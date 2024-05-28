@@ -1,7 +1,7 @@
 {
-  "name": "@onwidget/astrowind",
-  "version": "1.0.0-beta.34",
-  "description": "AstroWind: A free template using Astro 4.0 and Tailwind CSS. Astro starter theme.",
+  "name": "geas",
+  "version": "2.0.0",
+  "description": "AstroWind for GE Albert Schweitzer",
   "type": "module",
   "private": true,
   "engines": {

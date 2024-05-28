@@ -1,0 +1,62 @@
+---
+// import type { ItemVolunteer as Props } from '~/types';
+import { Icon } from 'astro-icon/components';
+import Headline from '../ui/Headline.astro';
+import WidgetWrapper from '../ui/WidgetWrapper.astro';
+import Image from '~/components/common/Image.astro';
+
+const {
+  title = '',
+  subtitle = '',
+  tagline = '',
+  volunteers = [],
+
+  id,
+  isDark = false,
+  classes = {},
+  bg = await Astro.slots.render('bg'),
+} = Astro.props;
+---
+
+<WidgetWrapper
+  id={id}
+  isDark={isDark}
+  containerClass={`max-w-4xl mx-auto lg:py-12 ${classes?.container ?? ''}`}
+  bg={bg}
+>
+  <Headline title={title} subtitle={subtitle} tagline={tagline} />
+  <div class="grid mx-auto gap-8 md:gap-y-12 lg:grid-cols-4 sm:grid-cols-2">
+    {
+      volunteers.map(({ title, description, image }) => {
+        return (
+          <div>
+            <div class="flex flex-col max-w-md">
+              <div class="rounded-md overflow-clip">
+                {image ? (
+                  typeof image === 'string' ? (
+                    <Fragment set:html={image} />
+                  ) : (
+                    <Image
+                      class="rounded-sm w-full aspect-[3/4]"
+                      loading="eager"
+                      alt={`${title}, ${description} do GEAS`}
+                      {...image}
+                    />
+                  )
+                ) : (
+                  <div class="text-secondary rounded-sm grid place-items-center h-full">
+                    <Icon name="tabler:user" class="w-24 h-24 mt-6" />
+                  </div>
+                )}
+              </div>
+              <div class="mt-1">
+                {title && <h3 class="text-xl font-bold">{title}</h3>}
+                {description && <p class={`${title ? 'mt-1 text-sm' : ''} text-muted`} set:html={description} />}
+              </div>
+            </div>
+          </div>
+        );
+      })
+    }
+  </div>
+</WidgetWrapper>
