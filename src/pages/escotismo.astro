@@ -93,7 +93,7 @@ const metadata = {
         description: 'Suporte do adulto',
         icon: 'tabler:directions',
         classes: {
-          icon: 'bg-sky-600 dark:bg-sky-400',
+          icon: 'bg-sky-600 dark:bg-sky-500',
         },
       },
       {
@@ -107,14 +107,14 @@ const metadata = {
         description: 'Natureza',
         icon: 'tabler:tent',
         classes: {
-          icon: 'bg-emerald-600 dark:bg-emerald-500',
+          icon: 'bg-emerald-600 dark:bg-emerald-700',
         },
       },
       {
         description: 'Envolvimento comunitário',
         icon: 'tabler:building-community',
         classes: {
-          icon: 'bg-yellow-500 dark:bg-yellow-400',
+          icon: 'bg-purple-500 dark:bg-purple-500',
         },
       },
     ]}
@@ -126,11 +126,11 @@ const metadata = {
     title="Ramo Lobinho"
     image={{ src: '~/assets/images/escultura.jpg', alt: 'Lobinho' }}
     callToAction={{
-      text: 'Saiba mais',
+      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF, 7MB)</span>',
       variant: 'primary',
       icon: 'tabler:download',
-      href: getAsset('documents/geas-lobinho.pdf'),
-      download: 'geas-lobinhos.pdf',
+      href: getAsset('documents/geas-lobinho-v.1.1.pdf'),
+      download: 'geas-lobinho.pdf',
     }}
   >
     <Fragment slot="content">
@@ -151,11 +151,11 @@ const metadata = {
     title="Ramo Escoteiro"
     image={{ src: '~/assets/images/caiaque.jpg', alt: 'Escoteiro' }}
     callToAction={{
-      text: 'Saiba mais',
+      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF, 7MB)</span>',
       variant: 'primary',
       icon: 'tabler:download',
-      href: getAsset('documents/geas-escoteiros.pdf'),
-      download: 'geas-escoteiros.pdf',
+      href: getAsset('documents/geas-escoteiro-v.1.1.pdf'),
+      download: 'geas-escoteiro.pdf',
     }}
   >
     <Fragment slot="content">
@@ -177,10 +177,10 @@ const metadata = {
     title="Ramo Sênior"
     image={{ src: '~/assets/images/rapel.jpg', alt: 'Sênior' }}
     callToAction={{
-      text: 'Saiba mais',
+      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF, 7MB)</span>',
       variant: 'primary',
       icon: 'tabler:download',
-      href: getAsset('documents/geas-senior.pdf'),
+      href: getAsset('documents/geas-senior-v.1.1.pdf'),
       download: 'geas-senior.pdf',
     }}
   >
@@ -202,11 +202,11 @@ const metadata = {
     title="Ramo Pioneiro"
     image={{ src: '~/assets/images/horta.jpg', alt: 'Pioneiro' }}
     callToAction={{
-      text: 'Saiba mais',
+      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF, 7MB)</span>',
       variant: 'primary',
       icon: 'tabler:download',
-      href: getAsset('documents/geas-pioneiro.pdf'),
-      download: 'geas-pioneiros.pdf',
+      href: getAsset('documents/geas-pioneiro-v.1.1.pdf'),
+      download: 'geas-pioneiro.pdf',
     }}
   >
     <Fragment slot="content">
@@ -234,17 +234,52 @@ const metadata = {
       allowfullscreen></iframe>`}
     columns={2}
     items={[
-      { description: 'Acampamentos' },
-      { description: 'Lanches' },
-      { description: 'Reuniões' },
-      { description: 'Eventos' },
-      { description: 'Cerimônias' },
+      {
+        description: 'Cerimônias',
+        icon: 'tabler:candle',
+        classes: {
+          icon: 'bg-amber-600 dark:bg-amber-600',
+        },
+      },
+      {
+        description: 'Lanches',
+        icon: 'tabler:chef-hat',
+        classes: {
+          icon: 'bg-rose-600 dark:bg-rose-500',
+        },
+      },
+      {
+        description: 'Reuniões',
+        icon: 'tabler:users-group',
+        classes: { icon: 'bg-indigo-600 dark:bg-indigo-600' },
+      },
+      {
+        description: 'Eventos',
+        icon: 'tabler:calendar',
+        classes: {
+          icon: 'bg-sky-600 dark:bg-sky-600',
+        },
+      },
+      {
+        description: 'Acampamentos',
+        icon: 'tabler:tent',
+        classes: {
+          icon: 'bg-emerald-600 dark:bg-emerald-700',
+        },
+      },
       { description: 'e muito mais!', classes: { icon: 'hidden' } },
     ]}
   >
     <Fragment slot="content">
-      A participação da família é muito importante no processo educativo, e por isso, contamos com a participação dos
-      pais em diversos momentos
+      <p class="mb-4">
+        O Movimento Escoteiro é, acima de tudo, um movimento educativo, que complementa a formação das crianças,
+        adolescentes e jovens. Assim, complementamos outros agentes, como a escola, o núcleo religioso e,
+        principalmente, a ação da família.
+      </p>
+      <p class="mb-4">
+        A participação da família é muito importante no processo educativo, e por isso, contamos com sua participação e
+        seu apoio em diversos momentos:
+      </p>
     </Fragment>
   </Content>
 </Layout>

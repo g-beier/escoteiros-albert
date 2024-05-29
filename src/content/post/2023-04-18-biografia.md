@@ -1,6 +1,6 @@
 ---
 publishDate: 2023-04-18T00:00:00Z
-title: O Albert Schweitzer
+title: 'Albert Schweitzer: O Homem'
 slug: 'biografia-albert'
 excerpt: Um resgate histórico aprofundado da história de Albert Schweitzer, teólogo, filósofo, organista e médico missionário que é patrono de nosso Grupo Escoteiro.
 image: '~/assets/images/blog/albert-schweitzer.jpeg'

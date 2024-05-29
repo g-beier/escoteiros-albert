@@ -1,4 +1,7 @@
 ---
+import { Icon } from 'astro-icon/components';
+import { twMerge } from 'tailwind-merge';
+
 // component: DListItem
 //
 // Mimics the html 'dl' (description list)
@@ -10,13 +13,18 @@
 // closing tags - it's simply contained in an enclosing div with a
 // margin left.  No need for 'dd' items.
 //
-const { dt } = Astro.props;
+const { dt, icon, classes = {} } = Astro.props;
 interface Props {
   dt: string;
+  icon?: string;
+  classes?: Record<string, string>;
 }
 
 const content: string = await Astro.slots.render('default');
 ---
 
-<h6 set:html={dt} />
-<div class="dd ml-8" set:html={content} />
+<h6 class={twMerge('inline-flex items-center gap-1', classes?.title)}>
+  {icon && <Icon name={icon} class={twMerge('w-4 h-4 block text-muted', classes?.icon)} />}
+  <Fragment set:html={dt} />
+</h6>
+<div class={twMerge('dd ml-8', classes?.description)} set:html={content} />

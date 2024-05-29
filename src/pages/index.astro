@@ -8,6 +8,7 @@ import Steps from '~/components/widgets/Steps.astro';
 import Content from '~/components/widgets/Content.astro';
 
 import { getPermalink } from '~/utils/permalinks';
+import Testimonials from '~/components/widgets/Testimonials.astro';
 
 const metadata = {
   title: 'Albert Schweitzer',
@@ -33,11 +34,44 @@ const metadata = {
 
     <Fragment slot="subtitle">
       <span class="hidden sm:inline">
-        O Grupo Escoteiro Albert Schweitzertem mais de 50 anos de história, proporcionando aventuras e aprendizagem para
-        crianças, adolescentes e jovens.
+        O Grupo Escoteiro Albert Schweitzer tem mais de 50 anos de história, proporcionando aventuras e aprendizagem
+        para crianças, adolescentes e jovens.
       </span>
     </Fragment>
   </Hero>
+
+  <Testimonials
+    title="Depoimentos"
+    subtitle="Leia o testemunho de pessoas que fazem parte do GEAS."
+    callToAction={{
+      text: 'Conheça nossos adultos »',
+      href: getPermalink('adultos'),
+      variant: 'link',
+    }}
+    testimonials={[
+      {
+        testimonial:
+          'Já tenho mais tempo de vida sendo escoteiro do que antes de entrar no Movimento, e acho que foi a melhor escolha que tomei.',
+        name: 'Gustav',
+        job: 'Dirigente',
+        image: { src: '~/assets/images/adultos/gustav-sq.jpg', alt: 'Gustav' },
+      },
+      {
+        testimonial:
+          'Quando eu fiz minha promessa, eu me comprometi a fazer o melhor possível para tornar o mundo um lugar melhor através dos valores que o Movimento me passou.',
+        name: 'Madu',
+        job: 'Escotista',
+        image: { src: '~/assets/images/adultos/madu-sq.jpg', alt: 'Madu' },
+      },
+      {
+        testimonial:
+          'Para mim, a Promessa Escoteira é um compromisso que assumimos para tornar o mundo um lugar melhor do que encontramos.',
+        name: 'Shirlley',
+        job: 'Pioneira',
+        image: { src: '~/assets/images/adultos/shirlley.jpg', alt: 'Shirlley' },
+      },
+    ]}
+  />
 
   <BlogHighlightedPosts
     title="Acompanhe as atividades no nosso Blog"
@@ -116,7 +150,7 @@ const metadata = {
   />
 
   <Steps
-    title="Venha ser escoteiro conosco:"
+    title="Venha ser escoteiro:"
     image={{
       src: '~/assets/images/cla.jpg',
       alt: 'Escoteiros em um jogo, equilibrando objetos em duplas.',
@@ -149,7 +183,7 @@ const metadata = {
 
   <Content
     title="Contato"
-    subtitle="Escolha a melhor forma de falar conosco!"
+    subtitle="Escolha a melhor forma de falar conosco:"
     id="mapa"
     isReversed
     classes={{
@@ -161,14 +195,26 @@ const metadata = {
         description: `Rua Coronel Camisão, 30 - Higienópolis`,
         icon: 'tabler:home',
       },
-      // {
-      //   title: 'Telefone',
-      //   description: '',
-      //   icon: 'tabler:phone',
-      // },
+      {
+        title: 'WhatsApp',
+        description: `<a
+                class="underline underline-offset-2"
+                href="https://wa.me/555195794880"
+                rel="noopener noreferrer"
+                target="_blank">
+                  (51) 9 9579 4880
+                </a>`,
+        icon: 'tabler:brand-whatsapp',
+      },
       {
         title: 'Email',
-        description: 'geas38rs@gmail.com',
+        description: `<a
+                class="underline underline-offset-2"
+                href="mailto:geas38rs@gmail.com"
+                rel="noopener noreferrer"
+                target="_blank">
+                  geas38rs@gmail.com
+                </a>`,
         icon: 'tabler:mail',
       },
     ]}

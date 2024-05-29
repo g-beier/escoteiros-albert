@@ -15,7 +15,7 @@ export const headerData = {
         },
         {
           text: 'História',
-          href: getPermalink('historia-do-geas', 'post'),
+          href: getPermalink('historia-geas', 'post'),
         },
       ],
     },
@@ -25,6 +25,7 @@ export const headerData = {
     },
   ],
   // socialLinks: [
+  //   { label: 'WhatsApp', icon: 'tabler:brand-whatsapp', href: 'https://wa.me/555195794880' },
   //   { label: 'Facebook', icon: 'tabler:brand-facebook', href: 'https://www.facebook.com/Geas38rs' },
   //   { label: 'Instagram', icon: 'tabler:brand-instagram', href: 'https://www.instagram.com/escoteirosalbert/' },
   // ],
@@ -36,6 +37,7 @@ export const footerData = {
     {
       title: 'Redes Sociais',
       links: [
+        { text: 'WhatsApp', href: 'https://wa.me/555195794880' },
         { text: 'Facebook do GEAS', href: 'https://www.facebook.com/Geas38rs' },
         { text: 'Instagram do GEAS', href: 'https://www.instagram.com/escoteirosalbert/' },
       ],
@@ -64,6 +66,7 @@ export const footerData = {
     { text: 'Calendário', href: getAsset('documents/geas03-calendario.pdf') },
   ],
   socialLinks: [
+    { ariaLabel: 'WhatsApp', icon: 'tabler:brand-whatsapp', href: 'https://wa.me/555195794880' },
     { ariaLabel: 'Facebook', icon: 'tabler:brand-facebook', href: 'https://www.facebook.com/Geas38rs' },
     { ariaLabel: 'Instagram', icon: 'tabler:brand-instagram', href: 'https://www.instagram.com/escoteirosalbert/' },
   ],
