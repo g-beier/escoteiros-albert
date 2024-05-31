@@ -14,7 +14,8 @@ const metadata = {
     title="Conhecendo o Movimento Escoteiro"
     subtitle=`O Escotismo é um movimento educacional de jovens e para jovens, que conta
             com a colaboração de adultos voluntários e valoriza a participação de pessoas
-            de todas as origens sociais, etnias e credos.`
+            de todas as origens sociais, etnias e credos.<br />Nossa missão é, por meio
+            da educação de crianças, adolescentes e jovens, construir um mundo melhor.`
     items={[
       {
         title: 'Propósito',
@@ -40,6 +41,12 @@ const metadata = {
     ]}
     classes={{
       container: 'lg:py-12',
+    }}
+    callToAction={{
+      text: 'Projeto Educativo <span class="font-light inline-block ml-1 text-sm">(PDF - 2MB)</span>',
+      variant: 'primary',
+      href: getAsset('documents/projeto-educativo.pdf'),
+      icon: 'tabler:download',
     }}
   />
 
@@ -126,7 +133,7 @@ const metadata = {
     title="Ramo Lobinho"
     image={{ src: '~/assets/images/escultura.jpg', alt: 'Lobinho' }}
     callToAction={{
-      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF, 7MB)</span>',
+      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF - 7MB)</span>',
       variant: 'primary',
       icon: 'tabler:download',
       href: getAsset('documents/geas-lobinho-v.1.1.pdf'),
@@ -136,12 +143,12 @@ const metadata = {
     <Fragment slot="content">
       <p class="mb-4">
         No Ramo Lobinho, aprendemos a viver em grupo e desenvolvemos nossa liderança. <i>O livro da Jângal</i>, que
-        conta a história de Mowgli, o menino lobo, inspira a organização dos lobinhos em uma Alcateia, dividida em
-        equipes chamadas matilhas.
+        conta a história de Mowgli, o menino lobo, inspira a organização dos lobinhos e lobinhas em uma Alcateia,
+        dividida em equipes chamadas matilhas, cada uma formada por quatro a seis crianças.
       </p>
       <p class="mb-4">
-        Cada matilha é formada por quatro a seis lobinhos e lobinhas, e é nesse grupo que fazemos jogos e brincadeiras,
-        trabalhamos a importância da boa ação diária, e somos incentivados a fazer o Melhor Possível!
+        É na Alcateia que os lobinhos fazem jogos e realizam outras atividades, trabalham a importância da boa ação
+        diária e são incentivados a fazer o Melhor Possível!
       </p>
     </Fragment>
   </Content>
@@ -151,7 +158,7 @@ const metadata = {
     title="Ramo Escoteiro"
     image={{ src: '~/assets/images/caiaque.jpg', alt: 'Escoteiro' }}
     callToAction={{
-      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF, 7MB)</span>',
+      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF - 7MB)</span>',
       variant: 'primary',
       icon: 'tabler:download',
       href: getAsset('documents/geas-escoteiro-v.1.1.pdf'),
@@ -160,13 +167,13 @@ const metadata = {
   >
     <Fragment slot="content">
       <p class="mb-4">
-        Formamos patrulhas de cinco a oito jovens, que juntas formam uma Tropa. Trabalhamos em equipe, aprendemos
-        diversas coisas, acampamos e organizamos algumas atividades por conta própria, como ir ao cinema, ou uma noite
-        de jogos.
+        Formamos patrulhas de cinco a oito jovens, que juntas formam uma Tropa. Trabalhamos em equipe, aprendemos muito,
+        acampamos e organizamos algumas atividades por conta própria, como ir ao cinema, ou participar de uma noite de
+        jogos.
       </p>
       <p class="mb-4">
         Cada patrulha elege um monitor, que age como um líder, e tem símbolos, como uma bandeirola, um livro de patrulha
-        e cores que nos representam. Estamos sempre buscando coisas novas com nosso grupo de amigos.
+        e cores que a representam. Estamos sempre buscando coisas novas com nosso grupo de amigos.
       </p>
     </Fragment>
   </Content>
@@ -177,7 +184,7 @@ const metadata = {
     title="Ramo Sênior"
     image={{ src: '~/assets/images/rapel.jpg', alt: 'Sênior' }}
     callToAction={{
-      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF, 7MB)</span>',
+      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF - 7MB)</span>',
       variant: 'primary',
       icon: 'tabler:download',
       href: getAsset('documents/geas-senior-v.1.1.pdf'),
@@ -187,7 +194,7 @@ const metadata = {
     <Fragment slot="content">
       <p class="mb-4">
         O Ramo Sênior nos incentiva a superar nossos próprios desafios. Já nos conhecemos melhor, aceitamos nossas
-        características e diferenças, e estamos entendendo melhor nossa personalidade. Em patrulhas, a Tropa Sênior vive
+        características e diferenças e estamos entendendo melhor nossa personalidade. Em patrulhas, a Tropa Sênior vive
         diversas aventuras: acampamentos, escaladas, trilhas e rapel são alguns exemplos.
       </p>
       <p class="mb-4">
@@ -202,7 +209,7 @@ const metadata = {
     title="Ramo Pioneiro"
     image={{ src: '~/assets/images/horta.jpg', alt: 'Pioneiro' }}
     callToAction={{
-      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF, 7MB)</span>',
+      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF - 7MB)</span>',
       variant: 'primary',
       icon: 'tabler:download',
       href: getAsset('documents/geas-pioneiro-v.1.1.pdf'),
@@ -212,12 +219,14 @@ const metadata = {
     <Fragment slot="content">
       <p class="mb-4">
         O Clã é o espaço de apoio e desenvolvimento comum dos pioneiros. Seguindo o lema <i>Servir</i>, experimentamos o
-        papel real do adulto por meio do serviço ao próximo e das atividades de desenvolvimento comunitário. Aqui,
-        nossos valores e princípios nos orientam a realizar atividades relevantes, retibuindo a tudo que aprendemos.
+        papel real do adulto na sociedade, por meio de atividades de serviço e de desenvolvimento comunitário. Aqui,
+        nossos valores e princípios nos orientam a realizar atividades relevantes, colocando à disposição do próximo
+        tudo que aprendemos.
       </p>
       <p class="mb-4">
-        A rotina do Ramo Pioneiro é mais flexível, e isso nos dá bastante responsabilidade. Somos nós que organizamos
-        nossas próprias atividades, escrevendo o nosso projeto de vida, um trajeto de aprendizado e superação.
+        Nossa rotina, no Ramo Pioneiro, é mais flexível, e isso nos dá bastante responsabilidade. Somos nós que
+        organizamos nossas próprias atividades, escrevendo o nosso projeto de vida, um trajeto de aprendizado e
+        superação.
       </p>
     </Fragment>
   </Content>
@@ -273,11 +282,11 @@ const metadata = {
     <Fragment slot="content">
       <p class="mb-4">
         O Movimento Escoteiro é, acima de tudo, um movimento educativo, que complementa a formação das crianças,
-        adolescentes e jovens. Assim, complementamos outros agentes, como a escola, o núcleo religioso e,
-        principalmente, a ação da família.
+        adolescentes e jovens. Assim, auxiliamos outros agentes, como a escola, o núcleo religioso e, principalmente, a
+        ação da família.
       </p>
       <p class="mb-4">
-        A participação da família é muito importante no processo educativo, e por isso, contamos com sua participação e
+        A participação da família é muito importante no processo educativo e, por isso, contamos com sua participação e
         seu apoio em diversos momentos:
       </p>
     </Fragment>
