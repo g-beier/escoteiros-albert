@@ -7,6 +7,9 @@ import { getAsset } from '~/utils/permalinks';
 const metadata = {
   title: 'Escotismo',
 };
+
+const docVersion = '1.2';
+const docSize = '3MB';
 ---
 
 <Layout metadata={metadata}>
@@ -133,10 +136,10 @@ const metadata = {
     title="Ramo Lobinho"
     image={{ src: '~/assets/images/escultura.jpg', alt: 'Lobinho' }}
     callToAction={{
-      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF - 7MB)</span>',
+      text: `Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF - ${docSize})</span>`,
       variant: 'primary',
       icon: 'tabler:download',
-      href: getAsset('documents/geas-lobinho-v.1.1.pdf'),
+      href: getAsset(`documents/geas-lobinho-v.${docVersion}.pdf`),
       download: 'geas-lobinho.pdf',
     }}
   >
@@ -158,10 +161,10 @@ const metadata = {
     title="Ramo Escoteiro"
     image={{ src: '~/assets/images/caiaque.jpg', alt: 'Escoteiro' }}
     callToAction={{
-      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF - 7MB)</span>',
+      text: `Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF - ${docSize})</span>`,
       variant: 'primary',
       icon: 'tabler:download',
-      href: getAsset('documents/geas-escoteiro-v.1.1.pdf'),
+      href: getAsset(`documents/geas-escoteiro-v.${docVersion}.pdf`),
       download: 'geas-escoteiro.pdf',
     }}
   >
@@ -184,10 +187,10 @@ const metadata = {
     title="Ramo Sênior"
     image={{ src: '~/assets/images/rapel.jpg', alt: 'Sênior' }}
     callToAction={{
-      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF - 7MB)</span>',
+      text: `Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF - ${docSize})</span>`,
       variant: 'primary',
       icon: 'tabler:download',
-      href: getAsset('documents/geas-senior-v.1.1.pdf'),
+      href: getAsset(`documents/geas-senior-v.${docVersion}.pdf`),
       download: 'geas-senior.pdf',
     }}
   >
@@ -209,10 +212,10 @@ const metadata = {
     title="Ramo Pioneiro"
     image={{ src: '~/assets/images/horta.jpg', alt: 'Pioneiro' }}
     callToAction={{
-      text: 'Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF - 7MB)</span>',
+      text: `Saiba mais <span class="font-light inline-block ml-1 text-sm">(PDF - ${docSize})</span>`,
       variant: 'primary',
       icon: 'tabler:download',
-      href: getAsset('documents/geas-pioneiro-v.1.1.pdf'),
+      href: getAsset(`documents/geas-pioneiro-v.${docVersion}.pdf`),
       download: 'geas-pioneiro.pdf',
     }}
   >
