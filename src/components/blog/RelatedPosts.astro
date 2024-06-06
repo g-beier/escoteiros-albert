@@ -18,7 +18,7 @@ const relatedPosts = post.tags ? await getRelatedPosts(post, 4) : [];
 {
   APP_BLOG.isRelatedPostsEnabled ? (
     <BlogHighlightedPosts
-      classes={{ container: 'pt-0 lg:pt-0 md:pt-0' }}
+      classes={{ container: 'pt-0 lg:pt-0 md:pt-0 print:hidden' }}
       title="Posts relacionados"
       linkText="Ver todos os posts"
       linkUrl={getBlogPermalink()}

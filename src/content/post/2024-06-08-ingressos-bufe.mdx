@@ -1,0 +1,87 @@
+---
+publishDate: 2024-06-08T00:00:00Z
+title: 'Bufê de Sopas: Ingressos'
+slug: 'ingressos-bufe-2024'
+excerpt: Reserve o seu ingresso para a 16ª edição do nosso Bufê de Sopas.
+image: '~/assets/images/blog/bufe-sopas.png'
+category: Notícia
+tags:
+  - cml
+  - evento
+  - bufê de sopas
+---
+
+import Button from '~/components/ui/Button.astro';
+import { Icon } from 'astro-icon/components';
+import DListItem from '~/components/ui/DListItem.astro';
+
+{/* INTRODUÇÃO AO BUFÊ */}
+
+Começaram as vendas dos ingressos para a décima sexta edição do Bufê de Sopas,
+que irá ocorrer no dia **06 de julho, às 20h**, no salão da Comunidade Martin Luther
+(Rua&nbsp;Coronel Camisão, 30).
+
+Retornamos este ano com as sopas tradicionais:
+caldo nordestino, creme de ervilha, creme de milho, sopa de capelete e sopa de feijão.
+Consulte a lista de ingredientes de cada sopa ao final do texto.
+No bar, teremos várias opções de bebidas, incluindo água, refrigerantes e vinho
+(taça e garrafa).
+
+{/* INFORMAÇÕES DE LOTES,  VALORES E VENDA */}
+
+**Após o evento, 10% do lucro será destinado, através da Comunidade Martin Luther, como doação para instituições e pessoas atingidas pelas enchentes.** Mais&nbsp;informações serão divulgadas nas nossas redes sociais.
+
+Os ingressos serão vendidos em lotes:
+
+- Primeiro lote: R$&nbsp;40,00 (até 22 de junho)
+- Segundo lote: R$&nbsp;50,00 (após 22 de junho)
+
+Crianças até 5 anos não pagam, e entre 6 e 10 anos pagam R$&nbsp;35,00.
+Estaremos realizando a pré-venda de garrafas de vinho, para garantir que possamos
+atender aos pedidos de todos.
+
+Teremos também o pague-e-leve, onde você pode buscar 3 sabores, seguindo os valores dos lotes.
+
+<Button
+  text="Compre seu ingresso"
+  icon="tabler:brand-whatsapp"
+  href="https://wa.me/555195794880"
+  class="no-underline"
+></Button>
+
+A venda de ingressos na hora não é garantida e dependerá do número de ingressos vendidos antecipadamente. Acompanhe nosso perfil no Instagram para ficar por dentro das novidades.
+
+### Ingredientes
+
+<div class="text-sm flex flex-wrap flex-col md:flex-row gap-4 md:justify-between my-4">
+  <div class="inline-flex flex-row flex-nowrap gap-2">
+    <Icon class="w-4 h-4 md:w-6 md:h-6 inline-block text-emerald-600 dark:text-emerald-400" name="tabler:leaf"></Icon> <span>Possui opção vegana</span>
+  </div>
+  <div class="inline-flex flex-row flex-nowrap gap-2">
+    <Icon class="w-4 h-4 md:w-6 md:h-6 inline-block text-muted" name="tabler:leaf"></Icon> <span>Possui opção vegetariana</span>
+  </div>
+  <div class="inline-flex flex-row flex-nowrap gap-2">
+    <Icon class="w-4 h-4 md:w-6 md:h-6 inline-block text-red-600 dark:text-red-400" name="tabler:leaf-off"></Icon> <span>Não possui opção vegetariana</span>
+  </div>
+</div>
+<DListItem dt="Caldo nordestino" icon="tabler:leaf-off" classes={{ icon: 'text-red-600 dark:text-red-400' }}>
+  _Contém frango, glúten e lactose._ Ingredientes: alho, azeitona verde, caldo de frango, cebola, cebolinha, colorau,
+  cominho, creme de leite, farinha de trigo, frango, leite de coco, leite integral, milho verde, óleo de soja,
+  pimenta-do-reino preta, pimentão verde, tomate.
+</DListItem>
+<DListItem dt="Creme de ervilha" icon="tabler:leaf" classes={{ icon: 'text-emerald-600 dark:text-emerald-400' }}>
+  _Contém porco. Não contém glútem nem lactose. Possui opção vegana._ Ingredientes: alho, bacon, caldo de legumes,
+  cebola, ervilha seca, linguiça calabresa, pimenta-do-reino preta.
+</DListItem>
+<DListItem dt="Creme de milho" icon="tabler:leaf">
+  _Contém lactose. Não contém glúten._ Ingredientes: amido de milho, caldo de legumes, cebola, creme de leite, leite
+  integral, manteiga, milho verde.
+</DListItem>
+<DListItem dt="Sopa de capelete" icon="tabler:leaf-off" classes={{ icon: 'text-red-600 dark:text-red-400' }}>
+  _Contém frango, glúten e lactose._ Ingredientes: alho, caldo de frango, capelete de frango, cebola, frango, louro,
+  noz-moscada.
+</DListItem>
+<DListItem dt="Sopa de feijão" icon="tabler:leaf" classes={{ icon: 'text-emerald-600 dark:text-emerald-400' }}>
+  _Contém porco e glúten. Possui opção vegana._ Ingredientes: alho, bacon, cebola, cebolinha, feijão preto, linguiça
+  calabresa, massa (sem ovos na versão vegana), pimenta-do-reino preta, salsinha. Versão vegana inclui caldo de legumes.
+</DListItem>

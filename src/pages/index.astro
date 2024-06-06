@@ -24,7 +24,7 @@ const metadata = {
         text: 'Encontre o Albert',
         href: '#mapa',
         target: '',
-        icon: 'tabler:map',
+        icon: 'tabler:map-pin',
       },
       { text: 'Saiba mais', href: '#perguntas' },
     ]}
@@ -80,7 +80,7 @@ const metadata = {
                         do que fazemos no Albert.
                 `}
     postIds={[
-      '2024-05-30-ingressos-bufe.mdx',
+      '2024-06-08-ingressos-bufe.mdx',
       '2024-05-18-enchentes.md',
       '2024-05-17-historia-geas.md',
       '2023-04-18-biografia.md',
@@ -104,14 +104,7 @@ const metadata = {
           href: '#mapa',
         },
       },
-      {
-        title: 'Qual a idade para participar?',
-        description: `Crianças a partir de 6 anos e meio podem participar como lobinhos - e jovens até
-                21 anos podem participar nos demais ramos.<br/>Os membros do grupo são divididos em
-                quatro ramos, pelas faixas etárias: Ramo Lobinho, entre 6 anos e meio e 11 anos; Ramo
-                Escoteiro, entre 10 e 15 anos; Ramo Sênior, entre 15 e 18 anos; e Ramo Pioneiro, entre
-                17 e 21 anos.`,
-      },
+
       {
         title: 'Quais os dias e horários das reuniões?',
         description: `Nossas atividades acontecem, normalmente, nos sábados à tarde, iniciando às 13h30
@@ -125,6 +118,19 @@ const metadata = {
                 custos com eventos, materiais e uniformes.<br/>Atualmente, a mensalidade do nosso grupo
                 tem o valor de R$ 30,00, e a taxa anual é em torno de R$ 120,00, a ser reajustada pelos
                 níveis Nacional e Regional dos Escoteiros do Brasil.`,
+      },
+      {
+        title: 'Qual a idade para participar?',
+        description: `Crianças a partir de 6 anos e meio podem participar como lobinhos - e jovens até
+                21 anos podem participar nos demais ramos.<br/>Os membros do grupo são divididos em
+                quatro ramos, pelas faixas etárias: Ramo Lobinho, entre 6 anos e meio e 10 anos; Ramo
+                Escoteiro, entre 10 e 14 anos; Ramo Sênior, entre 14 e 17 anos; e Ramo Pioneiro, entre
+                17 e 21 anos.`,
+        callToAction: {
+          text: 'Saiba mais sobre o Escotismo',
+          icon: 'tabler:link',
+          href: getPermalink('escotismo'),
+        },
       },
       {
         title: 'Quem foi Albert Schweitzer?',
@@ -219,9 +225,10 @@ const metadata = {
       },
     ]}
     image={`<iframe
+    title="Mapa - Grupo Escoteiro Albert Schweitzer"
     src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3454.8440461417117!2d-51.18917962370413!3d-30.012634129803327!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x951979db99ec9815%3A0xdd2f2406ed6dc875!2sGrupo%20Escoteiro%20Albert%20Schweitzer%2038%2FRS!5e0!3m2!1spt-BR!2sbr!4v1716685008300!5m2!1spt-BR!2sbr"
     class="w-full aspect-video rounded-md border-0 dark:shadow-none shadow-md"
-    loading="lazy"
+    loading="eager"
     referrerpolicy="no-referrer-when-downgrade"></iframe>`}
   />
 </Layout>
