@@ -11,7 +11,7 @@ metadata:
   title:
     default: Albert Schweitzer
     template: '%s — Albert Schweitzer'
-  description: "Website do Grupo Escoteiro Albert Schweitzer, de Porto Alegre/RS."
+  description: 'Website do Grupo Escoteiro Albert Schweitzer, de Porto Alegre/RS.'
   robots:
     index: true
     follow: true
