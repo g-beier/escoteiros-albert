@@ -9,14 +9,14 @@ site:
 # Default SEO metadata
 metadata:
   title:
-    default: Albert Schweitzer
-    template: '%s — Albert Schweitzer'
+    default: Grupo Escoteiro Albert Schweitzer
+    template: '%s — G.E. Albert Schweitzer'
   description: 'Website do Grupo Escoteiro Albert Schweitzer, de Porto Alegre/RS.'
   robots:
     index: true
     follow: true
   openGraph:
-    site_name: Albert Schweitzer
+    site_name: G.E. Albert Schweitzer
     images:
       - url: '~/assets/images/default.png'
         width: 1200

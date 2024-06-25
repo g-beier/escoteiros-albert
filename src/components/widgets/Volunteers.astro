@@ -37,7 +37,7 @@ const {
                     <Fragment set:html={image} />
                   ) : (
                     <Image
-                      class="rounded-sm w-full aspect-[3/4]"
+                      class="rounded-sm w-full aspect-square"
                       loading="eager"
                       layout="responsive"
                       widths={[200]}
@@ -47,8 +47,8 @@ const {
                     />
                   )
                 ) : (
-                  <div class="text-secondary rounded-sm grid place-items-center h-full">
-                    <Icon name="tabler:user" class="w-24 h-24 mt-6" />
+                  <div class="text-secondary rounded-sm grid place-items-center h-full aspect-square">
+                    <Icon name="tabler:user" class="w-32 h-32" />
                   </div>
                 )}
               </div>
