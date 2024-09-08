@@ -1,14 +1,14 @@
 ---
 publishDate: 2024-07-14T00:00:00Z
-title: 'Bufê de Sopas'
+title: '16º Bufê de Sopas'
 slug: 'bufe-2024'
-excerpt: Saiba mais sobre o resultado do nosso tradicional evento.
+excerpt: Saiba os resultados do Bufê de Sopas.
 # image: '~/assets/images/blog/solidariedade.png'
 category: Notícia
 tags:
   - cml
+  - bufe de sopas
   - evento
-  - bufê de sopas
 ---
 
 No último sábado, dia 13 de julho, ocorreu o nosso Bufê de Sopas. Vendemos 300 convites, divididos entre convidados no salão da Comunidade Martin Luther e pegue e leve.

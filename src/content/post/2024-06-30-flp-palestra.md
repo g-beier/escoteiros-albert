@@ -2,7 +2,7 @@
 publishDate: 2024-06-30T00:00:00Z
 title: 'Fórum de Lei e Promessa e Palestra sobre Saúde Mental'
 slug: 'flp-familias-2024'
-# excerpt: As medidas tomadas pelo GEAS para auxiliar as famílias atingidas pelas inundações de maio de 2024.
+excerpt: Leia sobre a atividade voltada às famílias.
 # image: '~/assets/images/blog/solidariedade.png'
 category: Notícia
 tags:
