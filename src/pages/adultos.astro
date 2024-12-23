@@ -11,22 +11,32 @@ const metadata = {
 <Layout metadata={metadata}>
   <HeroText
     title="Nossos Voluntários"
-    subtitle="O Escotismo é um movimento educativo de jovens e para jovens, que conta com o apoio de adultos voluntários. Este é o time de voluntários que mantém o Albert funcionando!"
+    subtitle=`O Escotismo é um movimento educativo de jovens e para jovens,
+      que conta com o apoio de adultos voluntários.
+      Este é o time de voluntários que mantém o Albert funcionando!`
   />
   <Volunteers
     title="Diretoria"
     subtitle="Adultos responsáveis pela administração e bom funcionamento do grupo."
     volunteers={[
-      { title: 'Etiane', description: 'Presidente', image: { src: '~/assets/images/adultos/eti-sq.jpg' } },
-      { title: 'Tatiana', description: 'Vice-Presidente', image: { src: '~/assets/images/adultos/tati-sq.jpg' } },
-      { title: 'Gênesis', description: 'Diretor Administrativo' },
-      { title: 'Amarilda', description: 'Diretora Administrativa Adjunta' },
-      { title: 'Rolf', description: 'Diretor Financeiro' },
       {
-        title: 'Márcia',
-        description: 'Diretora Financeira Adjunta',
-        image: { src: '~/assets/images/adultos/marcia-sq.jpg' },
+        title: 'Gustav',
+        description: 'Diretor Presidente',
+        image: { src: '~/assets/images/adultos/gustav-sq.jpg' },
       },
+      {
+        title: 'Tatiana',
+        description: 'Diretora Administrativa',
+        image: { src: '~/assets/images/adultos/tati-sq.jpg' },
+      },
+      {
+        title: 'Giba',
+        description: 'Diretor de Métodos Educativos',
+        image: { src: '~/assets/images/adultos/giba-sq.jpg' },
+      },
+      { title: 'Etiane', description: 'Diretora de Comunicação', image: { src: '~/assets/images/adultos/eti-sq.jpg' } },
+      { title: 'Léo', description: 'Diretor Adjunto de Comunicação' },
+      { title: 'Amarilda', description: 'Diretora de Patrimônio' },
       {
         title: 'Dodô',
         description: 'Diretor de Relações Institucionais',
@@ -37,22 +47,6 @@ const metadata = {
         description: 'Diretor Adjunto de Relações Institucionais',
         image: { src: '~/assets/images/adultos/atenante-sq.jpg' },
       },
-      {
-        title: 'Giba',
-        description: 'Diretor de Métodos Educativos',
-        image: { src: '~/assets/images/adultos/giba-sq.jpg' },
-      },
-      {
-        title: 'Gustav',
-        description: 'Diretor Adjunto de Métodos Educativos',
-        image: { src: '~/assets/images/adultos/gustav-sq.jpg' },
-      },
-      // {
-      //   title: 'Zanini',
-      //   description: 'Diretor de Comunicação',
-      //   image: { src: '~/assets/images/adultos/zanini-sq.jpg' },
-      // },
-      // { title: 'Luiza', description: 'Diretora Adjunta de Comunicação' },
     ]}
   />
 
@@ -66,10 +60,11 @@ const metadata = {
         description: 'Assistente - Lobo Gris',
         image: { src: '~/assets/images/adultos/marcus-sq.jpg' },
       },
-      { title: 'Nicole', description: 'Assistente - Kaa' },
-      // { title: 'Kalytsa', description: 'Assistente' },
-      // { title: 'Mariana', description: 'Assistente' },
-      // { title: 'Patrícia', description: 'Assistente - Raksha' },
+      {
+        title: 'Márcia',
+        description: 'Assistente',
+        image: { src: '~/assets/images/adultos/marcia-sq.jpg' },
+      },
     ]}
   />
 
@@ -79,7 +74,8 @@ const metadata = {
     volunteers={[
       { title: 'Brenda', description: 'Chefe de Seção', image: { src: '~/assets/images/adultos/brenda-sq.jpg' } },
       { title: 'Victória', description: 'Assistente', image: { src: '~/assets/images/adultos/vic-sq.jpg' } },
-      { title: 'Vitor', description: 'Instrutor', image: { src: '~/assets/images/adultos/vitor-sq.jpg' } },
+      { title: 'Nicole', description: 'Assistente' },
+      { title: 'Rolf', description: 'Assistente' },
     ]}
   />
 
@@ -89,16 +85,7 @@ const metadata = {
     volunteers={[
       { title: 'Flavio', description: 'Chefe de Seção', image: { src: '~/assets/images/adultos/flavio-sq.jpg' } },
       { title: 'Madu', description: 'Assistente', image: { src: '~/assets/images/adultos/madu-sq.jpg' } },
-      // { title: 'Rigo', description: 'Assistente' },
-    ]}
-  />
-
-  <Volunteers
-    title="Clã Pioneiro Highlander"
-    tagline="Ramo Pioneiro - 17 a 20 anos"
-    volunteers={[
-      { title: 'Léo', description: 'Mestre Pioneiro' },
-      // { title: 'Hermê', description: 'Mestre Pioneiro' },
+      { title: 'Hermê', description: 'Assistente' },
     ]}
   />
 </Layout>
