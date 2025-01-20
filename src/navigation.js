@@ -17,7 +17,6 @@ export const headerData = {
           text: 'História',
           href: getPermalink('historia-geas', 'post'),
         },
-        { text: 'Clube da Flor-de-Lis', href: getPermalink('/clube-flor-de-lis') },
       ],
     },
     {
