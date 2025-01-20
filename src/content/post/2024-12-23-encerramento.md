@@ -2,7 +2,7 @@
 publishDate: 2024-12-08T00:00:00Z
 title: 'Encerramento de 2024'
 slug: 'encerramento-2024'
-excerpt: Um breve resumo das últimas atividades de 2024, já com o planejamento para o ano seguinte.
+excerpt: Um breve resumo das últimas atividades de 2024.
 # image: '~/assets/images/blog/solidariedade.png'
 category: Notícia
 tags:
