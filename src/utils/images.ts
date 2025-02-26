@@ -8,6 +8,7 @@ const load = async function () {
     images = import.meta.glob('~/assets/images/**/*.{jpeg,jpg,png,tiff,webp,gif,svg,JPEG,JPG,PNG,TIFF,WEBP,GIF,SVG}');
   } catch (e) {
     // continue regardless of error
+    console.error(e);
   }
   return images;
 };

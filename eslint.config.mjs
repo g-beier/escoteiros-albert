@@ -1,8 +1,9 @@
-import astroEslintParser from 'astro-eslint-parser';
-import eslintPluginAstro from 'eslint-plugin-astro';
-import globals from 'globals';
 import js from '@eslint/js';
+import eslintPluginAstro from 'eslint-plugin-astro';
 import tseslint from 'typescript-eslint';
+import globals from 'globals';
+
+import astroEslintParser from 'astro-eslint-parser';
 import typescriptParser from '@typescript-eslint/parser';
 
 export default [
@@ -51,6 +52,7 @@ export default [
         },
       ],
       '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-empty-object-type': 'off',
     },
   },
   {

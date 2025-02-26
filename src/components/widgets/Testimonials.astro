@@ -22,12 +22,12 @@ const {
 <WidgetWrapper id={id} isDark={isDark} containerClass={`max-w-6xl mx-auto ${classes?.container ?? ''}`} bg={bg}>
   <Headline title={title} subtitle={subtitle} tagline={tagline} />
 
-  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
+  <div class="grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
     {
       testimonials &&
         testimonials.map(({ title, testimonial, name, job, image }) => (
-          <div class="flex flex-col p-4 md:p-6 rounded-md shadow-xl dark:shadow-none dark:border dark:border-slate-600">
-            {title && <h2 class="text-lg font-medium leading-6 pb-4">{title}</h2>}
+          <div class="flex flex-col rounded-md p-4 shadow-xl md:p-6">
+            {title && <h2 class="pb-4 text-lg leading-6 font-medium">{title}</h2>}
             {testimonial && (
               <div class="flex-grow">
                 <blockquote class="flex-auto">
@@ -36,16 +36,16 @@ const {
               </div>
             )}
 
-            <hr class="border-slate-200 dark:border-slate-600 my-4" />
+            <hr class="my-4 border-neutral-200" />
 
             <div class="flex items-center">
               {image && (
-                <div class="h-10 w-10 rounded-full border border-slate-200 dark:border-slate-600">
+                <div class="h-10 w-10 rounded-full border border-neutral-200">
                   {typeof image === 'string' ? (
                     <Fragment set:html={image} />
                   ) : (
                     <Image
-                      class="h-10 w-10 rounded-full border border-slate-200 dark:border-slate-600 min-w-full min-h-full"
+                      class="h-10 min-h-full w-10 min-w-full rounded-full border border-neutral-200"
                       width={40}
                       height={40}
                       widths={[400, 768]}
@@ -56,9 +56,9 @@ const {
                 </div>
               )}
 
-              <div class="grow ml-3 rtl:ml-0 rtl:mr-3">
+              <div class="ml-3 grow rtl:mr-3 rtl:ml-0">
                 {name && <p class="text-base font-semibold">{name}</p>}
-                {job && <p class="text-xs text-muted">{job}</p>}
+                {job && <p class="text-muted text-xs">{job}</p>}
               </div>
             </div>
           </div>
@@ -67,7 +67,7 @@ const {
   </div>
   {
     callToAction && (
-      <div class="flex justify-center mx-auto w-fit mt-8 md:mt-12 font-medium">
+      <div class="mx-auto mt-8 flex w-fit justify-center font-medium md:mt-12">
         <Button {...callToAction} />
       </div>
     )

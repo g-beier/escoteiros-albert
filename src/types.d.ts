@@ -196,18 +196,18 @@ export interface ItemGrid {
   classes?: Record<string, string>;
 }
 
-// export interface Volunteer {
-//   title?: string;
-//   description?: string;
-//   image?: Image;
-// }
+export interface ItemVolunteer {
+  title?: string;
+  description?: string;
+  image?: Image;
+}
 
-// export interface ItemVolunteer {
-//   title?: string;
-//   subtitle?: string;
-//   tagline?: string;
-//   volunteers?: Array<Volunteer>;
-// }
+export interface Volunteers extends Omit<Headline, 'classes'>, Widget {
+  title?: string;
+  subtitle?: string;
+  tagline?: string;
+  volunteers?: Array<Volunteer>;
+}
 
 export interface Collapse {
   iconUp?: string;

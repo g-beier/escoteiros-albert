@@ -71,6 +71,6 @@ export const footerData = {
     { ariaLabel: 'Instagram', icon: 'tabler:brand-instagram', href: 'https://www.instagram.com/escoteirosalbert/' },
   ],
   footNote: `
-    Produzido por <a class="text-blue-600 underline dark:text-muted" href="https://onwidget.com/"> onWidget</a> · Todos direitos reservados.
+    Produzido por <a class="text-muted underline" href="https://onwidget.com/"> onWidget</a> · Todos direitos reservados.
   `,
 };

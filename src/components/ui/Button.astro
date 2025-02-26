@@ -14,8 +14,8 @@ const {
 } = Astro.props;
 
 const variants = {
-  primary: 'btn-primary',
-  secondary: 'btn-secondary',
+  primary: 'btn btn-primary',
+  secondary: 'btn',
   tertiary: 'btn btn-tertiary',
   link: 'cursor-pointer hover:text-primary',
 };
@@ -24,7 +24,7 @@ const variants = {
 {
   type === 'button' || type === 'submit' || type === 'reset' ? (
     <button type={type} class={twMerge(variants[variant] || '', className)} {...rest}>
-      {icon && <Icon name={icon} class="w-5 h-5 mr-1 -ml-1.5 rtl:ml-1 rtl:-mr-1.5 inline-block" />}
+      {icon && <Icon name={icon} class="mr-1 -ml-1.5 inline-block h-5 w-5 rtl:-mr-1.5 rtl:ml-1" />}
       <Fragment set:html={text} />
     </button>
   ) : (
@@ -33,7 +33,7 @@ const variants = {
       {...(target ? { target: target, rel: 'noopener noreferrer' } : {})}
       {...rest}
     >
-      {icon && <Icon name={icon} class="w-5 h-5 mr-1 -ml-1.5 rtl:ml-1 rtl:-mr-1.5 inline-block" />}
+      {icon && <Icon name={icon} class="mr-1 -ml-1.5 inline-block h-5 w-5 rtl:-mr-1.5 rtl:ml-1" />}
       <Fragment set:html={text} />
     </a>
   )

@@ -1,9 +1,9 @@
 ---
-// import type { ItemVolunteer as Props } from '~/types';
 import { Icon } from 'astro-icon/components';
 import Headline from '../ui/Headline.astro';
 import WidgetWrapper from '../ui/WidgetWrapper.astro';
 import Image from '~/components/common/Image.astro';
+import type { Volunteers as Props } from '~/types';
 
 const {
   title = '',
@@ -25,19 +25,19 @@ const {
   bg={bg}
 >
   <Headline title={title} subtitle={subtitle} tagline={tagline} />
-  <div class="grid mx-auto gap-8 md:gap-y-12 lg:grid-cols-4 sm:grid-cols-2">
+  <div class="mx-auto grid gap-8 sm:grid-cols-2 md:gap-y-12 lg:grid-cols-4">
     {
       volunteers.map(({ title, description, image }) => {
         return (
           <div>
-            <div class="flex flex-col max-w-md">
-              <div class="rounded-md overflow-clip">
+            <div class="flex max-w-md flex-col">
+              <div class="overflow-clip rounded-md">
                 {image ? (
                   typeof image === 'string' ? (
                     <Fragment set:html={image} />
                   ) : (
                     <Image
-                      class="rounded-sm w-full aspect-square"
+                      class="aspect-square w-full rounded-sm"
                       loading="eager"
                       layout="responsive"
                       widths={[200]}
@@ -47,8 +47,8 @@ const {
                     />
                   )
                 ) : (
-                  <div class="text-secondary rounded-sm grid place-items-center h-full aspect-square">
-                    <Icon name="tabler:user" class="w-32 h-32" />
+                  <div class="text-primary grid aspect-square h-full place-items-center rounded-sm">
+                    <Icon name="tabler:user" class="h-32 w-32" />
                   </div>
                 )}
               </div>

@@ -25,7 +25,7 @@ const content: string = await Astro.slots.render('default');
 ---
 
 <h6 class={twMerge('inline-flex items-center gap-1', classes?.title)}>
-  {icon && <Icon name={icon} class={twMerge('w-4 h-4 block text-muted', classes?.icon)} />}
+  {icon && <Icon name={icon} class={twMerge('text-muted block h-4 w-4', classes?.icon)} />}
   <Fragment set:html={dt} />
 </h6>
 <div class={twMerge('dd ml-8', classes?.description)} set:html={content} />
