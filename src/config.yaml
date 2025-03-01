@@ -63,6 +63,22 @@ apps:
     isRelatedPostsEnabled: true
     relatedPostsCount: 4
 
+  store:
+    isEnabled: true,
+    itemsPerPage: 20
+
+    product:
+      isEnabled: true
+      permalink: '/%slug%' # Variables: %slug%, %year%, %month%, %day%, %hour%, %minute%, %second%, %category%
+      robots:
+        index: true
+
+    list:
+      isEnabled: true
+      pathname: 'store' # Store main path, you can change this to "articles" (/articles)
+      robots:
+        index: true
+
 analytics:
   vendors:
     googleAnalytics:

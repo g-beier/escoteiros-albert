@@ -19,14 +19,14 @@ const link = APP_BLOG?.post?.isEnabled ? getPermalink(post.permalink, 'post') : 
 ---
 
 <article class="mb-6 transition">
-  <div class="relative mb-6 rounded bg-gray-400 shadow-lg md:h-64">
+  <div class="relative mb-6 rounded-xl bg-gray-400 shadow-lg md:h-64">
     {
       image ? (
         link ? (
           <a href={link}>
             <Image
               src={image}
-              class="w-full rounded bg-gray-400 shadow-lg md:h-full"
+              class="w-full rounded-xl bg-gray-400 shadow-lg md:h-full"
               widths={[400, 900]}
               width={400}
               sizes="(max-width: 900px) 400px, 900px"
@@ -40,7 +40,7 @@ const link = APP_BLOG?.post?.isEnabled ? getPermalink(post.permalink, 'post') : 
         ) : (
           <Image
             src={image}
-            class="w-full rounded bg-gray-400 shadow-lg md:h-full"
+            class="w-full rounded-xl bg-gray-400 shadow-lg md:h-full"
             widths={[400, 900]}
             width={400}
             sizes="(max-width: 900px) 400px, 900px"
@@ -52,7 +52,7 @@ const link = APP_BLOG?.post?.isEnabled ? getPermalink(post.permalink, 'post') : 
           />
         )
       ) : link ? (
-        <a href={link}>
+        <a href={link} aria-label={`${post.title} - sem imagem.`}>
           <div class="grid h-full w-full place-items-center">
             <Icon name="tabler:article" class="h-32 w-32 text-neutral-100 drop-shadow-md" />
           </div>

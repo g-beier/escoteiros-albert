@@ -1,4 +1,4 @@
-import { getPermalink, getBlogPermalink, getAsset } from './utils/permalinks';
+import { getPermalink, getBlogPermalink, getStorePermalink, getAsset } from './utils/permalinks';
 
 export const headerData = {
   links: [
@@ -23,12 +23,13 @@ export const headerData = {
       text: 'Blog',
       href: getBlogPermalink(),
     },
+    { text: 'Lojinha', href: getStorePermalink() },
   ],
-  // socialLinks: [
-  //   { label: 'WhatsApp', icon: 'tabler:brand-whatsapp', href: 'https://wa.me/555195794880' },
-  //   { label: 'Facebook', icon: 'tabler:brand-facebook', href: 'https://www.facebook.com/Geas38rs' },
-  //   { label: 'Instagram', icon: 'tabler:brand-instagram', href: 'https://www.instagram.com/escoteirosalbert/' },
-  // ],
+  socialLinks: [
+    { label: 'WhatsApp', icon: 'tabler:brand-whatsapp', href: 'https://wa.me/555195794880' },
+    { label: 'Facebook', icon: 'tabler:brand-facebook', href: 'https://www.facebook.com/Geas38rs' },
+    { label: 'Instagram', icon: 'tabler:brand-instagram', href: 'https://www.instagram.com/escoteirosalbert/' },
+  ],
   // actions: [{ text: 'Download', href: 'https://github.com/onwidget/astrowind', target: '_blank' }],
 };
 
@@ -70,7 +71,5 @@ export const footerData = {
     { ariaLabel: 'Facebook', icon: 'tabler:brand-facebook', href: 'https://www.facebook.com/Geas38rs' },
     { ariaLabel: 'Instagram', icon: 'tabler:brand-instagram', href: 'https://www.instagram.com/escoteirosalbert/' },
   ],
-  footNote: `
-    Produzido por <a class="text-muted underline" href="https://onwidget.com/"> onWidget</a> · Todos direitos reservados.
-  `,
+  footNote: `Produzido por <a class="text-muted underline" href="https://onwidget.com/"> onWidget</a> · Todos direitos reservados · `,
 };

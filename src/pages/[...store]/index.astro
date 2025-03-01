@@ -1,0 +1,50 @@
+---
+import type { InferGetStaticPropsType, GetStaticPaths } from 'astro';
+
+import merge from 'lodash.merge';
+import type { ImageMetadata } from 'astro';
+import Layout from '~/layouts/PageLayout.astro';
+import SingleProduct from '~/components/store/SingleProduct.astro';
+import ToStoreLink from '~/components/store/ToStoreLink.astro';
+
+import { getCanonical, getPermalink } from '~/utils/permalinks';
+import { getStaticPathsStoreProduct, storeProductRobots } from '~/utils/store';
+import { findImage } from '~/utils/images';
+import type { MetaData } from '~/types';
+
+export const prerender = true;
+
+export const getStaticPaths = (async () => {
+  return await getStaticPathsStoreProduct();
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { product } = Astro.props as Props;
+
+const url = getCanonical(getPermalink(product.permalink, 'store'));
+const image = (await findImage(product.image)) as ImageMetadata | string | undefined;
+
+const metadata = merge(
+  {
+    title: product.title,
+    description: product.description,
+    robots: {
+      index: storeProductRobots?.index,
+      follow: storeProductRobots?.follow,
+    },
+    openGraph: {
+      type: 'article',
+      ...(image
+        ? { images: [{ url: image, width: (image as ImageMetadata)?.width, height: (image as ImageMetadata)?.height }] }
+        : {}),
+    },
+  },
+  { ...(product?.metadata ? { ...product.metadata, canonical: product.metadata?.canonical || url } : {}) }
+) as MetaData;
+---
+
+<Layout metadata={metadata}>
+  <SingleProduct product={{ ...product, image: image }} url={url} />
+  <ToStoreLink />
+</Layout>

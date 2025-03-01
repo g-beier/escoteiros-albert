@@ -8,6 +8,7 @@ type Config = {
   i18n?: I18NConfig;
   apps?: {
     blog?: AppBlogConfig;
+    store?: AppStoreConfig;
   };
   ui?: unknown;
   analytics?: unknown;
@@ -30,6 +31,26 @@ export interface I18NConfig {
   language: string;
   textDirection: string;
   dateFormatter?: Intl.DateTimeFormat;
+}
+export interface AppStoreConfig {
+  isEnabled: boolean;
+  itemsPerPage: number;
+  product: {
+    isEnabled: boolean;
+    permalink: string;
+    robots: {
+      index: boolean;
+      follow: boolean;
+    };
+  };
+  list: {
+    isEnabled: boolean;
+    pathname: string;
+    robots: {
+      index: boolean;
+      follow: boolean;
+    };
+  };
 }
 export interface AppBlogConfig {
   isEnabled: boolean;
@@ -169,6 +190,31 @@ const getAppBlog = (config: Config) => {
 
   return merge({}, _default, config?.apps?.blog ?? {}) as AppBlogConfig;
 };
+const getAppStore = (config: Config) => {
+  const _default = {
+    isEnabled: false,
+    itemsPerPage: 6,
+
+    product: {
+      isEnabled: true,
+      permalink: '/store/%slug%',
+      robots: {
+        index: true,
+        follow: true,
+      },
+    },
+    list: {
+      isEnabled: true,
+      pathname: 'store',
+      robots: {
+        index: true,
+        follow: true,
+      },
+    },
+  };
+
+  return merge({}, _default, config?.apps?.store ?? {}) as AppStoreConfig;
+};
 
 const getUI = (config: Config) => {
   const _default = {
@@ -196,6 +242,7 @@ export default (config: Config) => ({
   I18N: getI18N(config),
   METADATA: getMetadata(config),
   APP_BLOG: getAppBlog(config),
+  APP_STORE: getAppStore(config),
   UI: getUI(config),
   ANALYTICS: getAnalytics(config),
 });

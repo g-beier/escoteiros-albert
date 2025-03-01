@@ -28,14 +28,7 @@ const {
     <div class="py-12 pb-8 md:py-20 md:pb-8">
       <div class="mx-auto max-w-5xl text-center">
         {tagline && <p class="text-secondary text-base font-bold tracking-wide uppercase" set:html={tagline} />}
-        {
-          title && (
-            <h1
-              class="leading-tighter font-heading mb-4 text-5xl font-bold tracking-tighter md:text-6xl"
-              set:html={title}
-            />
-          )
-        }
+        {title && <h1 class="leading-tighter font-heading mb-4 text-5xl font-bold md:text-6xl" set:html={title} />}
         <div class="mx-auto max-w-3xl">
           {subtitle && <p class="text-muted mb-6 text-xl" set:html={subtitle} />}
           <div class="m-auto flex max-w-xs flex-col flex-nowrap gap-4 sm:max-w-md sm:flex-row sm:justify-center">

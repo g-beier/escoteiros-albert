@@ -22,9 +22,14 @@ interface MenuLink extends Link {
   links?: Array<MenuLink>;
 }
 
+interface IconLink extends Link {
+  label: string;
+}
+
 export interface Props {
   id?: string;
   links?: Array<MenuLink>;
+  socialLinks?: Array<IconLink>;
   actions?: Array<ActionLink>;
   isSticky?: boolean;
   isDark?: boolean;
@@ -38,6 +43,7 @@ export interface Props {
 const {
   id = 'header',
   links = [],
+  socialLinks = [],
   actions = [],
   isSticky = false,
   isFullWidth = false,
@@ -102,7 +108,7 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
                       <li>
                         <a
                           class:list={[
-                            'hover:text-link whitespace-no-wrap block px-5 py-2 first:rounded-t last:rounded-b lg:hover:bg-gray-100',
+                            'hover:text-link whitespace-no-wrap block px-5 py-2 first:rounded-t last:rounded-b lg:hover:bg-orange-50',
                             { 'aw-link-active': href2 === currentPath },
                           ]}
                           href={href2}
@@ -152,27 +158,15 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
           {
             showSocial && (
               <>
-                <a
-                  class="text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 focus:outline-none"
-                  aria-label="WhatsApp"
-                  href="https://wa.me/555195794880"
-                >
-                  <Icon name="tabler:brand-whatsapp" class="h-5 w-5" />
-                </a>
-                <a
-                  class="text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 focus:outline-none"
-                  aria-label="Facebook"
-                  href="https://www.facebook.com/Geas38rs"
-                >
-                  <Icon name="tabler:brand-facebook" class="h-5 w-5" />
-                </a>
-                <a
-                  class="text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 focus:outline-none"
-                  aria-label="Instagram"
-                  href="https://www.instagram.com/escoteirosalbert/"
-                >
-                  <Icon name="tabler:brand-instagram" class="h-5 w-5" />
-                </a>
+                {socialLinks.map((link) => (
+                  <a
+                    class="text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-purple-100 hover:text-purple-500 focus:ring-4 focus:ring-purple-200 focus:outline-none"
+                    aria-label={link.label}
+                    href={link.href}
+                  >
+                    <Icon name={link.icon} class="h-5 w-5" />
+                  </a>
+                ))}
               </>
             )
           }

@@ -1,0 +1,28 @@
+[
+  {
+    "slug": "camiseta-preta",
+    "title": "Camiseta preta",
+    "description": "Camiseta preta com o rosto do Albert",
+    "price": 30
+  },
+  {
+    "slug": "lenco",
+    "title": "Lenço do Albert",
+    "description": "Lenço cinza com medidas de 90cm, com o logo do grupo.\nOs membros do grupo recebem o lenço, sem custo, em uma cerimônia apropriada. Os lenços a venda são aqueles para trocar.",
+    "price": 30
+  },
+  {
+    "slug": "camiseta-cinquentenario",
+    "title": "Camiseta do cinquentenário",
+    "description": "Camiseta branca com o brasão do cinquentenário, em preto e dourado. A arte foi criada pelo então pioneiro Lukas Krick.",
+    "image": "~/assets/images/foto-epud-002.jpg",
+    "price": 25
+  },
+  {
+    "slug": "camiseta-cinza",
+    "title": "Camiseta cinza",
+    "description": "Camiseta cinza em algodão. A estampa é uma nuvem de palavras que fazem referência ao Movimento Escoteiro e ao Grupo.\nRecomendamos o uso da camiseta cinza durante as atividades.",
+    "image": "~/assets/images/foto-epud-003.jpg",
+    "price": 25
+  }
+]

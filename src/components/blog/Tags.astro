@@ -26,11 +26,11 @@ const { tags, class: className = 'text-sm', title = undefined, isCategory = fals
         {tags
           .sort((a, b) => (a.title < b.title ? -1 : a.title > b.title ? 1 : 0))
           .map((tag) => (
-            <li class="mr-2 mb-2 inline-block bg-gray-100 hover:bg-purple-100 px-2 py-0.5 font-medium lowercase rtl:mr-0 rtl:ml-2">
+            <li class="text-muted hover:even:text-primary hover:odd:text-secondary mr-2 mb-2 inline-block bg-gray-100 px-2 py-0.5 font-medium lowercase odd:hover:bg-green-100 even:hover:bg-purple-100 rtl:mr-0 rtl:ml-2">
               {!APP_BLOG?.tag?.isEnabled ? (
                 tag.title
               ) : (
-                <a href={getPermalink(tag.slug, isCategory ? 'category' : 'tag')} class="text-muted hover:text-primary">
+                <a href={getPermalink(tag.slug, isCategory ? 'category' : 'tag')} class="">
                   {tag.title}
                 </a>
               )}

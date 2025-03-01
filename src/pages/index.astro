@@ -30,7 +30,7 @@ const metadata = {
     ]}
     image={{ src: '~/assets/images/hero.jpg', alt: 'Lobinha sorrindo, com as mãos pintadas de tinta.' }}
   >
-    <Fragment slot="title"> O Grupo Escoteiro ideal para você! </Fragment>
+    <Fragment slot="title">O&nbsp;Grupo&nbsp;Escoteiro ideal&nbsp;para&nbsp;você!</Fragment>
 
     <Fragment slot="subtitle">
       <span class="hidden sm:inline">
@@ -156,6 +156,11 @@ const metadata = {
       src: '~/assets/images/cla.jpg',
       alt: 'Escoteiros em um jogo, equilibrando objetos em duplas.',
     }}
+    classes={{
+      items: {
+        icon: 'text-secondary',
+      },
+    }}
     items={[
       {
         title: 'Passo 1',
@@ -176,7 +181,7 @@ const metadata = {
         title: 'Pronto!',
         icon: 'tabler:check',
         classes: {
-          icon: 'bg-primary text-white ',
+          icon: 'bg-secondary text-white',
         },
       },
     ]}

@@ -55,9 +55,7 @@ const { post, url } = Astro.props;
         </p>
       </div>
 
-      <h1
-        class="leading-tighter font-heading mx-auto max-w-3xl px-4 text-4xl font-bold tracking-tighter sm:px-6 md:text-5xl"
-      >
+      <h1 class="leading-tighter font-heading mx-auto max-w-3xl px-4 text-4xl font-bold sm:px-6 md:text-5xl">
         {post.title}
       </h1>
       <p class="text-muted mx-auto mt-4 mb-8 max-w-3xl px-4 text-justify text-xl sm:px-6 md:text-2xl">
@@ -85,7 +83,7 @@ const { post, url } = Astro.props;
       }
     </header>
     <div
-      class="prose prose-md lg:prose-xl prose-headings:font-heading prose-headings:leading-tighter prose-headings:tracking-tighter prose-headings:font-bold prose-a:text-primary prose-img:rounded-md prose-img:shadow-lg prose-headings:scroll-mt-[80px] prose-li:my-0 mx-auto mt-8 max-w-3xl px-6 sm:px-6"
+      class="prose prose-md lg:prose-xl prose-headings:font-heading prose-headings:leading-tighter prose-headings:font-bold prose-a:text-primary prose-img:rounded-md prose-img:shadow-lg prose-headings:scroll-mt-[80px] prose-li:my-0 mx-auto mt-8 max-w-3xl px-6 sm:px-6"
     >
       <slot />
     </div>

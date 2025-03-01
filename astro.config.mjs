@@ -4,7 +4,7 @@ import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
 import icon from 'astro-icon';
 
-import astrowind from './vendor/integration';
+import astrowind from './vendor/integration/index.mjs';
 
 import { readingTimeRemarkPlugin, responsiveTablesRehypePlugin } from './src/utils/frontmatter.mjs';
 import { fileURLToPath } from 'url';

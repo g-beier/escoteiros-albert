@@ -44,6 +44,34 @@ export interface Post {
   readingTime?: number;
 }
 
+export interface Product {
+  /** A unique ID number that identifies a post. */
+  id: string;
+
+  /** A store item's unique slug – part of the item's URL based on its name, i.e. a product called “My Sample Page” has a slug “my-sample-page”. */
+  slug: string;
+
+  /**  */
+  permalink: string;
+
+  /**  */
+  title: string;
+
+  /**  */
+  price: number;
+
+  /**  */
+  description: string;
+
+  /**  */
+  available?: boolean;
+
+  /**  */
+  image?: ImageMetadata | string;
+
+  /**  */
+  metadata?: MetaData;
+}
 export interface Taxonomy {
   slug: string;
   title: string;

@@ -22,7 +22,7 @@ const {
       {tagline && <p class="text-secondary text-base font-bold tracking-wide uppercase" set:html={tagline} />}
       {title && (
         <h2
-          class={twMerge('leading-tighter font-heading text-heading text-3xl font-bold tracking-tighter', titleClass)}
+          class={twMerge('leading-tighter font-heading text-heading text-3xl font-bold', titleClass)}
           set:html={title}
         />
       )}

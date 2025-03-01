@@ -4,7 +4,7 @@
 
 @font-face {
   font-family: 'Agency';
-  src: url('fonts/Agency.woff');
+  src: url('fonts/agency.woff');
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -33,21 +33,21 @@
   --color-green-100: hsl(150, 78%, 84%);
   --color-green-200: hsl(150, 75%, 75%);
   --color-green-300: hsl(150, 73%, 65%);
-  --color-green-400: hsl(150, 73%, 50%); /* DEFAULT */
+  --color-green-400: hsl(150, 73%, 50%); /* MIV */
   --color-green-500: hsl(150, 73%, 45%);
   --color-green-600: hsl(150, 78%, 34%);
-  --color-green-700: hsl(152, 86%, 23%);
+  --color-green-700: hsl(152, 86%, 23%); /* ACESSÍVEL */
   --color-green-800: hsl(152, 100%, 13%);
   --color-green-900: hsl(140, 100%, 5%);
   --color-green-950: hsl(140, 100%, 2%);
 
-  --color-orange-50: hsl(16, 87%, 65%);
+  --color-orange-50: hsl(21, 100%, 94%);
   --color-orange-100: hsl(15, 97%, 85%);
   --color-orange-200: hsl(15, 89%, 75%);
   --color-orange-300: hsl(16, 87%, 65%);
-  --color-orange-400: hsl(15, 85%, 57%); /* DEFAULT */
+  --color-orange-400: hsl(15, 85%, 57%); /* MIV */
   --color-orange-500: hsl(15, 85%, 45%);
-  --color-orange-600: hsl(15, 87%, 35%);
+  --color-orange-600: hsl(15, 87%, 35%); /* ACESSÍVEL */
   --color-orange-700: hsl(16, 89%, 25%);
   --color-orange-800: hsl(15, 95%, 15%);
   --color-orange-900: hsl(6, 100%, 6%);
@@ -56,8 +56,8 @@
   --color-purple-50: hsl(254, 100%, 96%);
   --color-purple-100: hsl(250, 67%, 86%);
   --color-purple-200: hsl(252, 59%, 75%);
-  --color-purple-300: hsl(252, 58%, 64%); /* DEFAULT */
-  --color-purple-400: hsl(252, 57%, 55%);
+  --color-purple-300: hsl(252, 58%, 64%); /* MIV */
+  --color-purple-400: hsl(252, 57%, 55%); /* ACESSÍVEL */
   --color-purple-500: hsl(252, 58%, 45%);
   --color-purple-600: hsl(252, 58%, 35%);
   --color-purple-700: hsl(251, 58%, 25%);
@@ -69,16 +69,16 @@
   --color-yellow-100: hsl(37, 90%, 84%);
   --color-yellow-200: hsl(36, 88%, 75%);
   --color-yellow-300: hsl(36, 85%, 65%);
-  --color-yellow-400: hsl(36, 85%, 55%); /* DEFAULT */
+  --color-yellow-400: hsl(36, 85%, 55%); /* MIV */
   --color-yellow-500: hsl(36, 85%, 45%);
   --color-yellow-600: hsl(36, 89%, 34%);
-  --color-yellow-700: hsl(36, 92%, 24%);
+  --color-yellow-700: hsl(36, 92%, 24%); /* ACESSÍVEL */
   --color-yellow-800: hsl(35, 100%, 14%);
   --color-yellow-900: hsl(29, 100%, 6%);
   --color-yellow-950: hsl(29, 100%, 2%);
 
-  --color-primary: var(--color-purple-300);
-  --color-secondary: var(--color-green-400);
+  --color-primary: var(--color-purple-400);
+  --color-secondary: var(--color-green-700);
   --color-muted: var(--color-gray-600);
 }
 @utility bg-page {
@@ -86,15 +86,15 @@
 }
 
 @utility text-default {
-  color: var(--color-gray-900);
-}
-
-@utility text-page {
   color: var(--color-gray-800);
 }
 
-@utility text-muted {
-  color: var(--color-gray-600);
+@utility text-page {
+  color: var(--color-gray-700);
+}
+
+@utility text-link {
+  color: var(--color-orange-500);
 }
 
 /*
@@ -102,17 +102,16 @@
 COMPONENTS
 
 */
+* {
+  @apply selection:bg-green-400/40;
+}
 
 .btn {
-  @apply text-page inline-flex cursor-pointer items-center justify-center rounded-md border border-neutral-400 bg-transparent px-6 py-3.5 text-center text-base leading-snug font-medium transition duration-200 ease-in hover:border-neutral-600 hover:bg-neutral-100 focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 focus:ring-offset-neutral-200 md:px-8;
+  @apply text-page inline-flex cursor-pointer items-center justify-center rounded-full border border-gray-400 bg-transparent px-8 py-3.5 text-center text-base leading-snug font-medium transition duration-200 ease-in select-none hover:border-yellow-300 hover:bg-yellow-50 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white focus:outline-none md:px-8;
 }
 
 .btn-primary {
-  @apply bg-primary border-primary hover:bg-secondary hover:border-secondary font-semibold text-white hover:text-white;
-}
-
-.btn-secondary {
-  @apply text-page inline-flex cursor-pointer items-center justify-center rounded-md border border-neutral-400 bg-transparent px-6 py-3.5 text-center text-base leading-snug font-medium transition duration-200 ease-in hover:border-neutral-600 hover:bg-neutral-100 focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 focus:ring-offset-neutral-200 md:px-8;
+  @apply bg-primary border-primary hover:bg-secondary hover:border-secondary font-semibold text-white;
 }
 
 .btn-tertiary {
@@ -128,11 +127,7 @@ MENU
   @apply md:bg-white/90 md:backdrop-blur-md;
   box-shadow: 0 0.375rem 1.5rem 0 rgb(140 152 164 / 13%);
 }
-.dark #header.scroll > div:first-child,
-#header.scroll.dark > div:first-child {
-  @apply border-b border-gray-500/20 md:bg-[hsl(221,60%,7%)];
-  box-shadow: none;
-}
+
 #header.expanded nav {
   position: fixed;
   top: 70px;

@@ -1,0 +1,33 @@
+---
+import type { GetStaticPaths } from 'astro';
+import type { InferGetStaticPropsType } from 'astro';
+import Headline from '~/components/store/Headline.astro';
+import StoreList from '~/components/store/List.astro';
+import Pagination from '~/components/store/Pagination.astro';
+
+import Layout from '~/layouts/PageLayout.astro';
+import { getStaticPathsStoreList } from '~/utils/store';
+
+export const getStaticPaths = (async ({ paginate }) => {
+  return await getStaticPathsStoreList({ paginate });
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { page } = Astro.props as Props;
+const currentPage = page.currentPage ?? 1;
+
+const metadata = {
+  title: `Lojinha do GEAS${currentPage > 1 ? ` — Página ${currentPage}` : ''}`,
+  robots: {},
+  openGraph: { type: 'store' },
+};
+---
+
+<Layout metadata={metadata}>
+  <section class="mx-auto max-w-4xl px-6 py-12 sm:px-6 sm:py-16 lg:py-20">
+    <Headline>Lojinha do GEAS</Headline>
+    <StoreList products={page.data} />
+    <Pagination prevUrl={page.url.prev} nextUrl={page.url.next} />
+  </section></Layout
+>
