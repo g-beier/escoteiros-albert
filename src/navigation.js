@@ -1,4 +1,6 @@
+import { isBlogEnabled, isBlogPostRouteEnabled } from './utils/blog';
 import { getPermalink, getBlogPermalink, getStorePermalink, getAsset } from './utils/permalinks';
+import { isStoreEnabled } from './utils/store';
 
 export const headerData = {
   links: [
@@ -13,17 +15,25 @@ export const headerData = {
           text: 'Adultos',
           href: getPermalink('/adultos'),
         },
-        {
-          text: 'História',
-          href: getPermalink('historia-geas', 'post'),
-        },
+        ...(isBlogEnabled && isBlogPostRouteEnabled
+          ? [
+              {
+                text: 'História',
+                href: getPermalink('historia-geas', 'post'),
+              },
+            ]
+          : []),
       ],
     },
-    {
-      text: 'Blog',
-      href: getBlogPermalink(),
-    },
-    { text: 'Lojinha', href: getStorePermalink() },
+    ...(isBlogEnabled
+      ? [
+          {
+            text: 'Blog',
+            href: getBlogPermalink(),
+          },
+        ]
+      : []),
+    ...(isStoreEnabled ? [{ text: 'Lojinha', href: getStorePermalink() }] : []),
   ],
   socialLinks: [
     { label: 'WhatsApp', icon: 'tabler:brand-whatsapp', href: 'https://wa.me/555195794880' },
