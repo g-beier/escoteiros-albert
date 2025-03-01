@@ -1,7 +1,7 @@
 {
   "name": "escoteiros-albert",
   "type": "module",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
@@ -11,6 +11,7 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
+    "@astrojs/sitemap": "^3.2.1",
     "@astrojs/ts-plugin": "^1.10.4",
     "@astrolib/analytics": "^0.6.1",
     "@astrolib/seo": "^1.0.0-beta.8",

@@ -9,12 +9,15 @@ import astrowind from './vendor/integration/index.mjs';
 import { readingTimeRemarkPlugin, responsiveTablesRehypePlugin } from './src/utils/frontmatter.mjs';
 import { fileURLToPath } from 'url';
 
+import sitemap from '@astrojs/sitemap';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // https://astro.build/config
 
 export default defineConfig({
+  site: 'https://escoteirosalbert.com.br',
   output: 'static',
-  integrations: [astrowind({ config: './src/config.yaml' }), icon()],
+  integrations: [astrowind({ config: './src/config.yaml' }), icon(), sitemap()],
   markdown: {
     remarkPlugins: [readingTimeRemarkPlugin],
     rehypePlugins: [responsiveTablesRehypePlugin, 'rehype-plugin-image-native-lazy-loading'],
