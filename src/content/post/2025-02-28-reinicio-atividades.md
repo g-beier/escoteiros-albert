@@ -15,7 +15,7 @@ No sábado 08 de março, retomamos nossas atividades escoteiras! Será um dia 
 
 #### 9h às 12h – Conselho de Dirigentes e Escotistas
 
-Pela manhã, os voluntários estarão reunidos no grupo para conversar sobre "padrões de atividades escoteiras", envolvendo questões como planejamento e segurança em todas atividades. Estendemos o convite aos familiares que quiserem nos acompanhar: entrem em contato conosco para confirmar e saber mais da programação e do almoço.
+Pela manhã, os voluntários estarão reunidos no grupo para conversar sobre "padrões de atividades escoteiras", envolvendo questões como planejamento e segurança em todas as atividades. Estendemos o convite aos familiares que quiserem nos acompanhar: entrem em contato conosco para confirmar e saber mais da programação e do almoço.
 
 #### 13h30 – Reinício das atividades
 
