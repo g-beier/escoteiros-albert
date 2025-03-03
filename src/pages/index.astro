@@ -6,9 +6,9 @@ import BlogHighlightedPosts from '~/components/widgets/BlogHighlightedPosts.astr
 import FAQs from '~/components/widgets/FAQs.astro';
 import Steps from '~/components/widgets/Steps.astro';
 import Content from '~/components/widgets/Content.astro';
+import Testimonials from '~/components/widgets/Testimonials.astro';
 
 import { getPermalink } from '~/utils/permalinks';
-import Testimonials from '~/components/widgets/Testimonials.astro';
 
 const metadata = {
   title: 'Grupo Escoteiro Albert Schweitzer',
@@ -111,7 +111,7 @@ const metadata = {
         title: 'Quanto custa para ser escoteiro?',
         description: `Existem custos diretos e indiretos: existe uma taxa anual e mensalidades, além de
                 custos com eventos, materiais e uniformes.<br/>Atualmente, a mensalidade do nosso grupo
-                tem o valor de R$ 30,00, e a taxa anual é em torno de R$ 120,00, a ser reajustada pelos
+                tem o valor de R$ 30,00, e a taxa anual é em torno de R$ 130,00, a ser reajustada pelos
                 níveis Nacional e Regional dos Escoteiros do Brasil.`,
       },
       {
@@ -192,43 +192,49 @@ const metadata = {
     subtitle="Escolha a melhor forma de falar conosco:"
     id="mapa"
     isReversed
-    classes={{
-      icon: 'bg-primary-900',
-    }}
     items={[
       {
         title: 'Endereço',
         description: `Rua Coronel Camisão, 30 - Higienópolis`,
         icon: 'tabler:home',
+        classes: {
+          icon: 'bg-secondary',
+        },
       },
       {
         title: 'WhatsApp',
         description: `<a
-                class="underline underline-offset-2"
+                class="underline underline-offset-2 transition-all hover:decoration-secondary"
                 href="https://wa.me/555195794880"
                 rel="noopener noreferrer"
                 target="_blank">
                   (51) 9 9579 4880
                 </a>`,
         icon: 'tabler:brand-whatsapp',
+        classes: {
+          icon: 'bg-secondary',
+        },
       },
       {
         title: 'Email',
         description: `<a
-                class="underline underline-offset-2"
+                class="underline underline-offset-2 transition-all hover:decoration-secondary"
                 href="mailto:geas38rs@gmail.com"
                 rel="noopener noreferrer"
                 target="_blank">
                   geas38rs@gmail.com
                 </a>`,
         icon: 'tabler:mail',
+        classes: {
+          icon: 'bg-secondary',
+        },
       },
     ]}
     image={`<iframe
     title="Mapa - Grupo Escoteiro Albert Schweitzer"
     src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3454.8440461417117!2d-51.18917962370413!3d-30.012634129803327!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x951979db99ec9815%3A0xdd2f2406ed6dc875!2sGrupo%20Escoteiro%20Albert%20Schweitzer%2038%2FRS!5e0!3m2!1spt-BR!2sbr!4v1716685008300!5m2!1spt-BR!2sbr"
     class="w-full aspect-video rounded-md border-0  shadow-md"
-    loading="eager"
+    loading="lazy"
     referrerpolicy="no-referrer-when-downgrade"></iframe>`}
   />
 </Layout>

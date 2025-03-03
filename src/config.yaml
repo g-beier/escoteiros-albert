@@ -64,7 +64,7 @@ apps:
     relatedPostsCount: 4
 
   store:
-    isEnabled: false
+    isEnabled: true
     itemsPerPage: 20
 
     product:

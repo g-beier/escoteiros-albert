@@ -11,13 +11,15 @@ import { fileURLToPath } from 'url';
 
 import sitemap from '@astrojs/sitemap';
 
+import mdx from '@astrojs/mdx';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // https://astro.build/config
 
 export default defineConfig({
   site: 'https://escoteirosalbert.com.br',
   output: 'static',
-  integrations: [astrowind({ config: './src/config.yaml' }), icon(), sitemap()],
+  integrations: [astrowind({ config: './src/config.yaml' }), icon(), sitemap(), mdx()],
   markdown: {
     remarkPlugins: [readingTimeRemarkPlugin],
     rehypePlugins: [responsiveTablesRehypePlugin, 'rehype-plugin-image-native-lazy-loading'],

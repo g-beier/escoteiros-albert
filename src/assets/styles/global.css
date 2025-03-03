@@ -85,6 +85,10 @@
   background-color: var(--color-white);
 }
 
+@utility bg-shapes {
+  background-image: linear-gradient(red, fuchsia, blue);
+}
+
 @utility text-default {
   color: var(--color-gray-800);
 }

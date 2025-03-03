@@ -64,7 +64,7 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
   {...isSticky ? { 'data-aw-sticky-header': true } : {}}
   {...id ? { id } : {}}
 >
-  <div class="absolute inset-0"></div>
+  <div class="absolute inset-0 bg-white"></div>
   <div
     class:list={[
       'text-default relative mx-auto w-full px-3 py-3 lg:px-6',
@@ -88,7 +88,7 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
       </div>
     </div>
     <nav
-      class="text-default hidden w-full items-center overflow-x-hidden overflow-y-auto lg:mx-5 lg:flex lg:w-auto lg:justify-self-center lg:overflow-x-auto lg:overflow-y-visible"
+      class="text-default my-10 hidden w-full items-center overflow-x-hidden overflow-y-auto lg:mx-5 lg:my-auto lg:flex lg:w-auto lg:justify-self-center lg:overflow-x-auto lg:overflow-y-visible"
       aria-label="Main navigation"
     >
       <ul

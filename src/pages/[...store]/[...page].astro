@@ -18,7 +18,7 @@ const { page } = Astro.props as Props;
 const currentPage = page.currentPage ?? 1;
 
 const metadata = {
-  title: `Lojinha do GEAS${currentPage > 1 ? ` — Página ${currentPage}` : ''}`,
+  title: `Lojinha${currentPage > 1 ? ` — Página ${currentPage}` : ''}`,
   robots: {},
   openGraph: { type: 'store' },
 };
@@ -26,7 +26,7 @@ const metadata = {
 
 <Layout metadata={metadata}>
   <section class="mx-auto max-w-4xl px-6 py-12 sm:px-6 sm:py-16 lg:py-20">
-    <Headline>Lojinha do GEAS</Headline>
+    <Headline>Lojinha do Albert</Headline>
     <StoreList products={page.data} />
     <Pagination prevUrl={page.url.prev} nextUrl={page.url.next} />
   </section></Layout
