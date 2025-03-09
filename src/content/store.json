@@ -3,13 +3,19 @@
     "slug": "camiseta-preta",
     "title": "Camiseta preta",
     "description": "Camiseta preta com o rosto do Albert",
-    "price": 30
+    "price": 35
+  },
+  {
+    "slug": "anel-lenco",
+    "title": "Anel de lenço",
+    "description": "Anel de lenço com desenhos diversos: ramo lobinho, ramo escoteiro, padrão Escoteiros do Brasil. Consulte a disponibilidade.",
+    "price": 7
   },
   {
     "slug": "lenco",
     "title": "Lenço do Albert",
     "description": "Lenço cinza com medidas de 90cm, com o logo do grupo.\nOs membros do grupo recebem o lenço, sem custo, em uma cerimônia apropriada. Os lenços a venda são aqueles para trocar.",
-    "price": 30
+    "price": 35
   },
   {
     "slug": "camiseta-cinquentenario",
