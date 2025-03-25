@@ -3,7 +3,7 @@ publishDate: 2024-05-18T00:00:00Z
 title: 'Solidariedade Escoteira: Inundações no RS'
 slug: 'solidariedade-inundacoes'
 excerpt: As medidas tomadas pelo GEAS para auxiliar as famílias atingidas pelas inundações de maio de 2024.
-image: '~/assets/images/blog/solidariedade.png'
+image: '~/assets/images/blog/2024/solidariedade.png'
 category: Notícia
 tags:
   - voluntariado

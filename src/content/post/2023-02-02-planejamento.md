@@ -3,7 +3,7 @@ publishDate: 2023-02-02T00:00:00Z
 title: '2023: Mais um ano de GEAS'
 slug: 'planejamento-2023'
 excerpt: 'Com o Ano Novo, damos a largada a mais um ano de atividades do GEAS: diversos eventos, acampamentos e projetos para o ano de 2023.'
-image: ~/assets/images/blog/foto-epud-001.jpg
+image: ~/assets/images/blog/2023/planejamento.jpg
 category: Notícia
 tags:
   - escotismo

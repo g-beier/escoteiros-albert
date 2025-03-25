@@ -4,7 +4,7 @@ title: De volta à nossa Natureza
 slug: 'de-volta-a-nossa-natureza'
 author: Felipe Zanini
 excerpt: O cenário atual do Movimento Escoteiro pós pandemia no Rio Grande do Sul e a busca por uma reconstrução de identidade.
-image: '~/assets/images/blog/foto-epud-004.jpg'
+image: '~/assets/images/blog/2022/de-volta-a-nossa-natureza.jpg'
 category: Artigo
 tags:
   - escotismo

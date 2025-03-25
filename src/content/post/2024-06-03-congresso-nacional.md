@@ -3,7 +3,7 @@ publishDate: 2024-06-03T00:00:00Z
 title: 'Congresso Nacional Escoteiro 2024'
 slug: 'cne-2024'
 excerpt: 'Em 2024, comemoramos o Centenário dos Escoteiros do Brasil, e tivemos representantes do GEAS no Congresso do Centenário. Saiba mais sobre o que aconteceu em Recife neste post.'
-image: '~/assets/images/blog/cne2024.jpg'
+image: '~/assets/images/blog/2024/cne-2024.jpg'
 category: Notícia
 tags:
   - escotismo

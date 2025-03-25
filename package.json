@@ -11,13 +11,13 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
-    "@astrojs/mdx": "^4.1.0",
-    "@astrojs/sitemap": "^3.2.1",
+    "@astrojs/mdx": "^4.2.1",
+    "@astrojs/sitemap": "^3.3.0",
     "@astrojs/ts-plugin": "^1.10.4",
     "@astrolib/analytics": "^0.6.1",
     "@astrolib/seo": "^1.0.0-beta.8",
     "@tailwindcss/vite": "^4.0.9",
-    "astro": "^5.3.1",
+    "astro": "^5.5.4",
     "astro-icon": "^1.1.5",
     "limax": "^4.1.0",
     "lodash.merge": "^4.6.2",

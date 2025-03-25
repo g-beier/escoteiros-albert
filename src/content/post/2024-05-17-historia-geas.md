@@ -3,7 +3,7 @@ publishDate: 2024-05-17T00:00:00Z
 title: História do GEAS
 slug: 'historia-geas'
 excerpt: Conheça o desenvolvimento do Grupo Escoteiro Albert Schweitzer desde a sua fundação.
-image: ~/assets/images/blog/historia-geas.webp
+image: ~/assets/images/blog/2024/historia-geas.webp
 category: Artigo
 tags:
   - história
