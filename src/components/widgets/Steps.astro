@@ -2,7 +2,7 @@
 import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
 import Timeline from '~/components/ui/Timeline.astro';
 import Headline from '~/components/ui/Headline.astro';
-import Image from '~/components/common/Image.astro';
+import { Image } from 'astro:assets';
 import type { Steps as Props } from '~/types';
 
 const {
@@ -42,12 +42,12 @@ const {
             <Fragment set:html={image} />
           ) : (
             <Image
-              class="inset-0 w-full rounded-md bg-gray-400 object-cover object-top shadow-lg md:absolute md:h-full"
+              class="inset-0 w-full rounded-md bg-gray-400 object-cover object-center shadow-lg md:absolute md:h-full"
               widths={[400, 768]}
               sizes="(max-width: 768px) 100vw, 432px"
               width={432}
               height={768}
-              layout="cover"
+              layout="full-width"
               src={image?.src}
               alt={image?.alt || ''}
             />

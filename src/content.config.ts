@@ -48,39 +48,54 @@ const metadataDefinition = () =>
 
 const postCollection = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/post' }),
-  schema: z.object({
-    publishDate: z.date().optional(),
-    updateDate: z.date().optional(),
-    draft: z.boolean().optional(),
+  schema: ({ image }) =>
+    z.object({
+      publishDate: z.date().optional(),
+      updateDate: z.date().optional(),
+      draft: z.boolean().optional(),
 
-    title: z.string(),
-    image: z.string().optional(),
-    excerpt: z.string().optional(),
-    slug: z.string().optional(),
+      title: z.string(),
+      image: image().optional(),
+      excerpt: z.string().optional(),
+      slug: z.string().optional(),
 
-    category: z.string().optional(),
-    tags: z.array(z.string()).optional(),
-    author: z.string().optional(),
+      category: z.string().optional(),
+      tags: z.array(z.string()).optional(),
+      author: z.string().optional(),
 
-    metadata: metadataDefinition(),
-  }),
+      metadata: metadataDefinition(),
+    }),
 });
 
 const storeCollection = defineCollection({
   loader: file('./src/content/store.json'),
-  schema: z.object({
-    slug: z.string(),
-    available: z.boolean().default(true),
-    title: z.string(),
-    description: z.string(),
-    image: z.string().optional(),
-    price: z.number(),
+  schema: ({ image }) =>
+    z.object({
+      slug: z.string(),
+      available: z.boolean().default(true),
+      title: z.string(),
+      description: z.string(),
+      image: image().optional(),
+      price: z.number(),
 
-    metadata: metadataDefinition(),
-  }),
+      metadata: metadataDefinition(),
+    }),
+});
+
+const volunteerCollection = defineCollection({
+  loader: file('./src/content/volunteers.json'),
+  schema: ({ image }) =>
+    z.object({
+      id: z.number(),
+      name: z.string(),
+      title: z.string(),
+      image: image().optional(),
+      tags: z.enum(['diretoria', 'alcatéia', 'tropa-escoteira', 'tropa-sênior', 'clã-pioneiro']).array(),
+    }),
 });
 
 export const collections = {
   post: postCollection,
   store: storeCollection,
+  volunteers: volunteerCollection,
 };

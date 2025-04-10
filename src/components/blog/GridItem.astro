@@ -2,9 +2,7 @@
 import { APP_BLOG } from 'astrowind:config';
 import type { Post } from '~/types';
 
-import Image from '~/components/common/Image.astro';
-
-import { findImage } from '~/utils/images';
+import { Image } from 'astro:assets';
 import { getPermalink } from '~/utils/permalinks';
 import { Icon } from 'astro-icon/components';
 
@@ -13,7 +11,6 @@ export interface Props {
 }
 
 const { post } = Astro.props;
-const image = await findImage(post.image);
 
 const link = APP_BLOG?.post?.isEnabled ? getPermalink(post.permalink, 'post') : '';
 ---
@@ -21,32 +18,30 @@ const link = APP_BLOG?.post?.isEnabled ? getPermalink(post.permalink, 'post') : 
 <article class="mb-6 transition">
   <div class="relative mb-6 rounded-xl bg-gray-400 shadow-lg md:h-64">
     {
-      image ? (
+      post?.image ? (
         link ? (
           <a href={link}>
             <Image
-              src={image}
-              class="w-full rounded-xl bg-gray-400 shadow-lg md:h-full"
+              src={post?.image}
+              class="aspect-16/9 w-full rounded-xl bg-gray-400 object-cover shadow-lg md:h-full"
               widths={[400, 900]}
               width={400}
               sizes="(max-width: 900px) 400px, 900px"
               alt={post.title}
-              aspectRatio="16:9"
-              layout="cover"
+              layout="full-width"
               loading="lazy"
               decoding="async"
             />
           </a>
         ) : (
           <Image
-            src={image}
-            class="w-full rounded-xl bg-gray-400 shadow-lg md:h-full"
+            src={post?.image}
+            class="aspect-16/9 w-full rounded-xl bg-gray-400 object-cover shadow-lg md:h-full"
             widths={[400, 900]}
             width={400}
             sizes="(max-width: 900px) 400px, 900px"
             alt={post.title}
-            aspectRatio="16:9"
-            layout="cover"
+            layout="full-width"
             loading="lazy"
             decoding="async"
           />

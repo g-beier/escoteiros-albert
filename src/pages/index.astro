@@ -10,6 +10,13 @@ import Testimonials from '~/components/widgets/Testimonials.astro';
 
 import { getPermalink } from '~/utils/permalinks';
 
+// IMAGES
+import hero from '~/assets/images/hero.jpg';
+import venhaSerEscoteiro from '~/assets/images/cla.jpg';
+import zaniniSq from '~/assets/images/adultos/zanini-sq.jpg';
+import maduSq from '~/assets/images/adultos/madu-sq.jpg';
+import gustavSq from '~/assets/images/adultos/gustav-sq.jpg';
+
 const metadata = {
   title: 'Grupo Escoteiro Albert Schweitzer',
   ignoreTitleTemplate: true,
@@ -28,7 +35,7 @@ const metadata = {
       },
       { text: 'Saiba mais', href: '#perguntas' },
     ]}
-    image={{ src: '~/assets/images/hero.jpg', alt: 'Lobinha sorrindo, com as mãos pintadas de tinta.' }}
+    image={{ src: hero, alt: 'Lobinha sorrindo, com as mãos pintadas de tinta.' }}
   >
     <Fragment slot="title">O&nbsp;Grupo&nbsp;Escoteiro ideal&nbsp;para&nbsp;você!</Fragment>
 
@@ -54,21 +61,21 @@ const metadata = {
           'Já tenho mais tempo de vida sendo escoteiro do que antes de entrar no Movimento, e acho que foi a melhor escolha que tomei.',
         name: 'Gustav',
         job: 'Diretor',
-        image: { src: '~/assets/images/adultos/gustav-sq.jpg', alt: 'Gustav' },
+        image: { src: gustavSq, alt: 'Gustav' },
       },
       {
         testimonial:
           'Quando eu fiz minha promessa, eu me comprometi a fazer o melhor possível para tornar o mundo um lugar melhor através dos valores que o Movimento me passou.',
         name: 'Madu',
         job: 'Escotista',
-        image: { src: '~/assets/images/adultos/madu-sq.jpg', alt: 'Madu' },
+        image: { src: maduSq, alt: 'Madu' },
       },
       {
         testimonial:
           'Hoje, eu sou quem sou por conta do Escotismo: por conta da Promessa que eu fiz em 2007, dos valores que o Movimento Escoteiro me ensinou e de todas as pessoas que ele me proporcionou conhecer.',
         name: 'Zanini',
         job: 'Ex-diretor',
-        image: { src: '~/assets/images/adultos/zanini-sq.jpg', alt: 'Zanini' },
+        image: { src: zaniniSq, alt: 'Zanini' },
       },
     ]}
   />
@@ -153,7 +160,7 @@ const metadata = {
   <Steps
     title="Venha ser escoteiro:"
     image={{
-      src: '~/assets/images/cla.jpg',
+      src: venhaSerEscoteiro,
       alt: 'Escoteiros em um jogo, equilibrando objetos em duplas.',
     }}
     classes={{
