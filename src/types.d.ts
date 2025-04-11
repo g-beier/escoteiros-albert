@@ -117,8 +117,8 @@ export interface MetaDataTwitter {
 }
 
 export interface Image {
-  src: string;
-  alt?: string;
+  src: ImageMetadata;
+  alt: string;
 }
 
 export interface Video {
@@ -186,7 +186,7 @@ export interface Testimonial {
   testimonial?: string;
   name?: string;
   job?: string;
-  image?: string | unknown;
+  image?: string | Image;
 }
 
 export interface Input {
@@ -225,16 +225,18 @@ export interface ItemGrid {
 }
 
 export interface ItemVolunteer {
+  id: number;
+  name: string;
   title?: string;
-  description?: string;
-  image?: Image;
+  image?: ImageMetadata;
+  tags?: string[];
 }
 
 export interface Volunteers extends Omit<Headline, 'classes'>, Widget {
   title?: string;
   subtitle?: string;
   tagline?: string;
-  volunteers?: Array<Volunteer>;
+  volunteers?: Array<ItemVolunteer>;
 }
 
 export interface Collapse {
@@ -255,10 +257,14 @@ export interface Form {
 
 // WIDGETS
 export interface Hero extends Omit<Headline, 'classes'>, Widget {
+  id?: string;
+
+  title?: string;
+  subtitle?: string;
+  tagline?: string;
   content?: string;
-  image?: string | unknown;
-  callToAction1?: CallToAction;
-  callToAction2?: CallToAction;
+  image?: string | Image;
+  actions?: string | CallToAction[];
   isReversed?: boolean;
 }
 
@@ -285,7 +291,7 @@ export interface Brands extends Omit<Headline, 'classes'>, Widget {
 }
 
 export interface Features extends Omit<Headline, 'classes'>, Widget {
-  image?: string | unknown;
+  image?: string | Image;
   video?: Video;
   items?: Array<Item>;
   columns?: number;
@@ -318,7 +324,7 @@ export interface Steps extends Omit<Headline, 'classes'>, Widget {
 
 export interface Content extends Omit<Headline, 'classes'>, Widget {
   content?: string;
-  image?: string | unknown;
+  image?: string | Image;
   items?: Array<Item>;
   columns?: number;
   isReversed?: boolean;

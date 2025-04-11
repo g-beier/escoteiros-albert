@@ -21,12 +21,20 @@ const { prevUrl, nextUrl, prevText = 'Mais recentes', nextText = 'Mais antigos' 
           variant="tertiary"
           class={`mr-2 px-3 md:px-3 ${!prevUrl ? 'invisible' : ''}`}
           href={getPermalink(prevUrl)}
+          aria-label={prevText}
+          aria-hidden={!prevUrl}
         >
           <Icon name="tabler:chevron-left" class="h-6 w-6" />
           <p class="ml-2">{prevText}</p>
         </Button>
 
-        <Button variant="tertiary" class={`px-3 md:px-3 ${!nextUrl ? 'invisible' : ''}`} href={getPermalink(nextUrl)}>
+        <Button
+          variant="tertiary"
+          class={`px-3 md:px-3 ${!nextUrl ? 'invisible' : ''}`}
+          href={getPermalink(nextUrl)}
+          aria-hidden={!nextUrl}
+          aria-label={nextText}
+        >
           <span class="mr-2">{nextText}</span>
           <Icon name="tabler:chevron-right" class="h-6 w-6" />
         </Button>

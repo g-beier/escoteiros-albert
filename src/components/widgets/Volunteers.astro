@@ -2,7 +2,7 @@
 import { Icon } from 'astro-icon/components';
 import Headline from '../ui/Headline.astro';
 import WidgetWrapper from '../ui/WidgetWrapper.astro';
-import Image from '~/components/common/Image.astro';
+import { Image } from 'astro:assets';
 import type { Volunteers as Props } from '~/types';
 
 const {
@@ -18,48 +18,46 @@ const {
 } = Astro.props;
 ---
 
-<WidgetWrapper
-  id={id}
-  isDark={isDark}
-  containerClass={`max-w-4xl mx-auto lg:py-12 ${classes?.container ?? ''}`}
-  bg={bg}
->
-  <Headline title={title} subtitle={subtitle} tagline={tagline} />
-  <div class="mx-auto grid gap-8 sm:grid-cols-2 md:gap-y-12 lg:grid-cols-4">
-    {
-      volunteers.map(({ title, description, image }) => {
-        return (
-          <div>
-            <div class="flex max-w-md flex-col">
-              <div class="overflow-clip rounded-md">
-                {image ? (
-                  typeof image === 'string' ? (
-                    <Fragment set:html={image} />
-                  ) : (
+{
+  volunteers?.length > 0 && (
+    <WidgetWrapper
+      id={id}
+      isDark={isDark}
+      containerClass={`max-w-4xl mx-auto lg:py-12 ${classes?.container ?? ''}`}
+      bg={bg}
+    >
+      <Headline title={title} subtitle={subtitle} tagline={tagline} />
+      <div class="mx-auto grid gap-8 sm:grid-cols-2 md:gap-y-12 lg:grid-cols-4">
+        {volunteers.map(({ name, title, image }) => {
+          return (
+            <div>
+              <div class="flex max-w-md flex-col">
+                <div class="overflow-clip rounded-md">
+                  {image ? (
                     <Image
                       class="aspect-square w-full rounded-sm"
                       loading="eager"
                       layout="responsive"
                       widths={[200]}
                       sizes="200px"
-                      alt={`${title}, ${description} do GEAS`}
-                      {...image}
+                      alt={`${name}, ${title} do GEAS`}
+                      src={image}
                     />
-                  )
-                ) : (
-                  <div class="text-primary grid aspect-square h-full place-items-center rounded-sm">
-                    <Icon name="tabler:user" class="h-32 w-32" />
-                  </div>
-                )}
-              </div>
-              <div class="mt-1">
-                {title && <h3 class="text-xl font-bold">{title}</h3>}
-                {description && <p class={`${title ? 'mt-1 text-sm' : ''} text-muted`} set:html={description} />}
+                  ) : (
+                    <div class="text-primary grid aspect-square h-full place-items-center rounded-sm">
+                      <Icon name="tabler:user" class="h-32 w-32" />
+                    </div>
+                  )}
+                </div>
+                <div class="mt-1">
+                  {name && <h3 class="font-heading text-xl font-bold">{name}</h3>}
+                  {title && <p class={`${name ? 'text-sm' : ''} text-muted`} set:html={title} />}
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })
-    }
-  </div>
-</WidgetWrapper>
+          );
+        })}
+      </div>
+    </WidgetWrapper>
+  )
+}

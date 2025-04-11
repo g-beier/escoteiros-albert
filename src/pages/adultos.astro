@@ -2,6 +2,9 @@
 import Layout from '~/layouts/PageLayout.astro';
 import HeroText from '~/components/widgets/HeroText.astro';
 import Volunteers from '~/components/widgets/Volunteers.astro';
+import { getCollection } from 'astro:content';
+
+const allVolunteers = await getCollection('volunteers').then((v) => v.map((v) => v.data));
 
 const metadata = {
   title: 'Adultos',
@@ -18,77 +21,30 @@ const metadata = {
   <Volunteers
     title="Diretoria"
     subtitle="Adultos responsáveis pela administração e bom funcionamento do grupo."
-    volunteers={[
-      {
-        title: 'Gustav',
-        description: 'Diretor-Presidente',
-        image: { src: '~/assets/images/adultos/gustav-sq.jpg' },
-      },
-      {
-        title: 'Tatiana',
-        description: 'Diretora Administrativa',
-        image: { src: '~/assets/images/adultos/tati-sq.jpg' },
-      },
-      {
-        title: 'Giba',
-        description: 'Diretor de Métodos Educativos',
-        image: { src: '~/assets/images/adultos/giba-sq.jpg' },
-      },
-      { title: 'Amarilda', description: 'Diretora de Patrimônio' },
-      { title: 'Rosani', description: 'Diretora Financeira' },
-      { title: 'Etiane', description: 'Diretora de Comunicação', image: { src: '~/assets/images/adultos/eti-sq.jpg' } },
-      { title: 'Léo', description: 'Diretor Adjunto de Comunicação' },
-      { title: 'Amanda', description: 'Diretora Adjunta de Comunicação' },
-      {
-        title: 'Dodô',
-        description: 'Diretor de Relações Institucionais',
-        image: { src: '~/assets/images/adultos/dodo-sq.jpg' },
-      },
-      {
-        title: 'Atenante',
-        description: 'Diretor Adjunto de Relações Institucionais',
-        image: { src: '~/assets/images/adultos/atenante-sq.jpg' },
-      },
-    ]}
+    volunteers={allVolunteers.filter((v) => v.tags.includes('diretoria'))}
   />
 
   <Volunteers
     title="Alcateia Schweitzer"
     tagline="Ramo Lobinho - 6,5 a 10 anos"
-    volunteers={[
-      { title: 'Naan', description: 'Chefe de Seção - Akelá', image: { src: '~/assets/images/adultos/naan-sq.jpg' } },
-      {
-        title: 'Marcus',
-        description: 'Assistente - Lobo Gris',
-        image: { src: '~/assets/images/adultos/marcus-sq.jpg' },
-      },
-      {
-        title: 'Márcia',
-        description: 'Assistente',
-        image: { src: '~/assets/images/adultos/marcia-sq.jpg' },
-      },
-      { title: 'Felipe', description: 'Assistente' },
-    ]}
+    volunteers={allVolunteers.filter((v) => v.tags.includes('alcatéia'))}
   />
 
   <Volunteers
     title="Tropa Escoteira Albert Schweitzer"
     tagline="Ramo Escoteiro - 10 a 14 anos"
-    volunteers={[
-      { title: 'Brenda', description: 'Chefe de Seção', image: { src: '~/assets/images/adultos/brenda-sq.jpg' } },
-      { title: 'Victória', description: 'Assistente', image: { src: '~/assets/images/adultos/vic-sq.jpg' } },
-      { title: 'Kim', description: 'Assistente' },
-      { title: 'Rolf', description: 'Assistente' },
-    ]}
+    volunteers={allVolunteers.filter((v) => v.tags.includes('tropa-escoteira'))}
   />
 
   <Volunteers
     title="Tropa Sênior Kilimanjaro"
     tagline="Ramo Sênior - 14 a 17 anos"
-    volunteers={[
-      { title: 'Flavio', description: 'Chefe de Seção', image: { src: '~/assets/images/adultos/flavio-sq.jpg' } },
-      { title: 'Madu', description: 'Assistente', image: { src: '~/assets/images/adultos/madu-sq.jpg' } },
-      { title: 'Hermê', description: 'Assistente' },
-    ]}
+    volunteers={allVolunteers.filter((v) => v.tags.includes('tropa-sênior'))}
+  />
+
+  <Volunteers
+    title="Clã Highlander"
+    tagline="Ramo Pioneiro - 18 a 21 anos"
+    volunteers={allVolunteers.filter((v) => v.tags.includes('clã-pioneiro'))}
   />
 </Layout>

@@ -5,6 +5,7 @@
 @font-face {
   font-family: 'Agency';
   src: url('fonts/agency.woff');
+  font-display: swap;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -15,7 +16,7 @@
     'Noto Color Emoji';
   --font-heading: 'Agency', 'Poppins', var(--font-sans);
 
-  --color-white: hsl(39, 100%, 96%);
+  --color-white: hsl(39, 90%, 98%);
 
   --color-gray-50: hsl(240, 75%, 97%);
   --color-gray-100: hsl(240, 11%, 86%);

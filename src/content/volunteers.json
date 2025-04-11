@@ -1,0 +1,102 @@
+[
+  {
+    "id": 1,
+    "name": "Gustav",
+    "title": "Diretor-Presidente",
+    "image": "~/assets/images/adultos/gustav-sq.jpg",
+    "tags": ["diretoria"]
+  },
+  {
+    "id": 2,
+    "name": "Tatiana",
+    "title": "Diretora Administrativa",
+    "image": "~/assets/images/adultos/tati-sq.jpg",
+    "tags": ["diretoria"]
+  },
+  {
+    "id": 3,
+    "name": "Giba",
+    "title": "Diretor de Métodos Educativos",
+    "image": "~/assets/images/adultos/giba-sq.jpg",
+    "tags": ["diretoria"]
+  },
+  { "id": 4, "name": "Amarilda", "title": "Diretora de Patrimônio", "tags": ["diretoria"] },
+  { "id": 5, "name": "Rosani", "title": "Diretora Financeira", "tags": ["diretoria"] },
+  {
+    "id": 6,
+    "name": "Etiane",
+    "title": "Diretora de Comunicação",
+    "image": "~/assets/images/adultos/eti-sq.jpg",
+    "tags": ["diretoria"]
+  },
+  { "id": 7, "name": "Léo", "title": "Diretor Adj. de Comunicação", "tags": ["diretoria"] },
+  { "id": 8, "name": "Amanda", "title": "Diretora Adj. de Comunicação", "tags": ["diretoria"] },
+  {
+    "id": 9,
+    "name": "Dodô",
+    "title": "Diretor de Relações Institucionais",
+    "image": "~/assets/images/adultos/dodo-sq.jpg",
+    "tags": ["diretoria"]
+  },
+  {
+    "id": 10,
+    "name": "Atenante",
+    "title": "Dir. Adj. de Relações Institucionais",
+    "image": "~/assets/images/adultos/atenante-sq.jpg",
+    "tags": ["diretoria"]
+  },
+  {
+    "id": 11,
+    "name": "Naan",
+    "title": "Akelá - Chefe de Seção",
+    "image": "~/assets/images/adultos/naan-sq.jpg",
+    "tags": ["alcatéia"]
+  },
+  {
+    "id": 12,
+    "name": "Marcus",
+    "title": "Lobo Gris - Assistente",
+    "image": "~/assets/images/adultos/marcus-sq.jpg",
+    "tags": ["alcatéia"]
+  },
+  {
+    "id": 13,
+    "name": "Márcia",
+    "title": "Assistente",
+    "image": "~/assets/images/adultos/marcia-sq.jpg",
+    "tags": ["alcatéia"]
+  },
+  { "id": 14, "name": "Felipe", "title": "Assistente", "tags": ["alcatéia"] },
+  {
+    "id": 15,
+    "name": "Brenda",
+    "title": "Chefe de Seção",
+    "image": "~/assets/images/adultos/brenda-sq.jpg",
+    "tags": ["tropa-escoteira"]
+  },
+  {
+    "id": 16,
+    "name": "Victória",
+    "title": "Assistente",
+    "image": "~/assets/images/adultos/vic-sq.jpg",
+    "tags": ["tropa-escoteira"]
+  },
+  { "id": 17, "name": "Kim", "title": "Assistente", "tags": ["tropa-escoteira"] },
+  { "id": 18, "name": "Rolf", "title": "Assistente", "tags": ["tropa-escoteira"] },
+  { "id": 19, "name": "Maicon", "title": "Assistente", "tags": ["tropa-escoteira"] },
+  {
+    "id": 20,
+    "name": "Flavio",
+    "title": "Chefe de Seção",
+    "image": "~/assets/images/adultos/flavio-sq.jpg",
+    "tags": ["tropa-sênior"]
+  },
+  {
+    "id": 21,
+    "name": "Madu",
+    "title": "Assistente",
+    "image": "~/assets/images/adultos/madu-sq.jpg",
+    "tags": ["tropa-sênior"]
+  },
+  { "id": 22, "name": "Hermê", "title": "Assistente", "tags": ["tropa-sênior"] }
+]
