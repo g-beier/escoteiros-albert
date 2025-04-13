@@ -29,8 +29,8 @@
     "image": "~/assets/images/adultos/eti-sq.jpg",
     "tags": ["diretoria"]
   },
-  { "id": 7, "name": "Léo", "title": "Diretor Adj. de Comunicação", "tags": ["diretoria"] },
-  { "id": 8, "name": "Amanda", "title": "Diretora Adj. de Comunicação", "tags": ["diretoria"] },
+  { "id": 7, "name": "Léo", "title": "Dir. Adj. de Comunicação", "tags": ["diretoria"] },
+  { "id": 8, "name": "Amanda", "title": "Dir. Adj. de Comunicação", "tags": ["diretoria"] },
   {
     "id": 9,
     "name": "Dodô",
@@ -83,20 +83,20 @@
   },
   { "id": 17, "name": "Kim", "title": "Assistente", "tags": ["tropa-escoteira"] },
   { "id": 18, "name": "Rolf", "title": "Assistente", "tags": ["tropa-escoteira"] },
-  { "id": 19, "name": "Maicon", "title": "Assistente", "tags": ["tropa-escoteira"] },
   {
-    "id": 20,
+    "id": 19,
     "name": "Flavio",
     "title": "Chefe de Seção",
     "image": "~/assets/images/adultos/flavio-sq.jpg",
     "tags": ["tropa-sênior"]
   },
   {
-    "id": 21,
+    "id": 20,
     "name": "Madu",
     "title": "Assistente",
     "image": "~/assets/images/adultos/madu-sq.jpg",
     "tags": ["tropa-sênior"]
   },
-  { "id": 22, "name": "Hermê", "title": "Assistente", "tags": ["tropa-sênior"] }
+  { "id": 21, "name": "Hermê", "title": "Assistente", "tags": ["tropa-sênior"] },
+  { "id": 22, "name": "Maicon", "title": "Assistente", "tags": ["tropa-escoteira"] }
 ]

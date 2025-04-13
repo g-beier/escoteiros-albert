@@ -6,7 +6,12 @@ import icon from 'astro-icon';
 
 import astrowind from './vendor/integration/index.mjs';
 
-import { readingTimeRemarkPlugin, responsiveTablesRehypePlugin } from './src/utils/frontmatter.mjs';
+import {
+  readingTimeRemarkPlugin,
+  responsiveTablesRehypePlugin,
+  lazyImagesRehypePlugin,
+} from './src/utils/frontmatter.mjs';
+
 import { fileURLToPath } from 'url';
 
 import sitemap from '@astrojs/sitemap';
@@ -22,7 +27,7 @@ export default defineConfig({
   integrations: [astrowind({ config: './src/config.yaml' }), icon(), sitemap(), mdx()],
   markdown: {
     remarkPlugins: [readingTimeRemarkPlugin],
-    rehypePlugins: [responsiveTablesRehypePlugin, 'rehype-plugin-image-native-lazy-loading'],
+    rehypePlugins: [responsiveTablesRehypePlugin, lazyImagesRehypePlugin],
   },
   vite: {
     plugins: [tailwindcss()],

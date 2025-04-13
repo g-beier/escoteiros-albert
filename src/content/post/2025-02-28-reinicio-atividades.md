@@ -3,7 +3,7 @@ publishDate: 2025-02-28T00:00:00Z
 title: 'Início das atividades'
 slug: 'inicio-atividades-2025'
 description: 'O Escoteiro por um dia é uma atividade especial para jovens que querem visitar o Movimento Escoteiro. Saiba mais sobre o evento!'
-# image: '~/assets/images/blog/foto-epud-2023-001.jpg'
+image: '~/assets/images/blog/2025/reinicio.jpg'
 excerpt: 'Confira todas as informações sobre o início das atividades.'
 category: 'Notícia'
 tags:
