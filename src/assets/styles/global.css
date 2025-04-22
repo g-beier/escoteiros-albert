@@ -10,6 +10,8 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@custom-variant intersect (&:not([no-intersect]));
+
 @theme {
   --font-sans:
     'Poppins', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
@@ -85,7 +87,22 @@
   --color-primary: var(--color-purple-400);
   --color-secondary: var(--color-green-700);
   --color-muted: var(--color-gray-600);
+
+  --animate-fade-up: fade-up 0.6s both;
+
+  @keyframes fade-up {
+    0% {
+      opacity: 0%;
+      transform: translateY(4rem);
+    }
+
+    100% {
+      opacity: 100%;
+      transform: translateY(0rem);
+    }
+  }
 }
+
 @utility bg-page {
   background-color: var(--color-white);
 }
