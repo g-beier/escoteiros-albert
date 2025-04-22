@@ -4,6 +4,12 @@ import { SITE, APP_BLOG, APP_STORE } from 'astrowind:config';
 
 import { trim } from '~/utils/utils';
 
+/** Describes the object-based href options */
+interface LinkDescriptor {
+  type: 'home' | 'blog' | 'store' | 'asset' | 'category' | 'tag' | 'post' | 'product' | 'page';
+  url?: string;
+}
+
 export const trimSlash = (s: string) => trim(trim(s, '/'));
 const createPath = (...params: string[]) => {
   const paths = params
@@ -115,34 +121,68 @@ export const getAsset = (path: string): string =>
 /** */
 const definitivePermalink = (permalink: string): string => createPath(BASE_PATHNAME, permalink);
 
-/** */
-export const applyGetPermalinks = (menu: object = {}) => {
+/** Type‐guard for plain objects we can recurse into */
+function isRecord(x: unknown): x is Record<string, unknown> {
+  return typeof x === 'object' && x !== null && !Array.isArray(x);
+}
+
+/** Type‐guard for our LinkDescriptor shape */
+function isLinkDescriptor(o: unknown): o is LinkDescriptor {
+  if (!isRecord(o)) return false;
+  return typeof o.type === 'string';
+}
+
+/** Resolve a single href entry (string or LinkDescriptor) to its final URL */
+function resolveHref(raw: unknown): string {
+  if (typeof raw === 'string') {
+    return getPermalink(raw);
+  }
+  if (isLinkDescriptor(raw)) {
+    switch (raw.type) {
+      case 'home':
+        return getHomePermalink();
+      case 'blog':
+        return getBlogPermalink();
+      case 'store':
+        return getStorePermalink();
+      case 'asset':
+        return getAsset(raw.url ?? '');
+      default:
+        return getPermalink(raw.url ?? '', raw.type);
+    }
+  }
+  // Fallback: stringify anything unexpected
+  return String(raw);
+}
+
+/**
+ * Recursively walks any value of type T, looks for `href` keys,
+ * and replaces their values via our permalink helpers.
+ */
+export function applyGetPermalinks<T>(menu: T): T {
+  // Arrays: map each element
   if (Array.isArray(menu)) {
-    return menu.map((item) => applyGetPermalinks(item));
-  } else if (typeof menu === 'object' && menu !== null) {
-    const obj = {};
-    for (const key in menu) {
+    return menu
+      .map((item) => applyGetPermalinks(item))
+      .filter(() => true) // keep TS happy
+      .map((v) => v) as unknown as T;
+  }
+
+  // Plain objects: rebuild key by key
+  if (isRecord(menu)) {
+    const output: Record<string, unknown> = {};
+
+    for (const [key, value] of Object.entries(menu)) {
       if (key === 'href') {
-        if (typeof menu[key] === 'string') {
-          obj[key] = getPermalink(menu[key]);
-        } else if (typeof menu[key] === 'object') {
-          if (menu[key].type === 'home') {
-            obj[key] = getHomePermalink();
-          } else if (menu[key].type === 'blog') {
-            obj[key] = getBlogPermalink();
-          } else if (menu[key].type === 'store') {
-            obj[key] = getStorePermalink();
-          } else if (menu[key].type === 'asset') {
-            obj[key] = getAsset(menu[key].url);
-          } else if (menu[key].url) {
-            obj[key] = getPermalink(menu[key].url, menu[key].type);
-          }
-        }
+        output.href = resolveHref(value);
       } else {
-        obj[key] = applyGetPermalinks(menu[key]);
+        output[key] = applyGetPermalinks(value);
       }
     }
-    return obj;
+
+    return output as T;
   }
+
+  // Primitives (string, number, boolean, etc.): pass through
   return menu;
-};
+}

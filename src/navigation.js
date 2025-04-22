@@ -81,5 +81,5 @@ export const footerData = {
     { ariaLabel: 'Facebook', icon: 'tabler:brand-facebook', href: 'https://www.facebook.com/Geas38rs' },
     { ariaLabel: 'Instagram', icon: 'tabler:brand-instagram', href: 'https://www.instagram.com/escoteirosalbert/' },
   ],
-  footNote: `Produzido por <a class="text-muted underline" href="https://onwidget.com/"> onWidget</a> · Todos direitos reservados · `,
+  // footNote: `Produzido por <a class="text-muted underline" href="https://onwidget.com/"> onWidget</a> · Todos direitos reservados · `,
 };
