@@ -4,7 +4,7 @@
 
 @font-face {
   font-family: 'Agency';
-  src: url('/fonts/agency.woff');
+  src: url('/fonts/agency.woff') format('woff');
   font-display: swap;
 }
 

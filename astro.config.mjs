@@ -3,6 +3,7 @@ import { defineConfig } from 'astro/config';
 import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
 import icon from 'astro-icon';
+import Sonda from 'sonda/astro';
 
 import astrowind from './vendor/integration/index.mjs';
 
@@ -24,9 +25,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   site: 'https://escoteirosalbert.com.br',
   output: 'static',
-  integrations: [astrowind({ config: './src/config.yaml' }), icon(), sitemap(), mdx()],
+  integrations: [
+    astrowind({ config: './src/config.yaml' }),
+    icon(),
+    sitemap(),
+    mdx(),
+    Sonda({ open: true, enabled: false }),
+  ],
   markdown: {
     remarkPlugins: [readingTimeRemarkPlugin],
+    // @ts-expect-error rehypePlugin
     rehypePlugins: [responsiveTablesRehypePlugin, lazyImagesRehypePlugin],
   },
   vite: {
