@@ -4,7 +4,7 @@ title: 'Congresso Nacional Escoteiro 2025'
 slug: 'cne-2025'
 description: 'Começamos o mês de maio com o lançamento do Programa Educativo atualizado dos Escoteiros do Brasil, durante o Congresso Nacional em Brasília.'
 # image: '~/assets/images/blog/2025/epud-2025.png'
-excerpt: 'O Congresso Nacional de lançamento do Programa Educativo atualizado'
+excerpt: 'O Congresso Nacional de lançamento do Programa Educativo atualizado.'
 category: Notícia
 tags:
   - escotismo
