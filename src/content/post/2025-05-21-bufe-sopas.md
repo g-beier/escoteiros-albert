@@ -1,5 +1,5 @@
 ---
-slug: bufe-sopas-2025
+slug: bufe-2025
 title: '17º Bufê de Sopas'
 excerpt: Saiba tudo que vem sendo publicado sobre o nosso tão esperado Bufê de Sopas
 description: that
