@@ -7,75 +7,70 @@ import type { Product } from '~/types';
 import { getPermalink } from '~/utils/permalinks';
 import { findImage } from '~/utils/images';
 import { Icon } from 'astro-icon/components';
+import Badge from './Badge.astro';
 
 export interface Props {
   product: Product;
 }
 
 const { product } = Astro.props;
-const image = (await findImage(product.image)) as ImageMetadata | undefined;
+const image = (await findImage(product.images?.[0])) as ImageMetadata | undefined;
 
 const link = APP_STORE?.product?.isEnabled ? getPermalink(product.permalink, 'product') : '';
 ---
 
-<article class={`max-w-md mx-auto md:max-w-none flex gap-2 flex-col`}>
+<article class={`max-w-md mx-auto md:max-w-none flex gap-2 flex-col group`}>
   {
     image ? (
       link ? (
-        <a class="group relative block" href={link ?? 'javascript:void(0)'}>
-          <div class="relative h-0 overflow-hidden rounded-xl bg-gray-400 pb-[130%] shadow-lg md:h-72 md:pb-[130%] lg:pb-[56.25%]">
-            {image && (
-              <Image
-                src={image}
-                class="absolute inset-0 mb-6 aspect-square h-full w-full rounded-xl bg-gray-400 object-cover shadow-lg"
-                widths={[400, 900]}
-                width={900}
-                sizes="(max-width: 900px) 400px, 900px"
-                alt={product.title}
-                loading="lazy"
-                decoding="async"
-              />
-            )}
-          </div>
+        <a href={link} class="relative">
+          {!product.available && <Badge appearance="danger">indisponível</Badge>}
+          <Image
+            src={image}
+            class="aspect-square w-full rounded-xl object-cover shadow-lg transition-transform ease-in-out group-hover:scale-105"
+            alt={product.title}
+            loading="eager"
+            decoding="async"
+            widths={[400, 900]}
+            width={900}
+            sizes="(max-width: 900px) 400px, 900px"
+          />
         </a>
       ) : (
-        <div class="relative h-0 overflow-hidden rounded-xl bg-gray-400 pb-[130%] shadow-lg md:h-72 md:pb-[130%] lg:pb-[56.25%]">
-          {image && (
-            <Image
-              src={image}
-              class="absolute inset-0 mb-6 aspect-square h-full w-full rounded-xl bg-gray-400 object-cover shadow-lg"
-              widths={[400, 900]}
-              width={900}
-              sizes="(max-width: 900px) 400px, 900px"
-              alt={product.title}
-              loading="lazy"
-              decoding="async"
-            />
-          )}
+        <div class="relative">
+          {!product.available && <Badge appearance="danger">indisponível</Badge>}
+          <Image
+            src={image}
+            class="aspect-square w-full rounded-xl object-cover shadow-lg transition-transform ease-in-out group-hover:scale-105"
+            alt={product.title}
+            loading="eager"
+            decoding="async"
+            widths={[400, 900]}
+            width={900}
+            sizes="(max-width: 900px) 400px, 900px"
+          />
         </div>
       )
     ) : link ? (
-      <a class="group relative block" href={link ?? 'javascript:void(0)'} aria-label={product.title}>
-        <div class="relative flex items-center justify-center overflow-hidden rounded-xl bg-purple-100 pb-[130%] shadow-lg md:h-72 md:pb-[130%] lg:pb-[56.25%]">
-          <div class="absolute inset-0 grid place-items-center">
-            <Icon name="tabler:photo-x" class="text-primary h-12 w-12" />
-          </div>
+      <a href={link} aria-label={product.title} class="relative">
+        {!product.available && <Badge appearance="danger">indisponível</Badge>}
+        <div class="grid aspect-square place-items-center rounded-xl bg-gray-100 shadow-lg">
+          <Icon name="tabler:camera-off" class="text-muted h-16 w-16 drop-shadow-md" />
         </div>
       </a>
     ) : (
-      <div class="relative flex items-center justify-center overflow-hidden rounded-xl bg-purple-100 pb-[130%] shadow-lg md:h-72 md:pb-[130%] lg:pb-[56.25%]">
-        <div class="absolute inset-0 grid place-items-center">
-          <Icon name="tabler:photo-x" class="text-primary h-12 w-12" />
-        </div>
+      <div class="relative grid aspect-square place-items-center rounded-xl bg-gray-100 shadow-lg">
+        {!product.available && <Badge appearance="danger">indisponível</Badge>}
+        <Icon name="tabler:camera-off" class="text-muted h-16 w-16 drop-shadow-md" />
       </div>
     )
   }
   <div class="mt-2">
     <header>
-      <h2 class="text-lg leading-tight font-semibold sm:text-xl">
+      <h2 class="text-lg leading-tight font-semibold">
         {
           link ? (
-            <a class="hover:text-primary inline-block transition duration-200 ease-in" href={link}>
+            <a class="group-hover:text-primary inline-block transition duration-200 ease-in" href={link}>
               {product.title}
             </a>
           ) : (

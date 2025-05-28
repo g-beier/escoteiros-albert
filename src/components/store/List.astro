@@ -9,10 +9,10 @@ export interface Props {
 const { products } = Astro.props;
 ---
 
-<ul class="grid grid-cols-2 gap-6 md:gap-12 lg:grid-cols-4">
+<ul class="grid grid-cols-2 gap-4 md:gap-8 lg:grid-cols-3">
   {
     products.map((product) => (
-      <li class="mb-12">
+      <li class="mb-2">
         <Item product={product} />
       </li>
     ))

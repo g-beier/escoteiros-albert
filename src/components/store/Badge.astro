@@ -1,0 +1,16 @@
+---
+interface Props {
+  appearance?: 'neutral' | 'danger' | 'success';
+}
+const { appearance = 'neutral' } = Astro.props;
+
+const styles: Record<Props['appearance'] & string, string> = {
+  neutral: 'bg-gray-50 text-gray-600',
+  danger: 'text-orange-50 bg-orange-600',
+  success: 'bg-green-600 text-green-50',
+};
+---
+
+<span class:list={['absolute top-1 right-1 mx-auto rounded-full px-2 text-sm', styles[appearance]]}>
+  <slot />
+</span>

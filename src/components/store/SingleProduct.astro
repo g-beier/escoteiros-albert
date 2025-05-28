@@ -1,6 +1,7 @@
 ---
-import { Image } from 'astro:assets';
 import type { Product } from '~/types';
+import { findImage } from '~/utils/images';
+import Carousel from '../widgets/Carousel.astro';
 
 export interface Props {
   product: Product;
@@ -8,35 +9,27 @@ export interface Props {
 }
 
 const { product } = Astro.props;
+
+const imageList = await Promise.all(product.images?.map(async (path) => await findImage(path)) ?? []);
 ---
 
-<section class="mx-auto py-8 sm:py-16 lg:py-20 print:block">
-  <article>
+<section class="mx-auto max-w-4xl p-4">
+  <article class="flex flex-col gap-4 md:flex-row md:gap-12">
     {
-      product.image && (
-        <Image
-          src={product.image}
-          class="mx-auto mb-6 max-w-full bg-gray-400 sm:rounded-md lg:max-w-[900px]"
-          widths={[400, 900]}
-          sizes="(max-width: 900px) 400px, 900px"
-          alt={product?.title || ''}
-          width={900}
-          height={506}
-          loading="eager"
-          decoding="async"
-        />
+      imageList?.length > 0 && (
+        <div class="grow">
+          <Carousel images={imageList} alt={product.title} />
+        </div>
       )
     }
-    <header>
-      <div class="mx-auto mt-0 mb-2 flex max-w-3xl flex-col justify-between px-4 sm:flex-row sm:items-center sm:px-6">
-      </div>
-
-      <h1 class="leading-tighter font-heading mx-auto max-w-3xl px-4 text-xl font-bold sm:px-6 md:text-2xl">
+    <header class:list={['flex flex-col gap-1', imageList.length ? 'md:max-w-72' : '']}>
+      <h1 class="font-heading text-2xl leading-none">
         {product.title}
       </h1>
-      <p class="text-muted mx-auto mt-4 mb-8 max-w-3xl px-4 text-justify sm:px-6">
-        {product.description}
-      </p>
+      <span class="text-primary text-xl font-semibold">
+        {new Intl.NumberFormat('pt-BR', { currency: 'BRL', style: 'currency' }).format(product.price)}
+      </span>
+      <div class="text-muted mt-4" set:html={product.description} />
     </header>
   </article>
 </section>

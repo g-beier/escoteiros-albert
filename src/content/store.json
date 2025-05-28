@@ -12,23 +12,67 @@
     "price": 7
   },
   {
+    "slug": "adesivo",
+    "title": "Adesivo",
+    "description": "Adesivo emborrachado com o brasão do Grupo.",
+    "price": 5
+  },
+  {
+    "slug": "canguru",
+    "title": "Moletom estilo canguru",
+    "description": "Anel de lenço com desenhos diversos: ramo lobinho, ramo escoteiro, padrão Escoteiros do Brasil. Consulte a disponibilidade.",
+    "price": 127,
+    "available": false
+  },
+  {
+    "slug": "casaco",
+    "title": "Moletom com zíper",
+    "description": "Anel de lenço com desenhos diversos: ramo lobinho, ramo escoteiro, padrão Escoteiros do Brasil. Consulte a disponibilidade.",
+    "price": 117,
+    "available": false
+  },
+  {
     "slug": "lenco",
     "title": "Lenço do Albert",
     "description": "Lenço cinza com medidas de 90cm, com o logo do grupo.\nOs membros do grupo recebem o lenço, sem custo, em uma cerimônia apropriada. Os lenços a venda são aqueles para trocar.",
     "price": 35
   },
   {
+    "slug": "lenco-cinquentenario",
+    "title": "Lenço do cinquentenário",
+    "description": "<p>Lenço preto com fitas douradas com medidas de 90cm, com a arte criada por Lukas Krick.</p><p>Os membros do grupo receberam o lenço em 2018. Os lenços a venda são aqueles para trocar.</p>",
+    "price": 35
+  },
+  {
     "slug": "camiseta-cinquentenario",
     "title": "Camiseta do cinquentenário",
-    "description": "Camiseta branca com o brasão do cinquentenário, em preto e dourado. A arte foi criada pelo então pioneiro Lukas Krick.",
-    "image": "~/assets/images/foto-epud-002.jpg",
+    "description": "<p>Camiseta branca com o brasão do cinquentenário, em preto e dourado.</p><p>A arte foi criada pelo então pioneiro Lukas Krick.</p>",
+    "images": [
+      "~/assets/images/foto-epud-002.jpg",
+      "~/assets/images/foto-epud-003.jpg",
+      "~/assets/images/foto-epud-005.jpg"
+    ],
     "price": 25
   },
   {
     "slug": "camiseta-cinza",
     "title": "Camiseta cinza",
     "description": "Camiseta cinza em algodão. A estampa é uma nuvem de palavras que fazem referência ao Movimento Escoteiro e ao Grupo.\nRecomendamos o uso da camiseta cinza durante as atividades.",
-    "image": "~/assets/images/foto-epud-003.jpg",
+    "images": ["~/assets/images/foto-epud-003.jpg"],
     "price": 25
+  },
+  {
+    "slug": "camiseta-tocha",
+    "title": "Camiseta Tocha",
+    "description": "Camiseta cinza em algodão. A estampa é uma nuvem de palavras que fazem referência ao Movimento Escoteiro e ao Grupo.\nRecomendamos o uso da camiseta cinza durante as atividades.",
+    "price": 45,
+    "available": false
+  },
+  {
+    "slug": "camiseta-maravilhoso",
+    "title": "Camiseta maravilhosa",
+    "description": "Camiseta cinza em algodão. A estampa é uma nuvem de palavras que fazem referência ao Movimento Escoteiro e ao Grupo.\nRecomendamos o uso da camiseta cinza durante as atividades.",
+    "price": 45,
+    "available": false
   }
 ]

@@ -75,7 +75,7 @@ const storeCollection = defineCollection({
       available: z.boolean().default(true),
       title: z.string(),
       description: z.string(),
-      image: image().optional(),
+      images: image().array().optional(),
       price: z.number(),
 
       metadata: metadataDefinition(),

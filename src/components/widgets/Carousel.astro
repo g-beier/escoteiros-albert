@@ -1,0 +1,98 @@
+---
+import type { ImageMetadata } from 'astro';
+import { Image } from 'astro:assets';
+
+interface Props {
+  images: (string | ImageMetadata | null | undefined)[];
+  alt: string;
+}
+
+const { images, alt } = Astro.props;
+---
+
+<div class="relative mx-auto w-full max-w-3xl overflow-hidden rounded-xl shadow-lg" data-carousel>
+  <div class="flex transition-transform duration-500 ease-in-out">
+    {
+      images
+        .filter((img) => typeof img == 'object' && img !== null)
+        .map((img, i) => (
+          <Image
+            src={img}
+            alt={`${alt} - ${i + 1}`}
+            widths={[400, 900]}
+            width={900}
+            height={500}
+            class="aspect-square w-full flex-shrink-0 object-cover"
+            loading="eager"
+          />
+        ))
+    }
+  </div>
+
+  {
+    images.length > 1 && (
+      <div class="absolute inset-x-0 bottom-0 mx-auto flex justify-center gap-3 bg-gradient-to-t from-gray-900/40 to-gray-950/0 pt-4 pb-1">
+        {images.map((_, i) => (
+          <button
+            class="h-3 w-3 cursor-pointer rounded-full bg-gray-100 transition-all hover:scale-110 hover:bg-gray-200"
+            data-carousel-dot={i}
+            aria-label={`Ir para a imagem ${i + 1}`}
+          />
+        ))}
+      </div>
+    )
+  }
+</div>
+
+<script type="module">
+  document.addEventListener('astro:page-load', () => {
+    const carousels = document.querySelectorAll('[data-carousel]');
+
+    carousels.forEach((carousel) => {
+      const container = carousel.querySelector('div');
+      const dots = carousel.querySelectorAll('[data-carousel-dot]');
+      const total = dots.length;
+
+      let index = 0;
+      let intervalId;
+      let resumeTimeout;
+
+      const goTo = (i) => {
+        index = i;
+        container.style.transform = `translateX(-${i * 100}%)`;
+        dots.forEach((dot, idx) => {
+          dot.classList.toggle('bg-yellow-300', idx === i);
+          dot.classList.toggle('bg-gray-100', idx !== i);
+        });
+      };
+
+      const next = () => {
+        goTo((index + 1) % total);
+      };
+
+      const startAutoplay = () => {
+        intervalId = setInterval(next, 3000);
+      };
+
+      const stopAutoplay = () => {
+        clearInterval(intervalId);
+      };
+
+      const pauseAndResumeAutoplay = () => {
+        stopAutoplay();
+        clearTimeout(resumeTimeout);
+        resumeTimeout = setTimeout(startAutoplay, 5000);
+      };
+
+      dots.forEach((dot, i) => {
+        dot.addEventListener('click', () => {
+          goTo(i);
+          pauseAndResumeAutoplay();
+        });
+      });
+
+      goTo(0);
+      startAutoplay();
+    });
+  });
+</script>

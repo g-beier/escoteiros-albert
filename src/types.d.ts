@@ -67,7 +67,7 @@ export interface Product {
   available?: boolean;
 
   /**  */
-  image?: ImageMetadata | string;
+  images?: ImageMetadata[] | string[];
 
   /**  */
   metadata?: MetaData;

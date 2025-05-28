@@ -15,8 +15,8 @@ const { prevUrl, nextUrl, prevText = 'Próxima página', nextText = 'Página ant
 
 {
   (prevUrl || nextUrl) && (
-    <div class="container flex">
-      <div class="container mx-auto flex flex-row justify-between">
+    <div class="flex max-w-4xl">
+      <div class="mx-auto flex max-w-4xl flex-row justify-between">
         <Button
           variant="tertiary"
           class={`mr-2 px-3 md:px-3 ${!prevUrl ? 'invisible' : ''}`}

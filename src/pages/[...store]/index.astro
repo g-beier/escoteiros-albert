@@ -23,7 +23,11 @@ type Props = InferGetStaticPropsType<typeof getStaticPaths>;
 const { product } = Astro.props as Props;
 
 const url = getCanonical(getPermalink(product.permalink, 'store'));
-const image = (await findImage(product.image)) as ImageMetadata | string | undefined;
+const images = (await Promise.all((product?.images ?? []).map((img) => findImage(img)))) as (
+  | ImageMetadata
+  | string
+  | undefined
+)[];
 
 const metadata = merge(
   {
@@ -35,8 +39,14 @@ const metadata = merge(
     },
     openGraph: {
       type: 'article',
-      ...(image
-        ? { images: [{ url: image, width: (image as ImageMetadata)?.width, height: (image as ImageMetadata)?.height }] }
+      ...(images
+        ? {
+            images: images.map((img) => ({
+              url: img,
+              width: (img as ImageMetadata)?.width,
+              height: (img as ImageMetadata).height,
+            })),
+          }
         : {}),
     },
   },
@@ -45,6 +55,6 @@ const metadata = merge(
 ---
 
 <Layout metadata={metadata}>
-  <SingleProduct product={{ ...product, image: image }} url={url} />
+  <SingleProduct product={{ ...product, images }} url={url} />
   <ToStoreLink />
 </Layout>

@@ -16,7 +16,7 @@ const generatePermalink = async ({ id, slug }: { id: string; slug: string }) => 
 const getNormalizedProduct = async (item: CollectionEntry<'store'>): Promise<Product> => {
   const { id, data } = item;
 
-  const { slug: rawSlug, available, title, description, metadata = {}, image, price } = data;
+  const { slug: rawSlug, available, title, description, metadata = {}, images, price } = data;
 
   const slug = cleanSlug(rawSlug);
 
@@ -28,13 +28,13 @@ const getNormalizedProduct = async (item: CollectionEntry<'store'>): Promise<Pro
     available,
     description,
     metadata,
-    image,
+    images,
     price,
   };
 };
 
 export const load = async function (): Promise<Array<Product>> {
-  const products = await getCollection('store', (product) => product.data.available == true);
+  const products = await getCollection('store');
   const normalizedProducts = products.map(async (product) => await getNormalizedProduct(product));
 
   const results = (await Promise.all(normalizedProducts)).sort((a, b) => a.slug.localeCompare(b.slug));

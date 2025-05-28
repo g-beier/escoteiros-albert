@@ -37,9 +37,9 @@ const {
                     <Image
                       class="aspect-square w-full rounded-sm"
                       loading="eager"
-                      layout="responsive"
-                      widths={[200]}
-                      sizes="200px"
+                      widths={[300, 700]}
+                      width={700}
+                      sizes="(max-width: 700px) 300px, 700px"
                       alt={`${name}, ${title} do GEAS`}
                       src={image}
                     />
