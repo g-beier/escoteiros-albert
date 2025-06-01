@@ -26,9 +26,9 @@ const link = APP_BLOG?.post?.isEnabled ? getPermalink(post.permalink, 'post') : 
             <Image
               src={post?.image}
               class="aspect-16/9 w-full rounded-xl bg-gray-400 object-cover shadow-lg md:h-full"
-              widths={[400, 900]}
+              widths={[200, 400]}
               width={400}
-              sizes="(max-width: 900px) 400px, 900px"
+              sizes="(max-width: 900px) 200px, 400px"
               alt={post.title}
               layout="full-width"
               loading="lazy"

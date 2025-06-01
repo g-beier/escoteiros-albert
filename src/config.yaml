@@ -4,7 +4,7 @@ site:
   base: '/'
   trailingSlash: false
 
-  googleSiteVerificationId: orcPxI47GSa-cRvY11tUe6iGg2IO_RPvnA1q95iEM3M
+  googleSiteVerificationId: aVmeCMg1lqUzdNxkKQNuQr9EDoO3qjbm021ZbP311Tw
 
 # Default SEO metadata
 metadata:
@@ -18,7 +18,7 @@ metadata:
   openGraph:
     site_name: G.E. Albert Schweitzer
     images:
-      - url: '~/assets/images/default.png'
+      - url: '~/assets/images/openGraph.png'
         width: 1200
         height: 628
     type: website
@@ -82,7 +82,7 @@ apps:
 analytics:
   vendors:
     googleAnalytics:
-      id: null # or "G-XXXXXXXXXX"
+      id: 'G-5C6WH51JQL' # null or "G-XXXXXXXXXX"
 
 ui:
   theme: 'light:only' # Values: "system" | "light" | "dark" | "light:only" | "dark:only"

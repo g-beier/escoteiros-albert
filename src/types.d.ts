@@ -67,6 +67,9 @@ export interface Product {
   available?: boolean;
 
   /**  */
+  badge?: 'novo' | 'encomenda' | 'indisponível' | 'desconto';
+
+  /**  */
   images?: ImageMetadata[] | string[];
 
   /**  */

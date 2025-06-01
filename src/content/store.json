@@ -18,47 +18,47 @@
     "price": 5
   },
   {
-    "slug": "canguru",
+    "slug": "moletom-canguru",
     "title": "Moletom estilo canguru",
     "description": "Anel de lenço com desenhos diversos: ramo lobinho, ramo escoteiro, padrão Escoteiros do Brasil. Consulte a disponibilidade.",
     "price": 127,
-    "available": false
+    "badge": "encomenda"
   },
   {
-    "slug": "casaco",
+    "slug": "distintivos",
+    "title": "Distintivos",
+    "description": "O listel da região escoteira e o numeral do grupo escoteiro podem ser comprados individualmente. O listel é R$ 7,00, e cada numeral é R$ 2,00.",
+    "price": 11
+  },
+  {
+    "slug": "moletom-ziper",
     "title": "Moletom com zíper",
     "description": "Anel de lenço com desenhos diversos: ramo lobinho, ramo escoteiro, padrão Escoteiros do Brasil. Consulte a disponibilidade.",
     "price": 117,
-    "available": false
+    "badge": "encomenda"
   },
   {
     "slug": "lenco",
     "title": "Lenço do Albert",
     "description": "Lenço cinza com medidas de 90cm, com o logo do grupo.\nOs membros do grupo recebem o lenço, sem custo, em uma cerimônia apropriada. Os lenços a venda são aqueles para trocar.",
-    "price": 35
+    "price": 30
   },
   {
     "slug": "lenco-cinquentenario",
     "title": "Lenço do cinquentenário",
     "description": "<p>Lenço preto com fitas douradas com medidas de 90cm, com a arte criada por Lukas Krick.</p><p>Os membros do grupo receberam o lenço em 2018. Os lenços a venda são aqueles para trocar.</p>",
-    "price": 35
+    "price": 45
   },
   {
     "slug": "camiseta-cinquentenario",
     "title": "Camiseta do cinquentenário",
     "description": "<p>Camiseta branca com o brasão do cinquentenário, em preto e dourado.</p><p>A arte foi criada pelo então pioneiro Lukas Krick.</p>",
-    "images": [
-      "~/assets/images/foto-epud-002.jpg",
-      "~/assets/images/foto-epud-003.jpg",
-      "~/assets/images/foto-epud-005.jpg"
-    ],
     "price": 25
   },
   {
     "slug": "camiseta-cinza",
     "title": "Camiseta cinza",
     "description": "Camiseta cinza em algodão. A estampa é uma nuvem de palavras que fazem referência ao Movimento Escoteiro e ao Grupo.\nRecomendamos o uso da camiseta cinza durante as atividades.",
-    "images": ["~/assets/images/foto-epud-003.jpg"],
     "price": 25
   },
   {
@@ -66,13 +66,13 @@
     "title": "Camiseta Tocha",
     "description": "Camiseta cinza em algodão. A estampa é uma nuvem de palavras que fazem referência ao Movimento Escoteiro e ao Grupo.\nRecomendamos o uso da camiseta cinza durante as atividades.",
     "price": 45,
-    "available": false
+    "badge": "novo"
   },
   {
     "slug": "camiseta-maravilhoso",
     "title": "Camiseta maravilhosa",
     "description": "Camiseta cinza em algodão. A estampa é uma nuvem de palavras que fazem referência ao Movimento Escoteiro e ao Grupo.\nRecomendamos o uso da camiseta cinza durante as atividades.",
     "price": 45,
-    "available": false
+    "badge": "novo"
   }
 ]

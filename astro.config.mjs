@@ -18,6 +18,8 @@ import {
 
 import { fileURLToPath } from 'url';
 
+import partytown from '@astrojs/partytown';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // https://astro.build/config
 
@@ -31,6 +33,7 @@ export default defineConfig({
     mdx(),
     Sonda({ open: true, enabled: false }),
     react(),
+    partytown({ config: { forward: ['dataLayer.push'] } }),
   ],
   markdown: {
     remarkPlugins: [readingTimeRemarkPlugin],

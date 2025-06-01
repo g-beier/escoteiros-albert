@@ -26,7 +26,11 @@ const metadata = {
 
 <Layout metadata={metadata}>
   <section class="mx-auto max-w-4xl px-6 py-12 sm:px-6 sm:py-16 lg:py-20">
-    <Headline title="Lojinha do Albert" />
+    <Headline
+      title="Lojinha do Albert"
+      subtitle="Os produtos a seguir são vendidos na sede do Grupo: procure por eles na diretoria."
+    />
+
     <StoreList products={page.data} />
     <Pagination prevUrl={page.url.prev} nextUrl={page.url.next} />
   </section></Layout

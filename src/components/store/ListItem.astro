@@ -7,7 +7,7 @@ import type { Product } from '~/types';
 import { getPermalink } from '~/utils/permalinks';
 import { findImage } from '~/utils/images';
 import { Icon } from 'astro-icon/components';
-import Badge from './Badge.astro';
+import Badge, { type BadgeAppearance } from './Badge.astro';
 
 export interface Props {
   product: Product;
@@ -17,6 +17,13 @@ const { product } = Astro.props;
 const image = (await findImage(product.images?.[0])) as ImageMetadata | undefined;
 
 const link = APP_STORE?.product?.isEnabled ? getPermalink(product.permalink, 'product') : '';
+
+const badgeAppearance: Record<Product['badge'] & string, BadgeAppearance> = {
+  desconto: 'success',
+  novo: 'success',
+  indisponível: 'danger',
+  encomenda: 'neutral',
+};
 ---
 
 <article class={`max-w-md mx-auto md:max-w-none flex gap-2 flex-col group`}>
@@ -24,7 +31,8 @@ const link = APP_STORE?.product?.isEnabled ? getPermalink(product.permalink, 'pr
     image ? (
       link ? (
         <a href={link} class="relative">
-          {!product.available && <Badge appearance="danger">indisponível</Badge>}
+          {product.badge && <Badge appearance={badgeAppearance[product.badge]}>{product?.badge}</Badge>}
+
           <Image
             src={image}
             class="aspect-square w-full rounded-xl object-cover shadow-lg transition-transform ease-in-out group-hover:scale-105"
@@ -38,7 +46,8 @@ const link = APP_STORE?.product?.isEnabled ? getPermalink(product.permalink, 'pr
         </a>
       ) : (
         <div class="relative">
-          {!product.available && <Badge appearance="danger">indisponível</Badge>}
+          {product.badge && <Badge appearance={badgeAppearance[product.badge]}>{product?.badge}</Badge>}
+
           <Image
             src={image}
             class="aspect-square w-full rounded-xl object-cover shadow-lg transition-transform ease-in-out group-hover:scale-105"
@@ -53,14 +62,15 @@ const link = APP_STORE?.product?.isEnabled ? getPermalink(product.permalink, 'pr
       )
     ) : link ? (
       <a href={link} aria-label={product.title} class="relative">
-        {!product.available && <Badge appearance="danger">indisponível</Badge>}
+        {product.badge && <Badge appearance={badgeAppearance[product.badge]}>{product?.badge}</Badge>}
+
         <div class="grid aspect-square place-items-center rounded-xl bg-gray-100 shadow-lg">
           <Icon name="tabler:camera-off" class="text-muted h-16 w-16 drop-shadow-md" />
         </div>
       </a>
     ) : (
       <div class="relative grid aspect-square place-items-center rounded-xl bg-gray-100 shadow-lg">
-        {!product.available && <Badge appearance="danger">indisponível</Badge>}
+        {product.badge && <Badge appearance={badgeAppearance[product.badge]}>{product?.badge}</Badge>}
         <Icon name="tabler:camera-off" class="text-muted h-16 w-16 drop-shadow-md" />
       </div>
     )

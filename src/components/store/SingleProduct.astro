@@ -29,7 +29,22 @@ const imageList = await Promise.all(product.images?.map(async (path) => await fi
       <span class="text-primary text-xl font-semibold">
         {new Intl.NumberFormat('pt-BR', { currency: 'BRL', style: 'currency' }).format(product.price)}
       </span>
-      <div class="text-muted mt-4" set:html={product.description} />
+      <div class="mt-4 text-gray-900" set:html={product.description} />
+      <div class:list={[imageList.length ? 'mt-4 md:mt-auto' : 'mt-8', 'text-muted space-y-2 text-sm']}>
+        <p>
+          <strong class="mr-2 inline-block">Como comprar</strong>
+          os produtos da lojinha estão disponíveis na diretoria do Grupo. O pagamento pode ser feito via Pix, em dinheiro,
+          ou cartão de crédito (com taxas).
+        </p>
+        {
+          product?.badge == 'encomenda' && (
+            <p>
+              Este produto é disponível sob encomenda: metade do valor deve ser pago ao realizar o pedido e o restante,
+              ao receber o produto.
+            </p>
+          )
+        }
+      </div>
     </header>
   </article>
 </section>

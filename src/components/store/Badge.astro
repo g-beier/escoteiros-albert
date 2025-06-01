@@ -1,6 +1,7 @@
 ---
+export type BadgeAppearance = 'neutral' | 'danger' | 'success';
 interface Props {
-  appearance?: 'neutral' | 'danger' | 'success';
+  appearance?: BadgeAppearance;
 }
 const { appearance = 'neutral' } = Astro.props;
 
@@ -11,6 +12,6 @@ const styles: Record<Props['appearance'] & string, string> = {
 };
 ---
 
-<span class:list={['absolute top-1 right-1 mx-auto rounded-full px-2 text-sm', styles[appearance]]}>
+<span class:list={['absolute top-1 right-1 mx-auto rounded-full px-2 text-xs', styles[appearance] ?? styles.neutral]}>
   <slot />
 </span>

@@ -72,11 +72,13 @@ const storeCollection = defineCollection({
   schema: ({ image }) =>
     z.object({
       slug: z.string(),
-      available: z.boolean().default(true),
       title: z.string(),
       description: z.string(),
-      images: image().array().optional(),
       price: z.number(),
+
+      available: z.boolean().default(true),
+      badge: z.enum(['novo', 'encomenda', 'indisponível', 'desconto']).optional(),
+      images: image().array().optional(),
 
       metadata: metadataDefinition(),
     }),
