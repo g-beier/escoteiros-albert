@@ -5,10 +5,8 @@ import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
 import icon from 'astro-icon';
 import astrowind from './vendor/integration/index.mjs';
-import Sonda from 'sonda/astro';
 import sitemap from '@astrojs/sitemap';
 import mdx from '@astrojs/mdx';
-import react from '@astrojs/react';
 
 import {
   readingTimeRemarkPlugin,
@@ -31,8 +29,6 @@ export default defineConfig({
     icon(),
     sitemap(),
     mdx(),
-    Sonda({ open: true, enabled: false }),
-    react(),
     partytown({ config: { forward: ['dataLayer.push'] } }),
   ],
   markdown: {

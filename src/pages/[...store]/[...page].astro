@@ -6,7 +6,9 @@ import StoreList from '~/components/store/List.astro';
 import Pagination from '~/components/store/Pagination.astro';
 
 import Layout from '~/layouts/PageLayout.astro';
-import { getStaticPathsStoreList } from '~/utils/store';
+import { getStaticPathsStoreList, isStoreProductRouteEnabled } from '~/utils/store';
+import { getHomePermalink } from '~/utils/permalinks';
+import { Icon } from 'astro-icon/components';
 
 export const getStaticPaths = (async ({ paginate }) => {
   return await getStaticPathsStoreList({ paginate });
@@ -25,13 +27,34 @@ const metadata = {
 ---
 
 <Layout metadata={metadata}>
-  <section class="mx-auto max-w-4xl px-6 py-12 sm:px-6 sm:py-16 lg:py-20">
-    <Headline
-      title="Lojinha do Albert"
-      subtitle="Os produtos a seguir são vendidos na sede do Grupo: procure por eles na diretoria."
-    />
-
-    <StoreList products={page.data} />
-    <Pagination prevUrl={page.url.prev} nextUrl={page.url.next} />
-  </section></Layout
->
+  {
+    isStoreProductRouteEnabled ? (
+      <section class="mx-auto max-w-4xl px-6 py-12 sm:px-6 sm:py-16 lg:py-20">
+        <Headline
+          title="Lojinha do Albert"
+          subtitle="Os produtos são vendidos na sede do Grupo: procure por eles na diretoria."
+        />
+        <Fragment>
+          <StoreList products={page.data} />
+          <Pagination prevUrl={page.url.prev} nextUrl={page.url.next} />
+        </Fragment>
+      </section>
+    ) : (
+      <section class="flex h-full items-center p-16">
+        <div class="relative container mx-auto my-8 flex flex-col items-center justify-center px-5 select-none">
+          <Icon name="tabler:barrier-block" class="absolute top-8 -z-1 size-2/3 text-orange-200/70" />
+          <div class="max-w-md text-center">
+            <h2 class="text-orange mb-8 text-5xl font-bold">Em construção</h2>
+            <p class="text-xl font-semibold md:text-2xl">Logo teremos novidades.</p>
+            <p class="text-muted mt-4 mb-8 text-lg">
+              Mas não se preocupe, temos várias coisas na nossa página inicial.
+            </p>
+            <a rel="noopener noreferrer" href={getHomePermalink()} class="btn ml-4">
+              Voltar para página inicial
+            </a>
+          </div>
+        </div>
+      </section>
+    )
+  }
+</Layout>

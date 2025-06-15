@@ -1,6 +1,6 @@
 import { isBlogEnabled, isBlogPostRouteEnabled } from './utils/blog';
+import { isStoreEnabled, isStoreListRouteEnabled } from './utils/store';
 import { getPermalink, getBlogPermalink, getStorePermalink, getAsset } from './utils/permalinks';
-import { isStoreEnabled } from './utils/store';
 
 export const headerData = {
   links: [
@@ -33,7 +33,7 @@ export const headerData = {
           },
         ]
       : []),
-    ...(isStoreEnabled ? [{ text: 'Lojinha', href: getStorePermalink() }] : []),
+    ...(isStoreEnabled && isStoreListRouteEnabled ? [{ text: 'Lojinha', href: getStorePermalink() }] : []),
   ],
   socialLinks: [
     { label: 'WhatsApp', icon: 'tabler:brand-whatsapp', href: 'https://wa.me/555195794880' },
