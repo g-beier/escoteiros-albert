@@ -1,0 +1,42 @@
+---
+import RandomShape from './RandomShape.astro';
+
+function randomShapes(n: number = 10) {
+  const randomColor = () => {
+    const r = Math.random();
+    return r < 0.25 ? 'text-green' : r < 0.5 ? 'text-purple' : r < 0.75 ? 'text-yellow' : 'text-orange';
+  };
+
+  const randomShape = () => {
+    const r = Math.random();
+    return r > 0.6 ? 'circle' : r > 0.4 ? 'square' : 'triangle';
+  };
+
+  const randomTransform = () => {
+    const r = Math.random();
+    return r > 0.8 ? '-rotate-90' : r > 0.4 ? '' : 'rotate-90';
+  };
+
+  const arr = [];
+
+  for (let i = 0; i < n; i++) {
+    arr.push({
+      shape: randomShape(),
+      className: `${randomColor()} ${randomTransform()} size-0 lg:size-10`,
+    });
+  }
+
+  return arr as { shape: 'circle' | 'triangle' | 'square'; className: string }[];
+}
+
+type Props = {
+  rows?: number;
+  columns?: number;
+};
+
+const { rows = 5, columns = 2 } = Astro.props;
+---
+
+<div class:list={['grid']}>
+  {randomShapes(rows * columns).map(({ shape, className }) => <RandomShape shape={shape} class={className} />)}
+</div>

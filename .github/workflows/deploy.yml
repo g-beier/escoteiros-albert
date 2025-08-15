@@ -1,40 +1,17 @@
 name: Deploy do site Astro via FTP
+on: [push]
 
-on:
-  create:
-    
 jobs:
-  deploy:
+  build:
+
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/heads/release/')
 
     steps:
-      - name: Clonar o repositório
-        uses: actions/checkout@v3
-
-      - name: Instalar Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 18  # Ajuste para a versão correta do seu projeto
-
-      - name: Instalar dependências
-        run: npm install
-
-      - name: Construir o site
-        run: npm run build
-
-      - name: Instalar lftp
-        run: sudo apt-get install -y lftp
-
-      - name: Fazer upload para o FTP
-        env:
-          FTP_HOST: ${{ secrets.FTP_HOST }}
-          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-        run: |
-          lftp -e "
-          set ftp:ssl-allow no;
-          open -u $FTP_USERNAME,$FTP_PASSWORD $FTP_HOST;
-          mirror --reverse --verbose ./dist /;
-          bye
-          "
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build --if-present

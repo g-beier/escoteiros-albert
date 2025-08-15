@@ -10,7 +10,7 @@ tags:
   - escotismo
   - pandemia
   - voluntariado
-canonical: https://felipeszanini.medium.com/de-volta-à-nossa-natureza-9201072ae163
+# canonical: https://felipeszanini.medium.com/de-volta-à-nossa-natureza-9201072ae163
 ---
 
 No subsolo da Comunidade Luterana Martin Luther, em Porto Alegre, durante sábado ensolarado, enfileiram-se oito dos dezesseis jovens que compõem a tropa escoteira do grupo Albert Schweitzer. Em uma espécie de “telefone sem fio”, mas com movimentos e gestos em vez de palavras, aguardam o toque no ombro, indicativo de que devem se virar para observar a ação que devem passar adiante.

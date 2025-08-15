@@ -1,6 +1,6 @@
 ---
-import { Icon } from 'astro-icon/components';
 import { getHomePermalink } from '~/utils/permalinks';
+import SocialLink from '../ui/SocialLink.astro';
 
 interface Link {
   text?: string;
@@ -24,7 +24,7 @@ export interface Props {
 const { socialLinks = [], secondaryLinks = [], links = [], footNote = '' } = Astro.props;
 ---
 
-<footer class:list={['not-prose relative border-t border-gray-200 print:hidden']}>
+<footer class:list={['not-prose relative border-t border-gray-100 print:hidden']}>
   <div class="pointer-events-none absolute inset-0" aria-hidden="true"></div>
   <div class="relative mx-auto max-w-7xl px-4 sm:px-6">
     <div class="grid grid-cols-12 gap-4 gap-y-8 py-8 sm:gap-8 md:py-12">
@@ -172,14 +172,7 @@ const { socialLinks = [], secondaryLinks = [], links = [], footNote = '' } = Ast
           <ul class="mb-4 -ml-2 flex md:order-1 md:mb-0 md:ml-4 rtl:-mr-2 rtl:ml-0 rtl:md:mr-4 rtl:md:ml-0">
             {socialLinks.map(({ ariaLabel, href, text, icon }) => (
               <li>
-                <a
-                  class="text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-purple-100 hover:text-purple-500 focus:ring-4 focus:ring-gray-200 focus:outline-none"
-                  aria-label={ariaLabel}
-                  href={href}
-                >
-                  {icon && <Icon name={icon} class="h-5 w-5" />}
-                  <Fragment set:html={text} />
-                </a>
+                <SocialLink ariaLabel={ariaLabel} href={href} text={text} icon={icon} />
               </li>
             ))}
           </ul>

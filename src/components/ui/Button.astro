@@ -5,6 +5,7 @@ import type { CallToAction as Props } from '~/types';
 
 const {
   variant = 'secondary',
+  size = 'medium',
   target,
   text = Astro.slots.render('default'),
   icon = '',
@@ -19,17 +20,22 @@ const variants = {
   tertiary: 'btn btn-tertiary',
   link: 'cursor-pointer hover:text-primary',
 };
+
+const sizes = {
+  small: 'btn-small',
+  medium: 'btn-medium',
+};
 ---
 
 {
   type === 'button' || type === 'submit' || type === 'reset' ? (
-    <button type={type} class={twMerge(variants[variant] || '', className)} {...rest}>
+    <button type={type} class={twMerge(variants[variant] || '', sizes[size] || '', className)} {...rest}>
       {icon && <Icon name={icon} class="mr-1 -ml-1.5 inline-block h-5 w-5 rtl:-mr-1.5 rtl:ml-1" />}
       <Fragment set:html={text} />
     </button>
   ) : (
     <a
-      class={twMerge(variants[variant] || '', className)}
+      class={twMerge(variants[variant] || '', sizes[size] || '', className)}
       {...(target ? { target: target, rel: 'noopener noreferrer' } : {})}
       {...rest}
     >

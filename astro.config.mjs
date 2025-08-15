@@ -37,6 +37,7 @@ export default defineConfig({
     rehypePlugins: [responsiveTablesRehypePlugin, lazyImagesRehypePlugin],
   },
   vite: {
+    // @ts-expect-error tailwindcss
     plugins: [tailwindcss()],
     resolve: {
       alias: {

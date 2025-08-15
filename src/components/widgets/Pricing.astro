@@ -27,7 +27,7 @@ const {
           prices.map(({ title, subtitle, price, period, items, callToAction, hasRibbon = false, ribbonTitle }) => (
             <div class="col-span-3 mx-auto flex w-full sm:col-span-1 md:col-span-1 lg:col-span-1 xl:col-span-1">
               {price && period && (
-                <div class="flex w-full max-w-sm flex-col justify-between rounded-lg border border-gray-200 bg-white px-6 py-8 text-center shadow backdrop-blur">
+                <div class="flex w-full max-w-sm flex-col justify-between rounded-md border border-gray-200 bg-white px-6 py-8 text-center shadow backdrop-blur">
                   {hasRibbon && ribbonTitle && (
                     <div class="absolute top-[-5px] right-[-5px] z-[1] h-[100px] w-[100px] overflow-hidden text-right 2xl:top-[-10px] 2xl:right-[-8px] rtl:right-auto rtl:left-[-8px] rtl:2xl:left-[-10px]">
                       <span class="absolute top-[19px] right-[-21px] block w-full rotate-45 bg-green-700 text-center text-[10px] leading-5 font-bold text-white uppercase shadow-[0_3px_10px_-5px_rgba(0,0,0,0.3)] before:absolute before:top-full before:left-0 before:z-[-1] before:border-[3px] before:border-t-green-800 before:border-r-transparent before:border-b-transparent before:border-l-green-800 before:content-[''] after:absolute after:top-full after:right-0 after:z-[-1] after:border-[3px] after:border-t-green-800 after:border-r-green-800 after:border-b-transparent after:border-l-transparent after:content-[''] rtl:right-auto rtl:left-[-21px] rtl:-rotate-45">

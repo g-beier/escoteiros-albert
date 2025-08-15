@@ -1,0 +1,103 @@
+---
+import Button from '../ui/Button.astro';
+
+export interface Props {
+  position?: 'bottom' | 'top';
+  policyUrl?: string;
+  storageKey?: string;
+}
+
+const { position = 'bottom', policyUrl = '/politica-de-privacidade', storageKey = 'geas-consent' } = Astro.props;
+---
+
+<div
+  id="cookie-consent"
+  class={`fixed inset-x-0 ${position === 'top' ? 'top-0' : 'bottom-0'} z-[70] p-3`}
+  role="dialog"
+  aria-live="polite"
+  aria-label="Preferências de privacidade"
+  hidden
+>
+  <div class="mx-auto max-w-3xl rounded-2xl bg-white shadow-2xl ring-1 ring-white/10">
+    <div class="p-4 sm:p-5">
+      <h2 class="text-default text-sm leading-6 font-semibold">Privacidade & cookies</h2>
+      <p class="text-muted mt-1 text-xs">
+        Usamos cookies para <span class="font-semibold">métricas anônimas</span>. Você pode aceitar só métricas, aceitar
+        todos ou recusar. <span hidden={!!policyUrl}
+          >Leia nossa
+          <a class="hover:text-link underline" href={policyUrl} target="_blank" rel="noopener"
+            >política de privacidade</a
+          >.</span
+        >
+      </p>
+
+      <div class="mt-3 flex flex-wrap gap-2">
+        <Button type="button" size="small" variant="primary" id="cc-accept-all"> Aceitar todos </Button>
+        <Button type="button" size="small" id="cc-accept-metrics"> Aceitar métricas </Button>
+        <Button type="button" size="small" id="cc-reject"> Recusar </Button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline data-storageKey={storageKey}>
+  // Fallback se gtag ainda não existir
+  window.dataLayer = window.dataLayer || [];
+  window.gtag =
+    window.gtag ||
+    function (...args) {
+      window.dataLayer.push(args);
+    };
+
+  const banner = document.getElementById('cookie-consent');
+  const KEY = document.currentScript.dataset.storagekey;
+
+  // Exibe se ainda não houver decisão
+  const saved = localStorage.getItem(KEY);
+  if (!saved) {
+    banner.hidden = false;
+  } else {
+    applyConsent(saved);
+  }
+
+  document.getElementById('cc-accept-metrics')?.addEventListener('click', () => {
+    setConsent('metrics');
+  });
+  document.getElementById('cc-accept-all')?.addEventListener('click', () => {
+    setConsent('all');
+  });
+  document.getElementById('cc-reject')?.addEventListener('click', () => {
+    setConsent('denied');
+  });
+
+  function setConsent(mode) {
+    localStorage.setItem(KEY, mode);
+    applyConsent(mode);
+    banner.hidden = true;
+  }
+
+  function applyConsent(mode) {
+    if (mode === 'all') {
+      gtag('consent', 'update', {
+        ad_storage: 'granted',
+        analytics_storage: 'granted',
+        ad_user_data: 'granted',
+        ad_personalization: 'granted',
+      });
+    } else if (mode === 'metrics') {
+      gtag('consent', 'update', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'granted',
+      });
+    } else {
+      gtag('consent', 'update', {
+        ad_storage: 'denied',
+        analytics_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+      });
+    }
+  }
+</script>

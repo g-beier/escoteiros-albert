@@ -8,6 +8,7 @@ import Button from '~/components/ui/Button.astro';
 import { getHomePermalink } from '~/utils/permalinks';
 import { trimSlash, getAsset } from '~/utils/permalinks';
 import type { CallToAction } from '~/types';
+import SocialLink from '../ui/SocialLink.astro';
 
 interface Link {
   text?: string;
@@ -59,7 +60,7 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
 <header
   class:list={[
     { sticky: isSticky, relative: !isSticky },
-    'top-0 z-40 mx-auto w-full flex-none border-b border-gray-50/0 transition-[opacity] ease-in-out print:hidden',
+    'top-0 z-40 mx-auto w-full flex-none border-b border-gray-50 transition-[opacity] ease-in-out print:hidden',
   ]}
   {...isSticky ? { 'data-aw-sticky-header': true } : {}}
   {...id ? { id } : {}}
@@ -103,12 +104,12 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
                     {text}{' '}
                     <Icon name="tabler:chevron-down" class="ml-0.5 hidden h-3.5 w-3.5 lg:inline rtl:mr-0.5 rtl:ml-0" />
                   </button>
-                  <ul class="dropdown-menu rounded pl-4 font-medium drop-shadow-xl lg:absolute lg:hidden lg:min-w-[200px] lg:bg-white/90 lg:pl-0 lg:backdrop-blur-md">
+                  <ul class="dropdown-menu rounded-md pl-4 font-medium drop-shadow-xl lg:absolute lg:hidden lg:min-w-[200px] lg:bg-white/90 lg:pl-0 lg:backdrop-blur-md">
                     {links.map(({ text: text2, href: href2 }) => (
                       <li>
                         <a
                           class:list={[
-                            'hover:text-link whitespace-no-wrap block px-5 py-2 first:rounded-t last:rounded-b lg:hover:bg-orange-50',
+                            'hover:text-link whitespace-no-wrap block px-5 py-2 first:rounded-t-md last:rounded-b-md lg:hover:bg-orange-50',
                             { 'aw-link-active': href2 === currentPath },
                           ]}
                           href={href2}
@@ -147,7 +148,7 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
           {
             showRssFeed && (
               <a
-                class="text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 focus:outline-none"
+                class="text-muted inline-flex items-center rounded-md p-2.5 text-sm hover:bg-gray-100 focus:ring-4 focus:ring-gray-200 focus:outline-none"
                 aria-label="RSS Feed"
                 href={getAsset('/rss.xml')}
               >
@@ -158,14 +159,8 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
           {
             showSocial && (
               <>
-                {socialLinks.map((link) => (
-                  <a
-                    class="text-muted inline-flex items-center rounded-lg p-2.5 text-sm hover:bg-purple-100 hover:text-purple-500 focus:ring-4 focus:ring-purple-200 focus:outline-none"
-                    aria-label={link.label}
-                    href={link.href}
-                  >
-                    <Icon name={link.icon} class="h-5 w-5" />
-                  </a>
+                {socialLinks.map(({ icon, href, text, ariaLabel }) => (
+                  <SocialLink ariaLabel={ariaLabel} href={href} text={text} icon={icon} />
                 ))}
               </>
             )

@@ -1,0 +1,22 @@
+---
+import { Icon } from 'astro-icon/components';
+
+type Props = {
+  text?: string;
+  href?: string;
+  ariaLabel?: string;
+  label?: string;
+  icon?: string;
+};
+
+const { ariaLabel, href, icon, text, label } = Astro.props;
+---
+
+<a
+  class="text-muted inline-flex items-center rounded-md p-2.5 text-sm hover:bg-purple-100 hover:text-purple-600 focus:ring-4 focus:ring-gray-200 focus:outline-none"
+  aria-label={ariaLabel ?? label}
+  href={href}
+>
+  {icon && <Icon name={icon} class="h-5 w-5" />}
+  <Fragment set:html={text} />
+</a>

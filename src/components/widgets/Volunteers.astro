@@ -35,7 +35,7 @@ const {
                 <div class="overflow-clip rounded-md">
                   {image ? (
                     <Image
-                      class="aspect-square w-full rounded-sm"
+                      class="aspect-square w-full rounded-md"
                       loading="eager"
                       widths={[300, 700]}
                       width={700}
@@ -44,7 +44,7 @@ const {
                       src={image}
                     />
                   ) : (
-                    <div class="text-primary grid aspect-square h-full place-items-center rounded-sm">
+                    <div class="text-primary grid aspect-square h-full place-items-center rounded-md">
                       <Icon name="tabler:user" class="h-32 w-32" />
                     </div>
                   )}

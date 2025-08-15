@@ -218,6 +218,7 @@ export interface CallToAction extends Omit<HTMLAttributes<'a'>, 'slot'> {
   icon?: string;
   classes?: Record<string, string>;
   type?: 'button' | 'submit' | 'reset';
+  size?: 'small' | 'medium';
 }
 
 export interface ItemGrid {

@@ -1,0 +1,16 @@
+---
+import Circle from './Circle.astro';
+import Square from './Square.astro';
+import Triangle from './Triangle.astro';
+
+type Props = {
+  shape: 'circle' | 'triangle' | 'square';
+  class: string;
+};
+
+const { shape = 'circle', class: className = '' } = Astro.props;
+---
+
+{shape === 'circle' && <Circle class={className} />}
+{shape === 'square' && <Square class={className} />}
+{shape === 'triangle' && <Triangle class={className} />}

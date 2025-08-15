@@ -22,7 +22,7 @@ const link = APP_BLOG?.post?.isEnabled ? getPermalink(post.permalink, 'post') : 
 ---
 
 <article
-  class={`max-w-md mx-auto md:max-w-none grid gap-6 md:gap-8 motion-safe:md:opacity-0 intersect-once intersect-quarter intercept-no-queue motion-safe:md:intersect:animate-fade-up ${image ? 'md:grid-cols-2' : ''}`}
+  class={`max-w-md mx-auto md:max-w-none grid gap-2 md:gap-8 motion-safe:md:opacity-0 intersect-once intersect-quarter intercept-no-queue motion-safe:md:intersect:animate-fade-up ${image ? 'md:grid-cols-2' : ''}`}
 >
   {
     image &&
@@ -81,7 +81,7 @@ const link = APP_BLOG?.post?.isEnabled ? getPermalink(post.permalink, 'post') : 
                 {' '}
                 ·{' '}
                 <a
-                  class="decoration-green-400 decoration-2 hover:underline"
+                  class="decoration-green decoration-2 hover:underline"
                   href={getPermalink(post.category.slug, 'category')}
                 >
                   {post.category.title}

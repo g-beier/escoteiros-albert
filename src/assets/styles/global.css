@@ -1,12 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 @import 'tailwindcss';
 @plugin "@tailwindcss/typography";
-
-@font-face {
-  font-family: 'Agency';
-  src: url('/fonts/agency.woff') format('woff');
-  font-display: swap;
-}
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -16,21 +9,19 @@
   --font-sans:
     'Poppins', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
     'Noto Color Emoji';
-  --font-heading: 'Agency', 'Poppins', var(--font-sans);
+  --font-heading: 'Agency', var(--font-sans);
 
-  --color-white: hsl(39, 100%, 96%);
-
-  --color-gray-50: hsl(240, 75%, 97%);
-  --color-gray-100: hsl(240, 11%, 86%);
-  --color-gray-200: hsl(248, 6%, 75%);
-  --color-gray-300: hsl(247, 5%, 65%);
-  --color-gray-400: hsl(246, 4%, 55%);
+  --color-gray-50: hsl(39, 100%, 96%);
+  --color-gray-100: hsl(29, 41%, 90%);
+  --color-gray-200: hsl(10, 16%, 78%);
+  --color-gray-300: hsl(343, 8%, 65%);
+  --color-gray-400: hsl(270, 3%, 46%);
   --color-gray-500: hsl(248, 4%, 40%); /* DEFAULT */
-  --color-gray-600: hsl(247, 5%, 35%);
-  --color-gray-700: hsl(248, 6%, 25%);
-  --color-gray-800: hsl(240, 9%, 16%);
-  --color-gray-900: hsl(240, 33%, 6%);
-  --color-gray-950: hsl(240, 40%, 2%);
+  --color-gray-600: hsl(252, 3%, 31%);
+  --color-gray-700: hsl(240, 2%, 25%);
+  --color-gray-800: hsl(240, 3%, 17%);
+  --color-gray-900: hsl(240, 4%, 11%);
+  --color-gray-950: hsl(240, 6%, 5%);
 
   --color-green: var(--color-green-400); /* MIV */
   --color-green-50: hsl(148, 100%, 94%);
@@ -84,6 +75,9 @@
   --color-yellow-900: hsl(29, 100%, 6%);
   --color-yellow-950: hsl(29, 100%, 2%);
 
+  --color-white: var(--color-gray-50);
+  --color-black: var(--color-gray-950);
+
   --color-primary: var(--color-purple-400);
   --color-secondary: var(--color-green-700);
   --color-muted: var(--color-gray-600);
@@ -116,7 +110,7 @@
 }
 
 @utility text-link {
-  color: var(--color-orange-500);
+  color: var(--color-orange-400);
 }
 
 /*
@@ -129,7 +123,7 @@ COMPONENTS
 }
 
 .btn {
-  @apply text-page inline-flex cursor-pointer items-center justify-center rounded-full border border-gray-400 bg-transparent px-8 py-3.5 text-center text-base leading-snug font-medium transition duration-200 ease-in select-none hover:border-yellow-300 hover:bg-yellow-50 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white focus:outline-none md:px-8;
+  @apply text-page inline-flex cursor-pointer items-center justify-center rounded-full border border-gray-400 bg-transparent text-center leading-snug font-medium transition duration-200 ease-in select-none hover:border-yellow-300 hover:bg-yellow-50 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white focus:outline-none;
 }
 
 .btn-primary {
@@ -140,14 +134,19 @@ COMPONENTS
   @apply text-muted border-none shadow-none hover:text-neutral-900;
 }
 
+.btn-small {
+  @apply px-3 py-1 text-sm;
+}
+.btn-medium {
+  @apply px-8 py-3.5 text-base;
+}
+
 .text-gradient {
   @apply from-purple via-orange to-yellow bg-gradient-to-br bg-clip-text text-transparent;
 }
 
 /* 
-
 MENU 
-
 */
 #header.scroll > div:first-child {
   @apply bg-white/90 backdrop-blur-md;
