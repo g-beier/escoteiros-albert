@@ -1,5 +1,5 @@
 ---
-import { getPermalink } from '~/utils/permalinks';
+
 ---
 
 <div
@@ -7,16 +7,19 @@ import { getPermalink } from '~/utils/permalinks';
   class="text-muted relative hidden gap-1 overflow-hidden border-b border-orange-300 bg-orange-300/40 px-3 py-2 text-sm text-ellipsis whitespace-nowrap"
 >
   <span class="mr-0.5 inline-block bg-orange-400 px-1 py-0.5 text-xs font-semibold text-orange-50 rtl:mr-0 rtl:ml-0.5">
-    Bufê
+    Galeto
   </span>
-  <a href={getPermalink('ingressos-bufe-2025', 'post')} class="font-medium text-orange-800 hover:underline">
-    Acompanhe tudo do nosso 17º Bufê de Sopas »
+  <a
+    href="https://wa.me//555195794880?text=Gostaria%20de%20mais%20informa%C3%A7%C3%B5es%20sobre%20o%20Galeto%21"
+    class="font-medium text-orange-800 hover:underline"
+  >
+    Já tem data marcada: 05 de outubro! Fale conosco para saber mais »
   </a>
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const dataLimite = new Date('2025-07-12');
+    const dataLimite = new Date('2025-10-02');
     const dataAtual = new Date();
     const announcement = document.getElementById('announcement');
 

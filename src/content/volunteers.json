@@ -2,7 +2,7 @@
   {
     "id": 1,
     "name": "Gustav",
-    "title": "Diretor-Presidente",
+    "title": "Diretor-Presidente e Dir. Adj. de Métodos Educativos",
     "image": "~/assets/images/adultos/gustav-sq.jpg",
     "tags": ["diretoria"]
   },
@@ -21,6 +21,7 @@
     "tags": ["diretoria"]
   },
   { "id": 5, "name": "Rosani", "title": "Diretora Financeira", "tags": ["diretoria"] },
+  { "id": 24, "name": "Cássio", "title": "Dir. Adj. Financeiro", "tags": ["diretoria"] },
   { "id": 4, "name": "Amarilda", "title": "Diretora de Patrimônio", "tags": ["diretoria"] },
   { "id": 21, "name": "Hermê", "title": "Dir. Adj. de Patrimônio", "tags": ["diretoria"] },
 
@@ -38,15 +39,10 @@
     "image": "~/assets/images/adultos/atenante-sq.jpg",
     "tags": ["diretoria"]
   },
-  {
-    "id": 6,
-    "name": "Etiane",
-    "title": "Diretora de Comunicação",
-    "image": "~/assets/images/adultos/eti-sq.jpg",
-    "tags": ["diretoria"]
-  },
+
+  { "id": 8, "name": "Amanda", "title": "Diretora de Comunicação", "tags": ["diretoria"] },
   { "id": 7, "name": "Léo", "title": "Dir. Adj. de Comunicação", "tags": ["diretoria"] },
-  { "id": 8, "name": "Amanda", "title": "Dir. Adj. de Comunicação", "tags": ["diretoria"] },
+  { "id": 23, "name": "Luiza", "title": "Dir. Adj. de Comunicação", "tags": ["diretoria"] },
   {
     "id": 11,
     "name": "Naan",
@@ -90,6 +86,13 @@
     "name": "Flavio",
     "title": "Chefe de Seção",
     "image": "~/assets/images/adultos/flavio-sq.jpg",
+    "tags": ["tropa-sênior"]
+  },
+  {
+    "id": 6,
+    "name": "Etiane",
+    "title": "Assistente",
+    "image": "~/assets/images/adultos/eti-sq.jpg",
     "tags": ["tropa-sênior"]
   },
   {

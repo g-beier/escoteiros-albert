@@ -2,7 +2,7 @@
   {
     "slug": "camiseta-preta",
     "title": "Camiseta preta",
-    "description": "Camiseta preta com o rosto do Albert",
+    "description": "Camiseta preta com o rosto do Albert.",
     "price": 35
   },
   {
@@ -20,8 +20,8 @@
   {
     "slug": "moletom-canguru",
     "title": "Moletom estilo canguru",
-    "description": "Anel de lenço com desenhos diversos: ramo lobinho, ramo escoteiro, padrão Escoteiros do Brasil. Consulte a disponibilidade.",
-    "price": 127,
+    "description": "Moletom com bolso e capuz, nas cores cinza e preto.",
+    "price": 130,
     "badge": "encomenda"
   },
   {
@@ -29,13 +29,6 @@
     "title": "Distintivos",
     "description": "O listel da região escoteira e o numeral do grupo escoteiro podem ser comprados individualmente. O listel é R$ 7,00, e cada numeral é R$ 2,00.",
     "price": 11
-  },
-  {
-    "slug": "moletom-ziper",
-    "title": "Moletom com zíper",
-    "description": "Anel de lenço com desenhos diversos: ramo lobinho, ramo escoteiro, padrão Escoteiros do Brasil. Consulte a disponibilidade.",
-    "price": 117,
-    "badge": "encomenda"
   },
   {
     "slug": "lenco",
@@ -46,7 +39,7 @@
   {
     "slug": "lenco-cinquentenario",
     "title": "Lenço do cinquentenário",
-    "description": "<p>Lenço preto com fitas douradas com medidas de 90cm, com a arte criada por Lukas Krick.</p><p>Os membros do grupo receberam o lenço em 2018. Os lenços a venda são aqueles para trocar.</p>",
+    "description": "<p>Lenço preto com fitas douradas com medidas de 90cm, com a arte criada por Lukas Krick.</p><p>Os membros do grupo receberam o lenço em 2018, o ano do cinquentenário. Os lenços a venda são aqueles para trocar.</p>",
     "price": 45
   },
   {
