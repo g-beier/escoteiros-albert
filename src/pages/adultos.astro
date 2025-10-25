@@ -1,11 +1,10 @@
 ---
-import Layout from '~/layouts/PageLayout.astro';
-import HeroText from '~/components/widgets/HeroText.astro';
-import Volunteers from '~/components/widgets/Volunteers.astro';
+import Layout from '@layouts/PageLayout.astro';
+import HeroText from '@components/widgets/HeroText.astro';
+import Volunteers from '@components/widgets/Volunteers.astro';
 import { getCollection } from 'astro:content';
 
-const allVolunteers = await getCollection('volunteers').then((v) => v.map((v) => v.data));
-
+const activeVolunteers = await getCollection('volunteers').then((v) => v.map((v) => v.data).filter((v) => v.active));
 const metadata = {
   title: 'Adultos',
 };
@@ -21,30 +20,30 @@ const metadata = {
   <Volunteers
     title="Diretoria"
     subtitle="Adultos responsáveis pela administração e bom funcionamento do grupo."
-    volunteers={allVolunteers.filter((v) => v.tags.includes('diretoria'))}
+    volunteers={activeVolunteers.filter((v) => v.tags.includes('diretoria'))}
   />
 
   <Volunteers
     title="Alcateia Schweitzer"
     tagline="Ramo Lobinho - 6,5 a 10 anos"
-    volunteers={allVolunteers.filter((v) => v.tags.includes('alcatéia'))}
+    volunteers={activeVolunteers.filter((v) => v.tags.includes('alcatéia'))}
   />
 
   <Volunteers
     title="Tropa Escoteira Albert Schweitzer"
     tagline="Ramo Escoteiro - 10 a 14 anos"
-    volunteers={allVolunteers.filter((v) => v.tags.includes('tropa-escoteira'))}
+    volunteers={activeVolunteers.filter((v) => v.tags.includes('tropa-escoteira'))}
   />
 
   <Volunteers
     title="Tropa Sênior Kilimanjaro"
     tagline="Ramo Sênior - 14 a 17 anos"
-    volunteers={allVolunteers.filter((v) => v.tags.includes('tropa-sênior'))}
+    volunteers={activeVolunteers.filter((v) => v.tags.includes('tropa-sênior'))}
   />
 
   <Volunteers
     title="Clã Highlander"
     tagline="Ramo Pioneiro - 18 a 21 anos"
-    volunteers={allVolunteers.filter((v) => v.tags.includes('clã-pioneiro'))}
+    volunteers={activeVolunteers.filter((v) => v.tags.includes('clã-pioneiro'))}
   />
 </Layout>

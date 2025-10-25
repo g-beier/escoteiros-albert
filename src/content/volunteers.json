@@ -41,7 +41,7 @@
   },
 
   { "id": 8, "name": "Amanda", "title": "Diretora de Comunicação", "tags": ["diretoria"] },
-  { "id": 7, "name": "Léo", "title": "Dir. Adj. de Comunicação", "tags": ["diretoria"] },
+  { "id": 7, "name": "Leo", "title": "Dir. Adj. de Comunicação", "tags": ["diretoria"] },
   { "id": 23, "name": "Luiza", "title": "Dir. Adj. de Comunicação", "tags": ["diretoria"] },
   {
     "id": 11,
@@ -62,7 +62,8 @@
     "name": "Márcia",
     "title": "Assistente",
     "image": "~/assets/images/adultos/marcia-sq.jpg",
-    "tags": ["alcatéia"]
+    "tags": ["alcatéia"],
+    "active": false
   },
   { "id": 14, "name": "Felipe", "title": "Assistente", "tags": ["alcatéia"] },
   {
@@ -79,7 +80,8 @@
     "image": "~/assets/images/adultos/vic-sq.jpg",
     "tags": ["tropa-escoteira"]
   },
-  { "id": 17, "name": "Kim", "title": "Assistente", "tags": ["tropa-escoteira"] },
+  { "id": 17, "name": "Kim", "title": "Assistente", "tags": ["tropa-escoteira"], "active": false },
+  { "id": 22, "name": "Maicon", "title": "Assistente", "tags": ["tropa-escoteira"] },
   { "id": 18, "name": "Rolf", "title": "Assistente", "tags": ["tropa-escoteira"] },
   {
     "id": 19,
@@ -101,6 +103,5 @@
     "title": "Assistente",
     "image": "~/assets/images/adultos/madu-sq.jpg",
     "tags": ["tropa-sênior"]
-  },
-  { "id": 22, "name": "Maicon", "title": "Assistente", "tags": ["tropa-escoteira"] }
+  }
 ]

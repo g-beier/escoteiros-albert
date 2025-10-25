@@ -1,3 +1,5 @@
+declare module '~/*';
+
 import type { AstroComponentFactory } from 'astro/runtime/server/index.js';
 import type { HTMLAttributes, ImageMetadata } from 'astro/types';
 

@@ -93,6 +93,7 @@ const volunteerCollection = defineCollection({
       title: z.string(),
       image: image().optional(),
       tags: z.enum(['diretoria', 'alcatéia', 'tropa-escoteira', 'tropa-sênior', 'clã-pioneiro']).array(),
+      active: z.boolean().default(true),
     }),
 });
 

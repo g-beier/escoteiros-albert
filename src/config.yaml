@@ -18,7 +18,7 @@ metadata:
   openGraph:
     site_name: G.E. Albert Schweitzer
     images:
-      - url: '~/assets/images/openGraph.png'
+      - url: '~/assets/images/OpenGraph.jpg'
         width: 1200
         height: 628
     type: website
