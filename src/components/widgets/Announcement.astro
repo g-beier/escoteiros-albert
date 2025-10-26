@@ -4,19 +4,20 @@ import { getPermalink } from '~/utils/permalinks';
 
 <div
   id="announcement"
-  class="text-muted relative hidden gap-1 overflow-hidden border-b border-orange-300 bg-orange-300/40 px-3 py-2 text-sm text-ellipsis whitespace-nowrap"
+  class="text-muted relative hidden gap-1 overflow-hidden border-b border-yellow-300 bg-yellow-300/40 px-3 py-2 text-sm text-ellipsis whitespace-nowrap"
 >
-  <span class="mr-0.5 inline-block bg-orange-400 px-1 py-0.5 text-xs font-semibold text-orange-50 rtl:mr-0 rtl:ml-0.5">
+  <span class="mr-0.5 inline-block bg-yellow-400 px-1 py-0.5 text-xs text-yellow-50 rtl:mr-0 rtl:ml-0.5">
     Pré-venda
   </span>
-  <a href={getPermalink('pre-venda-camiseta', 'post')} class="font-medium text-orange-800 hover:underline">
+  <span id="timer" class="mx-2 font-semibold"></span>
+  <a href={getPermalink('pre-venda-camiseta', 'post')} class="font-medium text-yellow-800 hover:underline">
     Seja a faísca da mudança: saiba mais sobre a nossa nova camiseta »
   </a>
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const dataLimite = new Date('2025-10-26');
+    const dataLimite = new Date('2025-11-08');
     const dataAtual = new Date();
     const announcement = document.getElementById('announcement');
 
@@ -24,5 +25,37 @@ import { getPermalink } from '~/utils/permalinks';
       announcement.classList.remove('hidden'); // Remove `hidden`
       announcement.classList.add('flex'); // Adiciona `flex`
     }
+
+    const x = setInterval(function () {
+      const timer = document.getElementById('timer');
+      if (timer) {
+        // Get today's date and time
+        const now = new Date().getTime();
+
+        // Find the distance between now and the count down date
+        const distance = dataLimite.getTime() - now;
+
+        // Time calculations for days, hours, minutes and seconds
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        // Display the result in the element with id="demo"
+        let time = '';
+        if (days) {
+          time += `${days.toString()} dias`;
+        }
+        time += ` ${hours.toString().length == 1 ? `0${hours.toString()}` : hours.toString()}:${minutes}:${seconds}`;
+
+        timer.innerHTML = time;
+
+        if (distance < 0) {
+          clearInterval(x);
+        }
+      } else {
+        clearInterval(x);
+      }
+    }, 1000);
   });
 </script>

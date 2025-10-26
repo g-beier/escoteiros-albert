@@ -10,7 +10,7 @@ tags:
   - escotismo
 ---
 
-Está no ar a pré-venda da nossa nova camiseta: "Seja a faísca da mudança". O preço de pré-venda é **R$ 45.00, até 25 de outubro**.
+Está no ar a pré-venda da nossa nova camiseta: "Seja a faísca da mudança". O preço de pré-venda é **R$ 45.00, até 08 de novembro**.
 
 A produção começa após atingirmos o mínimo de 80 unidades vendidas e exige lote mínimo de 100 unidades: as camisetas pretas estão confirmadas e, caso não tenhamos demanda suficiente para a camiseta, não iremos confeccionar.
 

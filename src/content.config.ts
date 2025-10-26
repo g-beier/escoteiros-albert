@@ -97,8 +97,21 @@ const volunteerCollection = defineCollection({
     }),
 });
 
+const testimonialCollection = defineCollection({
+  loader: file('./src/content/testimonials.json'),
+  schema: ({ image }) =>
+    z.object({
+      id: z.number(),
+      name: z.string(),
+      role: z.string(),
+      image: image().optional(),
+      content: z.string(),
+    }),
+});
+
 export const collections = {
   post: postCollection,
   store: storeCollection,
   volunteers: volunteerCollection,
+  testimonials: testimonialCollection,
 };

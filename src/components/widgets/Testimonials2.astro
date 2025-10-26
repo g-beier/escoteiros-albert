@@ -1,0 +1,123 @@
+---
+import { getCollection } from 'astro:content';
+import WidgetWrapper from '../ui/WidgetWrapper.astro';
+import Headline from '~/components/ui/Headline.astro';
+import Button from '../ui/Button.astro';
+import { Image } from 'astro:assets';
+
+const {
+  title = '',
+  subtitle = '',
+  tagline = '',
+  callToAction,
+
+  id,
+  isDark = false,
+  classes = {},
+  bg = await Astro.slots.render('bg'),
+} = Astro.props;
+
+const testimonials = await getCollection('testimonials').then((tst) => tst.map((t) => t.data));
+
+const even = testimonials.filter((_, i) => i % 2);
+const odd = testimonials.filter((_, i) => !(i % 2));
+---
+
+<WidgetWrapper id={id} isDark={isDark} containerClass={`max-w-6xl mx-auto ${classes?.container ?? ''}`} bg={bg}>
+  <Headline title={title} subtitle={subtitle} tagline={tagline} />
+
+  <div class="relative overflow-hidden">
+    <div
+      class="animate-scroll-left my-4 flex w-max flex-row-reverse gap-x-6 motion-reduce:translate-x-4 motion-reduce:animate-none"
+    >
+      {
+        [...even, ...even].map(({ image, content, role, name, id }) => (
+          <div
+            id={String(id)}
+            class="flex aspect-video w-xs flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20"
+          >
+            <div class="flex-1">
+              <p class="text-sm">{content}</p>
+            </div>
+            <div class="flex items-center gap-2 border-t-[1px] border-gray-200/50 pt-2">
+              {image && (
+                <div class="h-10 w-10 rounded-full border border-gray-200/50">
+                  {typeof image === 'string' ? (
+                    <Fragment set:html={image} />
+                  ) : (
+                    <Image
+                      class="h-10 min-h-full w-10 min-w-full rounded-full border border-neutral-200 object-cover"
+                      loading="lazy"
+                      layout="fixed"
+                      alt={name}
+                      src={image}
+                      widths={[50]}
+                    />
+                  )}
+                </div>
+              )}
+
+              <div class="text-muted inline-flex flex-col text-xs">
+                <span class="font-semibold">{name}</span>
+                <span>{role}</span>
+              </div>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+
+    <div
+      class="animate-scroll-right my-4 flex w-max flex-row gap-x-6 motion-reduce:-translate-x-16 motion-reduce:animate-none"
+    >
+      {
+        [...odd, ...odd].map(({ image, content, role, name, id }) => (
+          <div
+            id={String(id)}
+            class="flex aspect-video w-xs flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20"
+          >
+            <div class="flex-1">
+              <p class="text-sm">{content}</p>
+            </div>
+            <div class="flex items-center gap-2 border-t-[1px] border-gray-200/50 pt-2">
+              {image && (
+                <div class="h-10 w-10 rounded-full border border-gray-200/50">
+                  {typeof image === 'string' ? (
+                    <Fragment set:html={image} />
+                  ) : (
+                    <Image
+                      class="h-10 min-h-full w-10 min-w-full rounded-full border border-neutral-200 object-cover"
+                      loading="lazy"
+                      layout="fixed"
+                      alt={name}
+                      src={image}
+                      widths={[50]}
+                    />
+                  )}
+                </div>
+              )}
+
+              <div class="text-muted inline-flex flex-col text-xs">
+                <span class="font-semibold">{name}</span>
+                <span>{role}</span>
+              </div>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-white to-transparent">
+    </div>
+    <div class="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-white to-transparent">
+    </div>
+  </div>
+
+  {
+    callToAction && (
+      <div class="mx-auto mt-4 flex w-fit justify-center font-medium md:mt-8">
+        <Button {...callToAction} />
+      </div>
+    )
+  }
+</WidgetWrapper>

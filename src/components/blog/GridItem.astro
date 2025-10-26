@@ -25,7 +25,7 @@ const link = APP_BLOG?.post?.isEnabled ? getPermalink(post.permalink, 'post') : 
           <a href={link}>
             <Image
               src={post?.image}
-              class="aspect-16/9 w-full rounded-xl bg-gray-400 object-cover shadow-lg md:h-full"
+              class="aspect-16/9 w-full rounded-xl bg-gray-400 object-cover shadow-lg transition-transform duration-100 ease-in-out hover:scale-105 md:h-full"
               widths={[200, 400]}
               width={400}
               sizes="(max-width: 900px) 200px, 400px"
@@ -38,7 +38,7 @@ const link = APP_BLOG?.post?.isEnabled ? getPermalink(post.permalink, 'post') : 
         ) : (
           <Image
             src={post?.image}
-            class="aspect-16/9 w-full rounded-xl bg-gray-400 object-cover shadow-lg md:h-full"
+            class="aspect-16/9 w-full rounded-xl bg-gray-400 object-cover shadow-lg transition-transform duration-100 ease-in-out hover:scale-105 md:h-full"
             widths={[400, 900]}
             width={400}
             sizes="(max-width: 900px) 400px, 900px"

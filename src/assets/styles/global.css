@@ -95,6 +95,28 @@
       transform: translateY(0rem);
     }
   }
+
+  --animate-scroll-left: 120s cubic-bezier(0.28, 0.1, 0.72, 0.9) infinite alternate scroll-left;
+
+  @keyframes scroll-left {
+    from {
+      transform: translateX(0%);
+    }
+    to {
+      transform: translateX(calc(72rem - 100%));
+    }
+  }
+
+  --animate-scroll-right: 120s cubic-bezier(0.28, 0.1, 0.72, 0.9) infinite alternate scroll-right;
+
+  @keyframes scroll-right {
+    from {
+      transform: translateX(calc(72rem - 100%));
+    }
+    to {
+      transform: translateX(0%);
+    }
+  }
 }
 
 @utility bg-page {
