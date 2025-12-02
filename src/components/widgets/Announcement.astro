@@ -1,23 +1,22 @@
 ---
-import { getPermalink } from '~/utils/permalinks';
+// import { getPermalink } from '~/utils/permalinks';
 ---
 
 <div
   id="announcement"
   class="text-muted relative hidden gap-1 overflow-hidden border-b border-yellow-300 bg-yellow-300/40 px-3 py-2 text-sm text-ellipsis whitespace-nowrap"
 >
-  <span class="mr-0.5 inline-block bg-yellow-400 px-1 py-0.5 text-xs text-yellow-50 rtl:mr-0 rtl:ml-0.5">
-    Pré-venda
-  </span>
+  <span class="mr-0.5 inline-block bg-yellow-400 px-1 py-0.5 text-xs text-yellow-50 rtl:mr-0 rtl:ml-0.5"> 13/12 </span>
   <span id="timer" class="mx-2 font-semibold"></span>
-  <a href={getPermalink('pre-venda-camiseta', 'post')} class="font-medium text-yellow-800 hover:underline">
-    Seja a faísca da mudança: saiba mais sobre a nossa nova camiseta »
+  <a href={'https://wa.me/555195794880'} class="font-medium text-yellow-800 hover:underline">
+    <!-- getPermalink('pre-venda-camiseta', 'post') -->
+    Assembleia de Grupo: verifique no seu e-mail a convocação »
   </a>
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const dataLimite = new Date('2025-11-08');
+    const dataLimite = new Date('2025-12-13');
     const dataAtual = new Date();
     const announcement = document.getElementById('announcement');
 

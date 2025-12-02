@@ -20,13 +20,7 @@
     "image": "~/assets/images/adultos/tati.png",
     "tags": ["diretoria"]
   },
-  {
-    "id": 24,
-    "name": "Cássio",
-    "title": "Dir. Administrativo Adj.",
-    "image": "~/assets/images/adultos/cassio.png",
-    "tags": ["diretoria"]
-  },
+
   {
     "id": 5,
     "name": "Rosani",
@@ -35,11 +29,19 @@
     "tags": ["diretoria"]
   },
   {
+    "id": 24,
+    "name": "Cássio",
+    "title": "Dir. Financeiro Adj.",
+    "image": "~/assets/images/adultos/cassio.png",
+    "tags": ["diretoria"]
+  },
+  {
     "id": 25,
     "name": "Ricardo",
     "title": "Diretor Financeiro Adj.",
     "image": "~/assets/images/adultos/old/ricardo-sq.jpg",
-    "tags": ["diretoria"]
+    "tags": ["diretoria"],
+    "active": false
   },
   {
     "id": 4,
@@ -70,13 +72,20 @@
     "image": "~/assets/images/adultos/atenante.png",
     "tags": ["diretoria"]
   },
-
+  {
+    "id": 8,
+    "name": "Amanda",
+    "title": "Diretora de Comunicação",
+    "tags": ["diretoria"],
+    "image": "~/assets/images/adultos/amanda.png"
+  },
   {
     "id": 26,
     "name": "Kalytsa",
     "title": "Diretora de Comunicação",
     "image": "~/assets/images/adultos/kalytsa.png",
-    "tags": ["diretoria"]
+    "tags": ["diretoria"],
+    "active": false
   },
   {
     "id": 23,
@@ -87,7 +96,8 @@
   {
     "id": 7,
     "name": "Leo",
-    "tags": ["comissão-fiscal"]
+    "title": "Dir. Adj. de Comunicação",
+    "tags": ["diretoria"]
   },
   {
     "id": 11,
@@ -95,14 +105,6 @@
     "title": "Akelá - Chefe de Seção",
     "image": "~/assets/images/adultos/naan.png",
     "tags": ["alcateia"]
-  },
-
-  {
-    "id": 8,
-    "name": "Amanda",
-    "title": "Assistente",
-    "tags": ["alcateia"],
-    "image": "~/assets/images/adultos/amanda.png"
   },
 
   {
@@ -121,17 +123,17 @@
     "tags": ["alcateia"]
   },
   {
-    "id": 16,
-    "name": "Victória",
+    "id": 15,
+    "name": "Brenda",
     "title": "Chefe de Seção",
-    "image": "~/assets/images/adultos/vic.png",
+    "image": "~/assets/images/adultos/brenda.png",
     "tags": ["tropa-escoteira"]
   },
   {
-    "id": 15,
-    "name": "Brenda",
+    "id": 16,
+    "name": "Victória",
     "title": "Assistente",
-    "image": "~/assets/images/adultos/brenda.png",
+    "image": "~/assets/images/adultos/vic.png",
     "tags": ["tropa-escoteira"]
   },
 
@@ -146,9 +148,9 @@
   {
     "id": 12,
     "name": "Marcus",
-    "title": "Assistente",
+    "title": "Assistente - Lobo Gris",
     "image": "~/assets/images/adultos/marcus.png",
-    "tags": ["tropa-escoteira"]
+    "tags": ["alcateia"]
   },
 
   {
@@ -170,25 +172,39 @@
     "name": "Madu",
     "title": "Assistente",
     "image": "~/assets/images/adultos/old/madu-sq.jpg",
-    "tags": ["tropa-sênior"],
-    "active": false
+    "tags": ["tropa-sênior"]
   },
   {
     "id": 27,
     "name": "Lucas",
     "title": "Assistente",
-    "tags": ["tropa-sênior"]
+    "tags": ["tropa-sênior"],
+    "active": false
   },
   {
     "id": 18,
     "name": "Rolf",
-    "tags": ["comissão-fiscal"],
+    "title": "Assistente",
+    "tags": ["tropa-escoteira"],
     "image": "~/assets/images/adultos/rolf.png"
   },
   {
     "id": 28,
     "name": "Magda",
     "title": "Presidente de Honra",
+    "image": "~/assets/images/adultos/magda.png",
+    "tags": ["honorífico"]
+  },
+  {
+    "id": 29,
+    "name": "Ernani",
+    "title": "Vice-Presidente de Honra",
+    "tags": ["honorífico"]
+  },
+  {
+    "id": 30,
+    "name": "Lourdes",
+    "title": "Vice-Presidente de Honra",
     "tags": ["honorífico"]
   }
 ]
