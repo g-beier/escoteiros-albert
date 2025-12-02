@@ -32,10 +32,10 @@ const {
           return (
             <div>
               <div class="flex max-w-md flex-col">
-                <div class="overflow-clip rounded-md">
+                <div class={`overflow-clip rounded-md ${image ? 'shadow-sm' : ''}`}>
                   {image ? (
                     <Image
-                      class="aspect-square w-full rounded-md"
+                      class="aspect-square w-full rounded-md border-[0.5px] border-black/25"
                       loading="eager"
                       widths={[300, 700]}
                       width={700}
@@ -44,7 +44,7 @@ const {
                       src={image}
                     />
                   ) : (
-                    <div class="text-primary grid aspect-square h-full place-items-center rounded-md">
+                    <div class="text-primary grid aspect-square h-full place-items-center">
                       <Icon name="tabler:user" class="h-32 w-32" />
                     </div>
                   )}

@@ -26,7 +26,7 @@ const metadata = {
   <Volunteers
     title="Alcateia Schweitzer"
     tagline="Ramo Lobinho - 6,5 a 10 anos"
-    volunteers={activeVolunteers.filter((v) => v.tags.includes('alcatéia'))}
+    volunteers={activeVolunteers.filter((v) => v.tags.includes('alcateia'))}
   />
 
   <Volunteers
@@ -46,4 +46,11 @@ const metadata = {
     tagline="Ramo Pioneiro - 18 a 21 anos"
     volunteers={activeVolunteers.filter((v) => v.tags.includes('clã-pioneiro'))}
   />
+
+  <Volunteers
+    title="Honoríficos"
+    subtitle="Adultos que construíram o GEAS que nós conhecemos hoje."
+    volunteers={activeVolunteers.filter((v) => v.tags.includes('honorífico'))}
+  />
+  <Volunteers title="Comissão Fiscal" volunteers={activeVolunteers.filter((v) => v.tags.includes('comissão-fiscal'))} />
 </Layout>

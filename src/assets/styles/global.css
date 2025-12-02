@@ -96,22 +96,22 @@
     }
   }
 
-  --animate-scroll-left: 120s cubic-bezier(0.28, 0.1, 0.72, 0.9) infinite alternate scroll-left;
+  --animate-scroll-left: 75s linear infinite scroll-left;
 
   @keyframes scroll-left {
     from {
       transform: translateX(0%);
     }
     to {
-      transform: translateX(calc(72rem - 100%));
+      transform: translateX(-50%);
     }
   }
 
-  --animate-scroll-right: 120s cubic-bezier(0.28, 0.1, 0.72, 0.9) infinite alternate scroll-right;
+  --animate-scroll-right: 75s linear infinite scroll-right;
 
   @keyframes scroll-right {
     from {
-      transform: translateX(calc(72rem - 100%));
+      transform: translateX(-50%);
     }
     to {
       transform: translateX(0%);
@@ -135,6 +135,10 @@
   color: var(--color-orange-400);
 }
 
+@utility animation-paused {
+  animation-play-state: paused;
+}
+
 /*
 
 COMPONENTS
@@ -149,7 +153,7 @@ COMPONENTS
 }
 
 .btn-primary {
-  @apply bg-primary border-primary hover:bg-secondary hover:border-secondary font-semibold text-white;
+  @apply bg-primary border-primary hover:bg-secondary hover:border-secondary font-semibold text-[#fff];
 }
 
 .btn-tertiary {

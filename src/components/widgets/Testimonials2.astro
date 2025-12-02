@@ -28,25 +28,25 @@ const odd = testimonials.filter((_, i) => !(i % 2));
 
   <div class="relative overflow-hidden">
     <div
-      class="animate-scroll-left my-4 flex w-max flex-row-reverse gap-x-6 motion-reduce:translate-x-4 motion-reduce:animate-none"
+      class="animate-scroll-left hover:animation-paused my-8 flex w-max flex-row-reverse gap-x-6 motion-reduce:translate-x-4 motion-reduce:animate-none"
     >
       {
         [...even, ...even].map(({ image, content, role, name, id }) => (
           <div
             id={String(id)}
-            class="flex aspect-video w-xs flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20"
+            class="flex h-52 max-w-md min-w-sm flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20 transition-all hover:scale-105 hover:bg-[#fff]/100 hover:shadow-lg"
           >
             <div class="flex-1">
-              <p class="text-sm">{content}</p>
+              <p class="indent-4 text-xs">{content}</p>
             </div>
-            <div class="flex items-center gap-2 border-t-[1px] border-gray-200/50 pt-2">
+            <div class="mt-2 flex items-center gap-2 border-t border-gray-200/50 pt-2">
               {image && (
-                <div class="h-10 w-10 rounded-full border border-gray-200/50">
+                <div class="size-10 rounded-full border border-gray-200/50">
                   {typeof image === 'string' ? (
                     <Fragment set:html={image} />
                   ) : (
                     <Image
-                      class="h-10 min-h-full w-10 min-w-full rounded-full border border-neutral-200 object-cover"
+                      class="size-10 min-h-full min-w-full rounded-full border border-gray-200/50 object-cover"
                       loading="lazy"
                       layout="fixed"
                       alt={name}
@@ -68,25 +68,25 @@ const odd = testimonials.filter((_, i) => !(i % 2));
     </div>
 
     <div
-      class="animate-scroll-right my-4 flex w-max flex-row gap-x-6 motion-reduce:-translate-x-16 motion-reduce:animate-none"
+      class="animate-scroll-right hover:animation-paused my-4 flex w-max flex-row gap-x-6 motion-reduce:-translate-x-16 motion-reduce:animate-none"
     >
       {
         [...odd, ...odd].map(({ image, content, role, name, id }) => (
           <div
             id={String(id)}
-            class="flex aspect-video w-xs flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20"
+            class="flex h-52 w-fit max-w-md min-w-sm flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20 transition-all hover:scale-105 hover:bg-[#fff]/100 hover:shadow-lg"
           >
             <div class="flex-1">
-              <p class="text-sm">{content}</p>
+              <p class="indent-4 text-xs">{content}</p>
             </div>
-            <div class="flex items-center gap-2 border-t-[1px] border-gray-200/50 pt-2">
+            <div class="mt-2 flex items-center gap-2 border-t border-gray-200/50 pt-2">
               {image && (
-                <div class="h-10 w-10 rounded-full border border-gray-200/50">
+                <div class="size-10 rounded-full border border-gray-200/50">
                   {typeof image === 'string' ? (
                     <Fragment set:html={image} />
                   ) : (
                     <Image
-                      class="h-10 min-h-full w-10 min-w-full rounded-full border border-neutral-200 object-cover"
+                      class="size-10 min-h-full min-w-full rounded-full border border-gray-200/50 object-cover"
                       loading="lazy"
                       layout="fixed"
                       alt={name}
@@ -107,9 +107,9 @@ const odd = testimonials.filter((_, i) => !(i % 2));
       }
     </div>
 
-    <div class="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-white to-transparent">
+    <div class="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-white to-transparent">
     </div>
-    <div class="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-white to-transparent">
+    <div class="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-white to-transparent">
     </div>
   </div>
 

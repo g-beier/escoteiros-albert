@@ -90,9 +90,19 @@ const volunteerCollection = defineCollection({
     z.object({
       id: z.number(),
       name: z.string(),
-      title: z.string(),
+      title: z.string().optional(),
       image: image().optional(),
-      tags: z.enum(['diretoria', 'alcatéia', 'tropa-escoteira', 'tropa-sênior', 'clã-pioneiro']).array(),
+      tags: z
+        .enum([
+          'diretoria',
+          'alcateia',
+          'tropa-escoteira',
+          'tropa-sênior',
+          'clã-pioneiro',
+          'comissão-fiscal',
+          'honorífico',
+        ])
+        .array(),
       active: z.boolean().default(true),
     }),
 });

@@ -18,7 +18,9 @@ const { position = 'bottom', policyUrl = '/politica-de-privacidade', storageKey 
   aria-label="Preferências de privacidade"
   hidden
 >
-  <div class="mx-auto max-w-3xl rounded-2xl bg-white shadow-2xl ring-1 ring-white/10">
+  <div
+    class="mx-auto max-w-3xl rounded-2xl bg-[#fff]/80 shadow-2xl outline-2 -outline-offset-2 outline-white/50 backdrop-blur-md"
+  >
     <div class="p-4 sm:p-5">
       <h2 class="text-default text-sm leading-6 font-semibold">Privacidade & cookies</h2>
       <p class="text-muted mt-1 text-xs">
@@ -32,9 +34,9 @@ const { position = 'bottom', policyUrl = '/politica-de-privacidade', storageKey 
       </p>
 
       <div class="mt-3 flex flex-wrap gap-2">
-        <Button type="button" size="small" variant="primary" id="cc-accept-all"> Aceitar todos </Button>
-        <Button type="button" size="small" id="cc-accept-metrics"> Aceitar métricas </Button>
-        <Button type="button" size="small" id="cc-reject"> Recusar </Button>
+        <Button type="button" size="small" variant="primary" id="cc-accept-all">Aceitar todos</Button>
+        <Button type="button" size="small" id="cc-accept-metrics">Aceitar métricas</Button>
+        <Button type="button" size="small" id="cc-reject">Recusar</Button>
       </div>
     </div>
   </div>

@@ -3,100 +3,108 @@
     "id": 1,
     "name": "Magda",
     "role": "Presidente de honra",
-    "image": "~/assets/images/adultos/eti-sq.jpg",
+    "image": "~/assets/images/adultos/magda.png",
     "content": "Depoimento histórico"
   },
   {
     "id": 2,
     "name": "Felipe",
     "role": "Chefe do Ramo Lobinho",
-    "image": "~/assets/images/adultos/madu-sq.jpg",
+    "image": "~/assets/images/adultos/felipe.png",
     "content": "Retorno ao ME"
   },
   {
     "id": 3,
     "name": "Brenda",
     "role": "Chefe do Ramo Escoteiro",
-    "image": "~/assets/images/adultos/brenda-sq.jpg",
-    "content": "Depoimento de jovem de longa data"
+    "image": "~/assets/images/adultos/brenda.png",
+    "content": "Desde antes de perceber, o Movimento Escoteiro já fazia parte de mim. Acompanhava minha irmã até poder entrar em 2007, fazendo promessa em 2008. Vivi todas as etapas: lobinha, escoteira, sênior e pioneira. Em 2018 cheguei ao GEAS, no Clã Highlander, onde encontrei uma nova casa. Em 2021 fiz minha partida já sabendo que meu caminho era a chefia. Hoje, em 2025, sou chefe de seção da tropa escoteira, muito feliz e certa de que o Movimento Escoteiro é parte essencial de quem eu sou."
   },
-  { "id": 4, "name": "Gustav", "role": "Diretor", "image": "~/assets/images/adultos/gustav-sq.jpg", "content": "" },
+  {
+    "id": 4,
+    "name": "Gustav",
+    "role": "Diretor",
+    "image": "~/assets/images/adultos/gustav.png",
+    "content": "Cheguei no grupo ainda pioneiro e aqui eu conheci uma família, fiz amigos e tive várias oportunidades que definiram quem que sou hoje.\nMinhas principais experiências no escotismo como voluntário foram aqui e faço propaganda do grupo que faço parte!"
+  },
   {
     "id": 5,
     "name": "Etiane",
     "role": "Chefe do Ramo Sênior",
-    "image": "~/assets/images/adultos/eti-sq.jpg",
+    "image": "~/assets/images/adultos/eti.png",
     "content": "Mãe, diretora e chefe."
   },
   {
     "id": 6,
     "name": "Flávio",
     "role": "Chefe do Ramo Sênior",
-    "image": "~/assets/images/adultos/eti-sq.jpg",
+    "image": "~/assets/images/adultos/flavio.png",
     "content": ""
   },
   {
     "id": 7,
     "name": "Rosani",
     "role": "Diretora",
-    "image": "~/assets/images/adultos/eti-sq.jpg",
+    "image": "~/assets/images/adultos/rosani.png",
     "content": "Mãe e diretora."
   },
   {
     "id": 8,
     "name": "Lourdes",
     "role": "Vice-presidente de honra",
-    "image": "~/assets/images/adultos/madu-sq.jpg",
     "content": "Mãe, diretora e chefe."
   },
   {
     "id": 9,
     "name": "Milena",
     "role": "Mãe de Lobinha",
-    "image": "~/assets/images/adultos/tati-sq.jpg",
     "content": "Mãe."
   },
   {
     "id": 10,
     "name": "Sidnei",
     "role": "Pai de Guias",
-    "image": "~/assets/images/adultos/naan-sq.jpg",
     "content": "Pai de longa data."
   },
   {
     "id": 11,
     "name": "Silvana",
     "role": "Mãe de Lobinho",
-    "image": "~/assets/images/adultos/zanini-sq.jpg",
     "content": "Mãe."
   },
   {
     "id": 12,
     "name": "Maicon",
-    "role": "Pai de Escoteiro",
-    "image": "~/assets/images/adultos/eti-sq.jpg",
-    "content": "Pai"
+    "role": "Chefe e Pai de Escoteiro",
+    "image": "~/assets/images/adultos/maicon.png",
+    "content": "Entrei no Escotismo para apoiar meu filho, mas acabei ficando por mim. De pai, me tornei escotista, e o que era para ensiná-lo virou uma lição de vida para mim. O Movimento formou meu filho e me deu um novo olhar sobre liderança e propósito. Uma jornada em família que vale cada segundo"
   },
-  { "id": 13, "name": "Giba", "role": "Diretor", "image": "~/assets/images/adultos/giba-sq.jpg", "content": "" },
+  {
+    "id": 13,
+    "name": "Giba",
+    "role": "Diretor",
+    "image": "~/assets/images/adultos/giba.png",
+    "content": "O Albert é minha segunda família. Dos meus 28 anos de adulto voluntário no escotismo, 21 foram dentro deste grupo. Sou muito feliz pelo meu trabalho, mas a maior felicidade é encontrar por aí antigos jovens que passaram por nós e hoje são homens e mulheres encaminhados na vida, que levam consigo valores escoteiros."
+  },
   {
     "id": 14,
     "name": "Daniel",
     "role": "Ex-membro",
-    "image": "~/assets/images/adultos/daniel-sq.jpg",
+    "image": "~/assets/images/adultos/old/daniel-sq.jpg",
     "content": "Depoimento de jovem de longa data."
   },
   {
     "id": 15,
     "name": "Kalytsa",
     "role": "Ex-jovem",
-    "image": "~/assets/images/adultos/tati-sq.jpg",
+    "image": "~/assets/images/adultos/kalytsa.png",
     "content": "Nova voluntária."
   },
   {
     "id": 16,
     "name": "Amanda",
     "role": "Diretora",
-    "image": "~/assets/images/adultos/zanini-sq.jpg",
-    "content": "Nova voluntária."
+    "image": "~/assets/images/adultos/amanda.png",
+    "content": "Cheguei há pouco tempo ao movimento escoteiro, mesmo não tendo vivido essa experiência quando jovem, percebi como também é legal depois de adulta. Trabalhar na comunicação do grupo é uma forma muito gratificante de contribuir com um voluntariado que faz diferença na vida de muitos jovens e adultos, e isso me motiva a seguir ajudando."
   }
 ]
