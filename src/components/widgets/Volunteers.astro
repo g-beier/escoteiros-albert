@@ -31,7 +31,7 @@ const {
         {volunteers.map(({ name, title, image }) => {
           return (
             <div>
-              <div class="flex max-w-md flex-col">
+              <div class="intersect-once intersect-quarter intercept-no-queue motion-safe:md:intersect:animate-fade-up flex max-w-md flex-col motion-safe:md:opacity-0">
                 <div class={`overflow-clip rounded-md ${image ? 'shadow-sm' : ''}`}>
                   {image ? (
                     <Image
