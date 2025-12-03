@@ -34,7 +34,7 @@ const odd = testimonials.filter((_, i) => !(i % 2));
         [...even, ...even].map(({ image, content, role, name, id }) => (
           <div
             id={String(id)}
-            class="flex h-52 max-w-md min-w-sm flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20 transition-all hover:scale-105 hover:bg-[#fff]/100 hover:shadow-lg"
+            class="flex h-52 max-w-sm min-w-sm flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20 transition-all hover:scale-105 hover:bg-[#fff] hover:shadow-lg md:max-w-md"
           >
             <div class="flex-1">
               <p class="indent-4 text-xs">{content}</p>
@@ -68,13 +68,13 @@ const odd = testimonials.filter((_, i) => !(i % 2));
     </div>
 
     <div
-      class="animate-scroll-right hover:animation-paused my-4 flex w-max flex-row gap-x-6 motion-reduce:-translate-x-16 motion-reduce:animate-none"
+      class="animate-scroll-right hover:animation-paused my-4 hidden w-max flex-row gap-x-6 motion-reduce:-translate-x-16 motion-reduce:animate-none md:flex"
     >
       {
         [...odd, ...odd].map(({ image, content, role, name, id }) => (
           <div
             id={String(id)}
-            class="flex h-52 w-fit max-w-md min-w-sm flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20 transition-all hover:scale-105 hover:bg-[#fff]/100 hover:shadow-lg"
+            class="flex h-52 w-fit max-w-sm min-w-sm flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20 transition-all hover:scale-105 hover:bg-[#fff] hover:shadow-lg md:max-w-md"
           >
             <div class="flex-1">
               <p class="indent-4 text-xs">{content}</p>
@@ -107,9 +107,8 @@ const odd = testimonials.filter((_, i) => !(i % 2));
       }
     </div>
 
-    <div class="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-white to-transparent">
-    </div>
-    <div class="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-white to-transparent">
+    <div class="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-linear-to-r from-white to-transparent"></div>
+    <div class="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-linear-to-l from-white to-transparent">
     </div>
   </div>
 
