@@ -28,16 +28,18 @@ const odd = testimonials.filter((_, i) => !(i % 2));
 
   <div class="relative overflow-hidden">
     <div
-      class="animate-scroll-left hover:animation-paused my-8 flex w-max flex-row-reverse gap-x-6 motion-reduce:translate-x-4 motion-reduce:animate-none"
+      class="animate-scroll-left hover:animation-paused my-8 flex w-max flex-row-reverse items-stretch gap-x-6 motion-reduce:translate-x-4 motion-reduce:animate-none"
     >
       {
         [...even, ...even].map(({ image, content, role, name, id }) => (
           <div
             id={String(id)}
-            class="flex h-52 max-w-sm min-w-sm flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20 transition-all hover:scale-105 hover:bg-[#fff] hover:shadow-lg md:max-w-md"
+            class="flex max-w-2xs flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20 transition-all hover:scale-105 hover:bg-[#fff] hover:shadow-lg md:max-w-sm md:min-w-xs"
           >
-            <div class="flex-1">
-              <p class="indent-4 text-xs">{content}</p>
+            <div class="flex-1 space-y-2">
+              {content.split('\n').map((p) => (
+                <p class="indent-4 text-xs" set:html={p} />
+              ))}
             </div>
             <div class="mt-2 flex items-center gap-2 border-t border-gray-200/50 pt-2">
               {image && (
@@ -74,10 +76,12 @@ const odd = testimonials.filter((_, i) => !(i % 2));
         [...odd, ...odd].map(({ image, content, role, name, id }) => (
           <div
             id={String(id)}
-            class="flex h-52 w-fit max-w-sm min-w-sm flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20 transition-all hover:scale-105 hover:bg-[#fff] hover:shadow-lg md:max-w-md"
+            class="flex max-w-2xs flex-col rounded-md bg-[#fff]/60 p-3 shadow-md outline-1 outline-gray-500/20 transition-all hover:scale-105 hover:bg-[#fff] hover:shadow-lg md:max-w-sm md:min-w-xs"
           >
-            <div class="flex-1">
-              <p class="indent-4 text-xs">{content}</p>
+            <div class="flex-1 space-y-2">
+              {content.split('\n').map((p) => (
+                <p class="indent-4 text-xs" set:html={p} />
+              ))}
             </div>
             <div class="mt-2 flex items-center gap-2 border-t border-gray-200/50 pt-2">
               {image && (

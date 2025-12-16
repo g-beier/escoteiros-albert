@@ -5,6 +5,9 @@ import BlogHighlightedPosts from '~/components/widgets/BlogHighlightedPosts.astr
 import FAQs from '~/components/widgets/FAQs.astro';
 import Steps from '~/components/widgets/Steps.astro';
 import Content from '~/components/widgets/Content.astro';
+import Hero2 from '~/components/widgets/Hero2.astro';
+import Testimonials2 from '~/components/widgets/Testimonials2.astro';
+import Brands from '~/components/widgets/Brands.astro';
 
 import { getPermalink } from '~/utils/permalinks';
 
@@ -12,9 +15,7 @@ import { getPermalink } from '~/utils/permalinks';
 import hero from '~/assets/images/hero.jpg';
 import venhaSerEscoteiro from '~/assets/images/venhaSerEscoteiro.jpg';
 
-import Hero2 from '~/components/widgets/Hero2.astro';
-import Cookies from '~/components/widgets/Cookies.astro';
-import Testimonials2 from '~/components/widgets/Testimonials2.astro';
+// BRANDS
 
 const metadata = {
   title: 'Grupo Escoteiro Albert Schweitzer',
@@ -186,6 +187,8 @@ const metadata = {
     ]}
   />
 
+  <Brands images={[{ src: '', alt: 'Comunidade Martin Luther' }]} />
+
   <Steps
     title="Venha ser escoteiro:"
     image={{
@@ -282,6 +285,4 @@ const metadata = {
     referrerpolicy="no-referrer-when-downgrade"></iframe>
     </div>`}
   />
-
-  <Cookies />
 </Layout>

@@ -11,6 +11,7 @@
     'Noto Color Emoji';
   --font-heading: 'Agency', var(--font-sans);
 
+  ---color-gray: var(--color-gray-500);
   --color-gray-50: hsl(39, 100%, 96%);
   --color-gray-100: hsl(29, 41%, 90%);
   --color-gray-200: hsl(10, 16%, 78%);
@@ -144,33 +145,34 @@
 COMPONENTS
 
 */
-* {
-  @apply selection:bg-yellow/30;
-}
+@layer components {
+  * {
+    @apply selection:bg-yellow/30;
+  }
 
-.btn {
-  @apply text-page inline-flex cursor-pointer items-center justify-center rounded-full border border-gray-400 bg-transparent text-center leading-snug font-medium transition duration-200 ease-in select-none hover:border-yellow-300 hover:bg-yellow-50 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white focus:outline-none;
-}
+  .btn {
+    @apply text-page inline-flex cursor-pointer items-center justify-center rounded-full border border-gray-400 bg-transparent text-center leading-snug font-medium transition duration-200 ease-in select-none hover:border-yellow-300 hover:bg-yellow-50 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-white focus:outline-none;
+  }
 
-.btn-primary {
-  @apply bg-primary border-primary hover:bg-secondary hover:border-secondary font-semibold text-[#fff];
-}
+  .btn-primary {
+    @apply bg-primary border-primary hover:bg-secondary hover:border-secondary font-semibold text-[#fff];
+  }
 
-.btn-tertiary {
-  @apply text-muted border-none shadow-none hover:text-neutral-900;
-}
+  .btn-tertiary {
+    @apply text-muted border-none shadow-none hover:text-neutral-900;
+  }
 
-.btn-small {
-  @apply px-3 py-1 text-sm;
-}
-.btn-medium {
-  @apply px-8 py-3.5 text-base;
-}
+  .btn-small {
+    @apply px-3 py-1 text-sm;
+  }
+  .btn-medium {
+    @apply px-8 py-3.5 text-base;
+  }
 
-.text-gradient {
-  @apply from-purple via-orange to-yellow bg-gradient-to-br bg-clip-text text-transparent;
+  .text-gradient {
+    @apply from-purple via-orange to-yellow bg-linear-to-br bg-clip-text text-transparent;
+  }
 }
-
 /* 
 MENU 
 */
@@ -210,5 +212,5 @@ MENU
 }
 
 [data-aw-toggle-menu].expanded g > path:last-child {
-  @apply translate-x-[14px] translate-y-[-8px] rotate-45;
+  @apply translate-x-3.5 -translate-y-2 rotate-45;
 }

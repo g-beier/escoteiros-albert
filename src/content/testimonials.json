@@ -2,7 +2,7 @@
   {
     "id": 2,
     "name": "Felipe",
-    "role": "Chefe do Ramo Lobinho",
+    "role": "Pai Lobo - Chefe do Ramo Lobinho",
     "image": "~/assets/images/adultos/felipe.png",
     "content": "Pensei que retornar ao escotismo seria só reviver memórias, mas acabou me dando propósito de novo. Servir e construir um mundo melhor me fez encontrar meu lugar."
   },
@@ -11,7 +11,7 @@
     "name": "Brenda",
     "role": "Chefe do Ramo Escoteiro",
     "image": "~/assets/images/adultos/brenda.png",
-    "content": "Desde antes de perceber, o Movimento Escoteiro já fazia parte de mim. Acompanhava minha irmã até poder entrar em 2007, fazendo promessa em 2008. Vivi todas as etapas: lobinha, escoteira, sênior e pioneira. Em 2018 cheguei ao GEAS, no Clã Highlander, onde encontrei uma nova casa. Em 2021 fiz minha partida já sabendo que meu caminho era a chefia. Hoje, em 2025, sou chefe de seção da tropa escoteira, muito feliz e certa de que o Movimento Escoteiro é parte essencial de quem eu sou."
+    "content": "Desde antes de perceber, o Movimento Escoteiro já fazia parte de mim. Acompanhava minha irmã até poder entrar em 2007, fazendo promessa em 2008. Vivi todas as etapas: lobinha, escoteira, sênior e pioneira. Em 2018 cheguei ao GEAS, no Clã Highlander, onde encontrei uma nova casa. Em 2021 fiz minha partida já sabendo que meu caminho era a chefia.\nHoje, em 2025, sou chefe de seção da tropa escoteira, muito feliz e certa de que o Movimento Escoteiro é parte essencial de quem eu sou."
   },
   {
     "id": 4,
@@ -21,9 +21,16 @@
     "content": "Cheguei no grupo ainda pioneiro e aqui eu conheci uma família, fiz amigos e tive várias oportunidades que definiram quem que sou hoje.\nMinhas principais experiências no escotismo como voluntário foram aqui e faço propaganda do grupo que faço parte!"
   },
   {
+    "id": 5,
+    "name": "Etiane",
+    "role": "Mãe e Chefe Sênior",
+    "image": "~/assets/images/adultos/eti.png",
+    "content": "Voltar pro Movimento Escoteiro foi quase um déjà-vu. Eu já tinha vivido tudo isso como jovem escoteira, mas voltar agora como mãe muda completamente o jogo. Ver meus filhos crescendo no escotismo é quase um alívio. Eu sei que aqui eles encontram algo que a família e a escola não conseguem entregar sozinhas: vivência real.\nVoltei pelos meus filhos. Fiquei porque o escotismo continua fazendo sentido — talvez até mais do que antes."
+  },
+  {
     "id": 12,
     "name": "Maicon",
-    "role": "Chefe e Pai de Escoteiro",
+    "role": "Pai e Chefe Escoteiro",
     "image": "~/assets/images/adultos/maicon.png",
     "content": "Entrei no Escotismo para apoiar meu filho, mas acabei ficando por mim. De pai, me tornei escotista, e o que era para ensiná-lo virou uma lição de vida para mim. O Movimento formou meu filho e me deu um novo olhar sobre liderança e propósito. Uma jornada em família que vale cada segundo"
   },
@@ -37,7 +44,7 @@
   {
     "id": 16,
     "name": "Amanda",
-    "role": "Diretora",
+    "role": "Assistente do Ramo Lobinho",
     "image": "~/assets/images/adultos/amanda.png",
     "content": "Cheguei há pouco tempo ao movimento escoteiro, mesmo não tendo vivido essa experiência quando jovem, percebi como também é legal depois de adulta. Trabalhar na comunicação do grupo é uma forma muito gratificante de contribuir com um voluntariado que faz diferença na vida de muitos jovens e adultos, e isso me motiva a seguir ajudando."
   }

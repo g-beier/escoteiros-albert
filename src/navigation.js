@@ -75,6 +75,7 @@ export const footerData = {
   secondaryLinks: [
     { text: 'Regulamento', href: getAsset('documents/geas05-regulamento.pdf') },
     { text: 'Calendário', href: getAsset('documents/geas03-calendario.pdf') },
+    { text: 'Transparência', href: getPermalink('/transparencia') },
   ],
   socialLinks: [
     { ariaLabel: 'WhatsApp', icon: 'tabler:brand-whatsapp', href: 'https://wa.me/555195794880' },

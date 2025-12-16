@@ -15,6 +15,7 @@ import BasicScripts from '~/components/common/BasicScripts.astro';
 import { ClientRouter } from 'astro:transitions';
 
 import type { MetaData as MetaDataType } from '~/types';
+import Cookies from '~/components/widgets/Cookies.astro';
 
 export interface Props {
   metadata?: MetaDataType;
@@ -42,6 +43,8 @@ const { language, textDirection } = I18N;
 
   <body class="text-default bg-page tracking-tight antialiased">
     <slot />
+
+    <Cookies />
 
     <BasicScripts />
 
