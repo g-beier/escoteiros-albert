@@ -1,7 +1,6 @@
 ---
 import Layout from '@layouts/PageLayout.astro';
 import Content from '~/components/widgets/Content.astro';
-import HeroText from '~/components/widgets/HeroText.astro';
 
 const metadata = {
   title: 'Transparência',
@@ -9,18 +8,16 @@ const metadata = {
 ---
 
 <Layout metadata={metadata}>
-  <HeroText title="Transparência" subtitle="Publicado " />
+  <Content isReversed title="Transparência" subtitle="Publicado" tagline="finanças">
+    <div slot="content">
+      <p>
+        Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere quisquam ut repudiandae porro natus delectus
+        adipisci quidem. Nemo mollitia, placeat sit maxime, commodi hic tenetur id incidunt illum possimus consequatur.
+      </p>
+    </div>
 
-  <Content title="aqui">
-    <Fragment slot="content">
-      <div>
-        <p class="text-right">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere quisquam ut repudiandae porro natus delectus
-          adipisci quidem. Nemo mollitia, placeat sit maxime, commodi hic tenetur id incidunt illum possimus
-          consequatur.
-        </p>
-      </div>
-    </Fragment>
-    <Fragment slot="bg"> <div class="absolute inset-0 bg-[#fff]"></div></Fragment>
+    <div slot="image">espaço da imagem</div>
+
+    <div slot="bg" class="absolute inset-0 bg-[#fff]"></div>
   </Content>
 </Layout>
