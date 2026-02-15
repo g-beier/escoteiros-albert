@@ -16,6 +16,6 @@ A produção começa após atingirmos o mínimo de 80 unidades vendidas e exige 
 
 Os pagamento são via Pix, mas aguarde: entraremos em contato assim que atingirmos um número mínimo de camisetas.
 
-Dúvidas: [(51) 99579-4880](https://wa.me/555195794880) ou geas38rs@gmail.com.
+Dúvidas: [(51) 99579-4880](https://wa.me/555195794880) ou diretoria@escoteirosalbert.com.br.
 
 [Acesse aqui para ver as medidas e fazer o seu pedido.](https://docs.google.com/forms/d/e/1FAIpQLSfIgBNsQO97gPJ1NH4lYq0BaCeYXN3oCCnbKfHnA5nsLnbjEg/viewform?usp=sharing&ouid=104036611384450214815)
