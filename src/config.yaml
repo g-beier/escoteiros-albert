@@ -82,7 +82,7 @@ apps:
 analytics:
   vendors:
     googleAnalytics:
-      id: 'G-5C6WH51JQL' # null or "G-XXXXXXXXXX"
+      id: 'G-MN2SMM9E1D' # null or "G-XXXXXXXXXX"
 
 ui:
   theme: 'light:only' # Values: "system" | "light" | "dark" | "light:only" | "dark:only"
