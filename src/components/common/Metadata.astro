@@ -1,17 +1,13 @@
 ---
 import merge from 'lodash.merge';
-import { AstroSeo } from '@astrolib/seo';
-
-import type { Props as AstroSeoProps } from '@astrolib/seo';
 
 import { SITE, METADATA, I18N } from 'astrowind:config';
 import type { MetaData } from '~/types';
 import { getCanonical } from '~/utils/permalinks';
-
 import { adaptOpenGraphImages } from '~/utils/images';
 
 export interface Props extends MetaData {
-  dontUseTitleTemplate?: boolean;
+  ignoreTitleTemplate?: boolean;
 }
 
 const {
@@ -24,7 +20,7 @@ const {
   twitter = {},
 } = Astro.props;
 
-const seoProps: AstroSeoProps = merge(
+const seoProps = merge(
   {
     title: '',
     titleTemplate: '%s',
@@ -63,6 +59,51 @@ const seoProps: AstroSeoProps = merge(
     twitter: twitter,
   }
 );
+
+const openGraphData = await adaptOpenGraphImages(seoProps.openGraph, Astro.site);
+
+const finalTitle =
+  seoProps.titleTemplate && seoProps.title ? seoProps.titleTemplate.replace('%s', seoProps.title) : seoProps.title;
 ---
 
-<AstroSeo {...{ ...seoProps, openGraph: await adaptOpenGraphImages(seoProps?.openGraph, Astro.site) }} />
+<title>{finalTitle}</title>
+
+<link rel="canonical" href={seoProps.canonical} />
+
+{seoProps.description && <meta name="description" content={seoProps.description} />}
+
+<meta
+  name="robots"
+  content={`${seoProps.noindex ? 'noindex' : 'index'},${seoProps.nofollow ? 'nofollow' : 'follow'}`}
+/>
+
+<!-- Open Graph -->
+<meta property="og:title" content={finalTitle} />
+<meta property="og:type" content={openGraphData?.type || 'website'} />
+<meta property="og:url" content={openGraphData?.url} />
+<meta property="og:site_name" content={openGraphData?.site_name} />
+<meta property="og:locale" content={openGraphData?.locale} />
+
+{seoProps.description && <meta property="og:description" content={seoProps.description} />}
+
+{
+  openGraphData?.images?.map((img: OpenGraphImgage) => (
+    <>
+      <meta property="og:image" content={img.url} />
+      {img.width && <meta property="og:image:width" content={img.width} />}
+      {img.height && <meta property="og:image:height" content={img.height} />}
+      {img.alt && <meta property="og:image:alt" content={img.alt} />}
+    </>
+  ))
+}
+
+<!-- Twitter -->
+<meta name="twitter:card" content={seoProps.twitter?.cardType || 'summary'} />
+
+{seoProps.twitter?.site && <meta name="twitter:site" content={seoProps.twitter.site} />}
+
+<meta name="twitter:title" content={finalTitle} />
+
+{seoProps.description && <meta name="twitter:description" content={seoProps.description} />}
+
+{openGraphData?.images?.[0]?.url && <meta name="twitter:image" content={openGraphData.images[0].url} />}

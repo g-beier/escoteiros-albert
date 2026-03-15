@@ -1,19 +1,38 @@
 import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
-import type { OpenGraph } from '@astrolib/seo';
 
-const load = async function () {
-  let images: Record<string, () => Promise<unknown>> | undefined = undefined;
+type ImageModule = { default: ImageMetadata };
+
+export interface OpenGraphImage {
+  url: string;
+  width?: number;
+  height?: number;
+  alt?: string;
+}
+
+export interface OpenGraph {
+  url?: string;
+  site_name?: string;
+  images?: OpenGraphImage[];
+  locale?: string;
+  type?: string;
+}
+
+const load = async () => {
+  let images: Record<string, () => Promise<ImageModule>> | undefined = undefined;
+
   try {
-    images = import.meta.glob('~/assets/images/**/*.{jpeg,jpg,png,tiff,webp,gif,svg,JPEG,JPG,PNG,TIFF,WEBP,GIF,SVG}');
+    images = import.meta.glob<ImageModule>(
+      '~/assets/images/**/*.{jpeg,jpg,png,tiff,webp,gif,svg,JPEG,JPG,PNG,TIFF,WEBP,GIF,SVG}'
+    );
   } catch (e) {
-    // continue regardless of error
     console.error(e);
   }
+
   return images;
 };
 
-let _images: Record<string, () => Promise<unknown>> | undefined = undefined;
+let _images: Record<string, () => Promise<ImageModule>> | undefined;
 
 /** */
 export const fetchLocalImages = async () => {
@@ -24,18 +43,16 @@ export const fetchLocalImages = async () => {
 /** */
 export const findImage = async (
   imagePath?: string | ImageMetadata | null
-): Promise<string | ImageMetadata | undefined | null> => {
-  // Not string
+): Promise<string | ImageMetadata | null | undefined> => {
   if (typeof imagePath !== 'string') {
     return imagePath;
   }
 
-  // Absolute paths
+  // absolute URLs
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://') || imagePath.startsWith('/')) {
     return imagePath;
   }
 
-  // Relative paths or not "~/assets/"
   if (!imagePath.startsWith('~/assets/images')) {
     return imagePath;
   }
@@ -43,9 +60,12 @@ export const findImage = async (
   const images = await fetchLocalImages();
   const key = imagePath.replace('~/', '/src/');
 
-  return images && typeof images[key] === 'function'
-    ? ((await images[key]()) as { default: ImageMetadata })['default']
-    : null;
+  if (images && typeof images[key] === 'function') {
+    const mod = await images[key]();
+    return mod.default;
+  }
+
+  return null;
 };
 
 /** */
@@ -57,44 +77,39 @@ export const adaptOpenGraphImages = async (
     return openGraph;
   }
 
-  const images = openGraph.images;
   const defaultWidth = 1200;
   const defaultHeight = 626;
 
-  const adaptedImages = await Promise.all(
-    images.map(async (image) => {
-      if (image?.url) {
-        const resolvedImage = (await findImage(image.url)) as ImageMetadata | undefined;
-        if (!resolvedImage) {
-          return {
-            url: '',
-          };
-        }
-
-        const _image = await getImage({
-          src: resolvedImage,
-          alt: 'Placeholder alt',
-          width: image?.width || defaultWidth,
-          height: image?.height || defaultHeight,
-        });
-
-        if (typeof _image === 'object') {
-          return {
-            url: 'src' in _image && typeof _image.src === 'string' ? String(new URL(_image.src, astroSite)) : 'pepe',
-            width: 'width' in _image && typeof _image.width === 'number' ? _image.width : undefined,
-            height: 'height' in _image && typeof _image.height === 'number' ? _image.height : undefined,
-          };
-        }
-        return {
-          url: '',
-        };
+  const adaptedImages: OpenGraphImage[] = await Promise.all(
+    openGraph.images.map(async (image): Promise<OpenGraphImage> => {
+      if (!image?.url) {
+        return { url: '' };
       }
 
+      const resolvedImage = (await findImage(image.url)) as ImageMetadata | string | null | undefined;
+
+      if (!resolvedImage || typeof resolvedImage === 'string') {
+        return { url: resolvedImage || '' };
+      }
+
+      const optimized = await getImage({
+        src: resolvedImage,
+        alt: image.alt ?? 'OpenGraph image',
+        width: image.width || defaultWidth,
+        height: image.height || defaultHeight,
+      });
+
       return {
-        url: '',
+        url: String(new URL(optimized.src, astroSite)),
+        width: optimized.attributes.width as number | undefined,
+        height: optimized.attributes.height as number | undefined,
+        alt: image.alt,
       };
     })
   );
 
-  return { ...openGraph, ...(adaptedImages ? { images: adaptedImages } : {}) };
+  return {
+    ...openGraph,
+    images: adaptedImages,
+  };
 };
