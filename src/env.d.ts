@@ -2,4 +2,4 @@
 /// <reference path="../.astro/types.d.ts" />
 /// <reference types="astro/client" />
 /// <reference types="vite/client" />
-/// <reference path="../vendor/integration/types.d.ts" />
+/// <reference path="./integration/types.d.ts" />

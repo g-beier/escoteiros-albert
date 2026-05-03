@@ -4,7 +4,7 @@ import path from 'path';
 
 import tailwindcss from '@tailwindcss/vite';
 import icon from 'astro-icon';
-import astrowind from './vendor/integration/index.mjs';
+import astrowind from './src/integration/index.mjs';
 import sitemap from '@astrojs/sitemap';
 import mdx from '@astrojs/mdx';
 

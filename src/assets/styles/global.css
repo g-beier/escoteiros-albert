@@ -11,7 +11,7 @@
     'Noto Color Emoji';
   --font-heading: 'Agency', var(--font-sans);
 
-  ---color-gray: var(--color-gray-500);
+  --color-gray: var(--color-gray-500);
   --color-gray-50: hsl(39, 100%, 96%);
   --color-gray-100: hsl(29, 41%, 90%);
   --color-gray-200: hsl(10, 16%, 78%);
@@ -76,7 +76,8 @@
   --color-yellow-900: hsl(29, 100%, 6%);
   --color-yellow-950: hsl(29, 100%, 2%);
 
-  --color-white: var(--color-gray-50);
+  --color-white: hsl(39, 80%, 99%);
+  --color-offwhite: var(--color-gray-50);
   --color-black: var(--color-gray-950);
 
   --color-primary: var(--color-purple-400);
