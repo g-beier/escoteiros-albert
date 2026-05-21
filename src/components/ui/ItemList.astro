@@ -1,0 +1,31 @@
+---
+import { Icon } from 'astro-icon/components';
+
+interface Item {
+  title: string;
+  description?: string;
+  icon?: string;
+}
+
+interface Props {
+  items: Item[];
+}
+
+const { items } = Astro.props;
+---
+
+<ul class="divide-y divide-gray-200 rounded-xl border border-gray-200 bg-white shadow-sm">
+  {
+    items.map(({ title, description, icon = 'tabler:circle-dot' }) => (
+      <li class="flex items-start gap-4 p-5">
+        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Icon name={icon} class="h-5 w-5" />
+        </span>
+        <div>
+          <p class="font-semibold text-gray-900" set:html={title} />
+          {description && <p class="text-sm text-gray-500">{description}</p>}
+        </div>
+      </li>
+    ))
+  }
+</ul>

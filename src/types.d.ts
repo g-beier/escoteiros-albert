@@ -280,6 +280,7 @@ export interface Team extends Omit<Headline, 'classes'>, Widget {
 
 export interface Stats extends Omit<Headline, 'classes'>, Widget {
   stats?: Array<Stat>;
+  footnote?: string;
 }
 
 export interface Pricing extends Omit<Headline, 'classes'>, Widget {

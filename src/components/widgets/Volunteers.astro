@@ -27,36 +27,38 @@ const {
       bg={bg}
     >
       <Headline title={title} subtitle={subtitle} tagline={tagline} />
-      <div class="mx-auto grid gap-8 sm:grid-cols-2 md:gap-y-12 lg:grid-cols-4">
-        {volunteers.map(({ name, title, image }) => {
-          return (
-            <div>
-              <div class="intersect-once intersect-quarter intercept-no-queue motion-safe:md:intersect:animate-fade-up flex max-w-md flex-col motion-safe:md:opacity-0">
-                <div class={`overflow-clip rounded-md ${image ? 'shadow-sm' : ''}`}>
-                  {image ? (
-                    <Image
-                      class="aspect-square w-full rounded-md border-[0.5px] border-black/25 object-cover"
-                      loading="eager"
-                      widths={[300, 700]}
-                      width={700}
-                      sizes="(max-width: 700px) 300px, 700px"
-                      alt={`${name}, ${title} do GEAS`}
-                      src={image}
-                    />
-                  ) : (
-                    <div class="text-primary grid aspect-square h-full place-items-center">
-                      <Icon name="tabler:user" class="h-32 w-32" />
-                    </div>
-                  )}
-                </div>
-                <div class="mt-1">
-                  {name && <h3 class="font-heading text-xl font-bold">{name}</h3>}
-                  {title && <p class={`${name ? 'text-sm' : ''} text-muted`} set:html={title} />}
+      <div class="mx-auto grid gap-8 sm:grid-cols-2 md:gap-y-12 lg:grid-cols-3">
+        {volunteers
+          .sort((a, b) => a.id - b.id)
+          .map(({ name, title, image }) => {
+            return (
+              <div>
+                <div class="intersect-once intersect-quarter intercept-no-queue motion-safe:md:intersect:animate-fade-up flex max-w-md flex-col motion-safe:md:opacity-0">
+                  <div class={`overflow-clip rounded-md ${image ? 'shadow-sm' : ''}`}>
+                    {image ? (
+                      <Image
+                        class="aspect-square w-full rounded-md border-[0.5px] border-black/25 object-cover"
+                        loading="eager"
+                        widths={[300, 700]}
+                        width={700}
+                        sizes="(max-width: 700px) 300px, 700px"
+                        alt={`${name}, ${title} do GEAS`}
+                        src={image}
+                      />
+                    ) : (
+                      <div class="text-primary grid aspect-square h-full place-items-center">
+                        <Icon name="tabler:user" class="h-32 w-32" />
+                      </div>
+                    )}
+                  </div>
+                  <div class="mt-1">
+                    {name && <h3 class="font-heading text-xl font-bold">{name}</h3>}
+                    {title && <p class={`${name ? 'text-sm' : ''} text-muted`} set:html={title} />}
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
     </WidgetWrapper>
   )

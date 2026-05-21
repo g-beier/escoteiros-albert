@@ -2,7 +2,7 @@
   {
     "id": 2,
     "name": "Felipe",
-    "role": "Pai Lobo - Chefe do Ramo Lobinho",
+    "role": "Baloo - Chefe do Ramo Lobinho",
     "image": "~/assets/images/adultos/felipe.png",
     "content": "Pensei que retornar ao escotismo seria só reviver memórias, mas acabou me dando propósito de novo. Servir e construir um mundo melhor me fez encontrar meu lugar."
   },
@@ -44,7 +44,7 @@
   {
     "id": 16,
     "name": "Amanda",
-    "role": "Assistente do Ramo Lobinho",
+    "role": "Bagheera - Chefe do Ramo Lobinho",
     "image": "~/assets/images/adultos/amanda.png",
     "content": "Cheguei há pouco tempo ao movimento escoteiro, mesmo não tendo vivido essa experiência quando jovem, percebi como também é legal depois de adulta. Trabalhar na comunicação do grupo é uma forma muito gratificante de contribuir com um voluntariado que faz diferença na vida de muitos jovens e adultos, e isso me motiva a seguir ajudando."
   }

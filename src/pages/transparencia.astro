@@ -1,23 +1,257 @@
 ---
 import Layout from '@layouts/PageLayout.astro';
-import Content from '~/components/widgets/Content.astro';
+import HeroText from '@components/widgets/HeroText.astro';
+import Stats from '@components/widgets/Stats.astro';
+import Content from '@components/widgets/Content.astro';
+import Steps2 from '@components/widgets/Steps2.astro';
+import FAQs from '@components/widgets/FAQs.astro';
+import CallToAction from '@components/widgets/CallToAction.astro';
+import { getAsset } from '~/utils/permalinks';
+import { Icon } from 'astro-icon/components';
+import ItemList from '~/components/ui/ItemList.astro';
+import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
 
 const metadata = {
   title: 'Transparência',
+  description: 'Prestação de contas e documentos oficiais do Grupo Escoteiro Albert Schweitzer — GEAS 38/RS.',
 };
 ---
 
 <Layout metadata={metadata}>
-  <Content isReversed title="Transparência" subtitle="Publicado" tagline="finanças">
-    <div slot="content">
-      <p>
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere quisquam ut repudiandae porro natus delectus
-        adipisci quidem. Nemo mollitia, placeat sit maxime, commodi hic tenetur id incidunt illum possimus consequatur.
+  <HeroText
+    tagline="GEAS 38/RS"
+    title="Transparência"
+    subtitle={`O Grupo Escoteiro Albert Schweitzer é uma associação sem fins lucrativos.<br/>
+      Aqui você encontra nossas prestações de contas, documentos institucionais<br/>
+      e informações sobre como o grupo é gerido.`}
+  />
+
+  <Stats
+    tagline={`Exercício 2026`}
+    title="O grupo em números"
+    stats={[
+      {
+        amount: '41',
+        title: 'Jovens',
+        icon: 'tabler:users',
+      },
+      {
+        amount: '19',
+        title: 'Voluntários',
+        icon: 'tabler:heart-handshake',
+      },
+    ]}
+    footnote="Dados atualizados em 21.5.2026"
+  />
+
+  <Content id="documentos" tagline="Documentação" title="Documentos institucionais" isReversed>
+    <Fragment slot="content">
+      <p class="mb-6">
+        Associação civil sem fins lucrativos, parceira da Comunidade Martin Luther e filiada à União dos Escoteiros do
+        Brasil. Documentos disponíveis para consulta mediante solicitação à diretoria.
       </p>
-    </div>
+      <div class="flex flex-wrap gap-3">
+        <a
+          href={getAsset('documents/geas-estatuto.pdf')}
+          download="geas-estatuto.pdf"
+          class="border-primary bg-primary hover:bg-primary/90 inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold text-white shadow-sm"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path d="M12 17V3"></path><path d="m6 11 6 6 6-6"></path><path d="M19 21H5"></path></svg
+          >
+          Estatuto
+        </a>
+        <a
+          href={getAsset('documents/geas05-regulamento.pdf')}
+          download="geas-regulamento.pdf"
+          class="border-primary text-primary hover:bg-primary/10 inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold shadow-sm"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path d="M12 17V3"></path><path d="m6 11 6 6 6-6"></path><path d="M19 21H5"></path></svg
+          >
+          Regulamento
+        </a>
+      </div>
+    </Fragment>
 
-    <div slot="image">espaço da imagem</div>
-
-    <div slot="bg" class="absolute inset-0 bg-[#fff]"></div>
+    <Fragment slot="image">
+      <ItemList
+        items={[
+          // {
+          //   title: 'Estatuto Social',
+          //   description: 'Finalidade, estrutura e regras de funcionamento.',
+          //   icon: 'tabler:file-certificate',
+          // },
+          {
+            title: 'CNPJ <span class="font-mono font-normal">64.376.475/0001-60</span>',
+            description: 'Cadastro Nacional da Pessoa Jurídica.',
+            icon: 'tabler:building-bank',
+          },
+          // {
+          //   title: 'Certificado de Funcionamento',
+          //   description: 'Credenciamento junto à UEB e à Região RS.',
+          //   icon: 'tabler:shield-check',
+          // },
+          // {
+          //   title: 'Ata de Eleição da Diretoria',
+          //   description: 'Última assembleia eleitoral, registrada em cartório.',
+          //   icon: 'tabler:notes',
+          // },
+        ]}
+      />
+    </Fragment>
   </Content>
+
+  <!-- <Content id="financas" tagline="Finanças" title={`Prestação de contas 2026`}>
+    <Fragment slot="content">
+      <p class="mb-4">
+        As contas são geridas pela diretoria e fiscalizadas pela Comissão Fiscal, eleita em assembleia. O relatório
+        anual é aprovado em Assembleia Geral Ordinária, no primeiro trimestre do ano seguinte.
+      </p>
+      <p class="mb-6">
+        Em <strong>{2026}</strong>, o grupo registrou receitas de <strong>R$ X.XXX,XX</strong> e despesas de
+        <strong>R$ X.XXX,XX</strong>, encerrando com saldo de <strong>R$ XXX,XX</strong>.
+      </p>
+      <a
+        href={getAsset(`documents/geas-prestacao-contas-2026.pdf`)}
+        download={`geas-prestacao-contas-2026.pdf`}
+        class="border-primary bg-primary hover:bg-primary/90 inline-flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold text-white shadow-sm"
+      >
+        <Icon name="tabler:download" class="h-4 w-4" />
+        Relatório financeiro 2026
+      </a>
+    </Fragment>
+
+    <Fragment slot="image">
+      <ItemList
+        items={[
+          {
+            title: 'Receitas',
+            description: 'Mensalidades, doações, arrecadação em eventos e apoios institucionais.',
+            icon: 'tabler:trending-up',
+          },
+          {
+            title: 'Despesas',
+            description: 'Atividades, materiais educativos, capacitação dos voluntários e despesas administrativas.',
+            icon: 'tabler:trending-down',
+          },
+          {
+            title: 'Resultado do exercício',
+            description: 'Saldo destinado à reserva para atividades do ano seguinte.',
+            icon: 'tabler:scale',
+          },
+          {
+            title: 'Parecer da Comissão Fiscal',
+            description: 'Aprovação das contas em Assembleia Geral Ordinária.',
+            icon: 'tabler:checkup-list',
+          },
+        ]}
+      />
+    </Fragment>
+  </Content> -->
+
+  <WidgetWrapper>
+    <iframe
+      class="border-gray h-[50vh] min-h-60 w-full rounded-md border-4"
+      src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQaCuKIEqC0uPjxQFTmpWA6k0CT2qwuQesnGmcudaxE167Y5UyurJLMfaUGf6AfmE4TdbwNRP6Xksfh/pubhtml?gid=1711792376&single=true&widget=false&headers=false&chrome=false"
+    ></iframe>
+  </WidgetWrapper>
+
+  <!-- <Steps2
+    id="atas"
+    tagline="Registros"
+    title="Atas e relatórios de atividades"
+    subtitle="Registros das principais decisões e das atividades realizadas pelo grupo."
+    items={[
+      {
+        title: `Ata da Assembleia Geral Ordinária 2026`,
+        description: 'Aprovação das contas, eleição de diretoria (quando aplicável) e deliberações gerais.',
+        icon: 'tabler:notes',
+      },
+      {
+        title: `Relatório de Atividades 2026`,
+        description:
+          'Resumo das atividades educativas realizadas em cada ramo: acampamentos, eventos, projetos comunitários.',
+        icon: 'tabler:report',
+      },
+    ]}
+  /> -->
+
+  <FAQs
+    id="governanca"
+    tagline="Governança"
+    title="Como o grupo é gerido"
+    subtitle="Entenda a estrutura de tomada de decisões e fiscalização do GEAS."
+    columns={1}
+    items={[
+      {
+        title: 'Quem dirige o grupo?',
+        description: `A Diretoria de Grupo, eleita em assembleia geral por todos os associados,
+          é responsável pela gestão administrativa e financeira. O mandato tem duração de
+          dois anos, com possibilidade de reeleição.`,
+        icon: 'tabler:chevron-right',
+      },
+      {
+        title: 'Quem fiscaliza as contas?',
+        description: `A Comissão Fiscal, também eleita em assembleia, é independente da diretoria
+          e tem a responsabilidade de examinar os documentos contábeis, emitindo
+          parecer anual sobre as contas do grupo.`,
+        icon: 'tabler:chevron-right',
+      },
+      {
+        title: 'De onde vêm os recursos?',
+        description: `Os recursos do GEAS provêm principalmente das mensalidades dos associados,
+           da arrecadação em eventos, e de doações de famílias e apoiadores. O grupo não
+          recebe repasse regular de verbas públicas.`,
+        icon: 'tabler:chevron-right',
+      },
+      {
+        title: 'Como são definidas as mensalidades?',
+        description: `Os valores são deliberados em assembleia geral, considerando o custo
+          operacional do grupo e a capacidade econômica das famílias. Há política de apoio para situações de vulnerabilidade.`,
+        icon: 'tabler:chevron-right',
+      },
+      {
+        title: 'O grupo tem isenção fiscal?',
+        description: `O GEAS busca o enquadramento como entidade sem fins lucrativos junto
+          aos órgãos competentes. Informações sobre certificações vigentes estão disponíveis
+          mediante solicitação à diretoria.`,
+        icon: 'tabler:chevron-right',
+      },
+    ]}
+  />
+
+  <CallToAction
+    title="Precisa de mais informações?"
+    subtitle="Documentos adicionais, cópias autenticadas ou esclarecimentos sobre a gestão do grupo podem ser solicitados diretamente à diretoria."
+    actions={[
+      {
+        text: 'Entrar em contato',
+        variant: 'primary',
+        icon: 'tabler:mail',
+        href: 'mailto:diretoria@escoteirosalbert.com.br',
+      },
+      {
+        text: 'WhatsApp',
+        icon: 'tabler:brand-whatsapp',
+        href: 'https://wa.me/555195794880',
+      },
+    ]}
+  />
 </Layout>

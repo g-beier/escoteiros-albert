@@ -15,6 +15,10 @@ export const headerData = {
           text: 'Adultos',
           href: getPermalink('/adultos'),
         },
+        {
+          text: 'Transparência',
+          href: getPermalink('/transparencia'),
+        },
         ...(isBlogEnabled && isBlogPostRouteEnabled
           ? [
               {

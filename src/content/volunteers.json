@@ -7,7 +7,21 @@
     "tags": ["diretoria"]
   },
   {
+    "id": 2,
+    "name": "Rosani",
+    "title": "Diretora Financeira",
+    "image": "~/assets/images/adultos/rosani.png",
+    "tags": ["diretoria"]
+  },
+  {
     "id": 3,
+    "name": "Cassio",
+    "title": "Dir. Financeiro Adj.",
+    "image": "~/assets/images/adultos/cassio.png",
+    "tags": ["diretoria"]
+  },
+  {
+    "id": 4,
     "name": "Giba",
     "title": "Diretor de Métodos Educativos",
     "image": "~/assets/images/adultos/giba.png",
@@ -15,57 +29,34 @@
   },
   {
     "id": 5,
-    "name": "Rosani",
-    "title": "Diretora Financeira",
-    "image": "~/assets/images/adultos/rosani.png",
-    "tags": ["diretoria"]
-  },
-  {
-    "id": 24,
-    "name": "Cassio",
-    "title": "Dir. Financeiro Adj.",
-    "image": "~/assets/images/adultos/cassio.png",
-    "tags": ["diretoria"]
-  },
-  {
-    "id": 2,
-    "name": "Tatiana",
-    "title": "Diretora Administrativa",
-    "image": "~/assets/images/adultos/tati.png",
-    "tags": ["diretoria"]
-  },
-  {
-    "id": 25,
-    "name": "Ricardo",
-    "title": "Diretor Financeiro Adj.",
-    "image": "~/assets/images/adultos/old/ricardo-sq.jpg",
-    "tags": ["diretoria"],
-    "active": false
-  },
-  {
-    "id": 4,
     "name": "Amarilda",
     "title": "Diretora de Patrimônio",
     "image": "~/assets/images/adultos/amarilda.png",
     "tags": ["diretoria"]
   },
   {
-    "id": 21,
+    "id": 6,
     "name": "Hermê",
     "title": "Dir. Adj. de Patrimônio",
     "image": "~/assets/images/adultos/herme.png",
     "tags": ["diretoria"]
   },
-
   {
-    "id": 9,
+    "id": 7,
+    "name": "Tatiana",
+    "title": "Diretora Administrativa",
+    "image": "~/assets/images/adultos/tati.png",
+    "tags": ["diretoria"]
+  },
+  {
+    "id": 8,
     "name": "Dodô",
     "title": "Diretor de Relações Institucionais",
     "image": "~/assets/images/adultos/old/dorival.jpg",
     "tags": ["diretoria"]
   },
   {
-    "id": 10,
+    "id": 9,
     "name": "Atenante",
     "title": "Dir. Adj. de Relações Institucionais",
     "image": "~/assets/images/adultos/atenante.png",
@@ -73,14 +64,15 @@
   },
 
   {
-    "id": 26,
+    "id": 10,
     "name": "Kalytsa",
     "title": "Diretora de Comunicação",
     "image": "~/assets/images/adultos/kalytsa.png",
-    "tags": ["diretoria"]
+    "tags": ["diretoria"],
+    "active": false
   },
   {
-    "id": 23,
+    "id": 11,
     "name": "Luiza",
     "title": "Dir. Adj. de Comunicação",
     "tags": ["diretoria"],
@@ -88,21 +80,21 @@
   },
 
   {
-    "id": 11,
+    "id": 12,
     "name": "Naan",
     "title": "Akelá - Chefe de Seção",
     "image": "~/assets/images/adultos/naan.png",
     "tags": ["alcateia"]
   },
   {
-    "id": 8,
+    "id": 13,
     "name": "Amanda",
-    "title": "Assistente",
+    "title": "Bagheera - Assistente",
     "tags": ["alcateia"],
     "image": "~/assets/images/adultos/amanda.png"
   },
   {
-    "id": 13,
+    "id": 14,
     "name": "Márcia",
     "title": "Assistente",
     "image": "~/assets/images/adultos/old/marcia-sq.jpg",
@@ -110,9 +102,9 @@
     "active": false
   },
   {
-    "id": 14,
+    "id": 15,
     "name": "Felipe",
-    "title": "Pai Lobo - Assistente",
+    "title": "Baloo - Assistente",
     "image": "~/assets/images/adultos/felipe.png",
     "tags": ["alcateia"]
   },
@@ -124,23 +116,23 @@
     "tags": ["tropa-escoteira"]
   },
   {
-    "id": 15,
+    "id": 17,
     "name": "Brenda",
     "title": "Assistente",
     "image": "~/assets/images/adultos/brenda.png",
     "tags": ["tropa-escoteira"]
   },
 
-  { "id": 17, "name": "Kim", "title": "Assistente", "tags": ["tropa-escoteira"], "active": false },
+  { "id": 18, "name": "Kim", "title": "Assistente", "tags": ["tropa-escoteira"], "active": false },
   {
-    "id": 22,
+    "id": 19,
     "name": "Maicon",
     "title": "Assistente",
     "tags": ["tropa-escoteira"],
     "image": "~/assets/images/adultos/maicon.png"
   },
   {
-    "id": 12,
+    "id": 20,
     "name": "Marcus",
     "title": "Assistente",
     "image": "~/assets/images/adultos/marcus.png",
@@ -148,21 +140,21 @@
   },
 
   {
-    "id": 19,
+    "id": 21,
     "name": "Flávio",
     "title": "Chefe de Seção",
     "image": "~/assets/images/adultos/flavio.png",
     "tags": ["tropa-sênior"]
   },
   {
-    "id": 6,
+    "id": 22,
     "name": "Etiane",
     "title": "Assistente",
     "image": "~/assets/images/adultos/eti.png",
     "tags": ["tropa-sênior"]
   },
   {
-    "id": 20,
+    "id": 23,
     "name": "Madu",
     "title": "Assistente",
     "image": "~/assets/images/adultos/old/madu-sq.jpg",
@@ -170,42 +162,50 @@
     "active": false
   },
   {
-    "id": 27,
+    "id": 24,
     "name": "Lucas",
     "title": "Assistente",
     "tags": ["tropa-sênior"]
   },
   {
-    "id": 18,
+    "id": 25,
     "name": "Rolf",
     "title": "Membro",
     "tags": ["comissão-fiscal"],
     "image": "~/assets/images/adultos/rolf.png"
   },
   {
-    "id": 7,
+    "id": 26,
     "name": "Leo",
     "title": "Membro",
     "tags": ["comissão-fiscal"]
   },
   {
-    "id": 28,
+    "id": 27,
     "name": "Magda",
     "title": "Presidente de Honra",
     "image": "~/assets/images/adultos/magda.png",
     "tags": ["honorífico"]
   },
   {
-    "id": 29,
+    "id": 28,
     "name": "Ernani",
     "title": "Vice-Presidente de Honra",
     "tags": ["honorífico"]
   },
   {
-    "id": 30,
+    "id": 29,
     "name": "Lourdes",
     "title": "Vice-Presidente de Honra",
     "tags": ["honorífico"]
   },
-  { "id": 31, "name": "Tatiane", "title": "Membro", "tags": ["comissão-fiscal"] }
+  { "id": 30, "name": "Tatiane", "title": "Membro", "tags": ["comissão-fiscal"] },
+  {
+    "id": 31,
+    "name": "Ricardo",
+    "title": "Diretor Financeiro Adj.",
+    "image": "~/assets/images/adultos/old/ricardo-sq.jpg",
+    "tags": ["diretoria"],
+    "active": false
+  }
 ]
