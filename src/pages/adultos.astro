@@ -2,6 +2,7 @@
 import Layout from '@layouts/PageLayout.astro';
 import HeroText from '@components/widgets/HeroText.astro';
 import Volunteers from '@components/widgets/Volunteers.astro';
+import CallToAction from '~/components/widgets/CallToAction.astro';
 import { getCollection } from 'astro:content';
 
 const activeVolunteers = await getCollection('volunteers').then((v) => v.map((v) => v.data).filter((v) => v.active));
@@ -52,5 +53,19 @@ const metadata = {
     subtitle="Adultos que construíram o GEAS que nós conhecemos hoje."
     volunteers={activeVolunteers.filter((v) => v.tags.includes('honorífico'))}
   />
-  <Volunteers title="Comissão Fiscal" volunteers={activeVolunteers.filter((v) => v.tags.includes('comissão-fiscal'))} />
+  <Volunteers
+    title="Comissão Fiscal"
+    subtitle=""
+    volunteers={activeVolunteers.filter((v) => v.tags.includes('comissão-fiscal'))}
+  />
+
+  <CallToAction
+    tagline="Faça parte"
+    title="Sua experiência pode fazer a diferença"
+    subtitle="O Escotismo é construído por adultos voluntários que educam, apoiam e ajudam a criar oportunidades para as novas gerações."
+    actions={[
+      { href: '', text: 'Quero participar', variant: 'primary' },
+      { href: '', text: 'Conheça as funções' },
+    ]}
+  />
 </Layout>

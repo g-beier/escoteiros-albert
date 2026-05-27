@@ -8,37 +8,37 @@
   },
   {
     "id": 2,
-    "name": "Rosani",
-    "title": "Diretora Financeira",
-    "image": "~/assets/images/adultos/rosani.png",
-    "tags": ["diretoria"]
-  },
-  {
-    "id": 3,
-    "name": "Cassio",
-    "title": "Dir. Financeiro Adj.",
-    "image": "~/assets/images/adultos/cassio.png",
-    "tags": ["diretoria"]
-  },
-  {
-    "id": 4,
     "name": "Giba",
     "title": "Diretor de Métodos Educativos",
     "image": "~/assets/images/adultos/giba.png",
     "tags": ["diretoria"]
   },
   {
-    "id": 5,
+    "id": 3,
+    "name": "Rosani",
+    "title": "Diretora Financeira",
+    "image": "~/assets/images/adultos/rosani.png",
+    "tags": ["diretoria"]
+  },
+  {
+    "id": 4,
     "name": "Amarilda",
     "title": "Diretora de Patrimônio",
     "image": "~/assets/images/adultos/amarilda.png",
     "tags": ["diretoria"]
   },
   {
-    "id": 6,
+    "id": 5,
     "name": "Hermê",
     "title": "Dir. Adj. de Patrimônio",
     "image": "~/assets/images/adultos/herme.png",
+    "tags": ["diretoria"]
+  },
+  {
+    "id": 6,
+    "name": "Cassio",
+    "title": "Dir. Financeiro Adj.",
+    "image": "~/assets/images/adultos/cassio.png",
     "tags": ["diretoria"]
   },
   {

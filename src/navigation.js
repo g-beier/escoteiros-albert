@@ -1,6 +1,6 @@
 import { isBlogEnabled, isBlogPostRouteEnabled } from './utils/blog';
 import { isStoreEnabled, isStoreListRouteEnabled } from './utils/store';
-import { getPermalink, getBlogPermalink, getStorePermalink, getAsset } from './utils/permalinks';
+import { getPermalink, getBlogPermalink, getStorePermalink, getAsset, getPostPermalink } from './utils/permalinks';
 
 export const headerData = {
   links: [
@@ -23,7 +23,7 @@ export const headerData = {
           ? [
               {
                 text: 'História',
-                href: getPermalink('historia-geas', 'post'),
+                href: getPostPermalink('historia-geas'),
               },
             ]
           : []),
