@@ -1,9 +1,119 @@
 ---
 import Layout from '@layouts/PageLayout.astro';
+import { twMerge } from 'tailwind-merge';
 import Content from '~/components/widgets/Content.astro';
+import Features2 from '~/components/widgets/Features2.astro';
+import Note from '~/components/widgets/Note.astro';
 const metadata = {
   title: 'Adultos - Conhecendo as funções',
 };
+
+import escotistas from '~/assets/images/escotista.jpg';
+import dirigentes from '~/assets/images/dirigente.jpg';
+
+const commonIconClasses: string =
+  'absolute size-50 opacity-25 group-hover:opacity-20 text-yellow -z-1 group-hover:scale-105 transition-all';
+const panelClasses: string =
+  'group overflow-clip motion-safe:md:opacity-0 intersect-once intersect-quarter intercept-no-queue motion-safe:md:intersect:animate-fade-up';
 ---
 
-<Layout metadata={metadata}> <Content /> </Layout>
+<Layout metadata={metadata}>
+  <Features2
+    tagline="Perfil"
+    title="O Adulto que Necessitamos"
+    subtitle={`O suporte do adulto é fundamental na realização do escotismo.
+              Seja como voluntário ou com a participação ativa da família, o exemplo para os jovens é fundamental.
+              Conheça o que precisa para ser um chefe escoteiro!`}
+    items={[
+      {
+        title: 'Compromisso com os jovens',
+        description:
+          'Coloca o desenvolvimento dos jovens em primeiro lugar, criando experiências educativas, seguras e marcantes.',
+        icon: 'tabler:compass',
+        classes: {
+          panel: panelClasses,
+          icon: twMerge('-top-2 right-0', commonIconClasses),
+        },
+      },
+      {
+        title: 'Exemplo no dia a dia',
+        description: 'Age de acordo com os valores escoteiros, inspirando pelo exemplo dentro e fora das atividades.',
+        icon: 'tabler:medal-2',
+        classes: {
+          panel: panelClasses,
+          icon: twMerge('-top-6 -right-4 rotate-5', commonIconClasses),
+        },
+      },
+      {
+        title: 'Vontade de aprender',
+        description: 'Está aberto a aprender coisas novas, trocar experiências e buscar melhoria contínua.',
+        icon: 'tabler:brain',
+        classes: {
+          panel: panelClasses,
+          icon: twMerge('-top-6 -rotate-6 right-2', commonIconClasses),
+        },
+      },
+      {
+        title: 'Trabalho em equipe',
+        description:
+          'Colabora com outros voluntários, famílias e jovens para construir um ambiente acolhedor e organizado.',
+        icon: 'tabler:users-group',
+        classes: {
+          panel: panelClasses,
+          icon: twMerge('-top-4 -rotate-2 right-0', commonIconClasses),
+        },
+      },
+      {
+        title: 'Responsabilidade',
+        description: 'Cumpre combinados, participa ativamente e assume suas responsabilidades com seriedade.',
+        icon: 'tabler:signature',
+        classes: {
+          panel: panelClasses,
+          icon: twMerge('-top-2 right-4', commonIconClasses),
+        },
+      },
+      {
+        title: 'Participação ativa',
+        description: 'Contribui com presença, dedicação e envolvimento na vida do Grupo Escoteiro.',
+        icon: 'tabler:rocket',
+        classes: {
+          panel: panelClasses,
+          icon: twMerge('-top-6 -right-4', commonIconClasses),
+        },
+      },
+    ]}
+  />
+
+  <Content image={{ src: escotistas, alt: 'Escotistas' }}>
+    <Fragment slot="content">
+      <h3 class="font-heading text-right text-2xl font-semibold">Escotistas</h3>
+      <p class="text-muted mt-2 text-right text-sm">
+        Os escotistas são responsáveis pelas atividades realizadas diretamente com os jovens: acampamentos, jornadas,
+        atividades no sábado à tarde, etc.
+      </p>
+      <p class="text-muted mt-2 text-right text-sm">
+        Cada seção conta com uma equipe de escotistas, liderada pelo <strong>chefe de seção</strong>, em parceria com
+        seus <strong>assistentes</strong> e <strong>instrutores</strong>. Além das atividades, também se reúnem para
+        planejar e acompanham a progressão pessoal dos jovens.
+      </p>
+    </Fragment>
+  </Content>
+
+  <Note />
+
+  <Content isReversed image={{ src: dirigentes, alt: 'Dirigentes em atividade' }}>
+    <Fragment slot="content">
+      <h3 class="font-heading text-2xl font-semibold">Dirigentes</h3>
+      <p class="text-muted mt-2 text-sm">
+        Os dirigentes são os demais voluntários que não trabalham diretamente com os jovens nas atividades, mas garantem
+        que os escotistas tenham os recursos e apoio necessário para as atividades. São responsáveis pelo bom
+        funcionamento e pela gestão do Grupo Escoteiro.
+      </p>
+      <p class="text-muted mt-2 text-sm">
+        A diretoria conta com diversos diretores, responsáveis pelo trabalho financeiro, administrativo, cuidado com
+        materiais e comunicação do Grupo Escoteiro, entre outras qustões. Também são dirigentes os membros da comissão
+        fiscal, órgão de fiscalização e orientação patrimonial e financeira.
+      </p>
+    </Fragment>
+  </Content>
+</Layout>

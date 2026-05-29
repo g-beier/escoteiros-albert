@@ -95,11 +95,9 @@
   },
   {
     "id": 14,
-    "name": "Márcia",
+    "name": "Bernardo",
     "title": "Assistente",
-    "image": "~/assets/images/adultos/old/marcia-sq.jpg",
-    "tags": ["alcateia"],
-    "active": false
+    "tags": ["alcateia"]
   },
   {
     "id": 15,
@@ -110,29 +108,37 @@
   },
   {
     "id": 16,
+    "name": "Márcia",
+    "title": "Assistente",
+    "image": "~/assets/images/adultos/old/marcia-sq.jpg",
+    "tags": ["alcateia"],
+    "active": false
+  },
+  {
+    "id": 17,
     "name": "Vic",
     "title": "Chefe de Seção",
     "image": "~/assets/images/adultos/vic.png",
     "tags": ["tropa-escoteira"]
   },
   {
-    "id": 17,
+    "id": 18,
     "name": "Brenda",
     "title": "Assistente",
     "image": "~/assets/images/adultos/brenda.png",
     "tags": ["tropa-escoteira"]
   },
 
-  { "id": 18, "name": "Kim", "title": "Assistente", "tags": ["tropa-escoteira"], "active": false },
+  { "id": 19, "name": "Kim", "title": "Assistente", "tags": ["tropa-escoteira"], "active": false },
   {
-    "id": 19,
+    "id": 20,
     "name": "Maicon",
     "title": "Assistente",
     "tags": ["tropa-escoteira"],
     "image": "~/assets/images/adultos/maicon.png"
   },
   {
-    "id": 20,
+    "id": 21,
     "name": "Marcus",
     "title": "Assistente",
     "image": "~/assets/images/adultos/marcus.png",
@@ -140,21 +146,21 @@
   },
 
   {
-    "id": 21,
+    "id": 22,
     "name": "Flávio",
     "title": "Chefe de Seção",
     "image": "~/assets/images/adultos/flavio.png",
     "tags": ["tropa-sênior"]
   },
   {
-    "id": 22,
+    "id": 23,
     "name": "Etiane",
     "title": "Assistente",
     "image": "~/assets/images/adultos/eti.png",
     "tags": ["tropa-sênior"]
   },
   {
-    "id": 23,
+    "id": 24,
     "name": "Madu",
     "title": "Assistente",
     "image": "~/assets/images/adultos/old/madu-sq.jpg",
@@ -162,50 +168,50 @@
     "active": false
   },
   {
-    "id": 24,
+    "id": 25,
     "name": "Lucas",
     "title": "Assistente",
     "tags": ["tropa-sênior"]
   },
   {
-    "id": 25,
+    "id": 26,
     "name": "Rolf",
     "title": "Membro",
     "tags": ["comissão-fiscal"],
     "image": "~/assets/images/adultos/rolf.png"
   },
   {
-    "id": 26,
+    "id": 27,
     "name": "Leo",
     "title": "Membro",
     "tags": ["comissão-fiscal"]
   },
   {
-    "id": 27,
+    "id": 28,
     "name": "Magda",
     "title": "Presidente de Honra",
     "image": "~/assets/images/adultos/magda.png",
     "tags": ["honorífico"]
   },
   {
-    "id": 28,
+    "id": 29,
     "name": "Ernani",
     "title": "Vice-Presidente de Honra",
     "tags": ["honorífico"]
   },
   {
-    "id": 29,
+    "id": 30,
     "name": "Lourdes",
     "title": "Vice-Presidente de Honra",
     "tags": ["honorífico"]
   },
-  { "id": 30, "name": "Tatiane", "title": "Membro", "tags": ["comissão-fiscal"] },
+  { "id": 31, "name": "Tatiane", "title": "Membro", "tags": ["comissão-fiscal"] },
   {
-    "id": 31,
+    "id": 32,
     "name": "Ricardo",
-    "title": "Diretor Financeiro Adj.",
+    "title": "",
     "image": "~/assets/images/adultos/old/ricardo-sq.jpg",
-    "tags": ["diretoria"],
+    "tags": [],
     "active": false
   }
 ]
