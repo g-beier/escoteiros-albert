@@ -3,11 +3,9 @@ import Layout from '@layouts/PageLayout.astro';
 import HeroText from '@components/widgets/HeroText.astro';
 import Stats from '@components/widgets/Stats.astro';
 import Content from '@components/widgets/Content.astro';
-import Steps2 from '@components/widgets/Steps2.astro';
 import FAQs from '@components/widgets/FAQs.astro';
 import CallToAction from '@components/widgets/CallToAction.astro';
 import { getAsset } from '~/utils/permalinks';
-import { Icon } from 'astro-icon/components';
 import ItemList from '~/components/ui/ItemList.astro';
 import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
 
@@ -167,10 +165,12 @@ const metadata = {
   </Content> -->
 
   <WidgetWrapper>
-    <iframe
-      class="border-gray h-[50vh] min-h-60 w-full rounded-md border-4"
-      src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQaCuKIEqC0uPjxQFTmpWA6k0CT2qwuQesnGmcudaxE167Y5UyurJLMfaUGf6AfmE4TdbwNRP6Xksfh/pubhtml?gid=1711792376&single=true&widget=false&headers=false&chrome=false"
-    ></iframe>
+    <div class="mx-auto max-w-7xl p-4 md:px-8">
+      <iframe
+        class="border-gray aspect-video w-full rounded-md border-4"
+        src="https://docs.google.com/spreadsheets/d/e/2PACX-1vQaCuKIEqC0uPjxQFTmpWA6k0CT2qwuQesnGmcudaxE167Y5UyurJLMfaUGf6AfmE4TdbwNRP6Xksfh/pubhtml?gid=1711792376&single=true&widget=false&headers=false&chrome=false"
+      ></iframe>
+    </div>
   </WidgetWrapper>
 
   <!-- <Steps2

@@ -1,16 +1,19 @@
 ---
 import Layout from '@layouts/PageLayout.astro';
 import { twMerge } from 'tailwind-merge';
+import CallToAction from '~/components/widgets/CallToAction.astro';
 import Content from '~/components/widgets/Content.astro';
+import FAQs from '~/components/widgets/FAQs.astro';
 import Features2 from '~/components/widgets/Features2.astro';
 import Note from '~/components/widgets/Note.astro';
-const metadata = {
-  title: 'Adultos - Conhecendo as funções',
-};
+import Steps2 from '~/components/widgets/Steps2.astro';
 
 import escotistas from '~/assets/images/escotista.jpg';
 import dirigentes from '~/assets/images/dirigente.jpg';
 
+const metadata = {
+  title: 'Adultos - Conhecendo as funções',
+};
 const commonIconClasses: string =
   'absolute size-50 opacity-25 group-hover:opacity-20 text-yellow -z-1 group-hover:scale-105 transition-all';
 const panelClasses: string =
@@ -33,15 +36,6 @@ const panelClasses: string =
         classes: {
           panel: panelClasses,
           icon: twMerge('-top-2 right-0', commonIconClasses),
-        },
-      },
-      {
-        title: 'Exemplo no dia a dia',
-        description: 'Age de acordo com os valores escoteiros, inspirando pelo exemplo dentro e fora das atividades.',
-        icon: 'tabler:medal-2',
-        classes: {
-          panel: panelClasses,
-          icon: twMerge('-top-6 -right-4 rotate-5', commonIconClasses),
         },
       },
       {
@@ -81,6 +75,15 @@ const panelClasses: string =
           icon: twMerge('-top-6 -right-4', commonIconClasses),
         },
       },
+      {
+        title: 'Exemplo no dia a dia',
+        description: 'Age de acordo com os valores escoteiros, inspirando pelo exemplo dentro e fora das atividades.',
+        icon: 'tabler:medal-2',
+        classes: {
+          panel: panelClasses,
+          icon: twMerge('-top-6 -right-4 rotate-5', commonIconClasses),
+        },
+      },
     ]}
   />
 
@@ -88,13 +91,22 @@ const panelClasses: string =
     <Fragment slot="content">
       <h3 class="font-heading text-right text-2xl font-semibold">Escotistas</h3>
       <p class="text-muted mt-2 text-right text-sm">
-        Os escotistas são responsáveis pelas atividades realizadas diretamente com os jovens: acampamentos, jornadas,
-        atividades no sábado à tarde, etc.
+        Os escotistas são os voluntários responsáveis por acompanhar o desenvolvimento dos jovens por meio do Método
+        Escoteiro. São eles que planejam, organizam e conduzem atividades como reuniões, acampamentos, jornadas,
+        oficinas e desafios, sempre com foco na educação para a vida.
       </p>
+
+      <p class="text-muted mt-2 text-right text-sm">
+        Mais do que coordenar atividades, os escotistas atuam como educadores e mentores, incentivando a autonomia, a
+        liderança, o trabalho em equipe, a cidadania e os valores escoteiros. Seu papel é orientar os jovens em sua
+        jornada de crescimento, respeitando a individualidade e o ritmo de cada um.
+      </p>
+
       <p class="text-muted mt-2 text-right text-sm">
         Cada seção conta com uma equipe de escotistas, liderada pelo <strong>chefe de seção</strong>, em parceria com
-        seus <strong>assistentes</strong> e <strong>instrutores</strong>. Além das atividades, também se reúnem para
-        planejar e acompanham a progressão pessoal dos jovens.
+        seus <strong>assistentes</strong> e <strong>instrutores</strong>. Além das atividades, a equipe se reúne
+        regularmente para planejar o programa educativo, acompanhar a progressão pessoal dos jovens e garantir
+        experiências seguras, desafiadoras e significativas.
       </p>
     </Fragment>
   </Content>
@@ -105,15 +117,121 @@ const panelClasses: string =
     <Fragment slot="content">
       <h3 class="font-heading text-2xl font-semibold">Dirigentes</h3>
       <p class="text-muted mt-2 text-sm">
-        Os dirigentes são os demais voluntários que não trabalham diretamente com os jovens nas atividades, mas garantem
-        que os escotistas tenham os recursos e apoio necessário para as atividades. São responsáveis pelo bom
-        funcionamento e pela gestão do Grupo Escoteiro.
+        Os dirigentes são os voluntários responsáveis pela gestão e sustentação do Grupo Escoteiro. Embora não atuem
+        diretamente nas atividades educativas com os jovens, seu trabalho é essencial para que os escotistas possam
+        desenvolver um programa de qualidade com segurança, organização e os recursos necessários.
       </p>
+
       <p class="text-muted mt-2 text-sm">
-        A diretoria conta com diversos diretores, responsáveis pelo trabalho financeiro, administrativo, cuidado com
-        materiais e comunicação do Grupo Escoteiro, entre outras qustões. Também são dirigentes os membros da comissão
-        fiscal, órgão de fiscalização e orientação patrimonial e financeira.
+        São os dirigentes que cuidam dos bastidores do Escotismo: administração, finanças, patrimônio, comunicação,
+        documentação, relacionamento com famílias, planejamento institucional e apoio às equipes educativas. Sua atuação
+        garante que o Grupo Escoteiro funcione de forma eficiente, transparente e alinhada aos seus objetivos
+        educacionais.
+      </p>
+
+      <p class="text-muted mt-2 text-sm">
+        A <strong>diretoria</strong> é responsável pela gestão financeira e administrativa da unidade, pela manutenção de
+        materiais e espaços, pela comunicação institucional e por diversas outras atividades necessárias ao dia a dia do Grupo
+        Escoteiro. Também integram o quadro de dirigentes os membros da <strong>comissão fiscal</strong>, órgão
+        responsável por acompanhar e orientar a gestão patrimonial e financeira, contribuindo para a transparência e a
+        boa governança da instituição.
       </p>
     </Fragment>
   </Content>
+
+  <Steps2
+    title="Como ingressar como voluntário"
+    subtitle="O processo é simples e acolhedor. Você não precisa ter experiência prévia — apenas disposição para aprender e contribuir."
+    tagline="Primeiros passos"
+    callToAction={{
+      text: 'Fale conosco pelo WhatsApp',
+      href: 'https://wa.me/555195794880',
+      icon: 'tabler:brand-whatsapp',
+      variant: 'secondary',
+    }}
+    items={[
+      {
+        title: 'Entre em contato',
+        description:
+          'Mande uma mensagem pelo WhatsApp ou venha pessoalmente em um sábado de atividades. Apresente-se e conte um pouco sobre você.',
+        icon: 'tabler:message',
+      },
+      {
+        title: 'Conheça o grupo',
+        description:
+          'Participe como observador em algumas reuniões ou acampamentos. Veja como funciona na prática e tire todas as suas dúvidas.',
+        icon: 'tabler:building-community',
+      },
+      {
+        title: 'Realize o Curso de Proteção Infantojuvenil',
+        description:
+          'É obrigatório que todos os adultos associados aos Escoteiros do Brasil realizem um curso breve sobre proteção infantojuvenil.',
+        icon: 'tabler:school',
+      },
+      {
+        title: 'Comece sua jornada',
+        description:
+          'Com o registro efetuado, você passa a integrar oficialmente a equipe de adultos do Grupo, podendo conhecer e experimentar uma função.',
+        icon: 'tabler:rocket',
+      },
+    ]}
+  />
+
+  <FAQs
+    title="Perguntas frequentes"
+    subtitle="Dúvidas comuns de quem quer se tornar voluntário no escotismo."
+    tagline="Tire suas dúvidas"
+    columns={2}
+    items={[
+      {
+        title: 'Preciso ter filhos no grupo para ser voluntário?',
+        description:
+          '<b>Não. Qualquer adulto pode ser voluntário no escotismo</b>, independentemente de ter ou não filhos participando. O que importa é o compromisso com o desenvolvimento dos jovens.',
+        icon: 'tabler:circle-check',
+      },
+      {
+        title: 'Quanto tempo preciso dedicar por semana?',
+        description:
+          'Em geral, os escotistas participam das atividades semanais de sábado e de reuniões de planejamento semanais. Acampamentos e eventos ocorrem em fins de semana específicos ao longo do ano, além de outras reuniões e possíveis cursos.',
+        icon: 'tabler:clock',
+      },
+      {
+        title: 'Preciso ter experiência prévia no escotismo?',
+        description:
+          '<b>Não é obrigatório.</b> Muitos dos nossos voluntários nunca foram escoteiros na infância. A formação inicial e o apoio da equipe preparam qualquer pessoa comprometida para a função.',
+        icon: 'tabler:star',
+      },
+      {
+        title: 'O voluntariado tem algum custo?',
+        description:
+          'O registro anual junto à União dos Escoteiros do Brasil tem um valor simbólico. O Grupo busca apoiar seus voluntários nesse custo sempre que possível. Não há remuneração — é um trabalho de amor.',
+        icon: 'tabler:coin',
+      },
+      {
+        title: 'Posso contribuir sem ser escotista ou dirigente?',
+        description:
+          'Sim! Familiares e amigos podem colaborar pontualmente em atividades, bazares, mutirões e eventos sem necessidade de registro formal. Toda ajuda é bem-vinda.',
+        icon: 'tabler:heart-handshake',
+      },
+      {
+        title: 'Como funciona a formação continuada?',
+        description:
+          'Após o curso inicial, os voluntários têm acesso a cursos presenciais e online pelo Campo Escola Virtual dos Escoteiros do Brasil, além de iniciativas regionais e nacionais. <b>O curso preliminar pode ser realizado mesmo sem registro definitivo.</b>',
+        icon: 'tabler:certificate',
+      },
+    ]}
+  />
+
+  <CallToAction
+    title="Pronto para fazer a diferença?"
+    subtitle="Junte-se à nossa equipe de voluntários e ajude a transformara vida de crianças e jovens por meio do escotismo."
+    actions={[
+      {
+        variant: 'primary',
+        text: 'Fale conosco',
+        href: 'https://wa.me/555195794880',
+        icon: 'tabler:brand-whatsapp',
+      },
+    ]}
+  />
 </Layout>
