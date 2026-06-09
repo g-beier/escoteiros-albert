@@ -243,6 +243,7 @@ export interface Volunteers extends Omit<Headline, 'classes'>, Widget {
   subtitle?: string;
   tagline?: string;
   volunteers?: Array<ItemVolunteer>;
+  lazyLoading?: boolean;
 }
 
 export interface Collapse {

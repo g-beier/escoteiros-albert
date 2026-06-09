@@ -13,6 +13,8 @@ import dirigentes from '~/assets/images/dirigente.jpg';
 
 const metadata = {
   title: 'Adultos - Conhecendo as funções',
+  description:
+    'Saiba como ser voluntário escoteiro em Porto Alegre: funções de escotista e dirigente, etapas de ingresso e perguntas frequentes sobre o voluntariado no G.E. Albert Schweitzer.',
 };
 const commonIconClasses: string =
   'absolute size-50 opacity-25 group-hover:opacity-20 text-yellow -z-1 group-hover:scale-105 transition-all';
@@ -31,7 +33,7 @@ const panelClasses: string =
       {
         title: 'Compromisso com os jovens',
         description:
-          'Coloca o desenvolvimento dos jovens em primeiro lugar, criando experiências educativas, seguras e marcantes.',
+          'Colocar o desenvolvimento dos jovens em primeiro lugar, criando experiências educativas, seguras e marcantes.',
         icon: 'tabler:compass',
         classes: {
           panel: panelClasses,
@@ -40,7 +42,7 @@ const panelClasses: string =
       },
       {
         title: 'Vontade de aprender',
-        description: 'Está aberto a aprender coisas novas, trocar experiências e buscar melhoria contínua.',
+        description: 'Estar aberto a aprender coisas novas, trocar experiências e buscar melhoria contínua.',
         icon: 'tabler:brain',
         classes: {
           panel: panelClasses,
@@ -50,7 +52,7 @@ const panelClasses: string =
       {
         title: 'Trabalho em equipe',
         description:
-          'Colabora com outros voluntários, famílias e jovens para construir um ambiente acolhedor e organizado.',
+          'Colaborar com outros voluntários, famílias e jovens para construir um ambiente acolhedor e organizado.',
         icon: 'tabler:users-group',
         classes: {
           panel: panelClasses,
@@ -59,7 +61,7 @@ const panelClasses: string =
       },
       {
         title: 'Responsabilidade',
-        description: 'Cumpre combinados, participa ativamente e assume suas responsabilidades com seriedade.',
+        description: 'Cumprir combinados, participar ativamente e assumir suas responsabilidades com seriedade.',
         icon: 'tabler:signature',
         classes: {
           panel: panelClasses,
@@ -68,7 +70,7 @@ const panelClasses: string =
       },
       {
         title: 'Participação ativa',
-        description: 'Contribui com presença, dedicação e envolvimento na vida do Grupo Escoteiro.',
+        description: 'Contribuir com presença, dedicação e envolvimento na vida do Grupo Escoteiro.',
         icon: 'tabler:rocket',
         classes: {
           panel: panelClasses,
@@ -77,7 +79,7 @@ const panelClasses: string =
       },
       {
         title: 'Exemplo no dia a dia',
-        description: 'Age de acordo com os valores escoteiros, inspirando pelo exemplo dentro e fora das atividades.',
+        description: 'Agir de acordo com os valores escoteiros, inspirando pelo exemplo dentro e fora das atividades.',
         icon: 'tabler:medal-2',
         classes: {
           panel: panelClasses,
@@ -85,29 +87,32 @@ const panelClasses: string =
         },
       },
     ]}
+    classes={{ items: { description: 'text-balance' } }}
   />
 
   <Content image={{ src: escotistas, alt: 'Escotistas' }}>
     <Fragment slot="content">
       <h3 class="font-heading text-right text-2xl font-semibold">Escotistas</h3>
-      <p class="text-muted mt-2 text-right text-sm">
-        Os escotistas são os voluntários responsáveis por acompanhar o desenvolvimento dos jovens por meio do Método
-        Escoteiro. São eles que planejam, organizam e conduzem atividades como reuniões, acampamentos, jornadas,
-        oficinas e desafios, sempre com foco na educação para a vida.
-      </p>
+      <div class="text-muted mt-2 space-y-2 text-right text-sm text-balance">
+        <p>
+          Os escotistas são os voluntários responsáveis por acompanhar o desenvolvimento dos jovens por meio do Método
+          Escoteiro. São eles que planejam, organizam e conduzem atividades como reuniões, acampamentos, jornadas,
+          oficinas e desafios, sempre com foco na educação para a vida.
+        </p>
 
-      <p class="text-muted mt-2 text-right text-sm">
-        Mais do que coordenar atividades, os escotistas atuam como educadores e mentores, incentivando a autonomia, a
-        liderança, o trabalho em equipe, a cidadania e os valores escoteiros. Seu papel é orientar os jovens em sua
-        jornada de crescimento, respeitando a individualidade e o ritmo de cada um.
-      </p>
+        <p>
+          Mais do que coordenar atividades, os escotistas atuam como educadores e mentores, incentivando a autonomia, a
+          liderança, o trabalho em equipe, a cidadania e os valores escoteiros. Seu papel é orientar os jovens em sua
+          jornada de crescimento, respeitando a individualidade e o ritmo de cada um.
+        </p>
 
-      <p class="text-muted mt-2 text-right text-sm">
-        Cada seção conta com uma equipe de escotistas, liderada pelo <strong>chefe de seção</strong>, em parceria com
-        seus <strong>assistentes</strong> e <strong>instrutores</strong>. Além das atividades, a equipe se reúne
-        regularmente para planejar o programa educativo, acompanhar a progressão pessoal dos jovens e garantir
-        experiências seguras, desafiadoras e significativas.
-      </p>
+        <p>
+          Cada seção conta com uma equipe de escotistas, liderada pelo <strong>chefe de seção</strong>, em parceria com
+          seus <strong>assistentes</strong> e <strong>instrutores</strong>. Além das atividades, a equipe se reúne
+          regularmente para planejar o programa educativo, acompanhar a progressão pessoal dos jovens e garantir
+          experiências seguras, desafiadoras e significativas.
+        </p>
+      </div>
     </Fragment>
   </Content>
 
@@ -116,26 +121,28 @@ const panelClasses: string =
   <Content isReversed image={{ src: dirigentes, alt: 'Dirigentes em atividade' }}>
     <Fragment slot="content">
       <h3 class="font-heading text-2xl font-semibold">Dirigentes</h3>
-      <p class="text-muted mt-2 text-sm">
-        Os dirigentes são os voluntários responsáveis pela gestão e sustentação do Grupo Escoteiro. Embora não atuem
-        diretamente nas atividades educativas com os jovens, seu trabalho é essencial para que os escotistas possam
-        desenvolver um programa de qualidade com segurança, organização e os recursos necessários.
-      </p>
+      <div class="text-muted mt-2 space-y-2 text-sm text-balance">
+        <p>
+          Os dirigentes são os voluntários responsáveis pela gestão e sustentação do Grupo Escoteiro. Embora não atuem
+          diretamente nas atividades educativas com os jovens, seu trabalho é essencial para que os escotistas possam
+          desenvolver um programa de qualidade com segurança, organização e os recursos necessários.
+        </p>
 
-      <p class="text-muted mt-2 text-sm">
-        São os dirigentes que cuidam dos bastidores do Escotismo: administração, finanças, patrimônio, comunicação,
-        documentação, relacionamento com famílias, planejamento institucional e apoio às equipes educativas. Sua atuação
-        garante que o Grupo Escoteiro funcione de forma eficiente, transparente e alinhada aos seus objetivos
-        educacionais.
-      </p>
+        <p>
+          São os dirigentes que cuidam dos bastidores do Escotismo: administração, finanças, patrimônio, comunicação,
+          documentação, relacionamento com famílias, planejamento institucional e apoio às equipes educativas. Sua
+          atuação garante que o Grupo Escoteiro funcione de forma eficiente, transparente e alinhada aos seus objetivos
+          educacionais.
+        </p>
 
-      <p class="text-muted mt-2 text-sm">
-        A <strong>diretoria</strong> é responsável pela gestão financeira e administrativa da unidade, pela manutenção de
-        materiais e espaços, pela comunicação institucional e por diversas outras atividades necessárias ao dia a dia do Grupo
-        Escoteiro. Também integram o quadro de dirigentes os membros da <strong>comissão fiscal</strong>, órgão
-        responsável por acompanhar e orientar a gestão patrimonial e financeira, contribuindo para a transparência e a
-        boa governança da instituição.
-      </p>
+        <p>
+          A <strong>diretoria</strong> é responsável pela gestão financeira e administrativa da unidade, pela manutenção de
+          materiais e espaços, pela comunicação institucional e por diversas outras atividades necessárias ao dia a dia do
+          Grupo Escoteiro. Também integram o quadro de dirigentes os membros da <strong>comissão fiscal</strong>, órgão
+          responsável por acompanhar e orientar a gestão patrimonial e financeira, contribuindo para a transparência e a
+          boa governança da instituição.
+        </p>
+      </div>
     </Fragment>
   </Content>
 
@@ -158,7 +165,8 @@ const panelClasses: string =
       },
       {
         title: 'Conheça o grupo',
-        description: 'Observe um pouco do trabalho em um sábado e tire todas as suas dúvidas.',
+        description:
+          'Observe um pouco do trabalho em um sábado e tire todas as suas dúvidas sobre o voluntariado, o escotismo ou o Albert.',
         icon: 'tabler:building-community',
       },
       {
@@ -215,7 +223,7 @@ const panelClasses: string =
       {
         title: 'Como funciona a formação continuada?',
         description:
-          'Após o curso inicial, os voluntários têm acesso a cursos presenciais e online pelo Campo Escola Virtual dos Escoteiros do Brasil, além de iniciativas regionais e nacionais. <b>O curso preliminar pode ser realizado mesmo sem registro definitivo.</b>',
+          'Após o curso inicial, os voluntários têm acesso a cursos presenciais e online pelo Campo Escola Virtual dos Escoteiros do Brasil, além de iniciativas regionais e nacionais. <b>O curso preliminar pode ser realizado mesmo sem o registro institucional.</b>',
         icon: 'tabler:certificate',
       },
     ]}

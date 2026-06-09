@@ -8,6 +8,8 @@ import { getCollection } from 'astro:content';
 const activeVolunteers = await getCollection('volunteers').then((v) => v.map((v) => v.data).filter((v) => v.active));
 const metadata = {
   title: 'Adultos',
+  description:
+    'Conheça os voluntários adultos do Grupo Escoteiro Albert Schweitzer — escotistas e dirigentes que mantêm o Albert funcionando em Porto Alegre/RS.',
 };
 ---
 
@@ -25,35 +27,41 @@ const metadata = {
   />
 
   <Volunteers
+    lazyLoading
     title="Alcateia Schweitzer"
     tagline="Ramo Lobinho - 6,5 a 10 anos"
     volunteers={activeVolunteers.filter((v) => v.tags.includes('alcateia'))}
   />
 
   <Volunteers
+    lazyLoading
     title="Tropa Escoteira Albert Schweitzer"
     tagline="Ramo Escoteiro - 10 a 14 anos"
     volunteers={activeVolunteers.filter((v) => v.tags.includes('tropa-escoteira'))}
   />
 
   <Volunteers
+    lazyLoading
     title="Tropa Sênior Kilimanjaro"
     tagline="Ramo Sênior - 14 a 17 anos"
     volunteers={activeVolunteers.filter((v) => v.tags.includes('tropa-sênior'))}
   />
 
   <Volunteers
+    lazyLoading
     title="Clã Highlander"
     tagline="Ramo Pioneiro - 18 a 21 anos"
     volunteers={activeVolunteers.filter((v) => v.tags.includes('clã-pioneiro'))}
   />
 
   <Volunteers
+    lazyLoading
     title="Honoríficos"
     subtitle="Adultos que construíram o GEAS que nós conhecemos hoje."
     volunteers={activeVolunteers.filter((v) => v.tags.includes('honorífico'))}
   />
   <Volunteers
+    lazyLoading
     title="Comissão Fiscal"
     subtitle=""
     volunteers={activeVolunteers.filter((v) => v.tags.includes('comissão-fiscal'))}

@@ -159,8 +159,8 @@ const currentPath = `/${trimSlash(new URL(Astro.url).pathname)}`;
           {
             showSocial && (
               <>
-                {socialLinks.map(({ icon, href, text, ariaLabel }) => (
-                  <SocialLink ariaLabel={ariaLabel} href={href} text={text} icon={icon} />
+                {socialLinks.map(({ icon, href, text, label }) => (
+                  <SocialLink ariaLabel={label} href={href} text={text} icon={icon} />
                 ))}
               </>
             )

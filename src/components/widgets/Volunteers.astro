@@ -11,6 +11,8 @@ const {
   tagline = '',
   volunteers = [],
 
+  lazyLoading = false,
+
   id,
   isDark = false,
   classes = {},
@@ -30,7 +32,7 @@ const {
       <div class="mx-auto grid gap-8 sm:grid-cols-2 md:gap-y-12 lg:grid-cols-3">
         {volunteers
           .sort((a, b) => a.id - b.id)
-          .map(({ name, title, image }) => {
+          .map(({ name, title, image }, index) => {
             return (
               <div>
                 <div class="intersect-once intersect-quarter intercept-no-queue motion-safe:md:intersect:animate-fade-up flex max-w-md flex-col motion-safe:md:opacity-0">
@@ -38,7 +40,7 @@ const {
                     {image ? (
                       <Image
                         class="aspect-square w-full rounded-md border-[0.5px] border-black/25 object-cover"
-                        loading="eager"
+                        loading={lazyLoading || index > 2 ? 'lazy' : 'eager'}
                         widths={[300, 700]}
                         width={700}
                         sizes="(max-width: 700px) 300px, 700px"
