@@ -108,6 +108,24 @@ const volunteerCollection = defineCollection({
     }),
 });
 
+const podcastCollection = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/podcast' }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      slug: z.string().optional(),
+      episode: z.number(),
+      published: z.date(),
+      duration: z.string().optional(),
+      audio: z.string(),
+      summary: z.string().optional(),
+      image: image().optional(),
+      draft: z.boolean().optional(),
+
+      metadata: metadataDefinition(),
+    }),
+});
+
 const testimonialCollection = defineCollection({
   loader: file('./src/content/testimonials.json'),
   schema: ({ image }) =>
@@ -123,6 +141,7 @@ const testimonialCollection = defineCollection({
 export const collections = {
   post: postCollection,
   store: storeCollection,
+  podcast: podcastCollection,
   volunteers: volunteerCollection,
   testimonials: testimonialCollection,
 };

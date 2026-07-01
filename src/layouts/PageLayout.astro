@@ -3,6 +3,7 @@ import Layout from '~/layouts/Layout.astro';
 import Header from '~/components/widgets/Header.astro';
 import Footer from '~/components/widgets/Footer.astro';
 import Announcement from '~/components/widgets/Announcement.astro';
+import PodcastPlayer from '~/components/podcast/PodcastPlayer.astro';
 
 import { headerData, footerData } from '~/navigation';
 
@@ -22,13 +23,16 @@ const { metadata } = Astro.props;
   <slot name="announcement">
     <Announcement />
   </slot>
-  <slot name="header">
-    <Header {...headerData} isSticky showSocial transition:persist />
-  </slot>
-  <main>
-    <slot />
-  </main>
-  <slot name="footer">
-    <Footer {...footerData} transition:persist />
-  </slot>
+  <div class="isolate">
+    <slot name="header">
+      <Header {...headerData} isSticky showSocial transition:persist />
+    </slot>
+    <main class="isolate">
+      <slot />
+    </main>
+    <slot name="footer">
+      <Footer {...footerData} transition:persist />
+    </slot>
+  </div>
+  <PodcastPlayer />
 </Layout>

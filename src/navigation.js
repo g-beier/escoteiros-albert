@@ -1,6 +1,19 @@
 import { isBlogEnabled, isBlogPostRouteEnabled } from './utils/blog';
 import { isStoreEnabled, isStoreListRouteEnabled } from './utils/store';
-import { getPermalink, getBlogPermalink, getStorePermalink, getAsset, getPostPermalink } from './utils/permalinks';
+import {
+  getPermalink,
+  getBlogPermalink,
+  getStorePermalink,
+  getPodcastPermalink,
+  getAsset,
+  getPostPermalink,
+} from './utils/permalinks';
+
+export const WHATSAPP_URL = 'https://wa.me/555195794880';
+export const FACEBOOK_URL = 'https://www.facebook.com/Geas38rs';
+export const INSTAGRAM_URL = 'https://www.instagram.com/escoteirosalbert/';
+const PODCAST_URL = getPodcastPermalink();
+const PODCAST_RSS_URL = getAsset('podcast/rss.xml');
 
 export const headerData = {
   links: [
@@ -40,9 +53,10 @@ export const headerData = {
     ...(isStoreEnabled && isStoreListRouteEnabled ? [{ text: 'Lojinha', href: getStorePermalink() }] : []),
   ],
   socialLinks: [
-    { label: 'WhatsApp', icon: 'tabler:brand-whatsapp', href: 'https://wa.me/555195794880' },
-    { label: 'Facebook', icon: 'tabler:brand-facebook', href: 'https://www.facebook.com/Geas38rs' },
-    { label: 'Instagram', icon: 'tabler:brand-instagram', href: 'https://www.instagram.com/escoteirosalbert/' },
+    { label: 'WhatsApp', icon: 'tabler:brand-whatsapp', href: WHATSAPP_URL },
+    { label: 'Facebook', icon: 'tabler:brand-facebook', href: FACEBOOK_URL },
+    { label: 'Instagram', icon: 'tabler:brand-instagram', href: INSTAGRAM_URL },
+    { label: 'RSS do Podcast', icon: 'tabler:rss', href: PODCAST_RSS_URL },
   ],
   // actions: [{ text: 'Download', href: 'https://github.com/onwidget/astrowind', target: '_blank' }],
 };
@@ -52,14 +66,16 @@ export const footerData = {
     {
       title: 'Redes Sociais',
       links: [
-        { text: 'WhatsApp', href: 'https://wa.me/555195794880' },
-        { text: 'Facebook do GEAS', href: 'https://www.facebook.com/Geas38rs' },
-        { text: 'Instagram do GEAS', href: 'https://www.instagram.com/escoteirosalbert/' },
+        { text: 'WhatsApp', href: WHATSAPP_URL },
+        { text: 'Facebook do GEAS', href: FACEBOOK_URL },
+        { text: 'Instagram do GEAS', href: INSTAGRAM_URL },
+        { text: 'RSS do Podcast', href: PODCAST_RSS_URL },
       ],
     },
     {
       title: 'Links úteis',
       links: [
+        { text: 'Podcast do Albert', href: PODCAST_URL },
         { text: 'Escoteiros do Brasil', href: 'https://www.escoteiros.org.br/' },
         { text: 'Loja Escoteira', href: 'https://loja.escoteiros.org.br/' },
         { text: 'EscoteirosRS', href: 'https://www.escoteirosrs.org.br/' },
@@ -82,9 +98,10 @@ export const footerData = {
     { text: 'Regulamento', href: getAsset('documents/geas05-regulamento.pdf') },
   ],
   socialLinks: [
-    { ariaLabel: 'WhatsApp', icon: 'tabler:brand-whatsapp', href: 'https://wa.me/555195794880' },
-    { ariaLabel: 'Facebook', icon: 'tabler:brand-facebook', href: 'https://www.facebook.com/Geas38rs' },
-    { ariaLabel: 'Instagram', icon: 'tabler:brand-instagram', href: 'https://www.instagram.com/escoteirosalbert/' },
+    { ariaLabel: 'WhatsApp', icon: 'tabler:brand-whatsapp', href: WHATSAPP_URL },
+    { ariaLabel: 'Facebook', icon: 'tabler:brand-facebook', href: FACEBOOK_URL },
+    { ariaLabel: 'Instagram', icon: 'tabler:brand-instagram', href: INSTAGRAM_URL },
+    { ariaLabel: 'RSS do Podcast', icon: 'tabler:rss', href: PODCAST_RSS_URL },
   ],
   // footNote: `Produzido por <a class="text-muted underline" href="https://onwidget.com/"> onWidget</a> · Todos direitos reservados · `,
 };

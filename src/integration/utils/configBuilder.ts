@@ -9,6 +9,7 @@ type Config = {
   apps?: {
     blog?: AppBlogConfig;
     store?: AppStoreConfig;
+    podcast?: AppPodcastConfig;
   };
   ui?: unknown;
   analytics?: unknown;
@@ -82,6 +83,26 @@ export interface AppBlogConfig {
     };
   };
   tag: {
+    isEnabled: boolean;
+    pathname: string;
+    robots: {
+      index: boolean;
+      follow: boolean;
+    };
+  };
+}
+export interface AppPodcastConfig {
+  isEnabled: boolean;
+  episodesPerPage: number;
+  episode: {
+    isEnabled: boolean;
+    permalink: string;
+    robots: {
+      index: boolean;
+      follow: boolean;
+    };
+  };
+  list: {
     isEnabled: boolean;
     pathname: string;
     robots: {
@@ -216,6 +237,32 @@ const getAppStore = (config: Config) => {
   return merge({}, _default, config?.apps?.store ?? {}) as AppStoreConfig;
 };
 
+const getAppPodcast = (config: Config) => {
+  const _default = {
+    isEnabled: false,
+    episodesPerPage: 6,
+
+    episode: {
+      isEnabled: true,
+      permalink: '/podcast/%slug%',
+      robots: {
+        index: true,
+        follow: true,
+      },
+    },
+    list: {
+      isEnabled: true,
+      pathname: 'podcast',
+      robots: {
+        index: true,
+        follow: true,
+      },
+    },
+  };
+
+  return merge({}, _default, config?.apps?.podcast ?? {}) as AppPodcastConfig;
+};
+
 const getUI = (config: Config) => {
   const _default = {
     theme: 'system',
@@ -243,6 +290,7 @@ export default (config: Config) => ({
   METADATA: getMetadata(config),
   APP_BLOG: getAppBlog(config),
   APP_STORE: getAppStore(config),
+  APP_PODCAST: getAppPodcast(config),
   UI: getUI(config),
   ANALYTICS: getAnalytics(config),
 });

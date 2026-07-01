@@ -1,12 +1,12 @@
 import slugify from 'limax';
 
-import { SITE, APP_BLOG, APP_STORE } from 'astrowind:config';
+import { SITE, APP_BLOG, APP_STORE, APP_PODCAST } from 'astrowind:config';
 
 import { trim } from '~/utils/utils';
 
 /** Describes the object-based href options */
 interface LinkDescriptor {
-  type: 'home' | 'blog' | 'store' | 'asset' | 'category' | 'tag' | 'post' | 'product' | 'page';
+  type: 'home' | 'blog' | 'store' | 'podcast' | 'asset' | 'category' | 'tag' | 'post' | 'product' | 'episode' | 'page';
   url?: string;
 }
 
@@ -32,9 +32,11 @@ export const CATEGORY_BASE = cleanSlug(APP_BLOG?.category?.pathname);
 export const TAG_BASE = cleanSlug(APP_BLOG?.tag?.pathname) || 'tag';
 
 export const STORE_BASE = cleanSlug(APP_STORE?.list?.pathname);
+export const PODCAST_BASE = cleanSlug(APP_PODCAST?.list?.pathname);
 
 export const POST_PERMALINK_PATTERN = trimSlash(APP_BLOG?.post?.permalink || `${BLOG_BASE}/%slug%`);
 export const STORE_PERMALINK_PATTERN = trimSlash(APP_STORE?.post?.permalink || `${STORE_BASE}/%slug%`);
+export const EPISODE_PERMALINK_PATTERN = trimSlash(APP_PODCAST?.episode?.permalink || `${PODCAST_BASE}/%slug%`);
 
 /** */
 export const getCanonical = (path = ''): string | URL => {
@@ -74,6 +76,10 @@ export const getPermalink = (slug = '', type = 'page'): string => {
       permalink = getStorePermalink();
       break;
 
+    case 'podcast':
+      permalink = getPodcastPermalink();
+      break;
+
     case 'asset':
       permalink = getAsset(slug);
       break;
@@ -94,6 +100,10 @@ export const getPermalink = (slug = '', type = 'page'): string => {
       permalink = createPath(trimSlash(slug));
       break;
 
+    case 'episode':
+      permalink = createPath(trimSlash(slug));
+      break;
+
     case 'page':
     default:
       permalink = createPath(slug);
@@ -111,9 +121,15 @@ export const getPostPermalink = (slug: string): string =>
   getPermalink(POST_PERMALINK_PATTERN.replace('%slug%', cleanSlug(slug)), 'post');
 
 /** */
+export const getEpisodePermalink = (slug: string): string =>
+  getPermalink(EPISODE_PERMALINK_PATTERN.replace('%slug%', cleanSlug(slug)), 'episode');
+
+/** */
 export const getBlogPermalink = (): string => getPermalink(BLOG_BASE);
 /** */
 export const getStorePermalink = (): string => getPermalink(STORE_BASE);
+/** */
+export const getPodcastPermalink = (): string => getPermalink(PODCAST_BASE);
 
 /** */
 export const getAsset = (path: string): string =>

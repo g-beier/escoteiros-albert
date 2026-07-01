@@ -63,6 +63,22 @@ apps:
     isRelatedPostsEnabled: true
     relatedPostsCount: 4
 
+  podcast:
+    isEnabled: true
+    episodesPerPage: 10
+
+    episode:
+      isEnabled: true
+      permalink: 'podcast/%slug%' # Variables: %slug%, %year%, %month%, %day%, %hour%, %minute%, %second%
+      robots:
+        index: true
+
+    list:
+      isEnabled: true
+      pathname: 'podcast' # Podcast main path, you can change this to "episodios" (/episodios)
+      robots:
+        index: true
+
   store:
     isEnabled: false
     itemsPerPage: 18

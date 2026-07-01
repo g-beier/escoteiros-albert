@@ -77,6 +77,46 @@ export interface Product {
   /**  */
   metadata?: MetaData;
 }
+export interface Episode {
+  /** A unique ID number that identifies an episode. */
+  id: string;
+
+  /** An episode's unique slug – part of the episode's URL based on its name. */
+  slug: string;
+
+  /**  */
+  permalink: string;
+
+  /**  */
+  episode: number;
+
+  /**  */
+  published: Date;
+
+  /**  */
+  duration?: string;
+
+  /** Path to the audio file. */
+  audio: string;
+
+  /**  */
+  title: string;
+  /** Optional summary of episode content. */
+  summary?: string;
+  /**  */
+  image?: ImageMetadata | string;
+
+  /**  */
+  metadata?: MetaData;
+
+  /**  */
+  draft?: boolean;
+
+  /**  */
+  Content?: AstroComponentFactory;
+  content?: string;
+}
+
 export interface Taxonomy {
   slug: string;
   title: string;

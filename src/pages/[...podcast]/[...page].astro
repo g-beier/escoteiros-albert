@@ -1,0 +1,40 @@
+---
+import type { InferGetStaticPropsType, GetStaticPaths } from 'astro';
+
+import Layout from '~/layouts/PageLayout.astro';
+import Headline from '~/components/blog/Headline.astro';
+import PodcastList from '~/components/podcast/List.astro';
+import Pagination from '~/components/blog/Pagination.astro';
+
+import { podcastListRobots, getStaticPathsPodcastList } from '~/utils/podcast';
+
+export const prerender = true;
+
+export const getStaticPaths = (async ({ paginate }) => {
+  return await getStaticPathsPodcastList({ paginate });
+}) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { page } = Astro.props as Props;
+const currentPage = page.currentPage ?? 1;
+
+const metadata = {
+  title: `Podcast${currentPage > 1 ? ` — Página ${currentPage}` : ''}`,
+  robots: {
+    index: podcastListRobots?.index && currentPage === 1,
+    follow: podcastListRobots?.follow,
+  },
+};
+---
+
+<Layout metadata={metadata}>
+  <Fragment slot="head">
+    <link rel="alternate" type="application/rss+xml" title="Podcast do Albert" href="/podcast/rss.xml" />
+  </Fragment>
+  <section class="mx-auto max-w-4xl px-6 py-12 sm:px-6 sm:py-16 lg:py-20">
+    <Headline subtitle="Conversas e histórias do Grupo Escoteiro Albert Schweitzer">Podcast do Albert</Headline>
+    <PodcastList episodes={page.data} />
+    <Pagination prevUrl={page.url.prev} nextUrl={page.url.next} />
+  </section>
+</Layout>
