@@ -5,6 +5,9 @@ import Layout from '~/layouts/PageLayout.astro';
 import BlogList from '~/components/blog/List.astro';
 import Headline from '~/components/blog/Headline.astro';
 import Pagination from '~/components/blog/Pagination.astro';
+import Circle from '~/components/ui/shapes/Circle.astro';
+import Triangle from '~/components/ui/shapes/Triangle.astro';
+import Square from '~/components/ui/shapes/Square.astro';
 // import PostTags from "~/components/blog/Tags.astro";
 
 import { blogListRobots, getStaticPathsBlogList } from '~/utils/blog';
@@ -36,15 +39,65 @@ const metadata = {
 ---
 
 <Layout metadata={metadata}>
-  <section class="mx-auto max-w-4xl px-6 py-12 sm:px-6 sm:py-16 lg:py-20">
-    <Headline subtitle="Notícias, artigos e um pouco de tudo que acontece no Grupo Escoteiro">
-      Blog do Albert
-    </Headline>
-    <BlogList posts={page.data} />
-    <Pagination prevUrl={page.url.prev} nextUrl={page.url.next} />
-    <!--
-      <PostTags tags={allCategories} class="mb-2" title="Search by Categories:" isCategory />
-      <PostTags tags={allTags}  title="Search by Tags:" />
-    -->
+  <section class="relative not-prose">
+    <!-- Decorative shapes spanning the whole list; slow scroll parallax makes them lag well behind the posts -->
+    <div
+      data-blog-shapes
+      class="pointer-events-none absolute inset-0 -z-10 hidden overflow-hidden lg:block"
+      aria-hidden="true"
+    >
+      <Circle class="blog-shape-parallax text-orange absolute top-[4%] left-2 size-24 xl:left-8" />
+      <Triangle class="blog-shape-parallax text-green absolute top-[14%] right-3 size-16 rotate-12 xl:right-10" />
+      <Square class="blog-shape-parallax text-purple absolute top-[26%] right-6 size-14 -rotate-12 xl:right-16" />
+      <Circle class="blog-shape-parallax text-yellow absolute top-[38%] left-4 size-20 xl:left-12" />
+      <Triangle class="blog-shape-parallax text-orange absolute top-[50%] left-6 -rotate-6 size-16 xl:left-16" />
+      <Square class="blog-shape-parallax text-green absolute top-[62%] right-4 size-16 rotate-6 xl:right-12" />
+      <Circle class="blog-shape-parallax text-purple absolute top-[74%] left-3 size-20 xl:left-10" />
+      <Triangle class="blog-shape-parallax text-yellow absolute top-[86%] right-5 -rotate-12 size-14 xl:right-14" />
+      <Square class="blog-shape-parallax text-orange absolute top-[96%] left-5 rotate-12 size-14 xl:left-14" />
+    </div>
+
+    <div class="bg-page/90 relative mx-auto max-w-4xl px-6 py-12 backdrop-blur-sm sm:px-6 sm:py-16 lg:py-20">
+      <Headline subtitle="Notícias, artigos e um pouco de tudo que acontece no Grupo Escoteiro">
+        Blog do Albert
+      </Headline>
+      <BlogList posts={page.data} />
+      <Pagination prevUrl={page.url.prev} nextUrl={page.url.next} />
+      <!--
+        <PostTags tags={allCategories} class="mb-2" title="Search by Categories:" isCategory />
+        <PostTags tags={allTags}  title="Search by Tags:" />
+      -->
+    </div>
   </section>
 </Layout>
+
+<script>
+  function initBlogShapesParallax() {
+    const wrapper = document.querySelector('[data-blog-shapes]');
+    if (!wrapper) return;
+
+    const shapes = wrapper.querySelectorAll('.blog-shape-parallax');
+    // Fractions of scroll speed — well below 1 so shapes lag noticeably behind the posts scrolling past.
+    const speeds = [0.18, 0.12, 0.22, 0.08, 0.16, 0.1, 0.2, 0.14, 0.09];
+
+    let ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const scrollY = window.scrollY;
+        shapes.forEach((shape, i) => {
+          const speed = speeds[i % speeds.length];
+          (shape as HTMLElement).style.transform = `translateY(${scrollY * speed}px)`;
+        });
+        ticking = false;
+      });
+    }
+
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+
+  initBlogShapesParallax();
+  document.addEventListener('astro:after-swap', initBlogShapesParallax);
+</script>
