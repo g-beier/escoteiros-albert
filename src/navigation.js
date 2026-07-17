@@ -1,4 +1,5 @@
 import { isBlogEnabled, isBlogPostRouteEnabled } from './utils/blog';
+import { isPodcastEnabled } from './utils/podcast';
 import { isStoreEnabled, isStoreListRouteEnabled } from './utils/store';
 import {
   getPermalink,
@@ -56,7 +57,7 @@ export const headerData = {
     { label: 'WhatsApp', icon: 'tabler:brand-whatsapp', href: WHATSAPP_URL },
     { label: 'Facebook', icon: 'tabler:brand-facebook', href: FACEBOOK_URL },
     { label: 'Instagram', icon: 'tabler:brand-instagram', href: INSTAGRAM_URL },
-    { label: 'RSS do Podcast', icon: 'tabler:rss', href: PODCAST_RSS_URL },
+    ...(isPodcastEnabled ? [{ label: 'RSS do Podcast', icon: 'tabler:rss', href: PODCAST_RSS_URL }] : []),
   ],
   // actions: [{ text: 'Download', href: 'https://github.com/onwidget/astrowind', target: '_blank' }],
 };
@@ -69,13 +70,13 @@ export const footerData = {
         { text: 'WhatsApp', href: WHATSAPP_URL },
         { text: 'Facebook do GEAS', href: FACEBOOK_URL },
         { text: 'Instagram do GEAS', href: INSTAGRAM_URL },
-        { text: 'RSS do Podcast', href: PODCAST_RSS_URL },
+        ...(isPodcastEnabled ? [{ text: 'RSS do Podcast', href: PODCAST_RSS_URL }] : []),
       ],
     },
     {
       title: 'Links úteis',
       links: [
-        { text: 'Podcast do Albert', href: PODCAST_URL },
+        ...(isPodcastEnabled ? [{ text: 'Podcast do Albert', href: PODCAST_URL }] : []),
         { text: 'Escoteiros do Brasil', href: 'https://www.escoteiros.org.br/' },
         { text: 'Loja Escoteira', href: 'https://loja.escoteiros.org.br/' },
         { text: 'EscoteirosRS', href: 'https://www.escoteirosrs.org.br/' },
@@ -101,7 +102,7 @@ export const footerData = {
     { ariaLabel: 'WhatsApp', icon: 'tabler:brand-whatsapp', href: WHATSAPP_URL },
     { ariaLabel: 'Facebook', icon: 'tabler:brand-facebook', href: FACEBOOK_URL },
     { ariaLabel: 'Instagram', icon: 'tabler:brand-instagram', href: INSTAGRAM_URL },
-    { ariaLabel: 'RSS do Podcast', icon: 'tabler:rss', href: PODCAST_RSS_URL },
+    ...(isPodcastEnabled ? [{ ariaLabel: 'RSS do Podcast', icon: 'tabler:rss', href: PODCAST_RSS_URL }] : []),
   ],
-  // footNote: `Produzido por <a class="text-muted underline" href="https://onwidget.com/"> onWidget</a> · Todos direitos reservados · `,
+  footNote: `Última atualização: ${new Date().toLocaleDateString('pt-BR', { dateStyle: 'full' })}`,
 };

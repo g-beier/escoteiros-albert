@@ -1,22 +1,22 @@
 ---
-// import { getPermalink } from '~/utils/permalinks';
+import { getPostPermalink } from '~/utils/permalinks';
 ---
 
 <div
   id="announcement"
   class="text-muted relative hidden gap-1 truncate border-b border-yellow-300 bg-yellow-300/40 px-3 py-2 text-sm whitespace-nowrap"
 >
-  <span class="mr-0.5 inline-block bg-yellow-400 px-1 py-0.5 text-xs text-yellow-50 rtl:mr-0 rtl:ml-0.5"> 13/12 </span>
+  <span class="mr-0.5 inline-block bg-yellow-400 px-1 py-0.5 text-xs text-yellow-50 rtl:mr-0 rtl:ml-0.5"> 08/08 </span>
   <span id="timer" class="mx-2 font-semibold"></span>
-  <a href={'https://wa.me/555195794880'} class="font-medium text-ellipsis text-yellow-800 hover:underline">
-    <!-- getPermalink('pre-venda-camiseta', 'post') -->
-    Assembleia de Grupo<span class="hidden md:inline">: verifique no seu e-mail a convocação »</span>
+  <a href={getPostPermalink('bufe-2026')} class="font-medium text-ellipsis text-yellow-800 hover:underline">
+    <!--  -->
+    Bufê de Sopas<span class="hidden md:inline">: garanta já seu ingresso! »</span>
   </a>
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const dataLimite = new Date('2025-12-13');
+    const dataLimite = new Date('2026-08-08');
     const dataAtual = new Date();
     const announcement = document.getElementById('announcement');
 

@@ -16,6 +16,10 @@ import { ClientRouter } from 'astro:transitions';
 
 import type { MetaData as MetaDataType } from '~/types';
 import Cookies from '~/components/widgets/Cookies.astro';
+import AnnouncementBanner from '~/components/widgets/AnnouncementBanner.astro';
+import { getBlogPermalink, getPermalink, getPostPermalink } from '~/utils/permalinks';
+import { findImage } from '~/utils/images';
+import type { ImageMetadata } from 'astro';
 
 export interface Props {
   metadata?: MetaDataType;
@@ -23,6 +27,7 @@ export interface Props {
 
 const { metadata = {} } = Astro.props;
 const { language, textDirection } = I18N;
+const bufeSopas = (await findImage('~/assets/images/blog/2026/bufe-2026.png')) as ImageMetadata;
 ---
 
 <!doctype html>
@@ -42,6 +47,11 @@ const { language, textDirection } = I18N;
   </head>
 
   <body class="text-default bg-page tracking-tight antialiased">
+    <!-- Remova ou edite o AnnouncementBanner abaixo quando não houver aviso ativo -->
+    <AnnouncementBanner
+      link={getPostPermalink('bufe-2026')}
+      image={{ src: bufeSopas, alt: 'Bufê de Sopas está com ingressos a venda!' }}
+    />
     <slot />
 
     <Cookies />

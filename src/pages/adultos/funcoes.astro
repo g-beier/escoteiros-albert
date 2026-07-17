@@ -7,6 +7,7 @@ import FAQs from '~/components/widgets/FAQs.astro';
 import Features2 from '~/components/widgets/Features2.astro';
 import Note from '~/components/widgets/Note.astro';
 import Steps2 from '~/components/widgets/Steps2.astro';
+import { WHATSAPP_URL } from '~/navigation';
 
 import escotistas from '~/assets/images/escotista.jpg';
 import dirigentes from '~/assets/images/dirigente.jpg';
@@ -152,7 +153,7 @@ const panelClasses: string =
     tagline="Primeiros passos"
     callToAction={{
       text: 'Fale conosco pelo WhatsApp',
-      href: 'https://wa.me/555195794880',
+      href: WHATSAPP_URL,
       icon: 'tabler:brand-whatsapp',
       variant: 'secondary',
     }}
@@ -236,7 +237,7 @@ const panelClasses: string =
       {
         variant: 'primary',
         text: 'Fale conosco',
-        href: 'https://wa.me/555195794880',
+        href: WHATSAPP_URL,
         icon: 'tabler:brand-whatsapp',
       },
     ]}

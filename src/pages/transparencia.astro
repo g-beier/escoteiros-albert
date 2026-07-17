@@ -6,6 +6,7 @@ import Content from '@components/widgets/Content.astro';
 import FAQs from '@components/widgets/FAQs.astro';
 import CallToAction from '@components/widgets/CallToAction.astro';
 import { getAsset } from '~/utils/permalinks';
+import { WHATSAPP_URL } from '~/navigation';
 import ItemList from '~/components/ui/ItemList.astro';
 import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
 
@@ -255,7 +256,7 @@ const metadata = {
       {
         text: 'WhatsApp',
         icon: 'tabler:brand-whatsapp',
-        href: 'https://wa.me/555195794880',
+        href: WHATSAPP_URL,
       },
     ]}
   />

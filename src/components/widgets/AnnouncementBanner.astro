@@ -1,0 +1,89 @@
+---
+import { Image } from 'astro:assets';
+import { Icon } from 'astro-icon/components';
+import type { Image as ImageType } from '~/types';
+
+export interface Props {
+  image: ImageType;
+  link?: string;
+  storageKey?: string;
+  dismissDays?: number;
+}
+
+const { image, link, storageKey = 'geas-banner', dismissDays = 2 } = Astro.props;
+---
+
+<div id="announcement-overlay" class="fixed inset-0 z-60 bg-black/50 backdrop-blur-sm" aria-hidden="true" hidden></div>
+
+<div
+  id="announcement-banner"
+  class="fixed inset-0 z-60 flex items-center justify-center p-4"
+  role="dialog"
+  aria-modal="true"
+  hidden
+>
+  <div class="relative w-full max-w-sm">
+    <button
+      id="banner-close"
+      aria-label="Fechar"
+      class="absolute top-1 right-1 z-10 rounded-full bg-white p-1 text-gray-700 shadow-md transition hover:text-black focus:ring-2 focus:ring-white focus:outline-none"
+    >
+      <Icon name="tabler:x" class="h-4 w-4" />
+    </button>
+
+    <div id="banner-image-slot"></div>
+  </div>
+
+  <template id="banner-image-template">
+    {
+      link ? (
+        <a href={link}>
+          <Image
+            src={image.src}
+            alt={image.alt}
+            loading="eager"
+            widths={[400, 768]}
+            sizes="(max-width: 640px) 100vw, 384px"
+            class="w-full rounded-2xl shadow-2xl"
+          />
+        </a>
+      ) : (
+        <Image
+          src={image.src}
+          alt={image.alt}
+          loading="eager"
+          widths={[400, 768]}
+          sizes="(max-width: 640px) 100vw, 384px"
+          class="w-full rounded-2xl shadow-2xl"
+        />
+      )
+    }
+  </template>
+</div>
+
+<script is:inline data-storage-key={storageKey} data-dismiss-days={dismissDays}>
+  const overlay = document.getElementById('announcement-overlay');
+  const banner = document.getElementById('announcement-banner');
+  const KEY = document.currentScript.dataset.storageKey;
+  const DAYS = Number(document.currentScript.dataset.dismissDays);
+
+  const dismissed = localStorage.getItem(KEY);
+  const now = Date.now();
+
+  if (!dismissed || now > Number(dismissed)) {
+    const template = document.getElementById('banner-image-template');
+    const slot = document.getElementById('banner-image-slot');
+    slot.appendChild(template.content.cloneNode(true));
+    overlay.hidden = false;
+    banner.hidden = false;
+  }
+
+  function close() {
+    overlay.hidden = true;
+    banner.hidden = true;
+    localStorage.setItem(KEY, String(now + DAYS * 24 * 60 * 60 * 1000));
+  }
+
+  document.getElementById('banner-close')?.addEventListener('click', close);
+  overlay.addEventListener('click', close);
+</script>

@@ -1,0 +1,212 @@
+---
+import type { Hero as Props } from '~/types';
+import Button from '~/components/ui/Button.astro';
+import Circle from '~/components/ui/shapes/Circle.astro';
+import Triangle from '~/components/ui/shapes/Triangle.astro';
+import Square from '~/components/ui/shapes/Square.astro';
+import { Image } from 'astro:assets';
+
+const {
+  title = await Astro.slots.render('title'),
+  subtitle = await Astro.slots.render('subtitle'),
+  tagline,
+  content = await Astro.slots.render('content'),
+  actions = await Astro.slots.render('actions'),
+  image = await Astro.slots.render('image'),
+} = Astro.props;
+
+const idadeGeas = (() => {
+  const foundation = new Date(1968, 9, 30);
+  const now = new Date();
+
+  let years = now.getFullYear() - foundation.getFullYear();
+  const beforeAnniversary =
+    now.getMonth() < foundation.getMonth() ||
+    (now.getMonth() === foundation.getMonth() && now.getDate() < foundation.getDate());
+  if (beforeAnniversary) years--;
+
+  return years;
+})();
+---
+
+<section class="not-prose relative md:-mt-[76px]" data-hero>
+  <div class="pointer-events-none absolute inset-0" aria-hidden="true"></div>
+
+  <!-- Edge shapes — bleed outside viewport, hidden on mobile to avoid overlap -->
+  <div class="pointer-events-none absolute inset-0 -z-10 hidden overflow-hidden lg:block" aria-hidden="true">
+    <Circle class="hero-scroll-shape text-orange absolute top-[55%] -left-24 size-48" />
+    <Triangle class="hero-scroll-shape text-green absolute top-[15%] -right-14 size-28 rotate-45" />
+    <Square class="hero-scroll-shape text-purple absolute top-[18%] -left-10 size-20 -rotate-12" />
+    <Circle class="hero-scroll-shape text-yellow absolute -right-12 bottom-[8%] size-24" />
+  </div>
+
+  <div class="relative mx-auto max-w-7xl px-4 sm:px-6">
+    <div class="pointer-events-none pt-0 md:pt-[76px]"></div>
+
+    <!-- Hero card container with rounded border -->
+    <div
+      class="relative my-6 overflow-visible rounded-2xl border border-gray-200 bg-white/60 p-6 backdrop-blur-md sm:p-10 md:my-10 md:p-14"
+    >
+      <div class="flex flex-col py-6 md:py-12 lg:flex-row lg:items-center lg:gap-12">
+        <!-- Text column -->
+        <div class="hero-reveal relative z-10 basis-1/2 pb-10 md:pb-16 lg:pb-0 lg:text-left">
+          {tagline && <p class="text-secondary mb-2 text-base font-bold tracking-wide uppercase" set:html={tagline} />}
+          {
+            title && (
+              <h1
+                class="font-heading mb-6 text-4xl leading-[0.95] font-bold tracking-tight sm:text-6xl md:text-7xl"
+                set:html={title}
+              />
+            )
+          }
+          <div class="max-w-xl">
+            {subtitle && <p class="text-muted mb-8 text-lg leading-relaxed sm:text-xl" set:html={subtitle} />}
+
+            {
+              actions && (
+                <div class="flex flex-col flex-nowrap gap-4 sm:flex-row lg:justify-start">
+                  {Array.isArray(actions) ? (
+                    actions.map((action) => (
+                      <div class="flex w-full sm:w-auto">
+                        <Button {...(action || {})} class="w-full sm:mb-0" />
+                      </div>
+                    ))
+                  ) : (
+                    <Fragment set:html={actions} />
+                  )}
+                </div>
+              )
+            }
+          </div>
+          {content && <Fragment set:html={content} />}
+        </div>
+
+        <!-- Image column -->
+        <div class="hero-reveal hero-reveal-delay basis-1/2">
+          {
+            image && (
+              <div class="relative mx-auto max-w-lg lg:max-w-xl">
+                {/* Color block behind image — like the pink bg in kristi.digital */}
+                <div class="bg-green absolute inset-4 -z-10 -rotate-3 rounded-xl sm:inset-2" />
+
+                <Circle class="hero-float text-green absolute -top-14 -left-16 -z-10 hidden size-44 lg:block" />
+
+                <Triangle class="hero-float hero-float-delay-1 text-orange absolute -top-6 -right-4 z-10 size-10 rotate-12 sm:-top-8 sm:-right-8 sm:size-14 md:size-18" />
+
+                <Square class="hero-float hero-float-delay-2 text-purple absolute -right-6 bottom-12 z-10 size-6 rotate-45 sm:-right-10 sm:size-8 md:size-10 lg:right-auto lg:-left-12" />
+
+                {/* Tilted image */}
+                <div class="relative rotate-2 transition-transform duration-500 hover:rotate-0">
+                  <div class="absolute inset-0 translate-x-2 translate-y-2 rounded-xl border-2 border-black" />
+                  {typeof image === 'string' ? (
+                    <Fragment set:html={image} />
+                  ) : (
+                    <Image
+                      class="relative w-full rounded-xl"
+                      widths={[400, 768, 1024, 2040]}
+                      sizes="(max-width: 767px) 400px, (max-width: 1023px) 768px, (max-width: 2039px) 1024px, 2040px"
+                      loading="eager"
+                      width={600}
+                      fetchpriority="high"
+                      {...image}
+                    />
+                  )}
+                </div>
+
+                {/* Sticker badge — like "Available for Freelance" */}
+                <div class="absolute -right-3 -bottom-5 z-20 rotate-3 sm:-right-5 sm:-bottom-7">
+                  <div class="bg-orange font-heading rounded-md border-2 border-black px-5 py-2.5 text-sm font-bold text-white shadow-lg sm:text-base">
+                    Sempre Alerta!
+                  </div>
+                </div>
+
+                {/* Small floating badge top-right — like icon badges */}
+                <div class="hero-float hero-float-delay-1 absolute -top-3 right-8 z-20 sm:-top-5 sm:right-12">
+                  <div class="bg-yellow font-heading -rotate-6 rounded-md border-2 border-black px-3 py-1.5 text-xs font-bold text-black shadow-md sm:text-sm">
+                    {idadeGeas} anos
+                  </div>
+                </div>
+              </div>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  @keyframes reveal-up {
+    from {
+      opacity: 0;
+      transform: translateY(3rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .hero-reveal {
+    animation: reveal-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .hero-reveal-delay {
+    animation-delay: 0.25s;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+    50% {
+      transform: translate(0, -10px);
+    }
+  }
+
+  .hero-float {
+    animation: float 5s ease-in-out infinite;
+  }
+
+  .hero-float-delay-1 {
+    animation-delay: 1.2s;
+  }
+
+  .hero-float-delay-2 {
+    animation-delay: 2.4s;
+  }
+
+  .hero-scroll-shape {
+    transition: transform 0.15s linear;
+  }
+</style>
+
+<script>
+  function initHeroScroll() {
+    const section = document.querySelector('[data-hero]');
+    if (!section) return;
+
+    const shapes = section.querySelectorAll('.hero-scroll-shape');
+    const speeds = [0.12, -0.08, 0.1, -0.06];
+
+    let ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const scrollY = window.scrollY;
+        shapes.forEach((shape, i) => {
+          const speed = speeds[i % speeds.length];
+          (shape as HTMLElement).style.transform = `translateY(${scrollY * speed}px)`;
+        });
+        ticking = false;
+      });
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+
+  initHeroScroll();
+  document.addEventListener('astro:after-swap', initHeroScroll);
+</script>

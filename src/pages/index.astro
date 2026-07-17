@@ -5,7 +5,7 @@ import BlogHighlightedPosts from '~/components/widgets/BlogHighlightedPosts.astr
 import FAQs from '~/components/widgets/FAQs.astro';
 import Steps from '~/components/widgets/Steps.astro';
 import Content from '~/components/widgets/Content.astro';
-import Hero2 from '~/components/widgets/Hero2.astro';
+import Hero3 from '~/components/widgets/Hero3.astro';
 import Testimonials2 from '~/components/widgets/Testimonials2.astro';
 // import Brands from '~/components/widgets/Brands.astro';
 
@@ -76,7 +76,7 @@ const metadata = {
     </script>
   </Fragment>
 
-  <Hero2
+  <Hero3
     actions={[
       {
         variant: 'primary',
@@ -89,7 +89,11 @@ const metadata = {
     ]}
     image={{ src: hero, alt: 'Lobinha sorrindo, com as mãos pintadas de tinta, em uma atividade em nossa sede.' }}
   >
-    <Fragment slot="title">O&nbsp;Grupo&nbsp;Escoteiro ideal&nbsp;para&nbsp;você!</Fragment>
+    <Fragment slot="title">
+      O&nbsp;Grupo&nbsp;Escoteiro<br /><span
+        class="bg-linear-to-br from-green-300 via-green-600 to-green-700 bg-clip-text text-transparent">ideal</span
+      >&nbsp;para&nbsp;você.
+    </Fragment>
 
     <Fragment slot="subtitle">
       <span class="hidden sm:inline">
@@ -97,7 +101,7 @@ const metadata = {
         para crianças, adolescentes e jovens.
       </span>
     </Fragment>
-  </Hero2>
+  </Hero3>
 
   <Testimonials2
     title="Depoimentos"
@@ -115,7 +119,7 @@ const metadata = {
                         As fotos estarão nas redes sociais, mas aqui você pode acompanhar um pouco
                         do que fazemos no Albert.
                 `}
-    postIds={['aniversario-geas', 'historia-geas', 'biografia-albert', 'educacao-escoteira-2026']}
+    postIds={['aniversario-geas', 'historia-geas', 'biografia-albert', 'bufe-2026']}
   />
 
   <FAQs
