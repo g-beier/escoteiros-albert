@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import { SITE, METADATA } from 'astrowind:config';
 import { fetchEpisodes } from '~/utils/podcast';
-import { getCanonical, getPermalink } from '~/utils/permalinks';
+import { getCanonical } from '~/utils/permalinks';
 
 const AUDIO_MIME_TYPES: Record<string, string> = {
   '.mp3': 'audio/mpeg',
@@ -28,6 +28,9 @@ const getEnclosure = (audio: string) => {
   return { url: String(getCanonical(audio)), length, type };
 };
 
+const PODCAST_AUTHOR = SITE.name;
+const PODCAST_EMAIL = 'comunicacao@escoteirosalbert.com.br';
+
 export const GET: APIRoute = async ({ site }) => {
   const episodes = await fetchEpisodes();
   const coverUrl = String(getCanonical('/rss-album.jpeg'));
@@ -41,15 +44,16 @@ export const GET: APIRoute = async ({ site }) => {
       itunes: 'http://www.itunes.com/dtds/podcast-1.0.dtd',
     },
     customData: `<language>pt-br</language><image><url>${coverUrl}</url><title>${title}</title><link>${String(
-      getCanonical('/podcast')
-    )}</link></image><itunes:image href="${coverUrl}" />`,
+      getCanonical('/')
+    )}</link></image><itunes:image href="${coverUrl}" /><itunes:author>${PODCAST_AUTHOR}</itunes:author><itunes:owner><itunes:name>${PODCAST_AUTHOR}</itunes:name><itunes:email>${PODCAST_EMAIL}</itunes:email></itunes:owner><itunes:explicit>false</itunes:explicit>`,
     items: episodes.map((episode) => ({
       title: episode.title,
       description: episode.summary,
       pubDate: episode.published,
-      link: getPermalink(episode.permalink, 'episode'),
       enclosure: getEnclosure(episode.audio),
-      customData: episode.duration ? `<itunes:duration>${episode.duration}</itunes:duration>` : undefined,
+      customData: `${
+        episode.duration ? `<itunes:duration>${episode.duration}</itunes:duration>` : ''
+      }<itunes:author>${PODCAST_AUTHOR}</itunes:author><itunes:explicit>false</itunes:explicit>`,
     })),
   });
 };

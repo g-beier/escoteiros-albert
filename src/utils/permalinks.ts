@@ -121,10 +121,6 @@ export const getPostPermalink = (slug: string): string =>
   getPermalink(POST_PERMALINK_PATTERN.replace('%slug%', cleanSlug(slug)), 'post');
 
 /** */
-export const getEpisodePermalink = (slug: string): string =>
-  getPermalink(EPISODE_PERMALINK_PATTERN.replace('%slug%', cleanSlug(slug)), 'episode');
-
-/** */
 export const getBlogPermalink = (): string => getPermalink(BLOG_BASE);
 /** */
 export const getStorePermalink = (): string => getPermalink(STORE_BASE);
