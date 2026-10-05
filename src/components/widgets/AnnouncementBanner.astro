@@ -8,9 +8,10 @@ export interface Props {
   link?: string;
   storageKey?: string;
   dismissDays?: number;
+  expireDate: string;
 }
 
-const { image, link, storageKey = 'geas-banner', dismissDays = 2 } = Astro.props;
+const { image, link, storageKey = 'geas-banner', dismissDays = 2, expireDate } = Astro.props;
 ---
 
 <div id="announcement-overlay" class="fixed inset-0 z-60 bg-black/50 backdrop-blur-sm" aria-hidden="true" hidden></div>
@@ -61,16 +62,17 @@ const { image, link, storageKey = 'geas-banner', dismissDays = 2 } = Astro.props
   </template>
 </div>
 
-<script is:inline data-storage-key={storageKey} data-dismiss-days={dismissDays}>
+<script is:inline data-storage-key={storageKey} data-dismiss-days={dismissDays} data-expire-date={expireDate}>
   const overlay = document.getElementById('announcement-overlay');
   const banner = document.getElementById('announcement-banner');
   const KEY = document.currentScript.dataset.storageKey;
   const DAYS = Number(document.currentScript.dataset.dismissDays);
+  const EXPIRE = new Date(document.currentScript.dataset.expireDate).getTime();
 
   const dismissed = localStorage.getItem(KEY);
   const now = Date.now();
 
-  if (!dismissed || now > Number(dismissed)) {
+  if (now < EXPIRE && (!dismissed || now > Number(dismissed))) {
     const template = document.getElementById('banner-image-template');
     const slot = document.getElementById('banner-image-slot');
     slot.appendChild(template.content.cloneNode(true));

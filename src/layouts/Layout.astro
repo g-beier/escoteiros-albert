@@ -47,10 +47,10 @@ const bufeSopas = (await findImage('~/assets/images/blog/2026/bufe-2026.png')) a
   </head>
 
   <body class="text-default bg-page tracking-tight antialiased">
-    <!-- Remova ou edite o AnnouncementBanner abaixo quando não houver aviso ativo -->
     <AnnouncementBanner
       link={getPostPermalink('bufe-2026')}
       image={{ src: bufeSopas, alt: 'Bufê de Sopas está com ingressos a venda!' }}
+      expireDate="2026-08-08"
     />
     <slot />
 

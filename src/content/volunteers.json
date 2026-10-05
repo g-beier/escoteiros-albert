@@ -49,6 +49,19 @@
     "tags": ["diretoria"]
   },
   {
+    "id": 33,
+    "name": "Tatiana",
+    "title": "Mestre",
+    "image": "~/assets/images/adultos/tati.png",
+    "tags": ["clã-pioneiro"]
+  },
+  {
+    "id": 34,
+    "name": "Guto",
+    "title": "Mestre",
+    "tags": ["clã-pioneiro"]
+  },
+  {
     "id": 8,
     "name": "Dodô",
     "title": "Diretor de Relações Institucionais",
