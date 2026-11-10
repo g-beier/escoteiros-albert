@@ -5,7 +5,7 @@ title: 'O Clã Highlander está de volta!'
 image: '~/assets/images/blog/2026/cla-highlander.jpg'
 excerpt: 'Em setembro, recebemos a primeira pioneira de uma nova geração do clã highlander.'
 tags:
-  - escotistmo
+  - escotismo
 draft: true
 ---
 

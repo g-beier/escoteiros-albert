@@ -1,60 +1,87 @@
 ---
 import { getPostPermalink } from '~/utils/permalinks';
+
+// true: contagem mostra só os dias ("12 dias", "Amanhã", "Hoje!"); false: dias + hh:mm:ss
+const somenteDias = true;
 ---
 
 <div
   id="announcement"
   class="text-muted relative hidden gap-1 truncate border-b border-yellow-300 bg-yellow-300/40 px-3 py-2 text-sm whitespace-nowrap"
 >
-  <span class="mr-0.5 inline-block bg-yellow-400 px-1 py-0.5 text-xs text-yellow-50 rtl:mr-0 rtl:ml-0.5"> 08/08 </span>
-  <span id="timer" class="mx-2 font-semibold"></span>
-  <a href={getPostPermalink('bufe-2026')} class="font-medium text-ellipsis text-yellow-800 hover:underline">
-    <!--  -->
-    Bufê de Sopas<span class="hidden md:inline">: garanta já seu ingresso! »</span>
+  <span class="mr-0.5 inline-block bg-yellow-400 px-1 py-0.5 text-xs font-bold text-yellow-50 rtl:mr-0 rtl:ml-0.5">
+    12/dez
+  </span>
+  <span
+    id="timer"
+    data-somente-dias={somenteDias ? 'true' : undefined}
+    class="mx-2 font-mono font-semibold tabular-nums"></span>
+  <a
+    href={getPostPermalink('edital-assembleia-2026')}
+    class="font-medium text-ellipsis text-yellow-800 hover:underline"
+  >
+    Assembleia de Grupo<span class="hidden md:inline">: confira o edital e as pautas! »</span>
   </a>
 </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const dataLimite = new Date('2026-08-08');
-    const dataAtual = new Date();
+    // Início da assembleia (contagem regressiva) e fim da exibição do aviso, no horário de Brasília
+    const dataEvento = new Date('2026-12-12T14:00:00-03:00');
+    const dataLimite = new Date('2026-12-13T00:00:00-03:00');
     const announcement = document.getElementById('announcement');
 
-    if (dataAtual < dataLimite && announcement) {
-      announcement.classList.remove('hidden'); // Remove `hidden`
-      announcement.classList.add('flex'); // Adiciona `flex`
+    if (new Date() < dataLimite && announcement) {
+      announcement.classList.remove('hidden');
+      announcement.classList.add('flex');
     }
 
-    const x = setInterval(function () {
+    const DIA = 1000 * 60 * 60 * 24;
+    const BRASILIA = -3 * 60 * 60 * 1000;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const plural = (n: number) => `${n} ${n === 1 ? 'dia' : 'dias'}`;
+
+    // Diferença em dias de calendário (horário de Brasília), não em blocos de 24h
+    const diasAteEvento = () =>
+      Math.floor((dataEvento.getTime() + BRASILIA) / DIA) - Math.floor((Date.now() + BRASILIA) / DIA);
+
+    const atualizar = () => {
       const timer = document.getElementById('timer');
-      if (timer) {
-        // Get today's date and time
-        const now = new Date().getTime();
-
-        // Find the distance between now and the count down date
-        const distance = dataLimite.getTime() - now;
-
-        // Time calculations for days, hours, minutes and seconds
-        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-        // Display the result in the element with id="demo"
-        let time = '';
-        if (days) {
-          time += `${days.toString()} dias`;
-        }
-        time += ` ${hours.toString().length == 1 ? `0${hours.toString()}` : hours.toString()}:${minutes}:${seconds}`;
-
-        timer.innerHTML = time;
-
-        if (distance < 0) {
-          clearInterval(x);
-        }
-      } else {
+      if (!timer) {
         clearInterval(x);
+        return;
       }
-    }, 1000);
+
+      const distance = dataEvento.getTime() - Date.now();
+
+      if (timer.dataset.somenteDias) {
+        const dias = diasAteEvento();
+        timer.textContent = dias <= 0 ? 'Hoje!' : dias === 1 ? 'Amanhã' : plural(dias);
+        if (distance <= 0) clearInterval(x);
+        return;
+      }
+
+      if (distance <= 0) {
+        timer.textContent = 'Hoje!';
+        clearInterval(x);
+        return;
+      }
+
+      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+      let time = '';
+      if (days) {
+        time += `${plural(days)} `;
+      }
+      time += `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+
+      timer.textContent = time;
+    };
+
+    const x = setInterval(atualizar, 1000);
+    atualizar();
   });
 </script>

@@ -44,19 +44,12 @@
   {
     "id": 7,
     "name": "Tatiana",
-    "title": "Diretora Administrativa",
+    "title": "Dir. Administrativa e Mestre",
     "image": "~/assets/images/adultos/tati.png",
-    "tags": ["diretoria"]
+    "tags": ["diretoria", "clã-pioneiro"]
   },
   {
     "id": 33,
-    "name": "Tatiana",
-    "title": "Mestre",
-    "image": "~/assets/images/adultos/tati.png",
-    "tags": ["clã-pioneiro"]
-  },
-  {
-    "id": 34,
     "name": "Guto",
     "title": "Mestre",
     "tags": ["clã-pioneiro"]
@@ -109,7 +102,7 @@
   {
     "id": 14,
     "name": "Bernardo",
-    "title": "Assistente",
+    "title": "Hathi - Assistente",
     "tags": ["alcateia"]
   },
   {
@@ -148,7 +141,8 @@
     "name": "Maicon",
     "title": "Assistente",
     "tags": ["tropa-escoteira"],
-    "image": "~/assets/images/adultos/maicon.png"
+    "image": "~/assets/images/adultos/maicon.png",
+    "active": false
   },
   {
     "id": 21,
@@ -184,7 +178,8 @@
     "id": 25,
     "name": "Lucas",
     "title": "Assistente",
-    "tags": ["tropa-sênior"]
+    "tags": ["tropa-sênior"],
+    "active": false
   },
   {
     "id": 26,
