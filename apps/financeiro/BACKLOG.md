@@ -57,7 +57,13 @@
 - **Contas** (`011_accounts.sql`): cadastro em `/cadastros` (tipo, banco, agência, número, saldo inicial), conta padrão por forma de pagamento, conta obrigatória no lançamento (lançamentos antigos foram para "A definir"; Dinheiro → Caixa), coluna e filtro **Conta** (`conta` na URL) e coluna nas exportações.
 - **Importação de extrato — banco e servidor** (`012_statement_import.sql`): perfis por banco, importações, linhas do extrato com impressão digital calculada no banco e duplicatas puladas; tabelas de vínculos/recusas de conciliação. Server Actions em `app/importacao/actions.ts`. Falta a tela de importação.
 
+## Concluído (2026-11-11, nona rodada)
+
+- **Conciliação** (`013_reconciliation.sql`, `/conciliacao`): funções `link_reconciliation` (1:1, 1:N, N:1; somas com sinal), `unlink_reconciliation`, `reject_reconciliation_suggestion`, `ignore_statement_line`/`reopen_statement_line`, `create_entry_from_statement_line`, `set_ledger_entry_outside_statement`, `set_ledger_entry_account`; excluir um lançamento conciliado ou mudar seu valor/conta desfaz o vínculo e reabre as linhas. Tela em duas colunas com sugestões (mesmo dia + valor; ambíguas ordenadas por nome parecido), vínculo manual, ignorar com motivo, fora do extrato, trocar conta, vinculados/ignoradas/fora do extrato com desfazer e fechamento. ✓ de conciliado na visão Por extrato. Teste SQL em `supabase/tests/reconciliation.sql` (roda em transação desfeita).
+
 ## A verificar
+
+- Aplicar `013` no banco local e testar `/conciliacao` no navegador (desktop e celular), inclusive "Criar lançamento" e o retorno de `/importacao`.
 
 - Aplicar `011`/`012` no banco local (`npx supabase migration up`) e conferir `/cadastros`, formulário e lista com a coluna Conta no navegador.
 
@@ -77,6 +83,7 @@
 - Rever o nome "Nome do lançamento": o campo deve ficar igual ao texto do extrato do banco (candidatos: "Histórico", "Texto do extrato"). Decidir junto com a importação de extratos.
 - Tela de importação (`/importacao`: upload, montagem/reuso de perfis, conferência) usando `lib/statement-import/` e as actions de `app/importacao/actions.ts`; perfis do grupo, editáveis e atualizados ao ajustar.
 - Mover em lote os lançamentos de "A definir" para a conta certa.
-- Conciliação em duas colunas após importar (sugestão por mesmo dia + mesmo valor, vincular, criar lançamento a partir da linha, ignorar, sobressalentes, fechamento do mês): plano em `docs/importacao-conciliacao.md`.
+- Conciliação, fase 4: tolerância de datas, semelhança de nomes nas sugestões, combinações 1:N sugeridas; vínculo N:M (hoje recusado).
+- Filtro "Conciliado" em `/lancamentos` (hoje só o indicador ✓ na visão Por extrato).
 - Anexos de comprovantes em bucket privado (complementa a "pasta").
 - Mensalidades por associado.
