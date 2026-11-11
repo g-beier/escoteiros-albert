@@ -29,7 +29,7 @@ function readName(formData: FormData, kind: CatalogKind) {
 
 function revalidate() {
   revalidatePath("/cadastros");
-  revalidatePath("/");
+  revalidatePath("/", "layout");
 }
 
 export async function createCatalogItem(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {

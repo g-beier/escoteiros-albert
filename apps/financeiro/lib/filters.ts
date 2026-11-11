@@ -14,6 +14,19 @@ export type EntryFilters = {
 
 export type RawSearchParams = Record<string, string | string[] | undefined>;
 
+/** Valor de `de` que remove o limite inicial (sem ele, a lista começa em 1º de janeiro do ano atual). */
+export const ALL_DATES = "tudo";
+
+/** Ano corrente no fuso do grupo. */
+export function currentYear(now = new Date()) {
+  return Number(now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).slice(0, 4));
+}
+
+/** Início padrão da lista de lançamentos: 1º de janeiro do ano atual. */
+export function defaultFrom(now = new Date()) {
+  return `${currentYear(now)}-01-01`;
+}
+
 /** Valor especial do filtro de associado para rateios sem vínculo. */
 export const NO_ASSOCIATE = "nenhum";
 const MAX_VALUES = 100;
@@ -37,13 +50,16 @@ export function listValues(value: string | string[] | undefined) {
 
 const uuids = (value: string | string[] | undefined) => listValues(value).filter((v) => UUID.test(v));
 
-/** Converte a query string em filtros válidos, descartando valores malformados. */
-export function parseFilters(params: RawSearchParams): EntryFilters {
+/**
+ * Converte a query string em filtros válidos, descartando valores malformados.
+ * Sem `de` (ou com `de` inválido), a lista começa em 1º de janeiro do ano atual; `de=tudo` remove o limite.
+ */
+export function parseFilters(params: RawSearchParams, now = new Date()): EntryFilters {
   const folders = listValues(params.pasta).filter((v): v is FolderStatus => v === "pendente" || v === "na-pasta");
   const associates = listValues(params.associado);
   const q = first(params.q)?.slice(0, 100);
   return {
-    from: date(params.de),
+    from: first(params.de) === ALL_DATES ? undefined : date(params.de) ?? defaultFrom(now),
     to: date(params.ate),
     paymentMethodIds: uuids(params.forma),
     // as duas opções marcadas equivalem a não filtrar

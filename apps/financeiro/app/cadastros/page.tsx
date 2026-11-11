@@ -30,7 +30,7 @@ export default async function CatalogsPage() {
     id: c.id, name: c.name, active: c.active, code: c.code, kind: c.kind, depth: depthOf(c.code), isGroup: parents.has(c.id),
     usage: c.usage?.[0]?.count ?? 0,
     // abre a visão por rubrica filtrada nesta rubrica (e nas de baixo) para recategorizar
-    usageHref: `/?visao=rubricas&rubrica=${[c.id, ...(descendants[c.id] ?? [])].join(",")}`,
+    usageHref: `/lancamentos?visao=rubricas&de=tudo&rubrica=${[c.id, ...(descendants[c.id] ?? [])].join(",")}`,
   }));
 
   return <div className="shell">

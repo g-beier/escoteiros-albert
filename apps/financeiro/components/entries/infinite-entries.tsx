@@ -70,7 +70,7 @@ export function InfiniteEntries({ initial, query, filtered, order, sortHref }: {
   const knownTotal = total === null ? null : Math.max(total - deleted, rows.length);
 
   return <>
-    <div ref={scrollerRef} className="min-h-[50vh] flex-1 overflow-auto md:min-h-0" data-slot="entries-scroller">
+    <div ref={scrollerRef} className="min-h-0 flex-1 overflow-auto overscroll-contain" data-slot="entries-scroller">
       {view === "rubricas"
         ? <SplitTable rows={rows as SplitRow[]} filtered={filtered} order={order} sortHref={sortHref} />
         : <StatementTable rows={rows as StatementRow[]} filtered={filtered} order={order} sortHref={sortHref} />}

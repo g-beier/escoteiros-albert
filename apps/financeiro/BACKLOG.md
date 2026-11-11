@@ -36,8 +36,22 @@
 
 - Lançamento com rubricas de receita e despesa misturadas (ex.: mensalidades atrasadas menos um ressarcimento na mesma transferência) (`009_mixed_split_kinds.sql`). O sinal de cada rateio vem da rubrica; entrada/saída vale só para o total do extrato. Seletor lista receitas e despesas (tipo do lançamento primeiro); a soma mostra receitas e despesas separadas quando há mistura.
 
+## Concluído (2026-11-11, quinta rodada)
+
+- Botão **Exportar** na tela de lançamentos (planilhas XLSX formatadas):
+  - **Fluxo de caixa** por extrato ou por rubrica, por período (mês, ano ou datas personalizadas, limites inclusivos); ignora os demais filtros da lista; totais de entradas, saídas e saldo em fórmulas.
+  - **Realizado anual**: rubricas × meses no layout da planilha do grupo (blocos verde/laranja), despesas positivas, grupos e totais como fórmulas SOMA, coluna Total e linha Saldo; rubricas ativas + inativas com movimento (`010_realized_by_month.sql`).
+
+## Concluído (2026-11-11, sexta rodada)
+
+- Tela inicial (`/`) virou **dashboard** do ano: receitas, despesas, saldo, documentos pendentes, tabela mês a mês com acumulado e últimos lançamentos.
+- Lista de lançamentos movida para `/lancamentos`; por padrão começa em 1º de janeiro do ano atual (`de` ausente); apagar a data inicial (`de=tudo`) mostra todos os anos.
+- Lançamentos: a página não rola em nenhuma largura; só as linhas da tabela rolam sob cabeçalho fixo.
+
 ## A verificar
 
+- Dashboard e rolagem da tabela no navegador (desktop e celular).
+- Exportações abertas no Excel/Google Sheets (cores, fórmulas) e download pelo navegador logado.
 - Formulário com rateio misto (receita + despesa), seletor de rubrica e painel de filtros ainda não passaram pelo teste automatizado no navegador (compilam e as rotas respondem).
 - Confirmar se "conta" é um campo distinto da forma de pagamento.
 

@@ -52,7 +52,7 @@ export function listQuery(params: Record<string, string | string[] | undefined> 
 /** Aceita apenas uma query string de volta para a lista, evitando redirecionamentos externos. */
 export function listHref(voltar: string | string[] | undefined) {
   const raw = Array.isArray(voltar) ? voltar[0] : voltar;
-  if (!raw) return "/";
+  if (!raw) return "/lancamentos";
   const query = listQuery(new URLSearchParams(raw.startsWith("?") ? raw.slice(1) : raw));
-  return query ? `/?${query}` : "/";
+  return query ? `/lancamentos?${query}` : "/lancamentos";
 }

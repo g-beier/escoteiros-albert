@@ -41,7 +41,7 @@ export async function createAssociate(_previous: AssociateFormState, formData: F
     const { error } = await supabase.from("associates").insert({ group_id: groupId, ...parsed.data });
     if (error) return { error: error.message };
     revalidatePath("/associados");
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return { success: `${parsed.data.name} cadastrado.` };
   } catch (error) {
     return fail(error, "Não foi possível cadastrar.");
@@ -67,7 +67,7 @@ export async function updateAssociate(_previous: AssociateFormState, formData: F
     const { error } = await supabase.from("associates").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", id).eq("group_id", groupId);
     if (error) return { error: error.message };
     revalidatePath("/associados");
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     return result;
   } catch (error) {
     return fail(error, "Não foi possível salvar.");

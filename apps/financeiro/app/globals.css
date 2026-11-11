@@ -241,9 +241,7 @@ tr.continued td { border-top: 1px dashed #ebece8; }
 }
 .topbar-wide { padding-inline: 16px; }
 .shell-workspace::before, .shell-workspace::after { display: none; }
-.workspace { display: flex; flex-direction: column; gap: 10px; padding: 12px 16px; }
-@media (min-width: 761px) {
-  .shell-workspace { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
-  .workspace { flex: 1; min-height: 0; }
-}
+/* Lançamentos: a página não rola; só as linhas da tabela rolam, sob cabeçalhos fixos. */
+.shell-workspace { height: 100dvh; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.workspace { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 12px 16px; }
 }

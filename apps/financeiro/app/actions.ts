@@ -35,7 +35,7 @@ export async function createEntry(payload: unknown): Promise<Result> {
     p_splits: toRpcSplits(parsed.data.splits),
   });
   if (error) return { error: error.message };
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return { success: true, id: data as string };
 }
 
@@ -56,7 +56,7 @@ export async function updateEntry(entryId: unknown, payload: unknown): Promise<R
     p_splits: toRpcSplits(parsed.data.splits),
   });
   if (error) return { error: error.message };
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   revalidatePath(`/lancamentos/${id.data}`);
   return { success: true };
 }
@@ -67,7 +67,7 @@ export async function deleteEntry(entryId: unknown): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("delete_ledger_entry", { p_entry_id: id.data });
   if (error) return { error: error.message };
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return { success: true };
 }
 
@@ -78,7 +78,7 @@ export async function setDocumentFiled(entryId: unknown, filed: unknown): Promis
   const supabase = await createClient();
   const { error } = await supabase.rpc("set_entry_document_filed", { p_entry_id: id.data, p_filed: value.data });
   if (error) return { error: error.message };
-  revalidatePath("/");
+  revalidatePath("/", "layout");
   return { success: true };
 }
 

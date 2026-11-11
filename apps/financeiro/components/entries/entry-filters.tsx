@@ -5,6 +5,7 @@ import { IconFilterOff, IconSearch } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ALL_DATES, defaultFrom } from "@/lib/filters";
 import { cn } from "@/lib/utils";
 import { useListParams } from "./filter-options";
 import { MultiFilter } from "./multi-filter";
@@ -16,6 +17,11 @@ export function EntryFilters() {
   const [q, setQ] = useState(params.get("q") ?? "");
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const active = FILTER_KEYS.some((key) => params.get(key));
+  // sem "de" na URL, a lista começa em 1º de janeiro do ano atual; campo vazio = sem limite
+  const yearStart = defaultFrom();
+  const rawFrom = params.get("de");
+  const fromValue = rawFrom === ALL_DATES ? "" : rawFrom ?? yearStart;
+  const setFrom = (value: string) => apply({ de: !value ? ALL_DATES : value === yearStart ? null : value });
 
   useEffect(() => () => { if (debounce.current) clearTimeout(debounce.current); }, []);
 
@@ -35,7 +41,7 @@ export function EntryFilters() {
   return <section aria-label="Filtros" aria-busy={pending} className="flex flex-wrap items-center gap-1.5">
     <div className="flex items-center gap-1">
       <Label htmlFor="filter-from" className="text-muted-foreground">De</Label>
-      <Input id="filter-from" type="date" className={dateClass("de")} value={params.get("de") ?? ""} onChange={(e) => apply({ de: e.target.value || null })} />
+      <Input id="filter-from" type="date" className={dateClass("de")} value={fromValue} onChange={(e) => setFrom(e.target.value)} title={rawFrom ? undefined : "Padrão: início do ano atual. Apague para ver todos os anos."} />
       <Label htmlFor="filter-to" className="text-muted-foreground">até</Label>
       <Input id="filter-to" type="date" className={dateClass("ate")} value={params.get("ate") ?? ""} onChange={(e) => apply({ ate: e.target.value || null })} />
     </div>

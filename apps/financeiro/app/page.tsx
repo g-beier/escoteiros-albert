@@ -1,0 +1,145 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { IconArrowRight, IconFolderExclamation } from "@tabler/icons-react";
+import { AppHeader } from "@/components/app-header";
+import { NewEntryButton } from "@/components/entries/entry-editor";
+import { ExportMenu } from "@/components/export/export-menu";
+import { SetupNeeded } from "@/components/setup-needed";
+import { buttonVariants } from "@/components/ui/button";
+import { canManageEntries } from "@/lib/auth";
+import type { CategoryKind } from "@/lib/categories";
+import type { StatementRow } from "@/lib/entry-queries";
+import { exportYears, MONTHS } from "@/lib/export/period";
+import { ALL_DATES, currentYear } from "@/lib/filters";
+import { dateBR, money } from "@/lib/format";
+import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
+
+type Sum = { category_id: string; month: number; amount_cents: number };
+type MonthTotals = { income: number; expense: number };
+
+/** Receitas e despesas por mês (centavos; despesa positiva). Rubrica sem tipo vale pelo sinal. */
+function monthlyTotals(sums: Sum[], kinds: Map<string, CategoryKind | null>): MonthTotals[] {
+  const months = Array.from({ length: 12 }, () => ({ income: 0, expense: 0 }));
+  for (const s of sums) {
+    const amount = Number(s.amount_cents);
+    const kind = kinds.get(s.category_id) ?? (amount < 0 ? "despesa" : "receita");
+    if (kind === "despesa") months[s.month - 1].expense -= amount;
+    else months[s.month - 1].income += amount;
+  }
+  return months;
+}
+
+export default async function Dashboard() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const { data: membership } = await supabase.from("memberships").select("group_id, role").eq("user_id", user.id).single();
+  if (!membership) return <SetupNeeded email={user.email ?? ""} />;
+  const groupId = membership.group_id as string;
+  const canEdit = canManageEntries(membership.role);
+  const year = currentYear();
+
+  const [{ data: categories }, { data: sums }, { count: pendingDocs }, { data: recent }, { data: firstEntry }, { data: lastEntry }] = await Promise.all([
+    supabase.from("categories").select("id, kind").eq("group_id", groupId),
+    supabase.rpc("realized_by_month", { p_group_id: groupId, p_year: year }),
+    supabase.from("ledger_entries").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("document_filed", false),
+    supabase.from("ledger_entry_rows").select("entry_id, entry_date, name, payment_method_name, document, document_filed, total_cents")
+      .eq("group_id", groupId).order("entry_date", { ascending: false }).order("created_at", { ascending: false }).limit(8),
+    supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date").limit(1).maybeSingle(),
+    supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+
+  const kinds = new Map((categories ?? []).map((c) => [c.id as string, c.kind as CategoryKind | null]));
+  const months = monthlyTotals((sums ?? []) as Sum[], kinds);
+  const income = months.reduce((sum, m) => sum + m.income, 0);
+  const expense = months.reduce((sum, m) => sum + m.expense, 0);
+  // meses até o atual, ou meses com movimento (se houver lançamentos futuros)
+  const thisMonth = Number(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).slice(5, 7));
+  const lastMonth = Math.max(thisMonth, ...months.map((m, i) => (m.income || m.expense ? i + 1 : 0)));
+  const monthRows = months.slice(0, lastMonth).map((m, i) => ({
+    label: MONTHS[i], ...m, balance: m.income - m.expense,
+    accumulated: months.slice(0, i + 1).reduce((sum, x) => sum + x.income - x.expense, 0),
+  }));
+  const recentRows = (recent ?? []) as StatementRow[];
+
+  return <div className="shell">
+    <AppHeader role={membership.role} email={user.email ?? ""} current="/" wide />
+    <main className="mx-auto grid max-w-6xl gap-5 px-4 py-6">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <h1 className="m-0 text-xl leading-tight font-bold tracking-tight">Resumo de {year}</h1>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <Link href="/lancamentos" className={buttonVariants({ variant: "outline", size: "lg" })}>Ver lançamentos <IconArrowRight data-icon="inline-end" /></Link>
+          <ExportMenu view="extrato" years={exportYears(firstEntry?.entry_date, lastEntry?.entry_date)} />
+          {canEdit && <NewEntryButton returnQuery="" />}
+        </div>
+      </div>
+
+      <section aria-label="Totais do ano" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Receitas" value={money(income / 100)} tone="success" href={`/lancamentos?visao=rubricas&de=${year}-01-01&ate=${year}-12-31`} />
+        <Stat label="Despesas" value={money(expense / 100)} tone="destructive" href={`/lancamentos?visao=rubricas&de=${year}-01-01&ate=${year}-12-31`} />
+        <Stat label="Saldo do ano" value={money((income - expense) / 100)} tone={income - expense < 0 ? "destructive" : "neutral"} />
+        <Stat label="Documentos pendentes na pasta" value={String(pendingDocs ?? 0)} tone={(pendingDocs ?? 0) > 0 ? "warning" : "neutral"}
+          href={(pendingDocs ?? 0) > 0 ? `/lancamentos?pasta=pendente&de=${ALL_DATES}` : undefined} icon={(pendingDocs ?? 0) > 0} />
+      </section>
+
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+        <section aria-labelledby="monthly-title" className="overflow-hidden rounded-lg border bg-card">
+          <h2 id="monthly-title" className="m-0 border-b px-4 py-2.5 text-sm font-semibold">Mês a mês</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-muted text-muted-foreground"><tr>
+                <th className="px-3 py-1.5 text-left font-semibold">Mês</th>
+                <th className="px-3 py-1.5 text-right font-semibold">Receitas</th>
+                <th className="px-3 py-1.5 text-right font-semibold">Despesas</th>
+                <th className="px-3 py-1.5 text-right font-semibold">Saldo</th>
+                <th className="px-3 py-1.5 text-right font-semibold">Acumulado</th>
+              </tr></thead>
+              <tbody>{monthRows.map((m) => <tr key={m.label} className="border-t">
+                <td className="px-3 py-1.5">{m.label}</td>
+                <td className="num px-3 py-1.5 text-right text-success">{money(m.income / 100)}</td>
+                <td className="num px-3 py-1.5 text-right text-destructive">{money(m.expense / 100)}</td>
+                <td className={cn("num px-3 py-1.5 text-right font-semibold", m.balance < 0 && "text-destructive")}>{money(m.balance / 100)}</td>
+                <td className={cn("num px-3 py-1.5 text-right text-muted-foreground", m.accumulated < 0 && "text-destructive")}>{money(m.accumulated / 100)}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        </section>
+
+        <section aria-labelledby="recent-title" className="overflow-hidden rounded-lg border bg-card">
+          <div className="flex items-center justify-between border-b px-4 py-2.5">
+            <h2 id="recent-title" className="m-0 text-sm font-semibold">Últimos lançamentos</h2>
+            <Link href="/lancamentos" className="text-xs font-semibold text-primary hover:underline">Ver todos</Link>
+          </div>
+          {recentRows.length === 0
+            ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhum lançamento ainda.</p>
+            : <ul className="m-0 list-none p-0">{recentRows.map((r) => <li key={r.entry_id} className="border-t first:border-t-0">
+              <Link href={`/lancamentos/${r.entry_id}`} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-muted">
+                <span className="num w-20 shrink-0 text-muted-foreground">{dateBR(r.entry_date)}</span>
+                <span className="min-w-0 flex-1 truncate">{r.name}</span>
+                <span className={cn("num shrink-0 font-semibold", r.total_cents < 0 ? "text-destructive" : "text-success")}>{money(r.total_cents / 100)}</span>
+              </Link>
+            </li>)}</ul>}
+        </section>
+      </div>
+    </main>
+  </div>;
+}
+
+const TONES = {
+  success: "text-success",
+  destructive: "text-destructive",
+  warning: "text-[#725d0d]",
+  neutral: "text-foreground",
+} as const;
+
+function Stat({ label, value, tone, href, icon }: { label: string; value: string; tone: keyof typeof TONES; href?: string; icon?: boolean }) {
+  const body = <>
+    <span className="text-xs text-muted-foreground">{label}</span>
+    <span className={cn("num flex items-center gap-1.5 text-xl font-bold", TONES[tone])}>{icon && <IconFolderExclamation className="size-5" aria-hidden />}{value}</span>
+  </>;
+  const className = "grid gap-1 rounded-lg border bg-card px-4 py-3";
+  return href
+    ? <Link href={href} className={cn(className, "transition-colors hover:border-primary")}>{body}</Link>
+    : <div className={className}>{body}</div>;
+}
