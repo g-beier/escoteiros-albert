@@ -1,0 +1,52 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { IconFilterOff, IconSearch } from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { useListParams } from "./filter-options";
+import { MultiFilter } from "./multi-filter";
+
+const FILTER_KEYS = ["de", "ate", "forma", "pasta", "associado", "rubrica", "q"] as const;
+
+export function EntryFilters() {
+  const { params, apply, pending } = useListParams();
+  const [q, setQ] = useState(params.get("q") ?? "");
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const active = FILTER_KEYS.some((key) => params.get(key));
+
+  useEffect(() => () => { if (debounce.current) clearTimeout(debounce.current); }, []);
+
+  function onSearch(value: string) {
+    setQ(value);
+    if (debounce.current) clearTimeout(debounce.current);
+    debounce.current = setTimeout(() => apply({ q: value.trim() || null }), 350);
+  }
+
+  function clear() {
+    setQ("");
+    apply(Object.fromEntries(FILTER_KEYS.map((key) => [key, null])));
+  }
+
+  const dateClass = (key: string) => cn("h-7 w-[8.5rem] px-1.5", params.get(key) && "border-primary bg-accent/60");
+
+  return <section aria-label="Filtros" aria-busy={pending} className="flex flex-wrap items-center gap-1.5">
+    <div className="flex items-center gap-1">
+      <Label htmlFor="filter-from" className="text-muted-foreground">De</Label>
+      <Input id="filter-from" type="date" className={dateClass("de")} value={params.get("de") ?? ""} onChange={(e) => apply({ de: e.target.value || null })} />
+      <Label htmlFor="filter-to" className="text-muted-foreground">até</Label>
+      <Input id="filter-to" type="date" className={dateClass("ate")} value={params.get("ate") ?? ""} onChange={(e) => apply({ ate: e.target.value || null })} />
+    </div>
+    <MultiFilter filterKey="forma" />
+    <MultiFilter filterKey="pasta" />
+    <MultiFilter filterKey="associado" />
+    <MultiFilter filterKey="rubrica" />
+    <div className="relative min-w-48 flex-1">
+      <IconSearch className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+      <Input type="search" aria-label="Buscar por nome do lançamento ou descrição" className={cn("h-7 pl-7", q.trim() && "border-primary")} placeholder="Buscar nome ou descrição" value={q} onChange={(e) => onSearch(e.target.value)} />
+    </div>
+    {active && <Button variant="ghost" onClick={clear}><IconFilterOff /> Limpar filtros</Button>}
+  </section>;
+}

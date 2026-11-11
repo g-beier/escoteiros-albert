@@ -11,6 +11,19 @@ MVP de gestão financeira para grupo escoteiro. Um lançamento representa uma li
 - Valores monetários armazenados como centavos inteiros
 - Criação do lançamento e seus rateios em uma única transação SQL
 
+## Telas
+
+- `/` — lançamentos: visões **Por extrato** (uma linha por lançamento) e **Por rubrica** (um rateio por linha), filtros na URL (`de`, `ate`, `forma`, `pasta`, `associado`, `rubrica`, `q`) e conferência rápida da pasta.
+- `/lancamentos/novo` — novo lançamento.
+- `/lancamentos/[id]` — detalhes com o formulário completo; edição e exclusão para tesouraria/administração, somente leitura para consulta.
+- `/associados` — associados (nome, ramo, seção, ativo).
+- `/cadastros` — rubricas e formas de pagamento (tesouraria e administração).
+- `/usuarios` — convites e papéis (administração).
+
+## Componentes
+
+shadcn/ui com o preset `b1D0eVNQ` (estilo `base-mira`, primitivas Base UI, ícones Tabler) sobre Tailwind CSS v4. Os tokens semânticos do shadcn são mapeados para a paleta do grupo em `app/globals.css`. Estilos anteriores ao shadcn ficam em `@layer legacy`, abaixo de `components`/`utilities`, para não sobrescrever os utilitários. Adicione componentes com `npx shadcn@latest add <nome>` dentro de `apps/financeiro` e troque eventuais imports de `cn` do pacote `cn` por `@/lib/utils`.
+
 ## Identidade visual
 
 A interface usa exclusivamente Poppins, nos pesos 400, 500, 600 e 700. A paleta segue a identidade do Grupo Escoteiro Albert Schweitzer: roxo para ações primárias, verde para suporte e sucesso, amarelo para foco e neutros quentes nas superfícies.
@@ -20,46 +33,73 @@ O navegador recebe somente a chave publicável do Supabase. As políticas RLS e 
 ## Executar localmente
 
 O ambiente de desenvolvimento usa a Supabase CLI para executar PostgreSQL, Auth,
-Studio, Inbucket e os demais serviços em containers Docker. É necessário ter Docker
+Studio, Mailpit e os demais serviços em containers Docker. É necessário ter Docker
 ativo e Node.js instalado. Na primeira execução, `npx` baixa a CLI do Supabase.
 
-```bash
-npm install
-npm run infra:start
-npm run dev
-```
-
-`infra:start` aplica automaticamente as migrations de `supabase/migrations` e gera
-um `.env.local` com as credenciais locais. Os serviços ficam disponíveis em:
-
-- aplicação: http://localhost:3000
-- Supabase Studio: http://127.0.0.1:54323
-- caixa de e-mails local (Inbucket): http://127.0.0.1:54324
-- API Supabase: http://127.0.0.1:54321
-
-Comandos úteis:
+Todos os comandos rodam a partir da **raiz do monorepo**:
 
 ```bash
-npm run infra:status  # mostra serviços, URLs e chaves
-npm run infra:reset   # recria o banco e reaplica todas as migrations
-npm run infra:env     # regenera somente o .env.local
-npm run infra:stop    # encerra os containers
+npm install              # instala todas as apps (nunca rode dentro de apps/financeiro)
+npm run infra:start      # sobe o Supabase local e gera apps/financeiro/.env.local
+npm run dev:financeiro   # aplicação em http://localhost:3000
 ```
 
-Para o primeiro acesso, crie no Studio um usuário confirmado com e-mail do domínio
-`@escoteirosalbert.com.br`. Depois, no SQL Editor do Studio, inicialize o grupo com
-a função restrita ao papel `postgres`:
+### Serviços locais
+
+| Serviço | URL | Para quê |
+| --- | --- | --- |
+| Aplicação | http://localhost:3000 | o financeiro |
+| Supabase Studio | http://localhost:54323 | tabelas, SQL Editor, usuários de Auth |
+| Mailpit | http://localhost:54324 | caixa de e-mails local: códigos de acesso e convites |
+| API Supabase | http://localhost:54321 | REST/Auth usados pela aplicação |
+| PostgreSQL | `postgresql://postgres:postgres@localhost:54322/postgres` | acesso direto via `psql` |
+
+Nenhum e-mail real é disparado localmente: tudo chega no Mailpit.
+
+### Primeiro acesso local
+
+1. **Crie o usuário administrador** no Studio → *Authentication* → *Users* → *Add user* → *Create new user*.
+   Use um e-mail `@escoteirosalbert.com.br` (outros domínios são bloqueados pelo hook `restrict_auth_domain`)
+   e marque *Auto Confirm User*. A senha é irrelevante: o login é por código.
+2. **Crie o grupo** no Studio → *SQL Editor*, trocando o e-mail pelo do passo 1:
+
+   ```sql
+   select public.admin_bootstrap_group(
+     'administrador@escoteirosalbert.com.br',
+     'Grupo Escoteiro Albert Schweitzer'
+   );
+   ```
+
+   A função cria o grupo, torna o usuário administrador e cadastra rubricas e formas de pagamento iniciais.
+   Ela só pode ser executada pelo papel `postgres` (SQL Editor), nunca pela aplicação.
+3. **Entre na aplicação** em http://localhost:3000/login com o e-mail do passo 1.
+   O código de 6 dígitos chega no Mailpit (http://localhost:54324).
+4. **Convide as demais pessoas** em `/usuarios` (menu *Usuários*, só para administradores), escolhendo o papel:
+   - **Administrador**: tudo, inclusive usuários;
+   - **Tesoureiro**: lançamentos, associados e cadastros;
+   - **Consulta**: somente leitura.
+
+   O convite também chega no Mailpit; a pessoa convidada entra pelo link ou pedindo um código em `/login`.
+
+### Banco de dados local
+
+```bash
+npx supabase migration up   # (em apps/financeiro) aplica migrations novas sem apagar dados
+npm run infra:reset         # recria o banco do zero e reaplica todas as migrations (apaga tudo; refaça o primeiro acesso)
+npm run infra:status        # mostra serviços, URLs e chaves
+npm run infra:stop          # encerra os containers (os dados são preservados)
+npm run infra:env --workspace=@geas/financeiro   # regenera somente o .env.local
+```
+
+Consultas úteis no SQL Editor:
 
 ```sql
-select public.admin_bootstrap_group(
-  'administrador@escoteirosalbert.com.br',
-  'Grupo Escoteiro Albert Schweitzer'
-);
-```
+-- quem tem acesso e com qual papel
+select u.email, m.role from public.memberships m join auth.users u on u.id = m.user_id;
 
-A partir daí, use `/usuarios` para convidar as demais pessoas.
-Os códigos de acesso e convites enviados localmente aparecem no Inbucket; nenhum
-e-mail real é disparado.
+-- trilha de auditoria mais recente
+select created_at, action, entity_id, details from public.audit_events order by id desc limit 50;
+```
 
 ### Deploy na Vercel
 

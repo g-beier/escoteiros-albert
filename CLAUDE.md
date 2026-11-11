@@ -38,6 +38,9 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 - Supabase Auth passwordless, restricted to `@escoteirosalbert.com.br`; RLS per group.
 - Money stored as integer cents (`lib/money.ts`).
 - Migrations in `supabase/migrations/`.
+- Model: `ledger_entries` = bank statement line (date, `name` of payer/issuer, payment method, `document_filed` "pasta", total); `entry_splits` = per-category split with description and optional associate. Writes go through SQL functions (`create_/update_/delete_ledger_entry`, `set_entry_document_filed`) that validate totals and audit. List views read `ledger_entry_rows` / `entry_split_rows` (security_invoker views with `search_text`).
+- UI: shadcn/ui (`base-mira`, Base UI primitives — not Radix) on Tailwind v4. Legacy CSS lives in `@layer legacy` in `app/globals.css`. Generated components import `cn` from `@/lib/utils` (not the `cn` npm package).
+- `npx supabase migration up` applies new migrations without resetting local data.
 
 ## CI/CD
 

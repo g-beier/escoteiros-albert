@@ -1,10 +1,9 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { InviteUser } from "@/components/invite-user";
 import { changeRole, removeUser } from "./actions";
-import { Brand } from "@/components/brand";
+import { AppHeader } from "@/components/app-header";
 import { ConfirmRemove } from "@/components/confirm-remove";
 
 const roleLabels = { admin: "Administrador", treasurer: "Tesoureiro", viewer: "Consulta" } as const;
@@ -24,7 +23,7 @@ export default async function UsersPage() {
   const authUsers = new Map((authData?.users ?? []).map((item) => [item.id, item]));
 
   return <div className="shell">
-    <header className="topbar"><Brand /><nav className="nav-actions" aria-label="Navegação principal"><Link href="/">Lançamentos</Link><span className="nav-email">{user.email}</span></nav></header>
+    <AppHeader role={ownMembership.role} email={user.email ?? ""} current="/usuarios" />
     <main className="main">
       <div className="page-head"><div><span className="eyebrow">Administração</span><h1>Usuários</h1><p className="lede">Convide pessoas do domínio institucional e defina o nível de acesso de cada uma.</p></div></div>
       <section className="card invite-card"><header className="card-head"><h2 className="card-title">Convidar usuário</h2><span className="badge">@escoteirosalbert.com.br</span></header><div style={{ padding: 22 }}><InviteUser /></div></section>

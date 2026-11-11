@@ -1,57 +1,93 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { IconFolderExclamation } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/server";
-import { dateBR, money } from "@/lib/format";
-import { logout } from "./actions";
-import { NewEntry } from "@/components/new-entry";
-import { Brand } from "@/components/brand";
+import { AppHeader } from "@/components/app-header";
+import { InfiniteEntries } from "@/components/entries/infinite-entries";
+import { fetchEntryPage } from "@/lib/entry-queries";
+import { EntryListProvider, NewEntryButton } from "@/components/entries/entry-editor";
+import { EntryFilters } from "@/components/entries/entry-filters";
 import { canManageEntries } from "@/lib/auth";
+import { listQuery } from "@/lib/entries";
+import { hasAnyFilter, NO_ASSOCIATE, parseFilters, parseOrder, type RawSearchParams } from "@/lib/filters";
+import { depthOf, descendantsMap, sortCategories, type CategoryItem } from "@/lib/categories";
+import { FilterOptionsProvider, type FilterDimensions } from "@/components/entries/filter-options";
 
-type Entry = { id: string; entry_date: string; description: string; document: string | null; total_cents: number };
-type Summary = { category_id: string; category_name: string; total_cents: number };
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ visao?: string }> }) {
-  const { visao = "extrato" } = await searchParams;
+type CatalogItem = { id: string; name: string; active: boolean };
+const toOptions = (items: CatalogItem[] | null) => (items ?? []).map((item) => ({ value: item.id, label: item.active ? item.name : `${item.name} (inativo)` }));
+
+export default async function Home({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  const params = await searchParams;
+  const byCategory = params.visao === "rubricas";
+  const filters = parseFilters(params);
+  const order = parseOrder(params);
+  const filtered = hasAnyFilter(filters);
+  const returnQuery = listQuery(params);
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const { data: membership } = await supabase.from("memberships").select("group_id, role, groups(name)").eq("user_id", user.id).single();
+  const { data: membership } = await supabase.from("memberships").select("group_id, role").eq("user_id", user.id).single();
   if (!membership) return <SetupNeeded email={user.email ?? ""} />;
   const groupId = membership.group_id;
-  const [{ data: categories }, { data: entries }, { data: summaries }] = await Promise.all([
-    supabase.from("categories").select("id, name").eq("group_id", groupId).eq("active", true).order("name"),
-    supabase.from("ledger_entries").select("id, entry_date, description, document, total_cents").eq("group_id", groupId).order("entry_date", { ascending: false }).limit(100),
-    supabase.from("category_summary").select("category_id, category_name, total_cents").eq("group_id", groupId).order("category_name"),
-  ]);
-  const typedEntries = (entries ?? []) as Entry[];
-  const typedSummaries = (summaries ?? []) as Summary[];
-  const grandTotal = typedEntries.reduce((sum, e) => sum + e.total_cents, 0);
-  const groupName = Array.isArray(membership.groups) ? membership.groups[0]?.name : (membership.groups as { name?: string } | null)?.name;
+  const canEdit = canManageEntries(membership.role);
 
-  return <div className="shell">
-    <header className="topbar"><Brand /><nav className="nav-actions" aria-label="Navegação principal">{membership.role === "admin" && <Link href="/usuarios">Usuários</Link>}<span className="nav-email">{user.email}</span><form action={logout}><button className="link-button">Sair</button></form></nav></header>
-    <main className="main">
-      <div className="page-head"><div><span className="eyebrow">{groupName ?? "Grupo escoteiro"}</span><h1>Lançamentos</h1><p className="lede">Acompanhe as movimentações do extrato e o rateio por rubricas.</p></div>{canManageEntries(membership.role) && <NewEntry categories={categories ?? []} />}</div>
-      <section className="summary"><div className="summary-card"><div className="summary-label">Saldo dos lançamentos</div><div className="summary-value">{money(grandTotal / 100)}</div></div><div className="summary-card"><div className="summary-label">Lançamentos exibidos</div><div className="summary-value">{typedEntries.length}</div></div><div className="summary-card"><div className="summary-label">Rubricas ativas</div><div className="summary-value">{categories?.length ?? 0}</div></div></section>
-      <nav className="tabs" aria-label="Visões"><Link aria-current={visao === "extrato" ? "page" : undefined} className={`tab ${visao === "extrato" ? "active" : ""}`} href="/?visao=extrato">Por extrato</Link><Link aria-current={visao === "rubricas" ? "page" : undefined} className={`tab ${visao === "rubricas" ? "active" : ""}`} href="/?visao=rubricas">Por rubrica</Link></nav>
-      <section className="card">
-        <header className="card-head"><h2 className="card-title">{visao === "rubricas" ? "Consolidado por rubrica" : "Movimentações do extrato"}</h2><span className="muted" style={{ fontSize: 12 }}>Valores em reais</span></header>
-        {visao === "rubricas" ? <CategoryTable rows={typedSummaries} /> : <EntryTable rows={typedEntries} />}
-      </section>
+  const [{ data: categories }, { data: paymentMethods }, { data: associates }, firstPage, { count: pendingDocs }] = await Promise.all([
+    supabase.from("categories").select("id, name, active, code, kind, parent_id").eq("group_id", groupId),
+    supabase.from("payment_methods").select("id, name, active").eq("group_id", groupId).order("name"),
+    supabase.from("associates").select("id, name, active").eq("group_id", groupId).order("name"),
+    fetchEntryPage(supabase, groupId, byCategory ? "rubricas" : "extrato", filters, order, 0, true),
+    supabase.from("ledger_entries").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("document_filed", false),
+  ]);
+  const tree = sortCategories((categories ?? []) as CategoryItem[]);
+  const dimensions: FilterDimensions = {
+    forma: { label: "Forma pgto", options: toOptions(paymentMethods) },
+    pasta: { label: "Pasta", options: [{ value: "pendente", label: "Pendente" }, { value: "na-pasta", label: "Na pasta" }] },
+    associado: { label: "Associado", options: [{ value: NO_ASSOCIATE, label: "(Sem associado)" }, ...toOptions(associates)] },
+    rubrica: {
+      label: "Rubrica",
+      options: tree.map((c) => ({ value: c.id, label: `${c.code ? `${c.code} ` : ""}${c.name}${c.active ? "" : " (inativa)"}`, depth: depthOf(c.code), tone: c.kind ?? undefined })),
+      descendants: descendantsMap(tree),
+      shortcuts: [
+        { label: "Só receitas", values: tree.filter((c) => c.kind === "receita").map((c) => c.id) },
+        { label: "Só despesas", values: tree.filter((c) => c.kind === "despesa").map((c) => c.id) },
+        { label: "Só inativas", values: tree.filter((c) => !c.active).map((c) => c.id) },
+      ],
+    },
+  };
+  const sortQuery = new URLSearchParams(returnQuery);
+  if (order === "desc") sortQuery.set("ordem", "antigos"); else sortQuery.delete("ordem");
+  const sortHref = `/?${sortQuery}`;
+  const viewHref = (visao: string) => { const next = new URLSearchParams(returnQuery); next.set("visao", visao); return `/?${next}`; };
+
+  const tab = (active: boolean) => `rounded-full px-3 py-1 text-xs font-semibold transition-colors ${active ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`;
+
+  return <div className="shell shell-workspace">
+    <AppHeader role={membership.role} email={user.email ?? ""} current="/" wide />
+    <main className="workspace">
+      <FilterOptionsProvider dimensions={dimensions}>
+      <EntryListProvider canEdit={canEdit} returnQuery={returnQuery}>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <h1 className="m-0 text-xl leading-tight font-bold tracking-tight">Lançamentos</h1>
+          <nav aria-label="Visões" className="inline-flex rounded-full bg-secondary p-0.5">
+            <Link aria-current={!byCategory ? "page" : undefined} className={tab(!byCategory)} href={viewHref("extrato")}>Por extrato</Link>
+            <Link aria-current={byCategory ? "page" : undefined} className={tab(byCategory)} href={viewHref("rubricas")}>Por rubrica</Link>
+          </nav>
+          <div className="ml-auto flex items-center gap-2">
+            {(pendingDocs ?? 0) > 0 && filters.folder !== "pendente" && <Link href="/?pasta=pendente" className="inline-flex items-center gap-1.5 rounded-full bg-[#f5eed1] px-3 py-1 text-xs font-semibold text-[#725d0d] hover:ring-1 hover:ring-current"><IconFolderExclamation className="size-4" aria-hidden /> {pendingDocs} {pendingDocs === 1 ? "documento pendente" : "documentos pendentes"} na pasta</Link>}
+            {canEdit && <NewEntryButton returnQuery={returnQuery} />}
+          </div>
+        </div>
+        <EntryFilters />
+        <section aria-label={byCategory ? "Rateios por rubrica" : "Movimentações do extrato"} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-card">
+          <InfiniteEntries key={returnQuery} initial={firstPage} query={returnQuery} filtered={filtered} order={order} sortHref={sortHref} />
+        </section>
+      </EntryListProvider>
+      </FilterOptionsProvider>
     </main>
   </div>;
 }
 
-function EntryTable({ rows }: { rows: Entry[] }) {
-  if (!rows.length) return <div className="empty">Nenhum lançamento ainda. Comece pelo botão “Novo lançamento”.</div>;
-  return <div className="table-wrap"><table><caption className="sr-only">Movimentações conforme aparecem no extrato bancário</caption><thead><tr><th scope="col">Data</th><th scope="col">Descrição</th><th scope="col">Documento</th><th scope="col" style={{ textAlign: "right" }}>Total</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td>{dateBR(row.entry_date)}</td><td><strong>{row.description}</strong></td><td className="muted">{row.document || "—"}</td><td className="amount">{money(row.total_cents / 100)}</td></tr>)}</tbody></table></div>;
-}
-
-function CategoryTable({ rows }: { rows: Summary[] }) {
-  if (!rows.length) return <div className="empty">Os totais por rubrica aparecerão depois do primeiro lançamento.</div>;
-  return <div className="table-wrap"><table><caption className="sr-only">Totais consolidados por rubrica</caption><thead><tr><th scope="col">Rubrica</th><th scope="col" style={{ textAlign: "right" }}>Total consolidado</th></tr></thead><tbody>{rows.map((row) => <tr key={row.category_id}><td><span className="badge">{row.category_name}</span></td><td className="amount">{money(row.total_cents / 100)}</td></tr>)}</tbody></table></div>;
-}
-
 function SetupNeeded({ email }: { email: string }) {
-  return <main className="main"><span className="eyebrow">Configuração inicial</span><h1>Falta criar o grupo</h1><p className="lede">A conta {email} foi autenticada, mas ainda não pertence a um grupo. Execute a migração SQL e a função <code>bootstrap_group</code> descritas no README.</p></main>;
+  return <main className="main"><span className="eyebrow">Configuração inicial</span><h1>Falta criar o grupo</h1><p className="lede">A conta {email} foi autenticada, mas ainda não pertence a um grupo. Peça a um administrador para convidá-la em Usuários. Na configuração inicial, execute <code>admin_bootstrap_group</code> no SQL Editor, conforme o README.</p></main>;
 }

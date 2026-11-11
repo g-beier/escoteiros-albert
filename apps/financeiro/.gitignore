@@ -5,3 +5,6 @@ out
 !.env.example
 npm-debug.log*
 .DS_Store
+supabase/snippets
+supabase/.branches
+supabase/.temp
