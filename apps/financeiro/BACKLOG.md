@@ -68,6 +68,6 @@
 - Histórico de alterações (auditoria) na página de detalhes.
 - Testes pgTAP das políticas RLS e funções; Playwright para OTP, lançamentos e gestão de usuários.
 - Rever o nome "Nome do lançamento": o campo deve ficar igual ao texto do extrato do banco (candidatos: "Histórico", "Texto do extrato"). Decidir junto com a importação de extratos.
-- Contas bancárias, importação de extrato CSV/OFX e conciliação (vincular e baixar sobressalentes): plano em `docs/importacao-conciliacao.md`, aguardando revisão e CSVs de exemplo.
+- Contas bancárias, importação de extrato CSV/OFX e conciliação (vincular e baixar sobressalentes): plano em `docs/importacao-conciliacao.md`, importação por perfis montados pelo usuário (CSV/OFX); aguardando revisão.
 - Anexos de comprovantes em bucket privado (complementa a "pasta").
 - Mensalidades por associado.
