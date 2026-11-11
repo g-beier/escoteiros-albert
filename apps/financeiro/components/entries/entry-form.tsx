@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconArrowDownLeft, IconArrowUpRight, IconPlus, IconTrash } from "@tabler/icons-react";
 import { createEntry, deleteEntry, updateEntry } from "@/app/actions";
+import { createEntryFromStatementLine } from "@/app/conciliacao/actions";
 import { OptionCombobox, OptionSelect, type Option } from "@/components/option-controls";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,12 +26,19 @@ export type Catalogs = { categories: CategoryItem[]; paymentMethods: PaymentMeth
 type Direction = "entrada" | "saida";
 
 type SplitDraft = { key: number; categoryId: string; amount: string; description: string; associateId: string };
+/** Linha do extrato que origina o lançamento: data, valor e conta vêm dela (valor e conta ficam travados). */
+export type StatementLinePrefill = { id: string; date: string; name: string; totalCents: number; accountId: string; paymentMethodId: string };
 type Draft = { direction: Direction | null; date: string; name: string; total: string; paymentMethodId: string; accountId: string; document: string; documentFiled: boolean; splits: SplitDraft[] };
 
 let splitKey = 0;
 const emptySplit = (): SplitDraft => ({ key: ++splitKey, categoryId: "", amount: "", description: "", associateId: "" });
 
-function toDraft(entry: EditableEntry | null): Draft {
+function toDraft(entry: EditableEntry | null, fromLine?: StatementLinePrefill): Draft {
+  if (!entry && fromLine) return {
+    direction: fromLine.totalCents < 0 ? "saida" : "entrada", date: fromLine.date, name: fromLine.name,
+    total: centsToInput(Math.abs(fromLine.totalCents)), paymentMethodId: fromLine.paymentMethodId, accountId: fromLine.accountId,
+    document: "", documentFiled: false, splits: [emptySplit()],
+  };
   if (!entry) return { direction: null, date: new Date().toISOString().slice(0, 10), name: "", total: "", paymentMethodId: "", accountId: "", document: "", documentFiled: false, splits: [emptySplit()] };
   return {
     direction: entry.totalCents < 0 ? "saida" : "entrada",
@@ -56,10 +64,11 @@ function visibleOptions(items: CatalogItem[], used: string[]): Option[] {
     .map((item) => ({ value: item.id, label: item.active ? item.name : `${item.name} (inativo)` }));
 }
 
-export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: EditableEntry | null; catalogs: Catalogs; canEdit: boolean; backHref: string }) {
+export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { entry: EditableEntry | null; catalogs: Catalogs; canEdit: boolean; backHref: string; fromLine?: StatementLinePrefill }) {
   const router = useRouter();
-  const [draft, setDraft] = useState<Draft>(() => toDraft(entry));
-  const [saved, setSaved] = useState<Draft>(() => toDraft(entry));
+  const [draft, setDraft] = useState<Draft>(() => toDraft(entry, fromLine));
+  const [saved, setSaved] = useState<Draft>(() => toDraft(entry, fromLine));
+  const locked = Boolean(fromLine);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pending, startTransition] = useTransition();
   const readOnly = !canEdit;
@@ -76,6 +85,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
 
   /** A conta acompanha a conta padrão da forma de pagamento, salvo se escolhida à mão. */
   function choosePaymentMethod(paymentMethodId: string) {
+    if (locked) { update({ paymentMethodId }); return; }
     update({ paymentMethodId, accountId: accountAfterPaymentChange(draft, paymentMethodId, catalogs.paymentMethods, catalogs.accounts) });
   }
   // rubricas do lançamento salvo: continuam selecionáveis mesmo se inativadas depois
@@ -121,9 +131,9 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
       splits: draft.splits.map((s) => ({ categoryId: s.categoryId, amountCents: signedSplit(s), description: s.description, associateId: s.associateId || null })),
     };
     startTransition(async () => {
-      const result = entry ? await updateEntry(entry.id, payload) : await createEntry(payload);
+      const result = entry ? await updateEntry(entry.id, payload) : fromLine ? await createEntryFromStatementLine(fromLine.id, payload) : await createEntry(payload);
       if (result.error) { toast.error(result.error); return; }
-      if (!entry) { toast.success("Lançamento salvo."); router.push(backHref); return; }
+      if (!entry) { toast.success(fromLine ? "Lançamento criado e conciliado." : "Lançamento salvo."); router.push(backHref); return; }
       setSaved(draft);
       toast.success("Alterações salvas.");
       router.refresh();
@@ -145,18 +155,18 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
     <fieldset disabled={readOnly} className="grid gap-3">
       <legend className="mb-2 text-sm font-semibold">Linha do extrato</legend>
       <div role="radiogroup" aria-label="Tipo do lançamento" className="flex flex-wrap items-center gap-2">
-        <DirectionButton value="entrada" current={draft.direction} onSelect={chooseDirection} disabled={readOnly} />
-        <DirectionButton value="saida" current={draft.direction} onSelect={chooseDirection} disabled={readOnly} />
+        <DirectionButton value="entrada" current={draft.direction} onSelect={chooseDirection} disabled={readOnly || locked} />
+        <DirectionButton value="saida" current={draft.direction} onSelect={chooseDirection} disabled={readOnly || locked} />
         {!draft.direction && <span className="text-muted-foreground">Comece escolhendo se o dinheiro entrou ou saiu da conta.</span>}
       </div>
       <div className="grid gap-3 sm:grid-cols-[10rem_minmax(0,1fr)_10rem]">
         <div className="grid gap-1.5"><Label htmlFor="entry-date">Data</Label><Input id="entry-date" type="date" value={draft.date} onChange={(e) => update({ date: e.target.value })} required /></div>
         <div className="grid gap-1.5"><Label htmlFor="entry-name">Nome do lançamento</Label><Input id="entry-name" maxLength={200} placeholder="Quem pagou ou recebeu, emitente da nota…" value={draft.name} onChange={(e) => update({ name: e.target.value })} required /></div>
-        <div className="grid gap-1.5"><Label htmlFor="entry-total">Valor total (R$){draft.direction && <span className={cn("ml-1", draft.direction === "saida" ? "text-destructive" : "text-success")}>· {draft.direction === "saida" ? "saída" : "entrada"}</span>}</Label><Input id="entry-total" inputMode="decimal" placeholder="0,00" value={draft.total} onChange={(e) => update({ total: e.target.value })} className="text-right num" required /></div>
+        <div className="grid gap-1.5"><Label htmlFor="entry-total">Valor total (R$){draft.direction && <span className={cn("ml-1", draft.direction === "saida" ? "text-destructive" : "text-success")}>· {draft.direction === "saida" ? "saída" : "entrada"}</span>}</Label><Input id="entry-total" inputMode="decimal" placeholder="0,00" value={draft.total} onChange={(e) => update({ total: e.target.value })} readOnly={locked} title={locked ? "Valor da linha do extrato" : undefined} className="text-right num" required /></div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
         <div className="grid gap-1.5"><Label htmlFor="entry-payment">Forma de pagamento</Label><OptionSelect id="entry-payment" value={draft.paymentMethodId} onValueChange={choosePaymentMethod} options={options.paymentMethods} disabled={readOnly} /></div>
-        <div className="grid gap-1.5"><Label htmlFor="entry-account">Conta</Label><OptionSelect id="entry-account" value={draft.accountId} onValueChange={(accountId) => update({ accountId })} options={options.accounts} placeholder="Escolha a conta…" disabled={readOnly} /></div>
+        <div className="grid gap-1.5"><Label htmlFor="entry-account">Conta</Label><OptionSelect id="entry-account" value={draft.accountId} onValueChange={(accountId) => update({ accountId })} options={options.accounts} placeholder="Escolha a conta…" disabled={readOnly || locked} /></div>
         <div className="grid gap-1.5"><Label htmlFor="entry-document">Documento (opcional)</Label><Input id="entry-document" maxLength={60} placeholder="NF 1234, recibo…" value={draft.document} onChange={(e) => update({ document: e.target.value })} /></div>
         <Label className="h-7 w-fit cursor-pointer gap-2 font-medium">
           <Checkbox checked={draft.documentFiled} onCheckedChange={(checked) => update({ documentFiled: checked === true })} disabled={readOnly} />
