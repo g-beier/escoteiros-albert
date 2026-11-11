@@ -21,6 +21,7 @@ Modelo principal: `accounts` (contas, com saldo inicial), `payment_methods` (com
 - `/lancamentos/novo` — novo lançamento.
 - `/lancamentos/[id]` — detalhes com o formulário completo; edição e exclusão para tesouraria/administração, somente leitura para consulta.
 - `/associados` — associados (nome, ramo, seção, ativo).
+- `/importacao` — importar extrato CSV/OFX numa conta (tesouraria e administração): o arquivo é lido no navegador com o perfil do banco (reconhecido pelo cabeçalho, editável), papéis das colunas sobre a pré-visualização, conferência (totais, saldos, erros, linhas ignoradas) e lista das importações recentes da conta (`conta` na URL). Depois de importar, segue para `/conciliacao?conta=…&de=…&ate=…`.
 - `/cadastros` — contas (banco, agência, número, saldo inicial), formas de pagamento com conta padrão e rubricas (tesouraria e administração).
 - `/usuarios` — convites e papéis (administração).
 
