@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { IconArrowDownLeft, IconArrowUpRight, IconPlus, IconTrash } from "@tabler/icons-react";
 import { createEntry, deleteEntry, updateEntry } from "@/app/actions";
 import { OptionCombobox, OptionSelect, type Option } from "@/components/option-controls";
@@ -56,14 +57,12 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
   const router = useRouter();
   const [draft, setDraft] = useState<Draft>(() => toDraft(entry));
   const [saved, setSaved] = useState<Draft>(() => toDraft(entry));
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pending, startTransition] = useTransition();
   const readOnly = !canEdit;
   const dirty = JSON.stringify(stripKeys(draft)) !== JSON.stringify(stripKeys(saved));
 
-  const update = (patch: Partial<Draft>) => { setNotice(""); setDraft((current) => ({ ...current, ...patch })); };
+  const update = (patch: Partial<Draft>) => { setDraft((current) => ({ ...current, ...patch })); };
   const updateSplit = (key: number, patch: Partial<SplitDraft>) => update({ splits: draft.splits.map((s) => s.key === key ? { ...s, ...patch } : s) });
 
   const options = useMemo(() => ({
@@ -102,7 +101,6 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
   function submit(event: React.FormEvent) {
     event.preventDefault();
     if (readOnly) return;
-    setError("");
     const payload = {
       date: draft.date,
       name: draft.name,
@@ -114,10 +112,10 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
     };
     startTransition(async () => {
       const result = entry ? await updateEntry(entry.id, payload) : await createEntry(payload);
-      if (result.error) { setError(result.error); return; }
-      if (!entry) { router.push(backHref); return; }
+      if (result.error) { toast.error(result.error); return; }
+      if (!entry) { toast.success("Lançamento salvo."); router.push(backHref); return; }
       setSaved(draft);
-      setNotice("Alterações salvas.");
+      toast.success("Alterações salvas.");
       router.refresh();
     });
   }
@@ -126,14 +124,13 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
     if (!entry) return;
     startTransition(async () => {
       const result = await deleteEntry(entry.id);
-      if (result.error) { setError(result.error); setConfirmDelete(false); return; }
+      if (result.error) { toast.error(result.error); setConfirmDelete(false); return; }
+      toast.info("Lançamento excluído.");
       router.push(backHref);
     });
   }
 
   return <form onSubmit={submit} className="grid gap-5">
-    {error && <div role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-destructive">{error}</div>}
-    {notice && <div role="status" className="rounded-lg bg-success-soft px-3 py-2 text-success">{notice}</div>}
 
     <fieldset disabled={readOnly} className="grid gap-3">
       <legend className="mb-2 text-sm font-semibold">Linha do extrato</legend>
@@ -183,7 +180,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
     {!readOnly && <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
       <div>{entry && <Button type="button" variant="destructive" onClick={() => setConfirmDelete(true)}><IconTrash /> Excluir lançamento</Button>}</div>
       <div className="flex gap-2">
-        <Button type="button" variant="outline" onClick={() => entry && dirty ? (setDraft(saved), setError("")) : router.push(backHref)}>{entry && dirty ? "Descartar alterações" : "Voltar"}</Button>
+        <Button type="button" variant="outline" onClick={() => entry && dirty ? setDraft(saved) : router.push(backHref)}>{entry && dirty ? "Descartar alterações" : "Voltar"}</Button>
         <Button type="submit" size="lg" disabled={!draft.direction || !balanced || pending || (Boolean(entry) && !dirty)}>{pending ? "Salvando…" : entry ? "Salvar alterações" : "Salvar lançamento"}</Button>
       </div>
     </div>}

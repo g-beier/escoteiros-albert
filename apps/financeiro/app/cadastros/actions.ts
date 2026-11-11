@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { canManageEntries } from "@/lib/auth";
 import { CATALOG_KINDS, catalogErrorMessage, isCatalogKind, type CatalogKind } from "@/lib/catalogs";
 
-export type CatalogFormState = { error?: string; success?: string };
+export type CatalogFormState = { error?: string; success?: string; tone?: "success" | "neutral" };
 
 async function requireEditor() {
   const supabase = await createClient();
@@ -59,16 +59,23 @@ export async function updateCatalogItem(_previous: CatalogFormState, formData: F
     const id = z.uuid().parse(formData.get("id"));
     const { supabase, groupId } = await requireEditor();
     const patch: { name?: string; active?: boolean } = {};
-    if (formData.has("active")) patch.active = formData.get("active") === "true";
+    const { singular } = CATALOG_KINDS[kind];
+    const label = singular.charAt(0).toUpperCase() + singular.slice(1);
+    let result: CatalogFormState = { success: `${label} salva.` };
+    if (formData.has("active")) {
+      patch.active = formData.get("active") === "true";
+      result = patch.active ? { success: `${label} reativada.` } : { success: `${label} inativada.`, tone: "neutral" };
+    }
     if (formData.has("name")) {
       const name = readName(formData, kind);
       if (!name.success) return { error: name.error.issues[0]?.message };
       patch.name = name.data;
+      result = { success: `“${name.data}” salva.` };
     }
     const { error } = await supabase.from(CATALOG_KINDS[kind].table).update(patch).eq("id", id).eq("group_id", groupId);
     if (error) return { error: catalogErrorMessage(error, CATALOG_KINDS[kind].singular) };
     revalidate();
-    return { success: "Salvo." };
+    return result;
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Não foi possível salvar." };
   }

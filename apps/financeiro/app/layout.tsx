@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 // Fonte do financeiro (variável, com algarismos tabulares). O site institucional segue em Poppins.
@@ -20,5 +21,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-BR" className={outfit.variable}><body>{children}</body></html>;
+  return <html lang="pt-BR" className={outfit.variable}><body>{children}<Toaster /></body></html>;
 }

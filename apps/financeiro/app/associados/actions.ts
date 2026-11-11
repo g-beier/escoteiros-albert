@@ -12,7 +12,7 @@ const associateSchema = z.object({
   section: z.string().trim().max(60).transform((value) => value || null),
 });
 
-export type AssociateFormState = { error?: string; success?: string };
+export type AssociateFormState = { error?: string; success?: string; tone?: "success" | "neutral" };
 
 async function requireEditor() {
   const supabase = await createClient();
@@ -53,17 +53,22 @@ export async function updateAssociate(_previous: AssociateFormState, formData: F
     const id = z.uuid().parse(formData.get("id"));
     const { supabase, groupId } = await requireEditor();
     let patch: Record<string, unknown>;
-    if (formData.has("active")) patch = { active: formData.get("active") === "true" };
-    else {
+    let result: AssociateFormState;
+    if (formData.has("active")) {
+      const active = formData.get("active") === "true";
+      patch = { active };
+      result = active ? { success: "Associado reativado." } : { success: "Associado inativado.", tone: "neutral" };
+    } else {
       const parsed = readAssociate(formData);
       if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
       patch = parsed.data;
+      result = { success: `${parsed.data.name} salvo.` };
     }
     const { error } = await supabase.from("associates").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", id).eq("group_id", groupId);
     if (error) return { error: error.message };
     revalidatePath("/associados");
     revalidatePath("/");
-    return { success: "Salvo." };
+    return result;
   } catch (error) {
     return fail(error, "Não foi possível salvar.");
   }

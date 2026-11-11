@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { CatalogKind } from "@/lib/catalogs";
+import { useActionToast } from "@/lib/use-action-toast";
 import { cn } from "@/lib/utils";
 
 type Item = {
@@ -18,14 +19,9 @@ type Item = {
 };
 const initial: CatalogFormState = {};
 
-function Feedback({ state }: { state: CatalogFormState }) {
-  if (state.error) return <p role="alert" className="text-destructive">{state.error}</p>;
-  if (state.success) return <p role="status" className="text-success">{state.success}</p>;
-  return null;
-}
-
 export function CatalogManager({ kind, title, singular, maxLength, items, canEdit }: { kind: CatalogKind; title: string; singular: string; maxLength: number; items: Item[]; canEdit: boolean }) {
   const [state, action, pending] = useActionState(createCatalogItem, initial);
+  useActionToast(state);
   return <section className="card" aria-labelledby={`${kind}-title`}>
     <header className="card-head"><h2 className="card-title" id={`${kind}-title`}>{title}</h2><span className="muted" style={{ fontSize: 12 }}>{items.filter((i) => i.active).length} ativas de {items.length}</span></header>
     {canEdit && <form action={action} className="grid gap-2 border-b p-3">
@@ -37,7 +33,6 @@ export function CatalogManager({ kind, title, singular, maxLength, items, canEdi
         <Button type="submit" disabled={pending}><IconPlus /> Adicionar</Button>
       </div>
       {kind === "categories" && <p className="text-xs text-muted-foreground">O código define o tipo (1 = receita, 2 = despesa) e a rubrica pai: 2.5.6 fica dentro de 2.5 Pastelada.</p>}
-      <Feedback state={state} />
     </form>}
     <Table>
       <TableCaption className="sr-only">{title} do grupo</TableCaption>
@@ -53,7 +48,9 @@ export function CatalogManager({ kind, title, singular, maxLength, items, canEdi
 
 function CatalogRow({ kind, item, maxLength, canEdit }: { kind: CatalogKind; item: Item; maxLength: number; canEdit: boolean }) {
   const [renameState, rename, renaming] = useActionState(updateCatalogItem, initial);
-  const [, toggle, toggling] = useActionState(updateCatalogItem, initial);
+  const [toggleState, toggle, toggling] = useActionState(updateCatalogItem, initial);
+  useActionToast(renameState);
+  useActionToast(toggleState);
   const status = <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", item.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{item.active ? "Ativa" : "Inativa"}</span>;
   return <TableRow className={cn(!item.active && "text-muted-foreground")}>
     <TableCell className="px-3 py-1.5">
@@ -63,7 +60,6 @@ function CatalogRow({ kind, item, maxLength, canEdit }: { kind: CatalogKind; ite
         <Label htmlFor={`${kind}-${item.id}`} className="sr-only">Nome</Label>
         <Input id={`${kind}-${item.id}`} name="name" defaultValue={item.name} maxLength={maxLength} required className={cn("max-w-md", item.isGroup && "font-semibold")} />
         <Button type="submit" variant="ghost" size="icon-sm" aria-label={`Salvar nome de ${item.name}`} disabled={renaming}><IconCheck /></Button>
-        {renameState.error && <span role="alert" className="text-destructive">{renameState.error}</span>}
       </form> : item.name}
     </TableCell>
     <TableCell className="px-3 py-1.5 text-right num" title="Rateios ou lançamentos que usam este cadastro">

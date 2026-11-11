@@ -3,7 +3,8 @@
 import { createContext, useContext, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { IconDots, IconFileDescription, IconFolderCheck, IconFolderExclamation, IconPlus, IconTrash, IconX } from "@tabler/icons-react";
+import { toast } from "sonner";
+import { IconDots, IconFileDescription, IconFolderCheck, IconFolderExclamation, IconPlus, IconTrash } from "@tabler/icons-react";
 import { deleteEntry, setDocumentFiled } from "@/app/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -32,7 +33,6 @@ function useList() {
 /** Ações rápidas da lista (pasta e exclusão) e links para a página de detalhes. */
 export function EntryListProvider({ canEdit, returnQuery, children }: { canEdit: boolean; returnQuery: string; children: React.ReactNode }) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState("");
   const [busyEntryId, setBusyEntryId] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<string, EntryOverride>>({});
   const [pending, startTransition] = useTransition();
@@ -46,11 +46,10 @@ export function EntryListProvider({ canEdit, returnQuery, children }: { canEdit:
     requestDelete: (entryId) => setDeleteId(entryId),
     toggleFiled: (entryId, filed) => {
       setBusyEntryId(entryId);
-      setActionError("");
       override(entryId, { filed });
       startTransition(async () => {
         const result = await setDocumentFiled(entryId, filed);
-        if (result.error) { setActionError(result.error); override(entryId, { filed: !filed }); }
+        if (result.error) { toast.error(result.error); override(entryId, { filed: !filed }); }
         setBusyEntryId(null);
       });
     },
@@ -61,17 +60,13 @@ export function EntryListProvider({ canEdit, returnQuery, children }: { canEdit:
     const id = deleteId;
     startTransition(async () => {
       const result = await deleteEntry(id);
-      if (result.error) setActionError(result.error);
-      else override(id, { deleted: true });
+      if (result.error) toast.error(result.error);
+      else { override(id, { deleted: true }); toast.info("Lançamento excluído."); }
       setDeleteId(null);
     });
   }
 
   return <ListContext.Provider value={api}>
-    {actionError && <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
-      {actionError}
-      <Button variant="ghost" size="icon-xs" aria-label="Dispensar aviso" onClick={() => setActionError("")}><IconX /></Button>
-    </div>}
     {children}
     {canEdit && <Dialog open={deleteId !== null} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
       <DialogContent>

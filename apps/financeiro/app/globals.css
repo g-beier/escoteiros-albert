@@ -21,6 +21,7 @@
   --orange: #f15b2a;
   --yellow: #ffad25;
   --red: #9d2f2f;
+  --red-soft: #f6e1df;
   --shadow: 5px 6px 0 rgba(37, 35, 40, .09);
   --topbar-h: 60px;
 
@@ -80,6 +81,7 @@
   --color-chart-5: var(--chart-5);
   --color-success: var(--green-dark);
   --color-success-soft: var(--green-soft);
+  --color-destructive-soft: var(--red-soft);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
