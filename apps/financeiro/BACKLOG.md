@@ -48,6 +48,10 @@
 - Lista de lançamentos movida para `/lancamentos`; por padrão começa em 1º de janeiro do ano atual (`de` ausente); apagar a data inicial (`de=tudo`) mostra todos os anos.
 - Lançamentos: a página não rola em nenhuma largura; só as linhas da tabela rolam sob cabeçalho fixo.
 
+## Concluído (2026-11-11, sétima rodada)
+
+- Coluna e filtro "Pasta" renomeados para **Documentos** (Pendente / Arquivado), também no formulário, no dashboard e nas exportações. Parâmetro de URL `pasta` mantido.
+
 ## A verificar
 
 - Dashboard e rolagem da tabela no navegador (desktop e celular).
@@ -63,6 +67,7 @@
 - Virtualizar a tabela se a rolagem infinita ficar pesada com milhares de linhas carregadas.
 - Histórico de alterações (auditoria) na página de detalhes.
 - Testes pgTAP das políticas RLS e funções; Playwright para OTP, lançamentos e gestão de usuários.
-- Importação/conciliação de extrato CSV/OFX.
+- Rever o nome "Nome do lançamento": o campo deve ficar igual ao texto do extrato do banco (candidatos: "Histórico", "Texto do extrato"). Decidir junto com a importação de extratos.
+- Contas bancárias, importação de extrato CSV/OFX e conciliação (vincular e baixar sobressalentes): plano em `docs/importacao-conciliacao.md`, aguardando revisão e CSVs de exemplo.
 - Anexos de comprovantes em bucket privado (complementa a "pasta").
 - Mensalidades por associado.

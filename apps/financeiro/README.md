@@ -13,7 +13,9 @@ MVP de gestão financeira para grupo escoteiro. Um lançamento representa uma li
 
 ## Telas
 
-- `/` — lançamentos: visões **Por extrato** (uma linha por lançamento) e **Por rubrica** (um rateio por linha), filtros na URL (`de`, `ate`, `forma`, `pasta`, `associado`, `rubrica`, `q`) e conferência rápida da pasta.
+- `/` — resumo do ano: receitas, despesas, saldo, documentos pendentes, mês a mês e últimos lançamentos.
+- `/lancamentos` — lançamentos: visões **Por extrato** (uma linha por lançamento) e **Por rubrica** (um rateio por linha), filtros na URL (`de`, `ate`, `forma`, `pasta` = documentos, `associado`, `rubrica`, `q`; sem `de`, começa em 1º de janeiro do ano atual, `de=tudo` mostra todos) e conferência rápida dos documentos.
+- `/exportar/fluxo` e `/exportar/realizado` — planilhas XLSX (fluxo de caixa por período e Realizado anual).
 - `/lancamentos/novo` — novo lançamento.
 - `/lancamentos/[id]` — detalhes com o formulário completo; edição e exclusão para tesouraria/administração, somente leitura para consulta.
 - `/associados` — associados (nome, ramo, seção, ativo).
