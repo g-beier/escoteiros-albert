@@ -52,9 +52,9 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-sans);
-  --font-numeric: var(--font-outfit), var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-numeric: var(--font-sans);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);

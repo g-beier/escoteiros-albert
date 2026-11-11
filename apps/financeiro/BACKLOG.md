@@ -30,12 +30,11 @@
 - Rubricas hierárquicas com código, tipo receita/despesa e pai (`008_category_tree.sql`); sinais validados no banco.
 - Formulário: passo Entrada/Saída antes da rubrica; seletor de rubrica em árvore; valores digitados sem sinal.
 - `/cadastros`: rubricas em árvore com código; uso leva aos rateios para recategorizar.
-- Algarismos tabulares com Outfit (a Poppins do Google Fonts não tem `tnum`).
+- Fonte do app trocada para Outfit (algarismos tabulares); institucional segue em Poppins.
 
 ## A verificar
 
 - Seletor de rubrica do formulário e painel de filtros ainda não passaram pelo teste automatizado no navegador (compilam e as rotas respondem).
-- Decidir se o app inteiro passa para Outfit ou mantém Poppins no texto.
 - Confirmar se "conta" é um campo distinto da forma de pagamento.
 
 ## Próximos

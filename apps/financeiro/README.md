@@ -26,7 +26,7 @@ shadcn/ui com o preset `b1D0eVNQ` (estilo `base-mira`, primitivas Base UI, ícon
 
 ## Identidade visual
 
-A interface usa exclusivamente Poppins, nos pesos 400, 500, 600 e 700. A paleta segue a identidade do Grupo Escoteiro Albert Schweitzer: roxo para ações primárias, verde para suporte e sucesso, amarelo para foco e neutros quentes nas superfícies.
+A interface usa a fonte Outfit (variável), escolhida por ter algarismos tabulares (`tnum`) para alinhar valores e datas; o site institucional continua em Poppins. Use a classe `num` em valores, datas e campos numéricos. A paleta segue a identidade do Grupo Escoteiro Albert Schweitzer: roxo para ações primárias, verde para suporte e sucesso, amarelo para foco e neutros quentes nas superfícies.
 
 O navegador recebe somente a chave publicável do Supabase. As políticas RLS e as funções transacionais validam novamente grupo, papel e fechamento do rateio no banco.
 

@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import { Outfit, Poppins } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 
-const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", variable: "--font-poppins" });
-// Algarismos tabulares (tnum) para valores e datas; a Poppins do Google Fonts não tem esse recurso.
+// Fonte do financeiro (variável, com algarismos tabulares). O site institucional segue em Poppins.
 const outfit = Outfit({ subsets: ["latin"], display: "swap", variable: "--font-outfit" });
 
 export const metadata: Metadata = {
@@ -21,5 +20,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-BR" className={`${poppins.variable} ${outfit.variable}`}><body>{children}</body></html>;
+  return <html lang="pt-BR" className={outfit.variable}><body>{children}</body></html>;
 }
