@@ -11,11 +11,17 @@ export async function loadEntryContext() {
   const { data: membership } = await supabase.from("memberships").select("group_id, role").eq("user_id", user.id).single();
   if (!membership) redirect("/");
   const groupId = membership.group_id as string;
-  const [{ data: categories }, { data: paymentMethods }, { data: associates }] = await Promise.all([
+  const [{ data: categories }, { data: paymentMethods }, { data: associates }, { data: accounts }] = await Promise.all([
     supabase.from("categories").select("id, name, active, code, kind, parent_id").eq("group_id", groupId),
-    supabase.from("payment_methods").select("id, name, active").eq("group_id", groupId).order("name"),
+    supabase.from("payment_methods").select("id, name, active, default_account_id").eq("group_id", groupId).order("name"),
     supabase.from("associates").select("id, name, active").eq("group_id", groupId).order("name"),
+    supabase.from("accounts").select("id, name, active").eq("group_id", groupId).order("name"),
   ]);
-  const catalogs: Catalogs = { categories: (categories ?? []) as Catalogs["categories"], paymentMethods: paymentMethods ?? [], associates: associates ?? [] };
+  const catalogs: Catalogs = {
+    categories: (categories ?? []) as Catalogs["categories"],
+    paymentMethods: paymentMethods ?? [],
+    associates: associates ?? [],
+    accounts: accounts ?? [],
+  };
   return { supabase, user, role: membership.role as string, canEdit: canManageEntries(membership.role), catalogs };
 }

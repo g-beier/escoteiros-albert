@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { canManageEntries } from "@/lib/auth";
 import { CATALOG_KINDS, catalogErrorMessage, isCatalogKind, type CatalogKind } from "@/lib/catalogs";
+import { readAccountForm, toAccountRpc } from "@/lib/accounts";
 
 export type CatalogFormState = { error?: string; success?: string; tone?: "success" | "neutral" };
 
@@ -78,5 +79,69 @@ export async function updateCatalogItem(_previous: CatalogFormState, formData: F
     return result;
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Não foi possível salvar." };
+  }
+}
+
+// Contas ------------------------------------------------------------------------
+// Escritas pelas funções SQL create_account/update_account/set_account_active (validadas e auditadas).
+
+export async function createAccount(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
+  try {
+    const parsed = readAccountForm(formData);
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+    const { supabase, groupId } = await requireEditor();
+    const { error } = await supabase.rpc("create_account", { p_group_id: groupId, ...toAccountRpc(parsed.data) });
+    if (error) return { error: error.message };
+    revalidate();
+    return { success: `Conta “${parsed.data.name}” cadastrada.` };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Não foi possível cadastrar a conta." };
+  }
+}
+
+export async function updateAccount(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
+  try {
+    const id = z.uuid().safeParse(formData.get("id"));
+    if (!id.success) return { error: "Conta inválida." };
+    const parsed = readAccountForm(formData);
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message };
+    const { supabase } = await requireEditor();
+    const { error } = await supabase.rpc("update_account", { p_account_id: id.data, ...toAccountRpc(parsed.data) });
+    if (error) return { error: error.message };
+    revalidate();
+    return { success: `Conta “${parsed.data.name}” salva.` };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Não foi possível salvar a conta." };
+  }
+}
+
+export async function setAccountActive(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
+  try {
+    const id = z.uuid().safeParse(formData.get("id"));
+    if (!id.success) return { error: "Conta inválida." };
+    const active = formData.get("active") === "true";
+    const { supabase } = await requireEditor();
+    const { error } = await supabase.rpc("set_account_active", { p_account_id: id.data, p_active: active });
+    if (error) return { error: error.message };
+    revalidate();
+    return active ? { success: "Conta reativada." } : { success: "Conta inativada.", tone: "neutral" };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Não foi possível alterar a conta." };
+  }
+}
+
+/** Conta padrão da forma de pagamento; `accountId` vazio remove o padrão. */
+export async function setPaymentMethodDefaultAccount(paymentMethodId: unknown, accountId: unknown): Promise<CatalogFormState> {
+  try {
+    const method = z.uuid().safeParse(paymentMethodId);
+    const account = z.union([z.uuid(), z.literal("")]).safeParse(accountId);
+    if (!method.success || !account.success) return { error: "Dados inválidos." };
+    const { supabase } = await requireEditor();
+    const { error } = await supabase.rpc("set_payment_method_default_account", { p_payment_method_id: method.data, p_account_id: account.data || null });
+    if (error) return { error: error.message };
+    revalidate();
+    return account.data ? { success: "Conta padrão salva." } : { success: "Conta padrão removida.", tone: "neutral" };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Não foi possível salvar a conta padrão." };
   }
 }

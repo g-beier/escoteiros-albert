@@ -93,6 +93,7 @@ export async function statementWorkbook(rows: StatementRow[], period: Period) {
   flowSheet(workbook, "Fluxo por extrato", "Fluxo de caixa por extrato", period, [
     { header: "Data", width: 12, date: true, value: (r) => toDate(r.entry_date) },
     { header: "Nome", width: 40, value: (r) => r.name },
+    { header: "Conta", width: 22, value: (r) => r.account_name },
     { header: "Forma pgto", width: 18, value: (r) => r.payment_method_name },
     { header: "Documento", width: 16, value: (r) => r.document ?? "" },
     { header: "Documentos", width: 12, value: (r) => folder(r.document_filed) },
@@ -106,6 +107,7 @@ export async function splitWorkbook(rows: SplitRow[], period: Period) {
   flowSheet(workbook, "Fluxo por rubrica", "Fluxo de caixa por rubrica", period, [
     { header: "Data", width: 12, date: true, value: (r) => toDate(r.entry_date) },
     { header: "Nome do lançamento", width: 34, value: (r) => r.entry_name },
+    { header: "Conta", width: 22, value: (r) => r.account_name },
     { header: "Forma pgto", width: 18, value: (r) => r.payment_method_name },
     { header: "Documento", width: 16, value: (r) => r.document ?? "" },
     { header: "Documentos", width: 12, value: (r) => folder(r.document_filed) },

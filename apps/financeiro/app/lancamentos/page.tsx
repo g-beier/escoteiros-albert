@@ -35,10 +35,11 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
   const groupId = membership.group_id;
   const canEdit = canManageEntries(membership.role);
 
-  const [{ data: categories }, { data: paymentMethods }, { data: associates }, firstPage, { count: pendingDocs }, { data: firstEntry }, { data: lastEntry }] = await Promise.all([
+  const [{ data: categories }, { data: paymentMethods }, { data: associates }, { data: accounts }, firstPage, { count: pendingDocs }, { data: firstEntry }, { data: lastEntry }] = await Promise.all([
     supabase.from("categories").select("id, name, active, code, kind, parent_id").eq("group_id", groupId),
     supabase.from("payment_methods").select("id, name, active").eq("group_id", groupId).order("name"),
     supabase.from("associates").select("id, name, active").eq("group_id", groupId).order("name"),
+    supabase.from("accounts").select("id, name, active").eq("group_id", groupId).order("name"),
     fetchEntryPage(supabase, groupId, byCategory ? "rubricas" : "extrato", filters, order, 0, true),
     supabase.from("ledger_entries").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("document_filed", false),
     supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date").limit(1).maybeSingle(),
@@ -47,6 +48,7 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
   const years = exportYears(firstEntry?.entry_date, lastEntry?.entry_date);
   const tree = sortCategories((categories ?? []) as CategoryItem[]);
   const dimensions: FilterDimensions = {
+    conta: { label: "Conta", options: toOptions(accounts) },
     forma: { label: "Forma pgto", options: toOptions(paymentMethods) },
     pasta: { label: "Documentos", options: [{ value: "pendente", label: "Pendente" }, { value: "na-pasta", label: "Arquivado" }] },
     associado: { label: "Associado", options: [{ value: NO_ASSOCIATE, label: "(Sem associado)" }, ...toOptions(associates)] },

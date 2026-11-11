@@ -9,6 +9,7 @@ export type StatementRow = {
   entry_id: string;
   entry_date: string;
   name: string;
+  account_name: string;
   payment_method_name: string;
   document: string | null;
   document_filed: boolean;
@@ -20,6 +21,7 @@ export type SplitRow = {
   entry_id: string;
   entry_date: string;
   entry_name: string;
+  account_name: string;
   payment_method_name: string;
   document: string | null;
   document_filed: boolean;
@@ -35,8 +37,8 @@ export type EntryPage =
   | { view: "extrato"; rows: StatementRow[]; total: number | null; error?: string }
   | { view: "rubricas"; rows: SplitRow[]; total: number | null; error?: string };
 
-export const STATEMENT_COLUMNS = "entry_id, entry_date, name, payment_method_name, document, document_filed, total_cents";
-export const SPLIT_COLUMNS = "split_id, entry_id, entry_date, entry_name, payment_method_name, document, document_filed, amount_cents, description, category_name, category_code, category_kind, associate_name";
+export const STATEMENT_COLUMNS = "entry_id, entry_date, name, account_name, payment_method_name, document, document_filed, total_cents";
+export const SPLIT_COLUMNS = "split_id, entry_id, entry_date, entry_name, account_name, payment_method_name, document, document_filed, amount_cents, description, category_name, category_code, category_kind, associate_name";
 
 // IDs chegam validados como UUID por parseFilters, então podem compor filtros `or` com segurança.
 
@@ -58,6 +60,7 @@ export async function fetchEntryPage(
       .eq("group_id", groupId);
     if (filters.from) query = query.gte("entry_date", filters.from);
     if (filters.to) query = query.lte("entry_date", filters.to);
+    if (filters.accountIds.length) query = query.in("account_id", filters.accountIds);
     if (filters.paymentMethodIds.length) query = query.in("payment_method_id", filters.paymentMethodIds);
     if (filters.folder) query = query.eq("document_filed", filters.folder === "na-pasta");
     if (filters.associateIds.length && filters.withoutAssociate) query = query.or(`associate_id.is.null,associate_id.in.(${filters.associateIds.join(",")})`);
@@ -76,6 +79,7 @@ export async function fetchEntryPage(
     .eq("group_id", groupId);
   if (filters.from) query = query.gte("entry_date", filters.from);
   if (filters.to) query = query.lte("entry_date", filters.to);
+  if (filters.accountIds.length) query = query.in("account_id", filters.accountIds);
   if (filters.paymentMethodIds.length) query = query.in("payment_method_id", filters.paymentMethodIds);
   if (filters.folder) query = query.eq("document_filed", filters.folder === "na-pasta");
   if (filters.associateIds.length && filters.withoutAssociate) query = query.or(`has_split_without_associate.is.true,associate_ids.ov.{${filters.associateIds.join(",")}}`);

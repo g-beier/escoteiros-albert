@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useListParams } from "./filter-options";
 import { MultiFilter } from "./multi-filter";
 
-const FILTER_KEYS = ["de", "ate", "forma", "pasta", "associado", "rubrica", "q"] as const;
+const FILTER_KEYS = ["de", "ate", "conta", "forma", "pasta", "associado", "rubrica", "q"] as const;
 
 export function EntryFilters() {
   const { params, apply, pending } = useListParams();
@@ -45,6 +45,7 @@ export function EntryFilters() {
       <Label htmlFor="filter-to" className="text-muted-foreground">até</Label>
       <Input id="filter-to" type="date" className={dateClass("ate")} value={params.get("ate") ?? ""} onChange={(e) => apply({ ate: e.target.value || null })} />
     </div>
+    <MultiFilter filterKey="conta" />
     <MultiFilter filterKey="forma" />
     <MultiFilter filterKey="pasta" />
     <MultiFilter filterKey="associado" />

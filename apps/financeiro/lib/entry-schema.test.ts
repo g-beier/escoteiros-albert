@@ -3,7 +3,7 @@ import { entrySchema, toRpcSplits } from "./entry-schema";
 
 const id = "0b6c7a4e-5d1f-4c1e-9a8b-2f3d4e5f6a7b";
 const base = {
-  date: "2026-11-11", name: "Fulano de Tal (PIX)", paymentMethodId: id, document: "NF 1", documentFiled: false, totalCents: 10000,
+  date: "2026-11-11", name: "Fulano de Tal (PIX)", paymentMethodId: id, accountId: id, document: "NF 1", documentFiled: false, totalCents: 10000,
   splits: [
     { categoryId: id, amountCents: 8000, description: "Mensalidade", associateId: id },
     { categoryId: id, amountCents: 2000, description: "Lanche", associateId: null },
