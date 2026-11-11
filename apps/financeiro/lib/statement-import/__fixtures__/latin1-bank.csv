@@ -1,0 +1,10 @@
+Banco Exemplo - Extrato de Conta Corrente
+Período: 01/03/2026 a 31/03/2026
+
+Data;Histórico;Documento;Crédito;Débito;Saldo
+28/02/2026;SALDO ANTERIOR;;;;1.000,00
+02/03/2026;DEPÓSITO EM DINHEIRO;000123;350,00;;1.350,00
+05/03/2026;TARIFA BANCÁRIA;;;12,90;1.337,10
+10/03/2026;PAGTO BOLETO Gráfica São José Fictícia;000456;;1.234,56;102,54
+15/03/2026;TED RECEBIDA Conceição Exemplo;000789;2.000,00;;2.102,54
+31/03/2026;S A L D O;;;;2.102,54
