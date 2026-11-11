@@ -67,6 +67,11 @@ export function matchIgnore(text: string, ignoreIf: string[] = []) {
   return ignoreIf.find((needle) => normalizeText(needle) !== "" && haystack.includes(normalizeText(needle))) ?? null;
 }
 
+/** Pseudo-linha de saldo anterior (Itaú e outros), comparada sem acentos nem caixa. */
+export function isPreviousBalance(description: string) {
+  return normalizeText(description).includes("saldo anterior");
+}
+
 type TrieNode = { count: number; children: Map<string, TrieNode>; forms: Map<string, number> };
 
 const newNode = (): TrieNode => ({ count: 0, children: new Map(), forms: new Map() });

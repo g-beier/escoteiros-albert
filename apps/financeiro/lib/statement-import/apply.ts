@@ -1,5 +1,5 @@
 import { readCsv } from "./csv";
-import { checkBalanceChain, computePeriod, computeTotals, matchIgnore, splitKind } from "./profile";
+import { checkBalanceChain, computePeriod, computeTotals, isPreviousBalance, matchIgnore, splitKind } from "./profile";
 import { collapseSpaces, normalizeText } from "./text";
 import type { CsvTable, Decimal, IgnoredRow, ParsedStatement, ProfileSettings, StatementIssue, StatementLine } from "./types";
 import { parseAmount, parseDate } from "./values";
@@ -81,6 +81,23 @@ export function applyProfile(input: CsvTable | string, settings: ProfileSettings
 
   const debitValues = (columns.debitValues ?? []).map(normalizeText);
   const cell = (row: string[], key: string) => (index[key] === undefined ? "" : (row[index[key]] ?? "").trim());
+  const rowAmount = (row: string[]): number | null => {
+    const read = (key: string) => (cell(row, key) ? parseAmount(cell(row, key), decimal) : null);
+    if (columns.amount) {
+      const amount = read("amount");
+      if (amount !== null && columns.nature) {
+        return debitValues.includes(normalizeText(cell(row, "nature"))) ? -Math.abs(amount) : Math.abs(amount);
+      }
+      if (amount !== null) return amount;
+    } else if (cell(row, "credit") || cell(row, "debit")) {
+      const credit = read("credit");
+      const debit = read("debit");
+      if (credit !== null || debit !== null) return Math.abs(credit ?? 0) - Math.abs(debit ?? 0);
+    }
+    return read("balance");
+  };
+  // Valor de uma pseudo-linha "SALDO ANTERIOR" ignorada: vira o saldo inicial se o arquivo não trouxer outro.
+  let previousBalance: number | undefined;
 
   csv.rows.forEach((row, position) => {
     const sourceRow = csv.rowNumbers[position] ?? csv.headerRow + position + 1;
@@ -88,6 +105,7 @@ export function applyProfile(input: CsvTable | string, settings: ProfileSettings
     const ignoredBy = matchIgnore(row.join(" "), settings.ignoreIf);
     if (ignoredBy) {
       ignored.push({ sourceRow, reason: `Contém "${ignoredBy}"` });
+      if (previousBalance === undefined && isPreviousBalance(description)) previousBalance = rowAmount(row) ?? undefined;
       return;
     }
 
@@ -152,6 +170,7 @@ export function applyProfile(input: CsvTable | string, settings: ProfileSettings
   } else {
     if (summary.openingBalanceCents !== undefined) result.openingBalanceCents = summary.openingBalanceCents;
     if (summary.closingBalanceCents !== undefined) result.closingBalanceCents = summary.closingBalanceCents;
+    if (result.openingBalanceCents === undefined && previousBalance !== undefined) result.openingBalanceCents = previousBalance;
   }
 
   const checks: boolean[] = [];
@@ -162,8 +181,8 @@ export function applyProfile(input: CsvTable | string, settings: ProfileSettings
     // A summary block must agree with the balances on the rows.
     if (summary.openingBalanceCents !== undefined) checks.push(summary.openingBalanceCents === chain.openingBalanceCents);
     if (summary.closingBalanceCents !== undefined) checks.push(summary.closingBalanceCents === chain.closingBalanceCents);
-  } else if (summary.openingBalanceCents !== undefined && summary.closingBalanceCents !== undefined) {
-    checks.push(summary.openingBalanceCents + totals.netCents === summary.closingBalanceCents);
+  } else if (result.openingBalanceCents !== undefined && result.closingBalanceCents !== undefined) {
+    checks.push(result.openingBalanceCents + totals.netCents === result.closingBalanceCents);
   }
   if (checks.length > 0) {
     result.balanceCheck = { ok: checks.every(Boolean) };

@@ -1,4 +1,4 @@
-import { computePeriod, computeTotals, headerSignature, matchIgnore, splitKind } from "./profile";
+import { computePeriod, computeTotals, headerSignature, isPreviousBalance, matchIgnore, splitKind } from "./profile";
 import { collapseSpaces } from "./text";
 import type {
   IgnoredRow,
@@ -142,10 +142,13 @@ const MEMO_SEPARATOR = " - ";
 export function applyOfxProfile(parsed: OfxStatement, settings: OfxProfileSettings): OfxStatement {
   const ignored: IgnoredRow[] = [...parsed.ignored];
   const lines: StatementLine[] = [];
+  let openingBalanceCents = parsed.openingBalanceCents;
   for (const original of parsed.lines) {
     const ignoredBy = matchIgnore(original.description, settings.ignoreIf);
     if (ignoredBy) {
       ignored.push({ sourceRow: original.sourceRow, reason: `Contém "${ignoredBy}"` });
+      // O Itaú lança o saldo anterior como pseudo-transação: vira o saldo inicial.
+      if (openingBalanceCents === undefined && isPreviousBalance(original.description)) openingBalanceCents = original.amountCents;
       continue;
     }
     const line: StatementLine = { ...original };
@@ -163,5 +166,13 @@ export function applyOfxProfile(parsed: OfxStatement, settings: OfxProfileSettin
     lines.push(line);
   }
   ignored.sort((a, b) => a.sourceRow - b.sourceRow);
-  return { ...parsed, lines, ignored, totals: computeTotals(lines) };
+  const totals = computeTotals(lines);
+  const result: OfxStatement = { ...parsed, lines, ignored, totals };
+  if (openingBalanceCents !== undefined) {
+    result.openingBalanceCents = openingBalanceCents;
+    if (parsed.closingBalanceCents !== undefined) {
+      result.balanceCheck = { ok: openingBalanceCents + totals.netCents === parsed.closingBalanceCents };
+    }
+  }
+  return result;
 }

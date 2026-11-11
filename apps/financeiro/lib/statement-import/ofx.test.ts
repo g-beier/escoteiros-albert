@@ -93,6 +93,20 @@ describe("readOfx — Itaú (SGML sem tags de fechamento)", () => {
     expect(applied.totals).toEqual({ creditsCents: 20000, debitsCents: -34700, netCents: -14700 });
     expect(applied.closingBalanceCents).toBe(85300);
   });
+
+  it("usa a pseudo-linha SALDO ANTERIOR ignorada como saldo inicial e confere com o saldo final", () => {
+    expect(parsed.openingBalanceCents).toBeUndefined();
+    const applied = applyOfxProfile(parsed, { ignoreIf: ["Saldo Anterior", "SALDO TOTAL DISPONÍVEL DIA"] });
+    expect(applied.openingBalanceCents).toBe(100000);
+    expect(applied.balanceCheck).toEqual({ ok: true });
+  });
+
+  it("não inventa saldo inicial quando SALDO ANTERIOR não é ignorado", () => {
+    const applied = applyOfxProfile(parsed, { ignoreIf: ["SALDO TOTAL DISPONÍVEL DIA"] });
+    expect(applied.openingBalanceCents).toBeUndefined();
+    expect(applied.balanceCheck).toBeUndefined();
+    expect(applied.lines[0]).toMatchObject({ description: "SALDO ANTERIOR", amountCents: 100000 });
+  });
 });
 
 describe("readOfx — casos tolerados", () => {
