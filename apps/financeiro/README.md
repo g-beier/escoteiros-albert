@@ -1,6 +1,8 @@
 # GEAS Financeiro
 
-MVP de gestão financeira para grupo escoteiro. Um lançamento representa uma linha do extrato e contém um ou mais rateios por rubrica. A aplicação oferece as visões “Por extrato” e “Por rubrica”.
+MVP de gestão financeira para grupo escoteiro. Um lançamento representa uma linha do extrato, pertence a uma **conta** (corrente, poupança, caixa…) e contém um ou mais rateios por rubrica. A aplicação oferece as visões “Por extrato” e “Por rubrica”.
+
+Modelo principal: `accounts` (contas, com saldo inicial), `payment_methods` (com conta padrão), `ledger_entries` (linha do extrato, com `account_id`) e `entry_splits` (rateio). A importação de extrato grava `import_profiles` (perfil por banco/formato), `statement_imports` e `statement_lines` (linhas abertas, deduplicadas por impressão digital); `reconciliation_links`/`reconciliation_rejections` guardarão a conciliação. Plano completo em `docs/importacao-conciliacao.md`.
 
 ## Arquitetura
 
@@ -14,12 +16,12 @@ MVP de gestão financeira para grupo escoteiro. Um lançamento representa uma li
 ## Telas
 
 - `/` — resumo do ano: receitas, despesas, saldo, documentos pendentes, mês a mês e últimos lançamentos.
-- `/lancamentos` — lançamentos: visões **Por extrato** (uma linha por lançamento) e **Por rubrica** (um rateio por linha), filtros na URL (`de`, `ate`, `forma`, `pasta` = documentos, `associado`, `rubrica`, `q`; sem `de`, começa em 1º de janeiro do ano atual, `de=tudo` mostra todos) e conferência rápida dos documentos.
+- `/lancamentos` — lançamentos: visões **Por extrato** (uma linha por lançamento) e **Por rubrica** (um rateio por linha), coluna Conta, filtros na URL (`de`, `ate`, `conta`, `forma`, `pasta` = documentos, `associado`, `rubrica`, `q`; sem `de`, começa em 1º de janeiro do ano atual, `de=tudo` mostra todos) e conferência rápida dos documentos.
 - `/exportar/fluxo` e `/exportar/realizado` — planilhas XLSX (fluxo de caixa por período e Realizado anual).
 - `/lancamentos/novo` — novo lançamento.
 - `/lancamentos/[id]` — detalhes com o formulário completo; edição e exclusão para tesouraria/administração, somente leitura para consulta.
 - `/associados` — associados (nome, ramo, seção, ativo).
-- `/cadastros` — rubricas e formas de pagamento (tesouraria e administração).
+- `/cadastros` — contas (banco, agência, número, saldo inicial), formas de pagamento com conta padrão e rubricas (tesouraria e administração).
 - `/usuarios` — convites e papéis (administração).
 
 ## Componentes
@@ -130,7 +132,7 @@ O código por e-mail é autenticação passwordless de um fator, não MFA verdad
 - Use bancos Supabase distintos para Preview e Production na Vercel.
 - Depois de criar o primeiro grupo, a migração `003_security_and_audit.sql` revoga o bootstrap público.
 - Remover um usuário bloqueia a conta e elimina sua associação ao grupo; lançamentos antigos preservam a autoria.
-- Mudanças de papel, remoções, convites e novos lançamentos geram eventos de auditoria.
+- Mudanças de papel, remoções, convites, lançamentos, contas, perfis de importação e importações de extrato geram eventos de auditoria.
 
 ### Qualidade
 

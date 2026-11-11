@@ -52,7 +52,14 @@
 
 - Coluna e filtro "Pasta" renomeados para **Documentos** (Pendente / Arquivado), também no formulário, no dashboard e nas exportações. Parâmetro de URL `pasta` mantido.
 
+## Concluído (2026-11-11, oitava rodada)
+
+- **Contas** (`011_accounts.sql`): cadastro em `/cadastros` (tipo, banco, agência, número, saldo inicial), conta padrão por forma de pagamento, conta obrigatória no lançamento (lançamentos antigos foram para "A definir"; Dinheiro → Caixa), coluna e filtro **Conta** (`conta` na URL) e coluna nas exportações.
+- **Importação de extrato — banco e servidor** (`012_statement_import.sql`): perfis por banco, importações, linhas do extrato com impressão digital calculada no banco e duplicatas puladas; tabelas de vínculos/recusas de conciliação. Server Actions em `app/importacao/actions.ts`. Falta a tela de importação.
+
 ## A verificar
+
+- Aplicar `011`/`012` no banco local (`npx supabase migration up`) e conferir `/cadastros`, formulário e lista com a coluna Conta no navegador.
 
 - Dashboard e rolagem da tabela no navegador (desktop e celular).
 - Exportações abertas no Excel/Google Sheets (cores, fórmulas) e download pelo navegador logado.
@@ -68,6 +75,8 @@
 - Histórico de alterações (auditoria) na página de detalhes.
 - Testes pgTAP das políticas RLS e funções; Playwright para OTP, lançamentos e gestão de usuários.
 - Rever o nome "Nome do lançamento": o campo deve ficar igual ao texto do extrato do banco (candidatos: "Histórico", "Texto do extrato"). Decidir junto com a importação de extratos.
-- Contas bancárias, importação de extrato CSV/OFX e conciliação (vincular e baixar sobressalentes): plano em `docs/importacao-conciliacao.md`, aguardando revisão e CSVs de exemplo.
+- Tela de importação (`/importacao`: upload, mapeamento, perfis, lista de linhas importadas) usando `lib/statement-import/` e as actions de `app/importacao/actions.ts`.
+- Mover em lote os lançamentos de "A definir" para a conta certa.
+- Conciliação (vincular, criar lançamento a partir da linha, ignorar, sobressalentes, fechamento do mês) e OFX: plano em `docs/importacao-conciliacao.md`.
 - Anexos de comprovantes em bucket privado (complementa a "pasta").
 - Mensalidades por associado.
