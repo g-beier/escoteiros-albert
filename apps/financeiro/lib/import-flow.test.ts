@@ -5,7 +5,8 @@ import {
   newCsvSettings, newOfxSettings, ofxSettingsFromProfile, parseTextList, pruneColumns, reconciliationHref, roleOf,
   sameSettings, setColumnRole, toImportLines,
 } from "@/lib/import-flow";
-import { applyProfile, decodeBytes, headerSignature, readCsv, readOfx, type ParsedStatement, type ProfileColumns } from "@/lib/statement-import";
+import { importLinesSchema, parseStatementLines } from "@/lib/import-schema";
+import { applyOfxProfile, applyProfile, decodeBytes, headerSignature, readCsv, readOfx, type ParsedStatement, type ProfileColumns } from "@/lib/statement-import";
 
 const fixture = (name: string) =>
   decodeBytes(new Uint8Array(readFileSync(new URL(`./statement-import/__fixtures__/${name}`, import.meta.url))));
@@ -176,5 +177,27 @@ describe("envio", () => {
   it("monta o link da conciliação", () => {
     expect(reconciliationHref("abc", "2026-10-01", "2026-10-31")).toBe("/conciliacao?conta=abc&de=2026-10-01&ate=2026-10-31");
     expect(reconciliationHref("abc")).toBe("/conciliacao?conta=abc");
+  });
+});
+
+describe("arquivo sem perfil até o payload do servidor", () => {
+  it.each(["mercadopago.csv", "cora.csv", "latin1-bank.csv", "nubank.ofx", "itau.ofx"])("%s gera linhas aceitas pela validação", (name) => {
+    const { text, encoding } = fixture(name);
+    const statement = detectFormat(text) === "ofx"
+      ? applyOfxProfile(readOfx(text), newOfxSettings(readOfx(text).lines.map((line) => line.description)))
+      : applyProfile(text, newCsvSettings(text, encoding));
+    const lines = toImportLines(dropZeroLines(statement).lines);
+    expect(lines.length).toBeGreaterThan(0);
+    expect(parseStatementLines(lines)).toEqual({ lines: expect.any(Array) });
+    const payload = { accountId: "00000000-0000-4000-8000-000000000001", fileName: name, periodFrom: statement.periodFrom, periodTo: statement.periodTo, lines };
+    expect(importLinesSchema.safeParse(payload).success).toBe(true);
+  });
+
+  it("Itaú OFX sem perfil: pseudo-linhas de saldo ignoradas e saldo anterior como saldo inicial", () => {
+    const { text } = fixture("itau.ofx");
+    const statement = applyOfxProfile(readOfx(text), newOfxSettings([]));
+    expect(statement.ignored).toHaveLength(3);
+    expect(statement.openingBalanceCents).toBe(100000);
+    expect(statement.balanceCheck).toEqual({ ok: true });
   });
 });
