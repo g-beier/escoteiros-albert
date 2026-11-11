@@ -1,27 +1,45 @@
-# Grupo Escoteiro Albert Schweitzer
+# Gestão do Grupo Escoteiro Albert Schweitzer
 
-Site oficial do Grupo Escoteiro Albert Schweitzer, em Porto Alegre, Brasil.
+Monorepo das aplicações do Grupo Escoteiro Albert Schweitzer, em Porto Alegre, Brasil.
 
-Acesse em: [escoteirosalbert.com.br](https://escoteirosalbert.com.br)
+## Aplicações
+
+- `apps/institucional`: site público em Astro, publicado em [escoteirosalbert.com.br](https://escoteirosalbert.com.br).
+- `apps/financeiro`: aplicação de gestão financeira em Next.js, com Supabase.
 
 ## Desenvolvimento
 
 ```sh
 npm install
-npm run dev       # servidor local em localhost:4321
-npm run build     # build de produção em ./dist/
-npm run preview   # visualizar build localmente
+npm run dev:institucional      # somente o site Astro
+npm run dev:financeiro         # somente a gestão financeira
+npm run build                  # build de todas as aplicações
+npm run lint
+npm test
 ```
 
-## Tecnologias
+As dependências de todas as aplicações são instaladas a partir da raiz, com um único `package-lock.json`. Não rode `npm install` dentro de `apps/*`.
 
-- [Astro](https://astro.build) — framework de geração de site estático
-- [Tailwind CSS](https://tailwindcss.com) — estilização
-- [MDX](https://mdxjs.com) — posts do blog em Markdown
+Os comandos usam npm workspaces e também podem ser executados diretamente por aplicação:
 
-## Estrutura de Conteúdo
+```sh
+npm run build --workspace=@geas/institucional
+npm run test --workspace=@geas/financeiro
+```
 
-- **Blog:** adicione posts em `src/content/post/` como arquivos Markdown/MDX
-- **Navegação:** edite `src/navigation.js`
-- **Configurações do site:** edite `src/config.yaml` (SEO, analytics, blog)
-- **Voluntários/Depoimentos:** edite os arquivos JSON em `src/content/`
+## Supabase local
+
+```sh
+npm run infra:start
+npm run infra:status
+npm run infra:reset
+npm run infra:stop
+```
+
+O ambiente local é escrito em `apps/financeiro/.env.local` e não é versionado.
+
+## Conteúdo institucional
+
+- Blog: `apps/institucional/src/content/post/`
+- Navegação: `apps/institucional/src/navigation.js`
+- Configuração: `apps/institucional/src/config.yaml`

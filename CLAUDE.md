@@ -2,39 +2,43 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Commands
+## Monorepo
+
+npm workspaces (`apps/*`, `packages/*`) with a single root `package-lock.json`. Always run `npm install` from the root, never inside an app.
+
+- `apps/institucional` (`@geas/institucional`) — public static site, Astro 6 + Tailwind CSS v4, `escoteirosalbert.com.br`.
+- `apps/financeiro` (`@geas/financeiro`) — financial management app, Next.js (App Router, Server Actions) + Supabase. Needs a Node server; cannot be deployed as static files.
+
+## Commands (from root)
 
 ```bash
-npm run dev          # Start dev server at localhost:4321
-npm run build        # Production build (output: ./dist/)
-npm run preview      # Preview production build locally
-npm run lint:eslint  # Run ESLint
-npm run format       # Format with Prettier
+npm run dev:institucional   # Astro dev server at localhost:4321
+npm run dev:financeiro      # Next dev server at localhost:3000
+npm run build               # build all apps
+npm run lint                # lint all apps
+npm test                    # vitest (financeiro)
+npm run typecheck
+npm run infra:start         # local Supabase (Docker) + writes apps/financeiro/.env.local
 ```
 
-## Architecture
+Per app: `npm run <script> --workspace=@geas/<app>`.
 
-Static site for a Brazilian Scout group (Grupo Escoteiro Albert Schweitzer) built with **Astro 6** and **Tailwind CSS v4**, deployed to `escoteirosalbert.com.br`.
+## institucional
 
-### Key Directories
+- `src/pages/` — file-based routing; blog uses `[...blog]`; store routes exist but are disabled.
+- `src/components/` — `blog/`, `common/`, `ui/`, `widgets/`, `store/`.
+- `src/content/post/` — blog posts (Markdown/MDX); schema in `src/content.config.ts`.
+- `src/config.yaml` — site config (SEO, i18n pt-BR, blog, store toggle, GA ID).
+- `src/navigation.js` — header/footer menus.
+- `vendor/` — custom `astrowind` integration. Path aliases: `~` → `src`, `@components`, `@layouts`.
+- Google Analytics via Partytown.
 
-- `src/pages/` — Astro file-based routing. Blog routes use `[...blog]` dynamic pattern; store routes exist but are disabled.
-- `src/components/` — Astro components organized into `blog/`, `common/`, `ui/`, `widgets/`, and `store/` subdirectories.
-- `src/layouts/` — Page layout templates (`Layout.astro`, `PageLayout.astro`, `LandingLayout.astro`, `MarkdownLayout.astro`).
-- `src/content/` — Blog posts (Markdown in `post/`), testimonials, volunteers, and store data (JSON).
-- `src/utils/` — Utilities for blog, images, permalinks, store, and frontmatter markdown plugins.
-- `vendor/` — Custom Astro integration (`astrowind`) that wires together the site configuration.
+## financeiro
 
-### Configuration
+- Supabase Auth passwordless, restricted to `@escoteirosalbert.com.br`; RLS per group.
+- Money stored as integer cents (`lib/money.ts`).
+- Migrations in `supabase/migrations/`.
 
-- `src/config.yaml` — Primary site config: metadata, SEO defaults, i18n (pt-BR), blog settings (10 posts/page), store toggle (disabled), and Google Analytics ID.
-- `src/navigation.js` — Navigation structure for header/footer menus.
-- `astro.config.mjs` — Astro build config with integrations: astrowind (custom), icons (Tabler), sitemap, MDX, Partytown (for GA). Path aliases: `~` → `src`, `@components`, `@layouts`.
+## CI/CD
 
-### Content System
-
-Blog posts live in `src/content/post/` as Markdown/MDX with frontmatter. Content collection schema is defined in `src/content.config.ts`. The store is data-driven from `src/content/store.json` but currently disabled via `config.yaml`.
-
-### Analytics
-
-Google Analytics runs via Partytown (web worker) to avoid blocking the main thread. The GA script integration is configured in `astro.config.mjs` and the ID is in `src/config.yaml`.
+No GitHub Actions workflows currently. Deploys are manual.

@@ -1,0 +1,67 @@
+---
+import '~/assets/styles/global.css';
+
+import { I18N } from 'astrowind:config';
+
+import CommonMeta from '~/components/common/CommonMeta.astro';
+import Favicons from '~/components/Favicons.astro';
+import CustomStyles from '~/components/CustomStyles.astro';
+import Metadata from '~/components/common/Metadata.astro';
+import SiteVerification from '~/components/common/SiteVerification.astro';
+import Analytics from '~/components/common/Analytics.astro';
+import BasicScripts from '~/components/common/BasicScripts.astro';
+
+// Comment the line below to disable View Transitions
+import { ClientRouter } from 'astro:transitions';
+
+import type { MetaData as MetaDataType } from '~/types';
+import Cookies from '~/components/widgets/Cookies.astro';
+import AnnouncementBanner from '~/components/widgets/AnnouncementBanner.astro';
+import { getPostPermalink } from '~/utils/permalinks';
+import { findImage } from '~/utils/images';
+import type { ImageMetadata } from 'astro';
+
+export interface Props {
+  metadata?: MetaDataType;
+}
+
+const { metadata = {} } = Astro.props;
+const { language, textDirection } = I18N;
+const bufeSopas = (await findImage('~/assets/images/blog/2026/bufe-2026.png')) as ImageMetadata;
+---
+
+<!doctype html>
+<html lang={language} dir={textDirection} class="2xl:text-[20px]">
+  <head>
+    <CommonMeta />
+    <Favicons />
+    <CustomStyles />
+    <Metadata {...metadata} />
+    <SiteVerification />
+    <Analytics />
+
+    <slot name="head" />
+
+    <!-- Comment the line below to disable View Transitions -->
+    <ClientRouter fallback="swap" />
+  </head>
+
+  <body class="text-default bg-page tracking-tight antialiased">
+    <AnnouncementBanner
+      link={getPostPermalink('bufe-2026')}
+      image={{ src: bufeSopas, alt: 'Bufê de Sopas está com ingressos a venda!' }}
+      expireDate="2026-08-08"
+    />
+    <slot />
+
+    <Cookies />
+
+    <BasicScripts />
+
+    <style is:global>
+      img {
+        content-visibility: auto;
+      }
+    </style>
+  </body>
+</html>
