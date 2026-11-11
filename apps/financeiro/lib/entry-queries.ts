@@ -35,6 +35,9 @@ export type EntryPage =
   | { view: "extrato"; rows: StatementRow[]; total: number | null; error?: string }
   | { view: "rubricas"; rows: SplitRow[]; total: number | null; error?: string };
 
+export const STATEMENT_COLUMNS = "entry_id, entry_date, name, payment_method_name, document, document_filed, total_cents";
+export const SPLIT_COLUMNS = "split_id, entry_id, entry_date, entry_name, payment_method_name, document, document_filed, amount_cents, description, category_name, category_code, category_kind, associate_name";
+
 // IDs chegam validados como UUID por parseFilters, então podem compor filtros `or` com segurança.
 
 /**
@@ -51,7 +54,7 @@ export async function fetchEntryPage(
 
   if (view === "rubricas") {
     let query = supabase.from("entry_split_rows")
-      .select("split_id, entry_id, entry_date, entry_name, payment_method_name, document, document_filed, amount_cents, description, category_name, category_code, category_kind, associate_name", { count })
+      .select(SPLIT_COLUMNS, { count })
       .eq("group_id", groupId);
     if (filters.from) query = query.gte("entry_date", filters.from);
     if (filters.to) query = query.lte("entry_date", filters.to);
@@ -69,7 +72,7 @@ export async function fetchEntryPage(
   }
 
   let query = supabase.from("ledger_entry_rows")
-    .select("entry_id, entry_date, name, payment_method_name, document, document_filed, total_cents", { count })
+    .select(STATEMENT_COLUMNS, { count })
     .eq("group_id", groupId);
   if (filters.from) query = query.gte("entry_date", filters.from);
   if (filters.to) query = query.lte("entry_date", filters.to);
