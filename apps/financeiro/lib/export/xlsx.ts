@@ -86,7 +86,7 @@ function flowSheet<T>(workbook: ExcelJS.Workbook, name: string, title: string, p
   return sheet;
 }
 
-const folder = (filed: boolean) => filed ? "Sim" : "Não";
+const folder = (filed: boolean) => filed ? "Arquivado" : "Pendente";
 
 export async function statementWorkbook(rows: StatementRow[], period: Period) {
   const workbook = newWorkbook();
@@ -95,7 +95,7 @@ export async function statementWorkbook(rows: StatementRow[], period: Period) {
     { header: "Nome", width: 40, value: (r) => r.name },
     { header: "Forma pgto", width: 18, value: (r) => r.payment_method_name },
     { header: "Documento", width: 16, value: (r) => r.document ?? "" },
-    { header: "Pasta", width: 8, value: (r) => folder(r.document_filed) },
+    { header: "Documentos", width: 12, value: (r) => folder(r.document_filed) },
     { header: "Valor", width: 16, money: true, value: (r) => reais(r.total_cents) },
   ], rows, (r) => r.total_cents);
   return toBuffer(workbook);
@@ -108,7 +108,7 @@ export async function splitWorkbook(rows: SplitRow[], period: Period) {
     { header: "Nome do lançamento", width: 34, value: (r) => r.entry_name },
     { header: "Forma pgto", width: 18, value: (r) => r.payment_method_name },
     { header: "Documento", width: 16, value: (r) => r.document ?? "" },
-    { header: "Pasta", width: 8, value: (r) => folder(r.document_filed) },
+    { header: "Documentos", width: 12, value: (r) => folder(r.document_filed) },
     { header: "Código", width: 9, value: (r) => r.category_code ?? "" },
     { header: "Rubrica", width: 30, value: (r) => r.category_name },
     { header: "Tipo", width: 10, value: (r) => r.category_kind === "receita" ? "Receita" : r.category_kind === "despesa" ? "Despesa" : "" },

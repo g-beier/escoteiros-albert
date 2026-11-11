@@ -79,7 +79,7 @@ export default async function Dashboard() {
         <Stat label="Receitas" value={money(income / 100)} tone="success" href={`/lancamentos?visao=rubricas&de=${year}-01-01&ate=${year}-12-31`} />
         <Stat label="Despesas" value={money(expense / 100)} tone="destructive" href={`/lancamentos?visao=rubricas&de=${year}-01-01&ate=${year}-12-31`} />
         <Stat label="Saldo do ano" value={money((income - expense) / 100)} tone={income - expense < 0 ? "destructive" : "neutral"} />
-        <Stat label="Documentos pendentes na pasta" value={String(pendingDocs ?? 0)} tone={(pendingDocs ?? 0) > 0 ? "warning" : "neutral"}
+        <Stat label="Documentos pendentes" value={String(pendingDocs ?? 0)} tone={(pendingDocs ?? 0) > 0 ? "warning" : "neutral"}
           href={(pendingDocs ?? 0) > 0 ? `/lancamentos?pasta=pendente&de=${ALL_DATES}` : undefined} icon={(pendingDocs ?? 0) > 0} />
       </section>
 

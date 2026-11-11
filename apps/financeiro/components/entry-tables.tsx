@@ -16,7 +16,7 @@ const wrapCell = "px-2.5 py-1 align-middle whitespace-normal min-w-48";
 const headCell = "h-8 px-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase";
 const amountCell = (cents: number) => cn(cell, "text-right font-semibold num whitespace-nowrap", cents < 0 && "text-destructive");
 
-const COLUMN_FILTERS: Record<string, FilterKey> = { "Forma pgto": "forma", "Pasta": "pasta", "Nome do Associado": "associado", "Rubrica": "rubrica" };
+const COLUMN_FILTERS: Record<string, FilterKey> = { "Forma pgto": "forma", "Documentos": "pasta", "Nome do Associado": "associado", "Rubrica": "rubrica" };
 
 type Sort = { order: SortOrder; sortHref: string };
 
@@ -54,7 +54,7 @@ export function StatementTable({ rows, filtered, order, sortHref }: { rows: Stat
   if (!rows.length) return <Empty>{filtered ? "Nenhum lançamento corresponde aos filtros." : "Nenhum lançamento ainda. Comece pelo botão “Novo lançamento”."}</Empty>;
   return <Table className="min-w-[720px]" containerClassName="overflow-visible">
     <TableCaption className="sr-only">Linhas do extrato. Selecione uma linha para ver os detalhes e o rateio.</TableCaption>
-    <Head columns={[{ label: "Data", className: "w-28" }, { label: "Nome do lançamento" }, { label: "Forma pgto", className: "w-40" }, { label: "Pasta", className: "w-48" }, { label: "Valor", className: "w-32 text-right" }]} order={order} sortHref={sortHref} />
+    <Head columns={[{ label: "Data", className: "w-28" }, { label: "Nome do lançamento" }, { label: "Forma pgto", className: "w-40" }, { label: "Documentos", className: "w-48" }, { label: "Valor", className: "w-32 text-right" }]} order={order} sortHref={sortHref} />
     <TableBody>{rows.map((row) => <EntryRow key={row.entry_id} entryId={row.entry_id}>
       <TableCell className={cn(cell, "whitespace-nowrap num")}>{dateBR(row.entry_date)}</TableCell>
       <TableCell className={wrapCell}><EntryLink entryId={row.entry_id}>{row.name}</EntryLink></TableCell>
@@ -70,7 +70,7 @@ export function SplitTable({ rows, filtered, order, sortHref }: { rows: SplitRow
   if (!rows.length) return <Empty>{filtered ? "Nenhum rateio corresponde aos filtros." : "Os rateios aparecerão depois do primeiro lançamento."}</Empty>;
   return <Table className="min-w-[1080px]" containerClassName="overflow-visible">
     <TableCaption className="sr-only">Um rateio por linha, repetindo os dados da linha do extrato de origem. Selecione uma linha para ver o lançamento.</TableCaption>
-    <Head columns={[{ label: "Data", className: "w-24" }, { label: "Lançamento" }, { label: "Forma pgto" }, { label: "Pasta" }, { label: "Valor", className: "text-right" }, { label: "Nome do Associado" }, { label: "Descrição" }, { label: "Rubrica" }]} order={order} sortHref={sortHref} />
+    <Head columns={[{ label: "Data", className: "w-24" }, { label: "Lançamento" }, { label: "Forma pgto" }, { label: "Documentos" }, { label: "Valor", className: "text-right" }, { label: "Nome do Associado" }, { label: "Descrição" }, { label: "Rubrica" }]} order={order} sortHref={sortHref} />
     <TableBody>{rows.map((row, index) => {
       const continued = index > 0 && rows[index - 1].entry_id === row.entry_id;
       return <EntryRow key={row.split_id} entryId={row.entry_id} data-entry-id={row.entry_id} className={cn(continued && "[&_td]:border-t [&_td]:border-dashed")}>

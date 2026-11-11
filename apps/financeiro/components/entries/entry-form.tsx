@@ -149,7 +149,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
         <div className="grid gap-1.5"><Label htmlFor="entry-document">Documento (opcional)</Label><Input id="entry-document" maxLength={60} placeholder="NF 1234, recibo…" value={draft.document} onChange={(e) => update({ document: e.target.value })} /></div>
         <Label className="h-7 w-fit cursor-pointer gap-2 font-medium">
           <Checkbox checked={draft.documentFiled} onCheckedChange={(checked) => update({ documentFiled: checked === true })} disabled={readOnly} />
-          Documento na pasta
+          Documento arquivado
         </Label>
       </div>
     </fieldset>

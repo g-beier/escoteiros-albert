@@ -30,7 +30,7 @@ function useList() {
   return api;
 }
 
-/** Ações rápidas da lista (pasta e exclusão) e links para a página de detalhes. */
+/** Ações rápidas da lista (documentos e exclusão) e links para a página de detalhes. */
 export function EntryListProvider({ canEdit, returnQuery, children }: { canEdit: boolean; returnQuery: string; children: React.ReactNode }) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [busyEntryId, setBusyEntryId] = useState<string | null>(null);
@@ -115,11 +115,11 @@ export function EntryLink({ entryId, children, className }: { entryId: string; c
 
 export function FolderStatus({ entryId, filed, document }: { entryId: string; filed: boolean; document: string | null }) {
   const { canEdit, toggleFiled, busyEntryId } = useList();
-  const label = filed ? "Na pasta" : "Pendente";
+  const label = filed ? "Arquivado" : "Pendente";
   const className = cn("inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
     filed ? "bg-success-soft text-success" : "bg-[#f5eed1] text-[#725d0d]");
   const icon = filed ? <IconFolderCheck className="size-3.5" aria-hidden /> : <IconFolderExclamation className="size-3.5" aria-hidden />;
-  const action = filed ? "Marcar como pendente" : "Marcar como arquivado na pasta";
+  const action = filed ? "Marcar documento como pendente" : "Marcar documento como arquivado";
   return <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
     {canEdit
       ? <button type="button" className={cn(className, "cursor-pointer hover:ring-1 hover:ring-current disabled:opacity-50")} disabled={busyEntryId === entryId}
@@ -137,7 +137,7 @@ export function EntryRowActions({ entryId, filed }: { entryId: string; filed: bo
     <DropdownMenuContent align="end">
       <DropdownMenuItem onClick={() => router.push(detailHref(entryId))}><IconFileDescription /> {canEdit ? "Detalhes e edição" : "Detalhes"}</DropdownMenuItem>
       {canEdit && <>
-        <DropdownMenuItem onClick={() => toggleFiled(entryId, !filed)}>{filed ? <IconFolderExclamation /> : <IconFolderCheck />} {filed ? "Marcar como pendente" : "Marcar na pasta"}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => toggleFiled(entryId, !filed)}>{filed ? <IconFolderExclamation /> : <IconFolderCheck />} {filed ? "Marcar documento como pendente" : "Marcar documento como arquivado"}</DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={() => requestDelete(entryId)}><IconTrash /> Excluir</DropdownMenuItem>
       </>}
