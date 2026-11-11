@@ -1,5 +1,5 @@
 ---
-publishDate: 2026-11-10T06:00:00Z
+publishDate: 2026-11-11T06:00:00Z
 slug: edital-assembleia-2026
 title: 'Edital de Convocação – Reunião Ordinária da Assembleia de Grupo'
 tags:
