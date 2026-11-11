@@ -61,8 +61,11 @@
 
 - **Tela de importação** (`/importacao`, menu "Importar extrato"): conta + arquivo (CSV ou OFX, detectado pelo conteúdo), perfil do grupo reconhecido pela assinatura do cabeçalho ou novo perfil com sugestões (`sniffCsv` + papéis pelo nome das colunas), grade com papel por coluna, natureza C/D, prefixos de tipo, linhas a ignorar, conferência (totais, saldos, primeira divergência, erros, ignoradas, valor zero), salvar/atualizar perfil ("salvar como novo") e importar; redireciona para `/conciliacao`. Lista das importações recentes da conta.
 - Linha "SALDO ANTERIOR" ignorada vira saldo inicial quando o arquivo não traz outro (Itaú); no OFX, confere saldo inicial + movimentos com o `LEDGERBAL`.
+- **Conciliação** (`013_reconciliation.sql`, `/conciliacao`): funções `link_reconciliation` (1:1, 1:N, N:1; somas com sinal), `unlink_reconciliation`, `reject_reconciliation_suggestion`, `ignore_statement_line`/`reopen_statement_line`, `create_entry_from_statement_line`, `set_ledger_entry_outside_statement`, `set_ledger_entry_account`; excluir um lançamento conciliado ou mudar seu valor/conta desfaz o vínculo e reabre as linhas. Tela em duas colunas com sugestões (mesmo dia + valor; ambíguas ordenadas por nome parecido), vínculo manual, ignorar com motivo, fora do extrato, trocar conta, vinculados/ignoradas/fora do extrato com desfazer e fechamento. ✓ de conciliado na visão Por extrato. Teste SQL em `supabase/tests/reconciliation.sql` (roda em transação desfeita).
 
 ## A verificar
+
+- Aplicar `013` no banco local e testar `/conciliacao` no navegador (desktop e celular), inclusive "Criar lançamento" e o retorno de `/importacao`.
 
 - Aplicar `011`/`012` no banco local (`npx supabase migration up`) e conferir `/cadastros`, formulário e lista com a coluna Conta no navegador.
 - `/importacao` no navegador, ponta a ponta, com as fixtures de `lib/statement-import/__fixtures__/` (ainda não exercitada: o banco local não tinha `011`/`012`).
@@ -83,6 +86,7 @@
 - Rever o nome "Nome do lançamento": o campo deve ficar igual ao texto do extrato do banco (candidatos: "Histórico", "Texto do extrato"). Decidir junto com a importação de extratos.
 - Importação: mostrar na conferência as duplicatas já importadas antes de gravar (hoje só o resultado informa), conferir o saldo inicial do arquivo com o saldo da conta e lista de perfis editável fora da importação.
 - Mover em lote os lançamentos de "A definir" para a conta certa.
-- Conciliação em duas colunas após importar (sugestão por mesmo dia + mesmo valor, vincular, criar lançamento a partir da linha, ignorar, sobressalentes, fechamento do mês): plano em `docs/importacao-conciliacao.md`.
+- Conciliação, fase 4: tolerância de datas, semelhança de nomes nas sugestões, combinações 1:N sugeridas; vínculo N:M (hoje recusado).
+- Filtro "Conciliado" em `/lancamentos` (hoje só o indicador ✓ na visão Por extrato).
 - Anexos de comprovantes em bucket privado (complementa a "pasta").
 - Mensalidades por associado.

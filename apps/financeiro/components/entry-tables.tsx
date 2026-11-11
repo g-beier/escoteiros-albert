@@ -3,7 +3,7 @@ import { EntryLink, EntryRow, EntryRowActions, FolderStatus } from "@/components
 import { dateBR, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { IconArrowDown, IconArrowUp } from "@tabler/icons-react";
+import { IconArrowDown, IconArrowUp, IconCircleCheck } from "@tabler/icons-react";
 import type { SplitRow, StatementRow } from "@/lib/entry-queries";
 import type { SortOrder } from "@/lib/filters";
 import { MultiFilter } from "@/components/entries/multi-filter";
@@ -61,7 +61,7 @@ export function StatementTable({ rows, filtered, order, sortHref }: { rows: Stat
       <TableCell className={cell}>{row.account_name}</TableCell>
       <TableCell className={cell}>{row.payment_method_name}</TableCell>
       <TableCell className={cell}><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} /></TableCell>
-      <TableCell className={amountCell(row.total_cents)}>{money(row.total_cents / 100)}</TableCell>
+      <TableCell className={amountCell(row.total_cents)}>{row.reconciled && <IconCircleCheck className="mr-1 inline size-3.5 align-[-2px] text-success" aria-label="Conciliado com o extrato" title="Conciliado com o extrato" />}{money(row.total_cents / 100)}</TableCell>
       <TableCell className="px-1 py-0.5 align-middle"><EntryRowActions entryId={row.entry_id} filed={row.document_filed} /></TableCell>
     </EntryRow>)}</TableBody>
   </Table>;

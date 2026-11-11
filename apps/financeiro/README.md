@@ -2,7 +2,7 @@
 
 MVP de gestão financeira para grupo escoteiro. Um lançamento representa uma linha do extrato, pertence a uma **conta** (corrente, poupança, caixa…) e contém um ou mais rateios por rubrica. A aplicação oferece as visões “Por extrato” e “Por rubrica”.
 
-Modelo principal: `accounts` (contas, com saldo inicial), `payment_methods` (com conta padrão), `ledger_entries` (linha do extrato, com `account_id`) e `entry_splits` (rateio). A importação de extrato grava `import_profiles` (perfil por banco/formato), `statement_imports` e `statement_lines` (linhas abertas, deduplicadas por impressão digital); `reconciliation_links`/`reconciliation_rejections` guardarão a conciliação. Plano completo em `docs/importacao-conciliacao.md`.
+Modelo principal: `accounts` (contas, com saldo inicial), `payment_methods` (com conta padrão), `ledger_entries` (linha do extrato, com `account_id`) e `entry_splits` (rateio). A importação de extrato grava `import_profiles` (perfil por banco/formato), `statement_imports` e `statement_lines` (linhas abertas, deduplicadas por impressão digital); a conciliação (`013_reconciliation.sql`) grava `reconciliation_links` (conjuntos 1:1, 1:N ou N:1 cujas somas batem) e `reconciliation_rejections` (sugestões recusadas); lançamentos podem ser marcados como fora do extrato. Plano completo em `docs/importacao-conciliacao.md`.
 
 ## Arquitetura
 
@@ -16,9 +16,10 @@ Modelo principal: `accounts` (contas, com saldo inicial), `payment_methods` (com
 ## Telas
 
 - `/` — resumo do ano: receitas, despesas, saldo, documentos pendentes, mês a mês e últimos lançamentos.
-- `/lancamentos` — lançamentos: visões **Por extrato** (uma linha por lançamento) e **Por rubrica** (um rateio por linha), coluna Conta, filtros na URL (`de`, `ate`, `conta`, `forma`, `pasta` = documentos, `associado`, `rubrica`, `q`; sem `de`, começa em 1º de janeiro do ano atual, `de=tudo` mostra todos) e conferência rápida dos documentos.
+- `/lancamentos` — lançamentos: visões **Por extrato** (uma linha por lançamento, com ✓ nos conciliados) e **Por rubrica** (um rateio por linha), coluna Conta, filtros na URL (`de`, `ate`, `conta`, `forma`, `pasta` = documentos, `associado`, `rubrica`, `q`; sem `de`, começa em 1º de janeiro do ano atual, `de=tudo` mostra todos) e conferência rápida dos documentos.
 - `/exportar/fluxo` e `/exportar/realizado` — planilhas XLSX (fluxo de caixa por período e Realizado anual).
-- `/lancamentos/novo` — novo lançamento.
+- `/lancamentos/novo` — novo lançamento; com `?linha=<id>` ("Criar lançamento" na conciliação) vem preenchido pela linha do extrato e já sai conciliado.
+- `/conciliacao` — extrato × lançamentos de uma conta e período (`conta`, `de`, `ate`; padrão: primeira conta ativa, mês atual): sugestões por mesmo dia + mesmo valor, vínculo manual com conferência das somas, ignorar linha, fora do extrato, trocar conta, desfazer e fechamento com o saldo do extrato. Somente leitura para consulta.
 - `/lancamentos/[id]` — detalhes com o formulário completo; edição e exclusão para tesouraria/administração, somente leitura para consulta.
 - `/associados` — associados (nome, ramo, seção, ativo).
 - `/importacao` — importar extrato CSV/OFX numa conta (tesouraria e administração): o arquivo é lido no navegador com o perfil do banco (reconhecido pelo cabeçalho, editável), papéis das colunas sobre a pré-visualização, conferência (totais, saldos, erros, linhas ignoradas) e lista das importações recentes da conta (`conta` na URL). Depois de importar, segue para `/conciliacao?conta=…&de=…&ate=…`.

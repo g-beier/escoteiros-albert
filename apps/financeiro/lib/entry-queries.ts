@@ -14,6 +14,8 @@ export type StatementRow = {
   document: string | null;
   document_filed: boolean;
   total_cents: number;
+  /** Vinculado a uma linha do extrato (conciliação). */
+  reconciled?: boolean;
 };
 
 export type SplitRow = {
@@ -37,7 +39,7 @@ export type EntryPage =
   | { view: "extrato"; rows: StatementRow[]; total: number | null; error?: string }
   | { view: "rubricas"; rows: SplitRow[]; total: number | null; error?: string };
 
-export const STATEMENT_COLUMNS = "entry_id, entry_date, name, account_name, payment_method_name, document, document_filed, total_cents";
+export const STATEMENT_COLUMNS = "entry_id, entry_date, name, account_name, payment_method_name, document, document_filed, total_cents, reconciled";
 export const SPLIT_COLUMNS = "split_id, entry_id, entry_date, entry_name, account_name, payment_method_name, document, document_filed, amount_cents, description, category_name, category_code, category_kind, associate_name";
 
 // IDs chegam validados como UUID por parseFilters, então podem compor filtros `or` com segurança.

@@ -1,6 +1,6 @@
 # Plano: contas bancárias, importação de extrato e conciliação
 
-Status: **proposta para revisão** (atualizada em 2026-11-11). Nada disto está implementado.
+Status: fases 1 a 3 implementadas (2026-11-11): contas (`011`), importação no banco (`012`) e conciliação (`013`, `/conciliacao`). Vínculo N:M ainda é recusado.
 
 ## Objetivo
 
