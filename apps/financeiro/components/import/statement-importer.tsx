@@ -240,7 +240,7 @@ export function StatementImporter({ accounts, profiles, accountId: initialAccoun
         <h2 className="card-title" id="import-review-title">3. Conferência</h2>
         <p className="m-0 text-xs text-muted-foreground">As linhas entram abertas, para conciliar. Duplicatas de importações anteriores são puladas.</p>
       </div>
-      <Button onClick={requestImport} disabled={!canImport}>{pending ? "Importando…" : `Importar ${statement?.lines.length ?? 0} linhas`}</Button>
+      <Button onClick={requestImport} disabled={!canImport}>{pending ? "Importando…" : `Importar ${statement?.lines.length ?? 0} ${statement?.lines.length === 1 ? "linha" : "linhas"}`}</Button>
       </header>
       <div className="p-5">
         {view.missing.length > 0
