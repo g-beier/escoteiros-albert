@@ -6,6 +6,7 @@ import { canManageEntries } from "@/lib/auth";
 const links = [
   { href: "/", label: "Início", show: () => true },
   { href: "/lancamentos", label: "Lançamentos", show: () => true },
+  { href: "/conciliacao", label: "Conciliação", show: () => true },
   { href: "/associados", label: "Associados", show: () => true },
   { href: "/cadastros", label: "Cadastros", show: (role: string) => canManageEntries(role) },
   { href: "/usuarios", label: "Usuários", show: (role: string) => role === "admin" },
