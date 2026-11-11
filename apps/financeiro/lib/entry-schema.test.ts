@@ -19,6 +19,11 @@ describe("entrySchema", () => {
     expect(result.error?.issues[0]?.message).toMatch(/soma das rubricas/);
   });
 
+  it("aceita receitas e despesas no mesmo lançamento", () => {
+    const splits = [{ ...base.splits[0], amountCents: 12000 }, { ...base.splits[1], amountCents: -3000 }];
+    expect(entrySchema.safeParse({ ...base, totalCents: 9000, splits }).success).toBe(true);
+  });
+
   it("exige descrição por rubrica", () => {
     const result = entrySchema.safeParse({ ...base, splits: [{ ...base.splits[0], amountCents: 10000, description: " " }] });
     expect(result.error?.issues[0]?.message).toBe("Descreva cada rubrica.");

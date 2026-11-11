@@ -41,9 +41,10 @@ function toDraft(entry: EditableEntry | null): Draft {
   };
 }
 
-/** Valor digitado sempre como magnitude; o sinal vem de entrada/saída. */
+/** Valor digitado sempre como magnitude; o sinal vem de entrada/saída (total) ou do tipo da rubrica (rateio). */
 const magnitude = (value: string) => Math.abs(parseMoneyToCents(value) ?? 0);
 const kindFor = (direction: Direction | null) => direction === "entrada" ? "receita" : direction === "saida" ? "despesa" : null;
+const directionSign = (direction: Direction | null) => direction === "saida" ? -1 : 1;
 
 /** Opções ativas, mais as inativas já usadas no lançamento. */
 function visibleOptions(items: CatalogItem[], used: string[]): Option[] {
@@ -72,24 +73,30 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
   // rubricas do lançamento salvo: continuam selecionáveis mesmo se inativadas depois
   const usedCategoryIds = useMemo(() => saved.splits.map((s) => s.categoryId).filter(Boolean), [saved]);
 
-  const sign = draft.direction === "saida" ? -1 : 1;
-  const totalCents = draft.direction ? sign * magnitude(draft.total) : 0;
-  const splitCents = sign * draft.splits.reduce((sum, s) => sum + magnitude(s.amount), 0);
+  const categoryKinds = useMemo(() => new Map(catalogs.categories.map((c) => [c.id, c.kind])), [catalogs.categories]);
+  /** Receita soma, despesa subtrai; rubrica sem tipo (antiga) ou ainda não escolhida segue entrada/saída. */
+  const splitSign = (split: SplitDraft) => {
+    const kind = categoryKinds.get(split.categoryId);
+    return kind === "receita" ? 1 : kind === "despesa" ? -1 : directionSign(draft.direction);
+  };
+  const signedSplit = (split: SplitDraft) => splitSign(split) * magnitude(split.amount);
+  const totalCents = draft.direction ? directionSign(draft.direction) * magnitude(draft.total) : 0;
+  const splitCents = draft.splits.reduce((sum, s) => sum + signedSplit(s), 0);
+  const incomeCents = draft.splits.reduce((sum, s) => sum + Math.max(0, signedSplit(s)), 0);
+  const expenseCents = draft.splits.reduce((sum, s) => sum + Math.min(0, signedSplit(s)), 0);
+  const mixed = incomeCents !== 0 && expenseCents !== 0;
   const balanced = totalCents !== 0 && splitCents === totalCents;
   const remaining = totalCents - splitCents;
 
   function chooseDirection(direction: Direction) {
-    if (direction === draft.direction) return;
-    const kind = kindFor(direction);
-    const valid = new Set(catalogs.categories.filter((c) => c.kind === kind).map((c) => c.id));
-    // rubricas do outro tipo deixam de valer ao trocar entrada/saída
-    update({ direction, splits: draft.splits.map((s) => valid.has(s.categoryId) ? s : { ...s, categoryId: "" }) });
+    if (direction !== draft.direction) update({ direction });
   }
 
   function fillRemaining() {
     const last = draft.splits[draft.splits.length - 1];
     if (!last || remaining === 0) return;
-    updateSplit(last.key, { amount: centsToInput(Math.max(0, magnitude(last.amount) + sign * remaining)) });
+    const sign = splitSign(last);
+    updateSplit(last.key, { amount: centsToInput(Math.max(0, sign * (signedSplit(last) + remaining))) });
   }
 
   function submit(event: React.FormEvent) {
@@ -103,7 +110,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
       document: draft.document,
       documentFiled: draft.documentFiled,
       totalCents,
-      splits: draft.splits.map((s) => ({ categoryId: s.categoryId, amountCents: sign * magnitude(s.amount), description: s.description, associateId: s.associateId || null })),
+      splits: draft.splits.map((s) => ({ categoryId: s.categoryId, amountCents: signedSplit(s), description: s.description, associateId: s.associateId || null })),
     };
     startTransition(async () => {
       const result = entry ? await updateEntry(entry.id, payload) : await createEntry(payload);
@@ -156,14 +163,16 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
         {!readOnly && <Button type="button" variant="ghost" size="sm" onClick={() => update({ splits: [...draft.splits, emptySplit()] })}><IconPlus /> Adicionar rubrica</Button>}
       </div>
       {draft.splits.map((split, index) => <div key={split.key} role="group" aria-label={`Rubrica ${index + 1}`} className="grid gap-2 rounded-lg bg-muted p-2.5 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_minmax(0,1fr)_8rem_auto] sm:items-end">
-        <div className="grid gap-1.5"><Label htmlFor={`split-category-${split.key}`}>Rubrica</Label><CategoryPicker id={`split-category-${split.key}`} value={split.categoryId} onChange={(categoryId) => updateSplit(split.key, { categoryId })} categories={catalogs.categories} kind={kindFor(draft.direction)} usedIds={usedCategoryIds} placeholder={draft.direction ? (draft.direction === "entrada" ? "Buscar receita…" : "Buscar despesa…") : "Escolha entrada ou saída"} disabled={readOnly || !draft.direction} /></div>
+        <div className="grid gap-1.5"><Label htmlFor={`split-category-${split.key}`}>Rubrica</Label><CategoryPicker id={`split-category-${split.key}`} value={split.categoryId} onChange={(categoryId) => updateSplit(split.key, { categoryId })} categories={catalogs.categories} preferredKind={kindFor(draft.direction)} usedIds={usedCategoryIds} placeholder="Buscar receita ou despesa…" disabled={readOnly} /></div>
         <div className="grid gap-1.5"><Label htmlFor={`split-description-${split.key}`}>Descrição</Label><Input id={`split-description-${split.key}`} maxLength={200} placeholder="Ex.: Lanche do acampamento" value={split.description} onChange={(e) => updateSplit(split.key, { description: e.target.value })} required /></div>
         <div className="grid gap-1.5"><Label htmlFor={`split-associate-${split.key}`}>Associado (opcional)</Label><OptionCombobox id={`split-associate-${split.key}`} value={split.associateId} onValueChange={(associateId) => updateSplit(split.key, { associateId })} options={options.associates} placeholder={readOnly ? "—" : "Buscar associado…"} emptyText="Nenhum associado encontrado." disabled={readOnly} /></div>
-        <div className="grid gap-1.5"><Label htmlFor={`split-amount-${split.key}`}>Valor (R$)</Label><Input id={`split-amount-${split.key}`} inputMode="decimal" placeholder="0,00" value={split.amount} onChange={(e) => updateSplit(split.key, { amount: e.target.value })} className="text-right num" required /></div>
+        <div className="grid gap-1.5"><Label htmlFor={`split-amount-${split.key}`}>Valor (R$){split.categoryId && <span className={cn("ml-1", splitSign(split) < 0 ? "text-destructive" : "text-success")}>{splitSign(split) < 0 ? "−" : "+"}</span>}</Label><Input id={`split-amount-${split.key}`} inputMode="decimal" placeholder="0,00" value={split.amount} onChange={(e) => updateSplit(split.key, { amount: e.target.value })} className="text-right num" required /></div>
         {!readOnly && <Button type="button" variant="ghost" size="icon" aria-label={`Remover rubrica ${index + 1}`} disabled={draft.splits.length === 1} onClick={() => update({ splits: draft.splits.filter((s) => s.key !== split.key) })}><IconTrash /></Button>}
       </div>)}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-        <span>Soma do rateio: <strong className="num">{money(splitCents / 100)}</strong></span>
+        <span>Soma do rateio: <strong className="num">{money(splitCents / 100)}</strong>
+          {mixed && <span className="ml-2 text-muted-foreground">(receitas <span className="num text-success">{money(incomeCents / 100)}</span>, despesas <span className="num text-destructive">{money(expenseCents / 100)}</span>)</span>}
+        </span>
         <span role="status" aria-live="polite" className={cn("font-semibold", balanced ? "text-success" : "text-destructive")}>
           {balanced ? "✓ Valores conferem" : `Diferença: ${money(remaining / 100)}`}
         </span>

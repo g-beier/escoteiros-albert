@@ -32,9 +32,13 @@
 - `/cadastros`: rubricas em árvore com código; uso leva aos rateios para recategorizar.
 - Fonte do app trocada para Outfit (algarismos tabulares); institucional segue em Poppins.
 
+## Concluído (2026-11-11, quarta rodada)
+
+- Lançamento com rubricas de receita e despesa misturadas (ex.: mensalidades atrasadas menos um ressarcimento na mesma transferência) (`009_mixed_split_kinds.sql`). O sinal de cada rateio vem da rubrica; entrada/saída vale só para o total do extrato. Seletor lista receitas e despesas (tipo do lançamento primeiro); a soma mostra receitas e despesas separadas quando há mistura.
+
 ## A verificar
 
-- Seletor de rubrica do formulário e painel de filtros ainda não passaram pelo teste automatizado no navegador (compilam e as rotas respondem).
+- Formulário com rateio misto (receita + despesa), seletor de rubrica e painel de filtros ainda não passaram pelo teste automatizado no navegador (compilam e as rotas respondem).
 - Confirmar se "conta" é um campo distinto da forma de pagamento.
 
 ## Próximos

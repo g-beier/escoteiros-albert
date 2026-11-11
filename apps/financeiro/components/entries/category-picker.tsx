@@ -22,16 +22,17 @@ type PickerItem = {
 const toneClass = (kind: CategoryKind | null) => kind === "receita" ? "text-success" : kind === "despesa" ? "text-destructive" : "text-muted-foreground";
 
 /**
- * Seleção de rubrica em árvore: só rubricas do tipo do lançamento (receita/despesa),
- * com código, recuo por nível e indicação de grupo. Rubricas inativas aparecem apenas
- * quando já estão em uso no lançamento.
+ * Seleção de rubrica em árvore: receitas e despesas (um lançamento pode misturar as duas),
+ * com o tipo do lançamento primeiro, código, recuo por nível e indicação de grupo.
+ * Rubricas inativas aparecem apenas quando já estão em uso no lançamento.
  */
-export function CategoryPicker({ id, value, onChange, categories, kind, usedIds, disabled, placeholder }: {
+export function CategoryPicker({ id, value, onChange, categories, preferredKind, usedIds, disabled, placeholder }: {
   id: string;
   value: string;
   onChange: (value: string) => void;
   categories: CategoryItem[];
-  kind: CategoryKind | null;
+  /** Tipo listado primeiro (o do lançamento). */
+  preferredKind: CategoryKind | null;
   usedIds: string[];
   disabled?: boolean;
   placeholder: string;
@@ -39,8 +40,10 @@ export function CategoryPicker({ id, value, onChange, categories, kind, usedIds,
   const items = useMemo<PickerItem[]>(() => {
     const byId = new Map(categories.map((c) => [c.id, c]));
     const parents = new Set(categories.map((c) => c.parent_id).filter(Boolean));
+    const rank = (c: CategoryItem) => c.kind === preferredKind ? 0 : c.kind === null ? 2 : 1;
     return sortCategories(categories)
-      .filter((c) => (c.active && c.kind === kind && kind !== null) || (usedIds.includes(c.id) && (c.kind === kind || c.kind === null)))
+      .sort((a, b) => rank(a) - rank(b))
+      .filter((c) => (c.active && c.kind !== null) || usedIds.includes(c.id))
       .map((c) => {
         const label = categoryLabel(c, byId);
         const path = label.replace(/^[\d.]+\s/, "");
@@ -48,7 +51,7 @@ export function CategoryPicker({ id, value, onChange, categories, kind, usedIds,
       })
       // a raiz (Receitas/Despesas) só aparece como cabeçalho, não como opção
       .filter((item) => item.code === null || item.code.includes(".") || usedIds.includes(item.value));
-  }, [categories, kind, usedIds]);
+  }, [categories, preferredKind, usedIds]);
 
   const selected = items.find((item) => item.value === value) ?? null;
 
@@ -67,9 +70,6 @@ export function CategoryPicker({ id, value, onChange, categories, kind, usedIds,
       </InputGroupAddon>}
     </ComboboxInput>
     <ComboboxContent className="w-[min(30rem,calc(100vw-2rem))]">
-      <div className={cn("border-b px-3 py-1.5 text-[11px] font-semibold tracking-wide uppercase", toneClass(kind))}>
-        {kind === "receita" ? "1 · Receitas" : "2 · Despesas"}
-      </div>
       <ComboboxEmpty>Nenhuma rubrica encontrada.</ComboboxEmpty>
       <ComboboxList className="max-h-80">
         {(item: PickerItem) => <ComboboxItem key={item.value} value={item} className="pr-8">
