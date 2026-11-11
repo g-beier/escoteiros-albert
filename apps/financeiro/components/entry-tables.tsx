@@ -16,7 +16,7 @@ const wrapCell = "px-2.5 py-1 align-middle whitespace-normal min-w-48";
 const headCell = "h-8 px-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase";
 const amountCell = (cents: number) => cn(cell, "text-right font-semibold num whitespace-nowrap", cents < 0 && "text-destructive");
 
-const COLUMN_FILTERS: Record<string, FilterKey> = { "Forma pgto": "forma", "Documentos": "pasta", "Nome do Associado": "associado", "Rubrica": "rubrica" };
+const COLUMN_FILTERS: Record<string, FilterKey> = { "Conta": "conta", "Forma pgto": "forma", "Documentos": "pasta", "Nome do Associado": "associado", "Rubrica": "rubrica" };
 
 type Sort = { order: SortOrder; sortHref: string };
 
@@ -52,12 +52,13 @@ const Empty = ({ children }: { children: React.ReactNode }) => <div className="p
 
 export function StatementTable({ rows, filtered, order, sortHref }: { rows: StatementRow[]; filtered: boolean } & Sort) {
   if (!rows.length) return <Empty>{filtered ? "Nenhum lançamento corresponde aos filtros." : "Nenhum lançamento ainda. Comece pelo botão “Novo lançamento”."}</Empty>;
-  return <Table className="min-w-[720px]" containerClassName="overflow-visible">
+  return <Table className="min-w-[860px]" containerClassName="overflow-visible">
     <TableCaption className="sr-only">Linhas do extrato. Selecione uma linha para ver os detalhes e o rateio.</TableCaption>
-    <Head columns={[{ label: "Data", className: "w-28" }, { label: "Nome do lançamento" }, { label: "Forma pgto", className: "w-40" }, { label: "Documentos", className: "w-48" }, { label: "Valor", className: "w-32 text-right" }]} order={order} sortHref={sortHref} />
+    <Head columns={[{ label: "Data", className: "w-28" }, { label: "Nome do lançamento" }, { label: "Conta", className: "w-40" }, { label: "Forma pgto", className: "w-40" }, { label: "Documentos", className: "w-48" }, { label: "Valor", className: "w-32 text-right" }]} order={order} sortHref={sortHref} />
     <TableBody>{rows.map((row) => <EntryRow key={row.entry_id} entryId={row.entry_id}>
       <TableCell className={cn(cell, "whitespace-nowrap num")}>{dateBR(row.entry_date)}</TableCell>
       <TableCell className={wrapCell}><EntryLink entryId={row.entry_id}>{row.name}</EntryLink></TableCell>
+      <TableCell className={cell}>{row.account_name}</TableCell>
       <TableCell className={cell}>{row.payment_method_name}</TableCell>
       <TableCell className={cell}><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} /></TableCell>
       <TableCell className={amountCell(row.total_cents)}>{money(row.total_cents / 100)}</TableCell>
@@ -68,14 +69,15 @@ export function StatementTable({ rows, filtered, order, sortHref }: { rows: Stat
 
 export function SplitTable({ rows, filtered, order, sortHref }: { rows: SplitRow[]; filtered: boolean } & Sort) {
   if (!rows.length) return <Empty>{filtered ? "Nenhum rateio corresponde aos filtros." : "Os rateios aparecerão depois do primeiro lançamento."}</Empty>;
-  return <Table className="min-w-[1080px]" containerClassName="overflow-visible">
+  return <Table className="min-w-[1200px]" containerClassName="overflow-visible">
     <TableCaption className="sr-only">Um rateio por linha, repetindo os dados da linha do extrato de origem. Selecione uma linha para ver o lançamento.</TableCaption>
-    <Head columns={[{ label: "Data", className: "w-24" }, { label: "Lançamento" }, { label: "Forma pgto" }, { label: "Documentos" }, { label: "Valor", className: "text-right" }, { label: "Nome do Associado" }, { label: "Descrição" }, { label: "Rubrica" }]} order={order} sortHref={sortHref} />
+    <Head columns={[{ label: "Data", className: "w-24" }, { label: "Lançamento" }, { label: "Conta" }, { label: "Forma pgto" }, { label: "Documentos" }, { label: "Valor", className: "text-right" }, { label: "Nome do Associado" }, { label: "Descrição" }, { label: "Rubrica" }]} order={order} sortHref={sortHref} />
     <TableBody>{rows.map((row, index) => {
       const continued = index > 0 && rows[index - 1].entry_id === row.entry_id;
       return <EntryRow key={row.split_id} entryId={row.entry_id} data-entry-id={row.entry_id} className={cn(continued && "[&_td]:border-t [&_td]:border-dashed")}>
         <TableCell className={cn(cell, "whitespace-nowrap num")}>{dateBR(row.entry_date)}</TableCell>
         <TableCell className={wrapCell}><EntryLink entryId={row.entry_id} className="font-medium">{row.entry_name}</EntryLink></TableCell>
+        <TableCell className={cell}>{row.account_name}</TableCell>
         <TableCell className={cell}>{row.payment_method_name}</TableCell>
         <TableCell className={cell}><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} /></TableCell>
         <TableCell className={amountCell(row.amount_cents)}>{money(row.amount_cents / 100)}</TableCell>

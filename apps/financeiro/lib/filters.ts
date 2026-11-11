@@ -3,6 +3,7 @@ export type FolderStatus = "pendente" | "na-pasta";
 export type EntryFilters = {
   from?: string;
   to?: string;
+  accountIds: string[];
   paymentMethodIds: string[];
   folder?: FolderStatus;
   associateIds: string[];
@@ -61,6 +62,7 @@ export function parseFilters(params: RawSearchParams, now = new Date()): EntryFi
   return {
     from: first(params.de) === ALL_DATES ? undefined : date(params.de) ?? defaultFrom(now),
     to: date(params.ate),
+    accountIds: uuids(params.conta),
     paymentMethodIds: uuids(params.forma),
     // as duas opções marcadas equivalem a não filtrar
     folder: folders.length === 1 ? folders[0] : undefined,
@@ -78,7 +80,7 @@ export function likePattern(q: string) {
 
 export function hasAnyFilter(filters: EntryFilters) {
   return Boolean(filters.from || filters.to || filters.folder || filters.q || filters.withoutAssociate
-    || filters.paymentMethodIds.length || filters.associateIds.length || filters.categoryIds.length);
+    || filters.accountIds.length || filters.paymentMethodIds.length || filters.associateIds.length || filters.categoryIds.length);
 }
 
 export type SortOrder = "desc" | "asc";

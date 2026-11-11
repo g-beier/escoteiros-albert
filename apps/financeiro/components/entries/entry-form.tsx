@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { accountAfterPaymentChange } from "@/lib/accounts";
 import type { EditableEntry } from "@/lib/entries";
 import { centsToInput, money } from "@/lib/format";
 import { parseMoneyToCents } from "@/lib/money";
@@ -19,23 +20,25 @@ import type { CategoryItem } from "@/lib/categories";
 import { CategoryPicker } from "./category-picker";
 
 export type CatalogItem = { id: string; name: string; active: boolean };
-export type Catalogs = { categories: CategoryItem[]; paymentMethods: CatalogItem[]; associates: CatalogItem[] };
+export type PaymentMethodItem = CatalogItem & { default_account_id?: string | null };
+export type Catalogs = { categories: CategoryItem[]; paymentMethods: PaymentMethodItem[]; associates: CatalogItem[]; accounts: CatalogItem[] };
 type Direction = "entrada" | "saida";
 
 type SplitDraft = { key: number; categoryId: string; amount: string; description: string; associateId: string };
-type Draft = { direction: Direction | null; date: string; name: string; total: string; paymentMethodId: string; document: string; documentFiled: boolean; splits: SplitDraft[] };
+type Draft = { direction: Direction | null; date: string; name: string; total: string; paymentMethodId: string; accountId: string; document: string; documentFiled: boolean; splits: SplitDraft[] };
 
 let splitKey = 0;
 const emptySplit = (): SplitDraft => ({ key: ++splitKey, categoryId: "", amount: "", description: "", associateId: "" });
 
 function toDraft(entry: EditableEntry | null): Draft {
-  if (!entry) return { direction: null, date: new Date().toISOString().slice(0, 10), name: "", total: "", paymentMethodId: "", document: "", documentFiled: false, splits: [emptySplit()] };
+  if (!entry) return { direction: null, date: new Date().toISOString().slice(0, 10), name: "", total: "", paymentMethodId: "", accountId: "", document: "", documentFiled: false, splits: [emptySplit()] };
   return {
     direction: entry.totalCents < 0 ? "saida" : "entrada",
     date: entry.date,
     name: entry.name,
     total: centsToInput(Math.abs(entry.totalCents)),
     paymentMethodId: entry.paymentMethodId,
+    accountId: entry.accountId,
     document: entry.document,
     documentFiled: entry.documentFiled,
     splits: entry.splits.map((s) => ({ key: ++splitKey, categoryId: s.categoryId, amount: centsToInput(Math.abs(s.amountCents)), description: s.description, associateId: s.associateId ?? "" })),
@@ -67,8 +70,14 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
 
   const options = useMemo(() => ({
     paymentMethods: visibleOptions(catalogs.paymentMethods, [draft.paymentMethodId]),
+    accounts: visibleOptions(catalogs.accounts, [saved.accountId]),
     associates: visibleOptions(catalogs.associates, draft.splits.map((s) => s.associateId)),
-  }), [catalogs, draft.splits, draft.paymentMethodId]);
+  }), [catalogs, draft.splits, draft.paymentMethodId, saved.accountId]);
+
+  /** A conta acompanha a conta padrão da forma de pagamento, salvo se escolhida à mão. */
+  function choosePaymentMethod(paymentMethodId: string) {
+    update({ paymentMethodId, accountId: accountAfterPaymentChange(draft, paymentMethodId, catalogs.paymentMethods, catalogs.accounts) });
+  }
   // rubricas do lançamento salvo: continuam selecionáveis mesmo se inativadas depois
   const usedCategoryIds = useMemo(() => saved.splits.map((s) => s.categoryId).filter(Boolean), [saved]);
 
@@ -105,6 +114,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
       date: draft.date,
       name: draft.name,
       paymentMethodId: draft.paymentMethodId,
+      accountId: draft.accountId,
       document: draft.document,
       documentFiled: draft.documentFiled,
       totalCents,
@@ -144,8 +154,9 @@ export function EntryForm({ entry, catalogs, canEdit, backHref }: { entry: Edita
         <div className="grid gap-1.5"><Label htmlFor="entry-name">Nome do lançamento</Label><Input id="entry-name" maxLength={200} placeholder="Quem pagou ou recebeu, emitente da nota…" value={draft.name} onChange={(e) => update({ name: e.target.value })} required /></div>
         <div className="grid gap-1.5"><Label htmlFor="entry-total">Valor total (R$){draft.direction && <span className={cn("ml-1", draft.direction === "saida" ? "text-destructive" : "text-success")}>· {draft.direction === "saida" ? "saída" : "entrada"}</span>}</Label><Input id="entry-total" inputMode="decimal" placeholder="0,00" value={draft.total} onChange={(e) => update({ total: e.target.value })} className="text-right num" required /></div>
       </div>
-      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
-        <div className="grid gap-1.5"><Label htmlFor="entry-payment">Forma de pagamento</Label><OptionSelect id="entry-payment" value={draft.paymentMethodId} onValueChange={(paymentMethodId) => update({ paymentMethodId })} options={options.paymentMethods} disabled={readOnly} /></div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+        <div className="grid gap-1.5"><Label htmlFor="entry-payment">Forma de pagamento</Label><OptionSelect id="entry-payment" value={draft.paymentMethodId} onValueChange={choosePaymentMethod} options={options.paymentMethods} disabled={readOnly} /></div>
+        <div className="grid gap-1.5"><Label htmlFor="entry-account">Conta</Label><OptionSelect id="entry-account" value={draft.accountId} onValueChange={(accountId) => update({ accountId })} options={options.accounts} placeholder="Escolha a conta…" disabled={readOnly} /></div>
         <div className="grid gap-1.5"><Label htmlFor="entry-document">Documento (opcional)</Label><Input id="entry-document" maxLength={60} placeholder="NF 1234, recibo…" value={draft.document} onChange={(e) => update({ document: e.target.value })} /></div>
         <Label className="h-7 w-fit cursor-pointer gap-2 font-medium">
           <Checkbox checked={draft.documentFiled} onCheckedChange={(checked) => update({ documentFiled: checked === true })} disabled={readOnly} />

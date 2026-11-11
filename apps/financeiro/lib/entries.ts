@@ -5,6 +5,7 @@ export type EditableEntry = {
   date: string;
   name: string;
   paymentMethodId: string;
+  accountId: string;
   document: string;
   documentFiled: boolean;
   totalCents: number;
@@ -18,7 +19,7 @@ type SplitRow = { category_id: string; amount_cents: number; description: string
 /** Carrega um lançamento com seus rateios na ordem em que foram gravados (RLS restringe ao grupo). */
 export async function fetchEntry(supabase: SupabaseClient, id: string): Promise<EditableEntry | null> {
   const { data } = await supabase.from("ledger_entries")
-    .select("id, entry_date, name, payment_method_id, document, document_filed, total_cents, created_at, updated_at, entry_splits(id, category_id, amount_cents, description, associate_id, created_at)")
+    .select("id, entry_date, name, payment_method_id, account_id, document, document_filed, total_cents, created_at, updated_at, entry_splits(id, category_id, amount_cents, description, associate_id, created_at)")
     .eq("id", id).maybeSingle();
   if (!data) return null;
   const splits = [...(data.entry_splits as SplitRow[])].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
@@ -27,6 +28,7 @@ export async function fetchEntry(supabase: SupabaseClient, id: string): Promise<
     date: data.entry_date,
     name: data.name,
     paymentMethodId: data.payment_method_id,
+    accountId: data.account_id,
     document: data.document ?? "",
     documentFiled: data.document_filed,
     totalCents: data.total_cents,
@@ -36,7 +38,7 @@ export async function fetchEntry(supabase: SupabaseClient, id: string): Promise<
   };
 }
 
-const LIST_KEYS = ["visao", "ordem", "de", "ate", "forma", "pasta", "associado", "rubrica", "q"] as const;
+const LIST_KEYS = ["visao", "ordem", "de", "ate", "conta", "forma", "pasta", "associado", "rubrica", "q"] as const;
 
 /** Query string da lista (só chaves conhecidas), para voltar dos detalhes com os mesmos filtros. */
 export function listQuery(params: Record<string, string | string[] | undefined> | URLSearchParams) {

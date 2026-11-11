@@ -6,8 +6,8 @@ const id2 = "1b6c7a4e-5d1f-4c1e-9a8b-2f3d4e5f6a7c";
 
 describe("parseFilters", () => {
   it("lê filtros com vários valores", () => {
-    expect(parseFilters({ de: "2026-01-01", ate: "2026-01-31", forma: `${id},${id2}`, pasta: "pendente", associado: `${id},nenhum`, rubrica: id, q: " lanche " })).toEqual({
-      from: "2026-01-01", to: "2026-01-31", paymentMethodIds: [id, id2], folder: "pendente",
+    expect(parseFilters({ de: "2026-01-01", ate: "2026-01-31", conta: id2, forma: `${id},${id2}`, pasta: "pendente", associado: `${id},nenhum`, rubrica: id, q: " lanche " })).toEqual({
+      from: "2026-01-01", to: "2026-01-31", accountIds: [id2], paymentMethodIds: [id, id2], folder: "pendente",
       associateIds: [id], withoutAssociate: true, categoryIds: [id], q: "lanche",
     });
   });
@@ -20,8 +20,8 @@ describe("parseFilters", () => {
   });
 
   it("descarta valores malformados", () => {
-    expect(parseFilters({ de: "01/01/2026", forma: "x", pasta: "talvez", rubrica: "' or 1=1", q: "  " })).toEqual({
-      from: defaultFrom(), to: undefined, paymentMethodIds: [], folder: undefined, associateIds: [], withoutAssociate: false, categoryIds: [], q: undefined,
+    expect(parseFilters({ de: "01/01/2026", conta: "y", forma: "x", pasta: "talvez", rubrica: "' or 1=1", q: "  " })).toEqual({
+      from: defaultFrom(), to: undefined, accountIds: [], paymentMethodIds: [], folder: undefined, associateIds: [], withoutAssociate: false, categoryIds: [], q: undefined,
     });
   });
 
@@ -51,6 +51,7 @@ describe("hasAnyFilter", () => {
     expect(hasAnyFilter(empty)).toBe(false);
     expect(hasAnyFilter({ ...empty, withoutAssociate: true })).toBe(true);
     expect(hasAnyFilter({ ...empty, categoryIds: [id] })).toBe(true);
+    expect(hasAnyFilter({ ...empty, accountIds: [id] })).toBe(true);
   });
 });
 
