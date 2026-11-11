@@ -1,0 +1,49 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { AppHeader } from "@/components/app-header";
+import { RecentImports } from "@/components/import/recent-imports";
+import { StatementImporter, type ImportAccount } from "@/components/import/statement-importer";
+import { SetupNeeded } from "@/components/setup-needed";
+import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
+import { canManageEntries } from "@/lib/auth";
+import { fetchImportProfiles, fetchRecentImports } from "@/lib/import-queries";
+import { createClient } from "@/lib/supabase/server";
+
+export default async function ImportPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = await searchParams;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const { data: membership } = await supabase.from("memberships").select("group_id, role").eq("user_id", user.id).single();
+  if (!membership) return <SetupNeeded email={user.email ?? ""} />;
+  const groupId = membership.group_id as string;
+  const canEdit = canManageEntries(membership.role);
+
+  const [{ data: accountRows }, { profiles }] = await Promise.all([
+    supabase.from("accounts").select("id, name, bank").eq("group_id", groupId).eq("active", true).order("name"),
+    canEdit ? fetchImportProfiles(supabase, groupId) : Promise.resolve({ profiles: [] }),
+  ]);
+  // "A definir" é só um destino provisório de lançamentos antigos; não recebe extrato.
+  const accounts = ((accountRows ?? []) as ImportAccount[]).filter((account) => account.name !== PLACEHOLDER_ACCOUNT_NAME);
+  const requested = typeof params.conta === "string" ? params.conta : "";
+  const accountId = accounts.some((account) => account.id === requested) ? requested : accounts[0]?.id ?? "";
+  const recent = accountId ? await fetchRecentImports(supabase, groupId, accountId) : { rows: [], error: undefined };
+  const accountName = accounts.find((account) => account.id === accountId)?.name ?? "";
+
+  return <div className="shell">
+    <AppHeader role={membership.role} email={user.email ?? ""} current="/importacao" />
+    <main className="main">
+      <div className="page-head"><div>
+        <span className="eyebrow">Importar extrato</span>
+        <h1>Extrato do banco</h1>
+        <p className="lede">Envie o CSV ou OFX exportado pelo banco. O arquivo é lido no navegador com o perfil do banco; confira as linhas antes de importar. Depois, as linhas são conciliadas com os lançamentos.</p>
+      </div></div>
+      <div className="grid gap-5">
+        {!canEdit && <section className="card"><p className="empty m-0">Somente tesouraria e administração podem importar extratos. Você pode consultar as importações já feitas.</p></section>}
+        {canEdit && accounts.length === 0 && <section className="card"><p className="empty m-0">Nenhuma conta ativa. Cadastre a conta do banco em <Link href="/cadastros" className="underline">Cadastros</Link> antes de importar.</p></section>}
+        {canEdit && accounts.length > 0 && <StatementImporter accounts={accounts} profiles={profiles} accountId={accountId} />}
+        {accountId && <RecentImports accountId={accountId} accountName={accountName} rows={recent.rows} error={recent.error} />}
+      </div>
+    </main>
+  </div>;
+}

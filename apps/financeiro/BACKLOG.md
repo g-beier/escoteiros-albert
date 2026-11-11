@@ -57,9 +57,15 @@
 - **Contas** (`011_accounts.sql`): cadastro em `/cadastros` (tipo, banco, agência, número, saldo inicial), conta padrão por forma de pagamento, conta obrigatória no lançamento (lançamentos antigos foram para "A definir"; Dinheiro → Caixa), coluna e filtro **Conta** (`conta` na URL) e coluna nas exportações.
 - **Importação de extrato — banco e servidor** (`012_statement_import.sql`): perfis por banco, importações, linhas do extrato com impressão digital calculada no banco e duplicatas puladas; tabelas de vínculos/recusas de conciliação. Server Actions em `app/importacao/actions.ts`. Falta a tela de importação.
 
+## Concluído (2026-11-11, nona rodada)
+
+- **Tela de importação** (`/importacao`, menu "Importar extrato"): conta + arquivo (CSV ou OFX, detectado pelo conteúdo), perfil do grupo reconhecido pela assinatura do cabeçalho ou novo perfil com sugestões (`sniffCsv` + papéis pelo nome das colunas), grade com papel por coluna, natureza C/D, prefixos de tipo, linhas a ignorar, conferência (totais, saldos, primeira divergência, erros, ignoradas, valor zero), salvar/atualizar perfil ("salvar como novo") e importar; redireciona para `/conciliacao`. Lista das importações recentes da conta.
+- Linha "SALDO ANTERIOR" ignorada vira saldo inicial quando o arquivo não traz outro (Itaú); no OFX, confere saldo inicial + movimentos com o `LEDGERBAL`.
+
 ## A verificar
 
 - Aplicar `011`/`012` no banco local (`npx supabase migration up`) e conferir `/cadastros`, formulário e lista com a coluna Conta no navegador.
+- `/importacao` no navegador, ponta a ponta, com as fixtures de `lib/statement-import/__fixtures__/` (ainda não exercitada: o banco local não tinha `011`/`012`).
 
 - Dashboard e rolagem da tabela no navegador (desktop e celular).
 - Exportações abertas no Excel/Google Sheets (cores, fórmulas) e download pelo navegador logado.
@@ -75,7 +81,7 @@
 - Histórico de alterações (auditoria) na página de detalhes.
 - Testes pgTAP das políticas RLS e funções; Playwright para OTP, lançamentos e gestão de usuários.
 - Rever o nome "Nome do lançamento": o campo deve ficar igual ao texto do extrato do banco (candidatos: "Histórico", "Texto do extrato"). Decidir junto com a importação de extratos.
-- Tela de importação (`/importacao`: upload, montagem/reuso de perfis, conferência) usando `lib/statement-import/` e as actions de `app/importacao/actions.ts`; perfis do grupo, editáveis e atualizados ao ajustar.
+- Importação: mostrar na conferência as duplicatas já importadas antes de gravar (hoje só o resultado informa), conferir o saldo inicial do arquivo com o saldo da conta e lista de perfis editável fora da importação.
 - Mover em lote os lançamentos de "A definir" para a conta certa.
 - Conciliação em duas colunas após importar (sugestão por mesmo dia + mesmo valor, vincular, criar lançamento a partir da linha, ignorar, sobressalentes, fechamento do mês): plano em `docs/importacao-conciliacao.md`.
 - Anexos de comprovantes em bucket privado (complementa a "pasta").

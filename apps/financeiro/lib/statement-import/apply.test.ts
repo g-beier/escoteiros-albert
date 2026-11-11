@@ -222,6 +222,37 @@ describe("applyProfile — banco em latin1 com crédito/débito", () => {
   });
 });
 
+describe("applyProfile — SALDO ANTERIOR como saldo inicial", () => {
+  const settings: ProfileSettings = {
+    encoding: "utf-8",
+    delimiter: ";",
+    headerRow: 1,
+    dateFormat: "DD/MM/YYYY",
+    decimal: "comma",
+    columns: { date: "Data", amount: "Valor", description: ["Lançamento"] },
+    ignoreIf: ["SALDO ANTERIOR"],
+  };
+  const text = "Data;Lançamento;Valor\n30/09/2026;Saldo Anterior;1.000,00\n01/10/2026;PIX TRANSF ANA;-50,00\n";
+
+  it("usa o valor da linha ignorada quando não há outro saldo inicial", () => {
+    const parsed = applyProfile(text, settings);
+    expect(parsed.ignored).toEqual([{ sourceRow: 2, reason: 'Contém "SALDO ANTERIOR"' }]);
+    expect(parsed.openingBalanceCents).toBe(100000);
+    expect(parsed.closingBalanceCents).toBeUndefined();
+    expect(parsed.balanceCheck).toBeUndefined();
+  });
+
+  it("usa a coluna de saldo quando a linha não tem valor", () => {
+    const withBalance = { ...settings, columns: { ...settings.columns, amount: undefined, credit: "Crédito", debit: "Débito", balance: "Saldo" } };
+    const csv = "Data;Lançamento;Crédito;Débito;Saldo\n30/09/2026;SALDO ANTERIOR;;;-20,00\n01/10/2026;TARIFA;;5,00;\n";
+    expect(applyProfile(csv, withBalance).openingBalanceCents).toBe(-2000);
+  });
+
+  it("prefere o saldo das linhas e o bloco de resumo", () => {
+    expect(applyProfile(fixture("latin1-bank.csv"), latin1Bank).openingBalanceCents).toBe(100000);
+  });
+});
+
 describe("suggestKindPrefixes", () => {
   it("para no separador e não desce em nomes variados", () => {
     const values = [
