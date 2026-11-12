@@ -130,12 +130,12 @@ function useOpenOnClick(entryId: string) {
 }
 
 /** Linha clicável: abre os detalhes, exceto quando o clique é em um controle interno. */
-export function EntryRow({ entryId, className, children, ...props }: { entryId: string; className?: string; children: React.ReactNode } & React.HTMLAttributes<HTMLTableRowElement>) {
+export function EntryRow({ entryId, className, children, ...props }: { entryId: string; className?: string; children: React.ReactNode } & React.ComponentProps<"tr">) {
   const open = useOpenOnClick(entryId);
   return <tr
     {...props}
     data-slot="table-row"
-    className={cn("cursor-pointer border-b transition-colors even:bg-muted/40 hover:bg-accent/50", className)}
+    className={cn("cursor-pointer border-b transition-colors hover:bg-accent/50", className)}
     onClick={open}
   >{children}</tr>;
 }

@@ -99,8 +99,8 @@ export function InfiniteEntries({ initial, query, filtered, order, sortHref }: {
     <div ref={scrollerRef} className="md:min-h-0 md:flex-1 md:overflow-auto md:overscroll-contain" data-slot="entries-scroller">
       {narrow !== true && <div className={cn(narrow === null && "max-md:hidden")}>
         {view === "rubricas"
-          ? <SplitTable rows={rows as SplitRow[]} filtered={filtered} order={order} sortHref={sortHref} />
-          : <LedgerTable rows={rows as LedgerRow[]} filtered={filtered} order={order} sortHref={sortHref} />}
+          ? <SplitTable rows={rows as SplitRow[]} filtered={filtered} order={order} sortHref={sortHref} scroller={scrollerRef} />
+          : <LedgerTable rows={rows as LedgerRow[]} filtered={filtered} order={order} sortHref={sortHref} scroller={scrollerRef} />}
       </div>}
       {narrow !== false && <div className={cn(narrow === null && "md:hidden")}>
         {view === "rubricas"

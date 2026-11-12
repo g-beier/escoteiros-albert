@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { dateBR, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { IconArrowDown, IconArrowUp, IconCircleCheck, IconPaperclip } from "@tabler/icons-react";
 import type { SplitRow, LedgerRow } from "@/lib/entry-queries";
 import type { SortOrder } from "@/lib/filters";
@@ -23,9 +24,9 @@ const COLUMN_FILTERS: Record<string, FilterKey> = { "Conta": "conta", "Forma pgt
 
 type Sort = { order: SortOrder; sortHref: string };
 
-function Head({ columns, order, sortHref, select }: { columns: { label: string; className?: string }[]; select?: React.ReactNode } & Sort) {
+function Head({ columns, order, sortHref, select, virtual }: { columns: { label: string; className?: string }[]; select?: React.ReactNode; virtual: boolean } & Sort) {
   return <TableHeader className="sticky top-0 z-10 bg-muted shadow-[0_1px_0_var(--border)] [&_tr]:border-b-0">
-    <TableRow className="hover:bg-transparent">
+    <TableRow className="hover:bg-transparent" aria-rowindex={virtual ? 1 : undefined}>
       {select && <TableHead className="h-8 w-8 px-2.5">{select}</TableHead>}
       {columns.map((column) => column.label === "Data"
         ? <TableHead key={column.label} className={cn(headCell, column.className)} aria-sort={order === "desc" ? "descending" : "ascending"}>
@@ -79,47 +80,112 @@ function SelectRow({ row }: { row: LedgerRow }) {
     onCheckedChange={(on) => setSelected([[row.entry_id, { accountName: row.account_name, reconciled: Boolean(row.reconciled) }]], on)} />;
 }
 
-export function LedgerTable({ rows, filtered, order, sortHref }: { rows: LedgerRow[]; filtered: boolean } & Sort) {
+
+/** A partir de quantas linhas carregadas a tabela passa a montar só as que estão perto da tela. */
+export const VIRTUALIZE_FROM = 300;
+/** Altura do cabeçalho fixo (h-8): as linhas começam abaixo dele dentro da área que rola. */
+const HEAD_HEIGHT = 32;
+
+/**
+ * Virtualização das linhas da planilha (desktop). Abaixo de VIRTUALIZE_FROM todas as linhas são
+ * montadas (como antes; o HTML do servidor traz a primeira página inteira), mas já medidas, para que a
+ * troca não faça a lista pular. Acima, só as linhas visíveis (mais uma margem) ficam no DOM, entre
+ * duas linhas espaçadoras; aria-rowcount/aria-rowindex mantêm a posição para leitores de tela.
+ */
+function useVirtualRows(keys: string[], scroller: React.RefObject<HTMLElement | null>) {
+  // o app não usa o React Compiler; o aviso só diz que este hook não seria memoizado por ele
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const virtualizer = useVirtualizer<HTMLElement, HTMLTableRowElement>({
+    count: keys.length,
+    getScrollElement: () => scroller.current,
+    estimateSize: () => 33,
+    getItemKey: (index) => keys[index],
+    scrollMargin: HEAD_HEIGHT,
+    overscan: 15,
+    useFlushSync: false,
+  });
+  const virtual = keys.length >= VIRTUALIZE_FROM;
+  if (!virtual) return { virtual, indexes: keys.map((_, index) => index), top: 0, bottom: 0, measure: virtualizer.measureElement };
+  const items = virtualizer.getVirtualItems();
+  const first = items[0];
+  const last = items[items.length - 1];
+  return {
+    virtual,
+    indexes: items.map((item) => item.index),
+    top: first ? first.start - HEAD_HEIGHT : 0,
+    bottom: last ? virtualizer.getTotalSize() - (last.end - HEAD_HEIGHT) : 0,
+    measure: virtualizer.measureElement,
+  };
+}
+
+/** Linha vazia que ocupa a altura das linhas não montadas. */
+const Spacer = ({ height, columns }: { height: number; columns: number }) => height > 0
+  ? <tr aria-hidden className="border-0"><td colSpan={columns} className="p-0" style={{ height }} /></tr>
+  : null;
+
+/** Listra zebrada pelo índice (e não por :nth-child, que as linhas espaçadoras deslocariam). */
+const stripe = (index: number) => index % 2 === 1 && "bg-muted/40";
+
+type Scroller = { scroller: React.RefObject<HTMLElement | null> };
+
+export function LedgerTable({ rows, filtered, order, sortHref, scroller }: { rows: LedgerRow[]; filtered: boolean } & Sort & Scroller) {
   const { canEdit } = useEntrySelection();
+  const { virtual, indexes, top, bottom, measure } = useVirtualRows(rows.map((row) => row.entry_id), scroller);
   if (!rows.length) return <Empty>{filtered ? "Nenhum lançamento corresponde aos filtros." : "Nenhum lançamento ainda. Comece pelo botão “Novo lançamento”."}</Empty>;
-  return <Table className="min-w-[980px]" containerClassName="overflow-visible">
+  const columns = canEdit ? 9 : 8;
+  return <Table className="min-w-[980px]" containerClassName="overflow-visible" aria-rowcount={virtual ? rows.length + 1 : undefined}>
     <TableCaption className="sr-only">Um lançamento por linha. Selecione uma linha para ver os detalhes e o rateio.</TableCaption>
-    <Head columns={[{ label: "Data", className: "w-28" }, { label: "Histórico" }, { label: "Conta", className: "w-40" }, { label: "Forma pgto", className: "w-40" }, { label: "Documentos", className: "w-48" }, { label: "ID OFX", className: "w-36" }, { label: "Valor", className: "w-32 text-right" }]} order={order} sortHref={sortHref} select={canEdit ? <SelectAll rows={rows} /> : undefined} />
-    <TableBody>{rows.map((row) => <EntryRow key={row.entry_id} entryId={row.entry_id}>
-      {canEdit && <TableCell className="px-2.5 py-1 align-middle" onClick={(event) => event.stopPropagation()}><SelectRow row={row} /></TableCell>}
-      <TableCell className={cn(cell, "whitespace-nowrap num")}>{dateBR(row.entry_date)}</TableCell>
-      <TableCell className={wrapCell}><EntryLink entryId={row.entry_id}>{row.name}</EntryLink></TableCell>
-      <TableCell className={cell}>{row.account_name}</TableCell>
-      <TableCell className={cell}>{row.payment_method_name}</TableCell>
-      <TableCell className={cell}><span className="inline-flex items-center gap-1.5"><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} /><AttachmentClip count={row.attachment_count} /></span></TableCell>
-      <TableCell className={cell}><OfxIds ids={row.external_ids ?? []} /></TableCell>
-      <TableCell className={amountCell(row.total_cents)}>{row.reconciled && <ReconciledMark />}{money(row.total_cents / 100)}</TableCell>
-      <TableCell className="px-1 py-0.5 align-middle"><EntryRowActions entryId={row.entry_id} filed={row.document_filed} /></TableCell>
-    </EntryRow>)}</TableBody>
+    <Head columns={[{ label: "Data", className: "w-28" }, { label: "Histórico" }, { label: "Conta", className: "w-40" }, { label: "Forma pgto", className: "w-40" }, { label: "Documentos", className: "w-48" }, { label: "ID OFX", className: "w-36" }, { label: "Valor", className: "w-32 text-right" }]} order={order} sortHref={sortHref} select={canEdit ? <SelectAll rows={rows} /> : undefined} virtual={virtual} />
+    <TableBody>
+      <Spacer height={top} columns={columns} />
+      {indexes.map((index) => {
+        const row = rows[index];
+        return <EntryRow key={row.entry_id} entryId={row.entry_id} ref={measure} data-index={index} aria-rowindex={virtual ? index + 2 : undefined} className={cn(stripe(index))}>
+          {canEdit && <TableCell className="px-2.5 py-1 align-middle" onClick={(event) => event.stopPropagation()}><SelectRow row={row} /></TableCell>}
+          <TableCell className={cn(cell, "whitespace-nowrap num")}>{dateBR(row.entry_date)}</TableCell>
+          <TableCell className={wrapCell}><EntryLink entryId={row.entry_id}>{row.name}</EntryLink></TableCell>
+          <TableCell className={cell}>{row.account_name}</TableCell>
+          <TableCell className={cell}>{row.payment_method_name}</TableCell>
+          <TableCell className={cell}><span className="inline-flex items-center gap-1.5"><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} /><AttachmentClip count={row.attachment_count} /></span></TableCell>
+          <TableCell className={cell}><OfxIds ids={row.external_ids ?? []} /></TableCell>
+          <TableCell className={amountCell(row.total_cents)}>{row.reconciled && <ReconciledMark />}{money(row.total_cents / 100)}</TableCell>
+          <TableCell className="px-1 py-0.5 align-middle"><EntryRowActions entryId={row.entry_id} filed={row.document_filed} /></TableCell>
+        </EntryRow>;
+      })}
+      <Spacer height={bottom} columns={columns} />
+    </TableBody>
   </Table>;
 }
 
-export function SplitTable({ rows, filtered, order, sortHref }: { rows: SplitRow[]; filtered: boolean } & Sort) {
+export function SplitTable({ rows, filtered, order, sortHref, scroller }: { rows: SplitRow[]; filtered: boolean } & Sort & Scroller) {
+  const { virtual, indexes, top, bottom, measure } = useVirtualRows(rows.map((row) => row.split_id), scroller);
   if (!rows.length) return <Empty>{filtered ? "Nenhum rateio corresponde aos filtros." : "Os rateios aparecerão depois do primeiro lançamento."}</Empty>;
-  return <Table className="min-w-[1320px]" containerClassName="overflow-visible">
+  const columns = 11;
+  return <Table className="min-w-[1320px]" containerClassName="overflow-visible" aria-rowcount={virtual ? rows.length + 1 : undefined}>
     <TableCaption className="sr-only">Um rateio por linha, repetindo os dados do lançamento de origem. Selecione uma linha para ver o lançamento.</TableCaption>
-    <Head columns={[{ label: "Data", className: "w-24" }, { label: "Histórico" }, { label: "Conta" }, { label: "Forma pgto" }, { label: "Documentos" }, { label: "ID OFX" }, { label: "Valor", className: "text-right" }, { label: "Nome do Associado" }, { label: "Descrição" }, { label: "Rubrica" }]} order={order} sortHref={sortHref} />
-    <TableBody>{rows.map((row, index) => {
-      const continued = index > 0 && rows[index - 1].entry_id === row.entry_id;
-      return <EntryRow key={row.split_id} entryId={row.entry_id} data-entry-id={row.entry_id} className={cn(continued && "[&_td]:border-t [&_td]:border-dashed")}>
-        <TableCell className={cn(cell, "whitespace-nowrap num")}>{dateBR(row.entry_date)}</TableCell>
-        <TableCell className={wrapCell}><EntryLink entryId={row.entry_id} className="font-medium">{row.entry_name}</EntryLink></TableCell>
-        <TableCell className={cell}>{row.account_name}</TableCell>
-        <TableCell className={cell}>{row.payment_method_name}</TableCell>
-        <TableCell className={cell}><span className="inline-flex items-center gap-1.5"><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} />{!continued && <AttachmentClip count={row.attachment_count} />}</span></TableCell>
-        <TableCell className={cell}>{!continued && <OfxIds ids={row.external_ids ?? []} />}</TableCell>
-        <TableCell className={amountCell(row.amount_cents)}>{row.reconciled && !continued && <ReconciledMark />}{money(row.amount_cents / 100)}</TableCell>
-        <TableCell className={cell}>{row.associate_name ?? <span className="text-muted-foreground">—</span>}</TableCell>
-        <TableCell className={wrapCell}>{row.description}</TableCell>
-        <TableCell className={cell}><CategoryTag code={row.category_code} name={row.category_name} kind={row.category_kind} /></TableCell>
-        <TableCell className="px-1 py-0.5 align-middle">{!continued && <EntryRowActions entryId={row.entry_id} filed={row.document_filed} />}</TableCell>
-      </EntryRow>;
-    })}</TableBody>
+    <Head columns={[{ label: "Data", className: "w-24" }, { label: "Histórico" }, { label: "Conta" }, { label: "Forma pgto" }, { label: "Documentos" }, { label: "ID OFX" }, { label: "Valor", className: "text-right" }, { label: "Nome do Associado" }, { label: "Descrição" }, { label: "Rubrica" }]} order={order} sortHref={sortHref} virtual={virtual} />
+    <TableBody>
+      <Spacer height={top} columns={columns} />
+      {indexes.map((index) => {
+        const row = rows[index];
+        const continued = index > 0 && rows[index - 1].entry_id === row.entry_id;
+        return <EntryRow key={row.split_id} entryId={row.entry_id} data-entry-id={row.entry_id} ref={measure} data-index={index} aria-rowindex={virtual ? index + 2 : undefined}
+          className={cn(stripe(index), continued && "[&_td]:border-t [&_td]:border-dashed")}>
+          <TableCell className={cn(cell, "whitespace-nowrap num")}>{dateBR(row.entry_date)}</TableCell>
+          <TableCell className={wrapCell}><EntryLink entryId={row.entry_id} className="font-medium">{row.entry_name}</EntryLink></TableCell>
+          <TableCell className={cell}>{row.account_name}</TableCell>
+          <TableCell className={cell}>{row.payment_method_name}</TableCell>
+          <TableCell className={cell}><span className="inline-flex items-center gap-1.5"><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} />{!continued && <AttachmentClip count={row.attachment_count} />}</span></TableCell>
+          <TableCell className={cell}>{!continued && <OfxIds ids={row.external_ids ?? []} />}</TableCell>
+          <TableCell className={amountCell(row.amount_cents)}>{row.reconciled && !continued && <ReconciledMark />}{money(row.amount_cents / 100)}</TableCell>
+          <TableCell className={cell}>{row.associate_name ?? <span className="text-muted-foreground">—</span>}</TableCell>
+          <TableCell className={wrapCell}>{row.description}</TableCell>
+          <TableCell className={cell}><CategoryTag code={row.category_code} name={row.category_name} kind={row.category_kind} /></TableCell>
+          <TableCell className="px-1 py-0.5 align-middle">{!continued && <EntryRowActions entryId={row.entry_id} filed={row.document_filed} />}</TableCell>
+        </EntryRow>;
+      })}
+      <Spacer height={bottom} columns={columns} />
+    </TableBody>
   </Table>;
 }
 
