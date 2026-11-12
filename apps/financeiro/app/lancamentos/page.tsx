@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { IconFolderExclamation } from "@tabler/icons-react";
+import { IconFolderExclamation, IconHelpCircle } from "@tabler/icons-react";
 import { pageSession } from "@/lib/session";
 import { AppHeader } from "@/components/app-header";
 import { PageHeader, SectionTabs } from "@/components/nav/page-header";
@@ -7,6 +7,8 @@ import { InfiniteEntries } from "@/components/entries/infinite-entries";
 import { fetchEntryPage } from "@/lib/entry-queries";
 import { EntryListProvider, NewEntryButton } from "@/components/entries/entry-editor";
 import { EntryFilters } from "@/components/entries/entry-filters";
+import { BulkAccountBar } from "@/components/entries/bulk-account-bar";
+import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
 import { ExportMenu } from "@/components/export/export-menu";
 import { SetupNeeded } from "@/components/setup-needed";
 import { exportYears } from "@/lib/export/period";
@@ -41,6 +43,12 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
     supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date").limit(1).maybeSingle(),
     supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date", { ascending: false }).limit(1).maybeSingle(),
   ]);
+  // lançamentos digitados sem conta ficam em "A definir" (011) até serem movidos ou conciliados
+  const undefinedAccount = (accounts ?? []).find((account) => account.name === PLACEHOLDER_ACCOUNT_NAME);
+  const { count: undefinedCount } = undefinedAccount
+    ? await supabase.from("ledger_entries").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("account_id", undefinedAccount.id)
+    : { count: 0 };
+  const onlyUndefined = undefinedAccount && filters.accountIds.length === 1 && filters.accountIds[0] === undefinedAccount.id;
   const years = exportYears(firstEntry?.entry_date, lastEntry?.entry_date);
   const tree = sortCategories((categories ?? []) as CategoryItem[]);
   const dimensions: FilterDimensions = {
@@ -79,9 +87,11 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
           actions={<>
             {(pendingDocs ?? 0) > 0 && filters.folder !== "pendente" && <Link href={`/lancamentos?pasta=pendente&de=${ALL_DATES}`} className="inline-flex items-center gap-1.5 rounded-full bg-[#f5eed1] px-3 py-1 text-xs font-semibold text-[#725d0d] hover:ring-1 hover:ring-current"><IconFolderExclamation className="size-4" aria-hidden /> {pendingDocs} {pendingDocs === 1 ? "documento pendente" : "documentos pendentes"}</Link>}
             <ExportMenu view={byCategory ? "rubricas" : "lancamentos"} from={filters.from} to={filters.to} years={years} accounts={toOptions(accounts)} />
+            {undefinedAccount && (undefinedCount ?? 0) > 0 && !onlyUndefined && <Link href={`/lancamentos?conta=${undefinedAccount.id}&de=${ALL_DATES}`} className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-foreground hover:ring-1 hover:ring-current" title="Lançamentos sem conta definida; marque-os e escolha a conta certa"><IconHelpCircle className="size-4" aria-hidden /> {undefinedCount} em “{PLACEHOLDER_ACCOUNT_NAME}”</Link>}
             {canEdit && <NewEntryButton returnQuery={returnQuery} />}
           </>} />
         <EntryFilters />
+        {canEdit && !byCategory && <BulkAccountBar accounts={(accounts ?? []).filter((account) => account.active).map((account) => ({ value: account.id, label: account.name }))} />}
         <section aria-label={byCategory ? "Rateios por rubrica" : "Lançamentos"} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-card">
           <InfiniteEntries key={returnQuery} initial={firstPage} query={returnQuery} filtered={filtered} order={order} sortHref={sortHref} />
         </section>

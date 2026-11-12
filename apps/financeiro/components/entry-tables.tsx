@@ -1,5 +1,6 @@
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EntryLink, EntryRow, EntryRowActions, FolderStatus } from "@/components/entries/entry-editor";
+import { EntryLink, EntryRow, EntryRowActions, FolderStatus, useEntrySelection } from "@/components/entries/entry-editor";
+import { Checkbox } from "@/components/ui/checkbox";
 import { dateBR, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -21,9 +22,10 @@ const COLUMN_FILTERS: Record<string, FilterKey> = { "Conta": "conta", "Forma pgt
 
 type Sort = { order: SortOrder; sortHref: string };
 
-function Head({ columns, order, sortHref }: { columns: { label: string; className?: string }[] } & Sort) {
+function Head({ columns, order, sortHref, select }: { columns: { label: string; className?: string }[]; select?: React.ReactNode } & Sort) {
   return <TableHeader className="sticky top-0 z-10 bg-muted shadow-[0_1px_0_var(--border)] [&_tr]:border-b-0">
     <TableRow className="hover:bg-transparent">
+      {select && <TableHead className="h-8 w-8 px-2.5">{select}</TableHead>}
       {columns.map((column) => column.label === "Data"
         ? <TableHead key={column.label} className={cn(headCell, column.className)} aria-sort={order === "desc" ? "descending" : "ascending"}>
             <Link href={sortHref} scroll={false} className="inline-flex items-center gap-1 hover:text-foreground" title={order === "desc" ? "Mostrar mais antigos primeiro" : "Mostrar mais recentes primeiro"}>
@@ -62,12 +64,28 @@ const ReconciledMark = () => <IconCircleCheck className="mr-1 inline size-3.5 al
 
 const Empty = ({ children }: { children: React.ReactNode }) => <div className="px-6 py-12 text-center text-muted-foreground">{children}</div>;
 
+/** Marca todos os lançamentos já carregados (ou desmarca). */
+function SelectAll({ rows }: { rows: LedgerRow[] }) {
+  const { selected, setSelected } = useEntrySelection();
+  const count = rows.filter((row) => selected.has(row.entry_id)).length;
+  return <Checkbox aria-label="Selecionar todos os lançamentos carregados" checked={count > 0 && count === rows.length} indeterminate={count > 0 && count < rows.length}
+    onCheckedChange={(on) => setSelected(rows.map((row) => [row.entry_id, { accountName: row.account_name, reconciled: Boolean(row.reconciled) }]), on)} />;
+}
+
+function SelectRow({ row }: { row: LedgerRow }) {
+  const { selected, setSelected } = useEntrySelection();
+  return <Checkbox aria-label={`Selecionar ${row.name}`} checked={selected.has(row.entry_id)}
+    onCheckedChange={(on) => setSelected([[row.entry_id, { accountName: row.account_name, reconciled: Boolean(row.reconciled) }]], on)} />;
+}
+
 export function LedgerTable({ rows, filtered, order, sortHref }: { rows: LedgerRow[]; filtered: boolean } & Sort) {
+  const { canEdit } = useEntrySelection();
   if (!rows.length) return <Empty>{filtered ? "Nenhum lançamento corresponde aos filtros." : "Nenhum lançamento ainda. Comece pelo botão “Novo lançamento”."}</Empty>;
   return <Table className="min-w-[980px]" containerClassName="overflow-visible">
     <TableCaption className="sr-only">Um lançamento por linha. Selecione uma linha para ver os detalhes e o rateio.</TableCaption>
-    <Head columns={[{ label: "Data", className: "w-28" }, { label: "Histórico" }, { label: "Conta", className: "w-40" }, { label: "Forma pgto", className: "w-40" }, { label: "Documentos", className: "w-48" }, { label: "ID OFX", className: "w-36" }, { label: "Valor", className: "w-32 text-right" }]} order={order} sortHref={sortHref} />
+    <Head columns={[{ label: "Data", className: "w-28" }, { label: "Histórico" }, { label: "Conta", className: "w-40" }, { label: "Forma pgto", className: "w-40" }, { label: "Documentos", className: "w-48" }, { label: "ID OFX", className: "w-36" }, { label: "Valor", className: "w-32 text-right" }]} order={order} sortHref={sortHref} select={canEdit ? <SelectAll rows={rows} /> : undefined} />
     <TableBody>{rows.map((row) => <EntryRow key={row.entry_id} entryId={row.entry_id}>
+      {canEdit && <TableCell className="px-2.5 py-1 align-middle" onClick={(event) => event.stopPropagation()}><SelectRow row={row} /></TableCell>}
       <TableCell className={cn(cell, "whitespace-nowrap num")}>{dateBR(row.entry_date)}</TableCell>
       <TableCell className={wrapCell}><EntryLink entryId={row.entry_id}>{row.name}</EntryLink></TableCell>
       <TableCell className={cell}>{row.account_name}</TableCell>

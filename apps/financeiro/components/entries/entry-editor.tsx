@@ -11,7 +11,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-export type EntryOverride = { filed?: boolean; deleted?: boolean };
+export type EntryOverride = { filed?: boolean; deleted?: boolean; accountName?: string; reconciled?: boolean };
+/** Lançamento marcado para ação em lote, com o que a barra precisa mostrar. */
+export type SelectedEntry = { accountName: string; reconciled: boolean };
 
 type ListApi = {
   canEdit: boolean;
@@ -20,7 +22,14 @@ type ListApi = {
   requestDelete: (entryId: string) => void;
   toggleFiled: (entryId: string, filed: boolean) => void;
   busyEntryId: string | null;
+  /** Seleção para ações em lote (só tesouraria/administração, na visão Por lançamento). */
+  selected: Map<string, SelectedEntry>;
+  setSelected: (entries: [string, SelectedEntry][], on: boolean) => void;
+  clearSelection: () => void;
+  override: (entryId: string, patch: EntryOverride) => void;
 };
+
+const EMPTY_SELECTION = new Map<string, SelectedEntry>();
 
 const ListContext = createContext<ListApi | null>(null);
 
@@ -35,6 +44,9 @@ export function EntryListProvider({ canEdit, returnQuery, children }: { canEdit:
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [busyEntryId, setBusyEntryId] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<string, EntryOverride>>({});
+  // a seleção vale para a lista atual: trocar filtro, visão ou ordem começa uma seleção nova
+  const [selection, setSelection] = useState<{ query: string; entries: Map<string, SelectedEntry> }>({ query: returnQuery, entries: new Map() });
+  const selected = selection.query === returnQuery ? selection.entries : EMPTY_SELECTION;
   const [pending, startTransition] = useTransition();
   const override = (entryId: string, patch: EntryOverride) => setOverrides((current) => ({ ...current, [entryId]: { ...current[entryId], ...patch } }));
 
@@ -44,6 +56,16 @@ export function EntryListProvider({ canEdit, returnQuery, children }: { canEdit:
     busyEntryId,
     detailHref: (entryId) => `/lancamentos/${entryId}${returnQuery ? `?voltar=${encodeURIComponent(returnQuery)}` : ""}`,
     requestDelete: (entryId) => setDeleteId(entryId),
+    selected,
+    setSelected: (entries, on) => setSelection((current) => {
+      const next = new Map(current.query === returnQuery ? current.entries : undefined);
+      for (const [id, entry] of entries) {
+        if (on) next.set(id, entry); else next.delete(id);
+      }
+      return { query: returnQuery, entries: next };
+    }),
+    clearSelection: () => setSelection({ query: returnQuery, entries: new Map() }),
+    override,
     toggleFiled: (entryId, filed) => {
       setBusyEntryId(entryId);
       override(entryId, { filed });
@@ -91,6 +113,11 @@ export function useEntryOverrides() {
   return useList().overrides;
 }
 
+export function useEntrySelection() {
+  const { canEdit, selected, setSelected, clearSelection, override } = useList();
+  return { canEdit, selected, setSelected, clearSelection, override };
+}
+
 /** Linha clicável: abre os detalhes, exceto quando o clique é em um controle interno. */
 export function EntryRow({ entryId, className, children, ...props }: { entryId: string; className?: string; children: React.ReactNode } & React.HTMLAttributes<HTMLTableRowElement>) {
   const { detailHref } = useList();
@@ -100,7 +127,7 @@ export function EntryRow({ entryId, className, children, ...props }: { entryId: 
     data-slot="table-row"
     className={cn("cursor-pointer border-b transition-colors even:bg-muted/40 hover:bg-accent/50", className)}
     onClick={(event) => {
-      if ((event.target as HTMLElement).closest("a, button, [role=menuitem], input, select")) return;
+      if ((event.target as HTMLElement).closest("a, button, label, [role=menuitem], [role=checkbox], input, select")) return;
       if (window.getSelection()?.toString()) return;
       router.push(detailHref(entryId));
     }}

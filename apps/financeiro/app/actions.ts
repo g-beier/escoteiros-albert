@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { memberOrError } from "@/lib/session";
+import { editorOrError, memberOrError } from "@/lib/session";
 import { entrySchema, toRpcSplits } from "@/lib/entry-schema";
 import { fetchEntryPage, type EntryPage } from "@/lib/entry-queries";
 import { parseFilters, parseOrder } from "@/lib/filters";
@@ -84,6 +84,23 @@ export async function setDocumentFiled(entryId: unknown, filed: unknown): Promis
   if (error) return { error: error.message };
   revalidatePath("/", "layout");
   return { success: true };
+}
+
+export type MoveResult = { error?: string; moved?: number; unchanged?: number; unlinked?: number };
+
+/** Move vários lançamentos para outra conta (ex.: os que ficaram em "A definir"); conciliados perdem o vínculo. */
+export async function moveEntriesAccount(entryIds: unknown, accountId: unknown): Promise<MoveResult> {
+  const ids = z.array(z.uuid()).min(1, "Selecione ao menos um lançamento.").max(500, "Selecione no máximo 500 lançamentos por vez.").safeParse(entryIds);
+  const account = z.uuid().safeParse(accountId);
+  if (!ids.success) return { error: ids.error.issues[0]?.message ?? "Seleção inválida." };
+  if (!account.success) return { error: "Escolha a conta." };
+  const ctx = await editorOrError("Sem permissão para mudar a conta dos lançamentos.");
+  if ("error" in ctx) return { error: ctx.error };
+  const { data, error } = await ctx.supabase.rpc("move_ledger_entries_account", { p_entry_ids: ids.data, p_account_id: account.data });
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  const result = data as { moved: number; unchanged: number; unlinked: number };
+  return { moved: result.moved, unchanged: result.unchanged, unlinked: result.unlinked };
 }
 
 /** Próxima página da rolagem infinita; os filtros chegam como a query string da lista. */

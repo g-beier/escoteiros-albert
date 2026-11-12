@@ -60,8 +60,14 @@ export function InfiniteEntries({ initial, query, filtered, order, sortHref }: {
       seen.add(id);
       return true;
     }).map((row) => {
-      const filed = overrides[row.entry_id]?.filed;
-      return filed === undefined ? row : { ...row, document_filed: filed };
+      const override = overrides[row.entry_id];
+      if (!override) return row;
+      return {
+        ...row,
+        ...(override.filed !== undefined && { document_filed: override.filed }),
+        ...(override.accountName !== undefined && { account_name: override.accountName }),
+        ...(override.reconciled !== undefined && { reconciled: override.reconciled }),
+      };
     });
   }, [pages, overrides]);
 
