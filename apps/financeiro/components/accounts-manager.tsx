@@ -41,7 +41,7 @@ export function AccountsManager({ accounts, canEdit }: { accounts: AccountItem[]
       <TableBody>{accounts.map((account) => <AccountRow key={account.id} account={account} canEdit={canEdit} onEdit={() => setEditing(account)} />)}</TableBody>
     </Table>
     {canEdit && <Dialog open={editing !== null} onOpenChange={(open) => { if (!open) setEditing(null); }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent>
         {editing !== null && <AccountForm key={editing === "new" ? "new" : editing.id} account={editing === "new" ? null : editing} onDone={() => setEditing(null)} />}
       </DialogContent>
     </Dialog>}

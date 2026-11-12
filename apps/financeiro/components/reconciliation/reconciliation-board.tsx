@@ -378,7 +378,7 @@ function BulkCreateDialog({ lines, paymentMethods, pending, onClose, onConfirm }
   lines: OpenLine[] | null; paymentMethods: BoardData["paymentMethods"]; pending: boolean; onClose: () => void; onConfirm: (items: BulkItem[]) => void;
 }) {
   return <Dialog open={lines !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
-    <DialogContent className="sm:max-w-4xl">
+    <DialogContent className="sm:max-w-4xl lg:max-w-[80vw]">
       {lines && <BulkCreateForm key={lines.map((l) => l.id).join()} lines={lines} paymentMethods={paymentMethods} pending={pending} onClose={onClose} onConfirm={onConfirm} />}
     </DialogContent>
   </Dialog>;
