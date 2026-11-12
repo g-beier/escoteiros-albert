@@ -111,9 +111,6 @@
 - Remover o código CSV de importação (`csv.ts`, `apply.ts`, `csv-profile-builder.tsx`) se o CSV não voltar.
 - Exportação contábil: código reduzido e histórico padrão, se o contador pedir; lançamento múltiplo agrupado pelo ID OFX.
 - Mover em lote os lançamentos de "A definir" para a conta certa.
-- Conciliação: sugerir combinações 1:N (uma linha = soma de vários lançamentos); vínculo N:M (hoje recusado).
-- Criação em massa: lembrar a rubrica usada antes para a mesma contraparte, se a recategorização manual pesar.
-- Importação: conferir se o arquivo é mesmo da conta escolhida (ex.: saldo inicial do arquivo × saldo da conta).
 - Filtro "Conciliado" em `/lancamentos` (hoje só o indicador ✓ na visão Por extrato).
 - Anexos de comprovantes em bucket privado (complementa a "pasta").
 - Mensalidades por associado.

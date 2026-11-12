@@ -211,7 +211,7 @@ Objetivo: cruzar o que **já foi lançado à mão** com o que **veio do banco**,
 1. **Contas**: cadastro, conta padrão por forma de pagamento, conta no lançamento (com migração dos dados atuais), filtro e coluna Conta.
 2. **Importação**: upload, montagem e reuso de perfis (CSV e OFX), conferência, deduplicação, lista de linhas importadas.
 3. **Conciliação**: tela em duas colunas logo após a importação, sugestões por mesmo dia + mesmo valor (aceitar/recusar/aceitar todas), vínculo manual com conferência de somas, criar lançamento a partir da linha, ignorar, sobressalentes, fechamento do mês.
-4. **Sugestões ampliadas**: tolerância de datas e semelhança de nomes feitas (`015`); falta sugerir combinações 1:N.
+4. **Sugestões ampliadas**: tolerância de datas e semelhança de nomes (`015`).
 5. **Transferências entre contas** (um movimento que sai de uma conta e entra em outra sem virar receita ou despesa).
 
 ## Decisões
