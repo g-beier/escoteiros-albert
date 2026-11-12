@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { branchLabels, isScoutBranch, NO_SECTION } from "@/lib/associates";
-import { feeAmounts, FEE_MONTH_LABELS, FEE_MONTHS, monthSummary, type CellState, type FeeRow, type FeeSplit, type FeeSuggestion } from "@/lib/fees";
+import { feeAmounts, feeBalance, FEE_MONTH_LABELS, FEE_MONTHS, monthSummary, type CellState, type FeePrice, type FeeRow, type FeeSplit, type FeeSuggestion } from "@/lib/fees";
 import { normalizeText } from "@/lib/statement-import";
 import { money } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -22,13 +22,18 @@ type Optimistic = { associateId: string; month: number; state: CellState | null 
 const LEGEND: CellState[] = ["pago", "atencao", "atrasado", "sugestao", "vazio"];
 
 /** Grade de mensalidades do ano: associados × março a dezembro. */
-export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }: {
+export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, price, onlyOverdue: initialOnlyOverdue = false }: {
   year: number; rows: FeeRow[]; suggestions: FeeSuggestion[]; splitsByAssociate: Record<string, FeeSplit[]>; canEdit: boolean;
+  /** Valor do ano (nulo = não configurado: sem previsto/em aberto). */
+  price: FeePrice | null;
+  /** Começa mostrando só quem tem mensalidade atrasada (?atrasados=1). */
+  onlyOverdue?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [query, setQuery] = useState("");
   const [showExempt, setShowExempt] = useState(false);
   const [bySection, setBySection] = useState(false);
+  const [onlyOverdue, setOnlyOverdue] = useState(initialOnlyOverdue);
   const [exempting, setExempting] = useState<FeeRow | null>(null);
   // estado otimista por caixinha, até o servidor responder
   const [optimistic, addOptimistic] = useOptimistic<Record<string, CellState | null>, Optimistic>({},
@@ -36,8 +41,10 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }:
 
   const visible = useMemo(() => {
     const q = normalizeText(query);
-    return rows.filter((row) => (showExempt || !row.exemption) && (!q || normalizeText(row.associate.name).includes(q)));
-  }, [rows, query, showExempt]);
+    return rows.filter((row) => (showExempt || !row.exemption) && (!onlyOverdue || (!row.exemption && row.overdue > 0))
+      && (!q || normalizeText(row.associate.name).includes(q)));
+  }, [rows, query, showExempt, onlyOverdue]);
+  const overdueCount = rows.filter((r) => !r.exemption && r.overdue > 0).length;
   const stateOf = (row: FeeRow, index: number) => optimistic[`${row.associate.id}:${FEE_MONTHS[index]}`] ?? row.cells[index].state;
   const summary = monthSummary(visible.filter((r) => !r.exemption).map((row) => row.cells.map((_, i) => stateOf(row, i))));
   const exemptCount = rows.filter((r) => r.exemption).length;
@@ -45,6 +52,12 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }:
   const amounts = useMemo(() => feeAmounts(year, Object.fromEntries(visible.map((row) => [row.associate.id, splitsByAssociate[row.associate.id] ?? []]))),
     [year, visible, splitsByAssociate]);
   const filtered = visible.length !== rows.length;
+  // previsto × recebido por associado (com valor do ano configurado)
+  const balances = useMemo(() => new Map(visible.map((row) => [row.associate.id, feeBalance(row, splitsByAssociate[row.associate.id] ?? [], year, price)])),
+    [visible, splitsByAssociate, year, price]);
+  const expectedTotal = [...balances.values()].reduce((sum, b) => sum + b.expected, 0);
+  const openTotal = [...balances.values()].reduce((sum, b) => sum + b.open, 0);
+  const extra = price ? 1 : 0;
   const groups = useMemo(() => {
     if (!bySection) return [{ section: undefined as string | null | undefined, rows: visible }];
     const sections = [...new Set(visible.map((r) => r.associate.section?.trim() || null))]
@@ -77,6 +90,15 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }:
         <dt className="text-xs text-muted-foreground">Pagamentos</dt>
         <dd className="m-0 num text-xl font-bold">{amounts.count}</dd>
       </div>
+      {price && <div className="grid gap-0.5 rounded-lg border bg-card px-4 py-2.5">
+        <dt className="text-xs text-muted-foreground">Previsto ({money(price.monthlyCents / 100)}/mês)</dt>
+        <dd className="m-0 num text-xl font-bold">{money(expectedTotal / 100)}</dd>
+      </div>}
+      {price && <div className="grid gap-0.5 rounded-lg border bg-card px-4 py-2.5">
+        <dt className="text-xs text-muted-foreground">Em aberto</dt>
+        <dd className={cn("m-0 num text-xl font-bold", openTotal > 0 && "text-destructive")}>{money(openTotal / 100)}</dd>
+      </div>}
+      {!price && canEdit && <p className="m-0 self-center text-xs text-muted-foreground">Configure o valor de {year} em Configurações › Mensalidades para ver previsto e em aberto.</p>}
       {amounts.outsideGrid > 0 && <div className="grid gap-0.5 rounded-lg border bg-card px-4 py-2.5">
         <dt className="text-xs text-muted-foreground">Recebido em jan/fev</dt>
         <dd className="m-0 num text-xl font-bold">{money(amounts.outsideGrid / 100)}</dd>
@@ -89,6 +111,7 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }:
         <Input type="search" aria-label="Buscar associado" placeholder="Buscar associado" className="h-7 pl-7" value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
       <Label className="font-normal"><Checkbox checked={bySection} onCheckedChange={(v) => setBySection(v === true)} /> Agrupar por seção</Label>
+      <Label className="font-normal"><Checkbox checked={onlyOverdue} onCheckedChange={(v) => setOnlyOverdue(v === true)} /> Só com atrasos ({overdueCount})</Label>
       {exemptCount > 0 && <Label className="font-normal"><Checkbox checked={showExempt} onCheckedChange={(v) => setShowExempt(v === true)} /> Mostrar isentos ({exemptCount})</Label>}
       <ul className="m-0 flex list-none flex-wrap gap-3 p-0 text-xs text-muted-foreground" aria-label="Legenda">
         {LEGEND.map((state) => <li key={state} className="inline-flex items-center gap-1"><FeeMark state={state} className="size-4 [&_svg]:size-3" />{STATE_LABELS[state]}</li>)}
@@ -107,11 +130,12 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }:
               {FEE_MONTHS.map((m) => <th key={m} scope="col" className="w-10 px-1 py-2 text-center font-semibold">{FEE_MONTH_LABELS[m]}</th>)}
               <th scope="col" className="px-3 py-2 text-right font-semibold">Pagos</th>
               <th scope="col" className="px-3 py-2 text-right font-semibold" title="Rateios de mensalidade lançados no ano">Recebido</th>
+              {price && <th scope="col" className="px-3 py-2 text-right font-semibold" title="Previsto do ano menos o recebido">Em aberto</th>}
               {canEdit && <th scope="col" className="w-10"><span className="sr-only">Ações</span></th>}
             </tr>
           </thead>
           <tbody>{groups.map((group) => <Fragment key={group.section ?? "__all"}>
-            {bySection && <tr className="bg-muted/50"><th scope="colgroup" colSpan={FEE_MONTHS.length + (canEdit ? 4 : 3)} className="sticky left-0 px-3 py-1.5 text-left text-xs font-semibold">
+            {bySection && <tr className="bg-muted/50"><th scope="colgroup" colSpan={FEE_MONTHS.length + (canEdit ? 4 : 3) + extra} className="sticky left-0 px-3 py-1.5 text-left text-xs font-semibold">
               {group.section ?? NO_SECTION} <span className="font-normal text-muted-foreground">({group.rows.length})</span></th></tr>}
             {group.rows.map((row) => {
               const exempt = Boolean(row.exemption);
@@ -132,6 +156,9 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }:
                 </td>)}
                 <td className="px-3 py-1 text-right num">{exempt ? "—" : `${paid}/${FEE_MONTHS.length}`}</td>
                 <td className="px-3 py-1 text-right num whitespace-nowrap">{amounts.byAssociate[row.associate.id] ? money(amounts.byAssociate[row.associate.id] / 100) : <span className="text-muted-foreground">—</span>}</td>
+                {price && <td className={cn("px-3 py-1 text-right num whitespace-nowrap", (balances.get(row.associate.id)?.open ?? 0) > 0 && "text-destructive")}>
+                  {exempt ? "—" : balances.get(row.associate.id)?.integral ? <span className="text-success" title="Pagamento integral com desconto">integral</span> : money((balances.get(row.associate.id)?.open ?? 0) / 100)}
+                </td>}
                 {canEdit && <td className="px-1 py-1">
                   <DropdownMenu>
                     <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações de ${row.associate.name}`} />}><IconDots /></DropdownMenuTrigger>
@@ -153,7 +180,7 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }:
                 {s.atrasado > 0 && <span className="block text-destructive" title="atrasados">{s.atrasado}</span>}
                 {s.atencao > 0 && <span className="block text-amber-700" title="em atenção">{s.atencao}</span>}
               </td>)}
-              <td colSpan={canEdit ? 3 : 2} className="px-3 py-1.5 text-right text-[11px] text-muted-foreground">verde pagos · vermelho atrasados · amarelo atenção</td>
+              <td colSpan={(canEdit ? 3 : 2) + extra} className="px-3 py-1.5 text-right text-[11px] text-muted-foreground">verde pagos · vermelho atrasados · amarelo atenção</td>
             </tr>
             <tr className="border-t">
               <th scope="row" className="sticky left-0 bg-muted/50 px-3 py-1.5 text-left font-semibold" title="Pela data do lançamento">Recebido no mês</th>
@@ -161,6 +188,7 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }:
                 {cents ? money(cents / 100) : <span className="text-muted-foreground">—</span>}</td>)}
               <td className="px-3 py-1.5 text-right text-muted-foreground">Total</td>
               <td className="px-3 py-1.5 text-right font-semibold whitespace-nowrap num">{money(amounts.total / 100)}</td>
+              {price && <td className={cn("px-3 py-1.5 text-right font-semibold whitespace-nowrap num", openTotal > 0 && "text-destructive")}>{money(openTotal / 100)}</td>}
               {canEdit && <td />}
             </tr>
           </tfoot>

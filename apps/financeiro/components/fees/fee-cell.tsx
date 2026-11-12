@@ -25,7 +25,9 @@ const STATE_STYLES: Record<CellState, string> = {
 };
 
 /** Ícone da caixinha; também usado na legenda. */
-export function FeeMark({ state, className }: { state: CellState; className?: string }) {
+export function FeeMark({ state, partial = false, className }: { state: CellState; partial?: boolean; className?: string }) {
+  // sugestão parcial (valor menor que a mensalidade): tracejado amarelo com "!"
+  if (state === "sugestao" && partial) return <span aria-hidden className={cn("grid size-6 place-items-center rounded-md border border-dashed border-amber-500 text-amber-700", className)}><IconAlertTriangle className="size-3.5" /></span>;
   return <span aria-hidden className={cn("grid size-6 place-items-center rounded-md border", STATE_STYLES[state], className)}>
     {state === "pago" || state === "sugestao" ? <IconCheck className="size-4" /> : state === "atencao" ? <IconAlertTriangle className="size-3.5" /> : state === "atrasado" ? <IconX className="size-3.5" /> : null}
   </span>;
@@ -40,13 +42,16 @@ export function FeeCell({ name, month, state, record, suggestion, splits, canEdi
   splits: FeeSplit[]; canEdit: boolean; exempt: boolean; onChange: (change: CellChange) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [note, setNote] = useState(record?.note ?? "");
+  const [note, setNote] = useState(record?.note ?? suggestion?.note ?? "");
   const [linked, setLinked] = useState<Set<string>>(new Set(record?.splitIds ?? (suggestion ? [suggestion.splitId] : [])));
-  const label = `${name}, ${FEE_MONTH_NAMES[month]}: ${STATE_LABELS[state]}${record?.note ? ` (${record.note})` : ""}`;
-  const mark = <FeeMark state={state} className={cn(exempt && "opacity-40")} />;
+  const partial = state === "sugestao" && suggestion?.status === "atencao";
+  const stateLabel = partial ? "pagamento parcial a confirmar" : STATE_LABELS[state];
+  const detail = record?.note ?? (state === "sugestao" ? suggestion?.note : undefined);
+  const label = `${name}, ${FEE_MONTH_NAMES[month]}: ${stateLabel}${detail ? ` (${detail})` : ""}`;
+  const mark = <FeeMark state={state} partial={partial} className={cn(exempt && "opacity-40")} />;
   if (!canEdit) return <span className="inline-grid" title={label} role="img" aria-label={label}>{mark}</span>;
 
-  const reset = () => { setNote(record?.note ?? ""); setLinked(new Set(record?.splitIds ?? (suggestion ? [suggestion.splitId] : []))); };
+  const reset = () => { setNote(record?.note ?? suggestion?.note ?? ""); setLinked(new Set(record?.splitIds ?? (suggestion ? [suggestion.splitId] : []))); };
   const apply = (status: FeeStatus | null) => { onChange({ status, note: status === "atencao" ? note : undefined, splitIds: status ? [...linked] : [] }); setOpen(false); };
   const toggle = (id: string) => setLinked((set) => { const next = new Set(set); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   const noteId = `fee-note-${month}-${name.replace(/\W+/g, "-")}`;
@@ -57,6 +62,9 @@ export function FeeCell({ name, month, state, record, suggestion, splits, canEdi
     </PopoverTrigger>
     <PopoverContent align="center" className="w-80 gap-3 p-3">
       <p className="m-0 text-sm font-semibold">{name} · {FEE_MONTH_NAMES[month]}</p>
+      {state === "sugestao" && suggestion && <p className="m-0 text-xs text-muted-foreground">
+        Sugestão a partir do fluxo de caixa: {suggestion.status === "atencao" ? `atenção (${suggestion.note})` : suggestion.integral ? "pago (pagamento integral do ano)" : "pago"}.
+      </p>}
       <div className="flex flex-wrap gap-2">
         <Button size="sm" onClick={() => apply("pago")}><IconCheck /> Pago</Button>
         <Button size="sm" variant="outline" onClick={() => apply("atencao")}><IconAlertTriangle /> Atenção</Button>

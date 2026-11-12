@@ -63,17 +63,31 @@ do $$ begin
 exception when raise_exception then if sqlerrm not like 'Dia do vencimento%' then raise; end if;
 end $$;
 
+\echo '--- valor do ano e sugestão de atenção com nota'
+select public.set_fee_year_settings(:'gid', 2026, 6000, 10, '2026-03-31');
+do $$ begin
+  perform public.set_fee_year_settings((select group_id from public.fee_settings limit 1), 2026, 6000, 10, null);
+  raise exception 'FALHOU: desconto sem data aceito';
+exception when raise_exception then if sqlerrm not like 'Informe a data-limite%' then raise; end if;
+end $$;
+select public.confirm_fee_suggestions(jsonb_build_array(jsonb_build_object('associateId', :'ana', 'year', 2026, 'month', 6, 'splitId', :'s_ana', 'status', 'atencao', 'note', 'pagou R$ 30,00 de R$ 60,00')));
+do $$ begin
+  if (select status::text || ':' || note from public.fee_records r join public.associates a on a.id = r.associate_id where a.name = 'Ana' and r.month = 6)
+    <> 'atencao:pagou R$ 30,00 de R$ 60,00' then raise exception 'FALHOU: sugestão com atenção'; end if;
+  if (select monthly_cents::text || '/' || annual_discount_pct from public.fee_year_settings) <> '6000/10.00' then raise exception 'FALHOU: valor do ano'; end if;
+end $$;
+
 \echo '--- excluir o lançamento desfaz o vínculo, o registro fica'
 select public.delete_ledger_entry(:'e1');
 do $$ begin
-  if (select count(*) from public.fee_records r join public.associates a on a.id = r.associate_id where a.name = 'Ana' and r.status = 'pago') <> 3 then raise exception 'FALHOU: registros sumiram'; end if;
+  if (select count(*) from public.fee_records r join public.associates a on a.id = r.associate_id where a.name = 'Ana') <> 4 then raise exception 'FALHOU: registros sumiram'; end if;
   if exists (select 1 from public.fee_record_splits) then raise exception 'FALHOU: vínculo ficou'; end if;
 end $$;
 
 \echo '--- consulta lê, não grava'
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000e2","role":"authenticated"}', true);
 do $$ begin
-  if (select count(*) from public.fee_records) <> 3 then raise exception 'FALHOU: consulta deveria ler'; end if;
+  if (select count(*) from public.fee_records) <> 4 then raise exception 'FALHOU: consulta deveria ler'; end if;
   perform public.set_fee_exemption((select id from public.associates where name = 'Ana'), 2026, 'x x');
   raise exception 'FALHOU: consulta gravou';
 exception when raise_exception then if sqlerrm not like '%sem permissão%' then raise; end if;

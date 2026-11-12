@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brazilHolidays, buildFeeRows, cellState, feeAmounts, dueDate, easter, monthSummary, overdueRanking, suggestFeeMonths, todayInSaoPaulo, type FeeSplit } from "./fees";
+import { brazilHolidays, buildFeeRows, cellState, feeAmounts, feeBalance, dueDate, easter, monthSummary, overdueRanking, suggestFeeMonths, todayInSaoPaulo, type FeeSplit } from "./fees";
 
 describe("feriados", () => {
   it("calcula a Páscoa e os feriados móveis", () => {
@@ -51,9 +51,9 @@ describe("suggestFeeMonths", () => {
       split("s4", "b", "2026-05-02", [202605]), split("s5", "c", "2025-12-01"),
     ], [{ associateId: "a", month: 3, status: "pago", note: null, splitIds: [] }]);
     expect(result).toEqual([
-      { associateId: "b", month: 3, splitId: "s3" },
-      { associateId: "a", month: 4, splitId: "s1" },
-      { associateId: "a", month: 5, splitId: "s2" },
+      { associateId: "b", month: 3, splitId: "s3", status: "pago" },
+      { associateId: "a", month: 4, splitId: "s1", status: "pago" },
+      { associateId: "a", month: 5, splitId: "s2", status: "pago" },
     ]);
   });
 });
@@ -76,7 +76,7 @@ describe("buildFeeRows e overdueRanking", () => {
     year: 2026, today: "2026-05-20", settings: { dueRule: "dia_fixo", dueDay: 10, categoryId: null }, associates,
     records: [{ associateId: "a", month: 3, status: "pago", note: null, splitIds: [] }, { associateId: "b", month: 3, status: "pago", note: null, splitIds: [] }],
     exemptions: [{ associateId: "d", reason: "Voluntário" }],
-    suggestions: [{ associateId: "c", month: 4, splitId: "s" }],
+    suggestions: [{ associateId: "c", month: 4, splitId: "s", status: "pago" }],
   });
   it("ordena por nome, inclui inativo com registro e calcula estados", () => {
     expect(rows.map((r) => r.associate.name)).toEqual(["ana", "Bruno", "Carla", "Davi"]);
@@ -101,5 +101,30 @@ describe("feeAmounts", () => {
     expect(result.byMonth.slice(0, 2)).toEqual([9000, 3000]);
     expect(result.outsideGrid).toBe(3000);
     expect([result.total, result.count]).toEqual([15000, 3]);
+  });
+});
+
+describe("valor do ano", () => {
+  const price = { monthlyCents: 6000, discountPct: 10, deadline: "2026-03-31" };
+  const split = (splitId: string, entryDate: string, amountCents: number): FeeSplit =>
+    ({ splitId, associateId: "a", entryId: "e", entryDate, amountCents, description: "", linkedPeriods: [] });
+  it("integral com desconto até a data-limite cobre os 10 meses", () => {
+    const result = suggestFeeMonths(2026, [split("s1", "2026-03-20", 54000)], [], price);
+    expect(result).toHaveLength(10);
+    expect(result.every((r) => r.status === "pago" && r.integral)).toBe(true);
+  });
+  it("valor com desconto depois do prazo não é integral: vale 9 mensalidades, a partir do mês do lançamento", () => {
+    const result = suggestFeeMonths(2026, [split("s1", "2026-04-02", 54000)], [], price);
+    expect(result.map((r) => r.month)).toEqual([4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(result.some((r) => r.integral || r.status !== "pago")).toBe(false);
+  });
+  it("mês do lançamento ocupado: começa no primeiro livre; sobra vira atenção com nota", () => {
+    const result = suggestFeeMonths(2026, [split("s1", "2026-05-05", 15000)], [{ associateId: "a", month: 5, status: "pago", note: null, splitIds: [] }], price);
+    expect(result.map((r) => [r.month, r.status, r.note])).toEqual([[3, "pago", undefined], [4, "pago", undefined], [6, "atencao", "pagou R$\u00a030,00 de R$\u00a060,00"]]);
+  });
+  it("previsto, recebido e em aberto", () => {
+    expect(feeBalance({ exemption: null }, [split("s1", "2026-03-20", 54000)], 2026, price)).toEqual({ expected: 54000, received: 54000, open: 0, integral: true });
+    expect(feeBalance({ exemption: null }, [split("s1", "2026-04-20", 12000)], 2026, price)).toEqual({ expected: 60000, received: 12000, open: 48000, integral: false });
+    expect(feeBalance({ exemption: { associateId: "a", reason: "x" } }, [], 2026, price).expected).toBe(0);
   });
 });

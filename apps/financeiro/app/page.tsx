@@ -122,7 +122,7 @@ export default async function Dashboard() {
         <section aria-labelledby="overdue-title" className="overflow-hidden rounded-lg border bg-card">
           <div className="flex items-center justify-between border-b px-4 py-2.5">
             <h2 id="overdue-title" className="m-0 text-sm font-semibold">Mensalidades atrasadas</h2>
-            <Link href="/mensalidades" className="text-xs font-semibold text-primary hover:underline">Ver mensalidades</Link>
+            <Link href="/mensalidades?atrasados=1" className="text-xs font-semibold text-primary hover:underline">Ver atrasados</Link>
           </div>
           {overdue.length === 0
             ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhuma mensalidade atrasada em {year}.</p>

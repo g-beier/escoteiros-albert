@@ -12,17 +12,23 @@ Grade anual (`/mensalidades?ano=AAAA`) de **março a dezembro** por associado, i
 | **Sugestão** | calculada: rateio de mensalidade do associado ainda sem caixinha | ✓ tracejado |
 | Vazio | mês futuro ou ainda no prazo | — |
 
-Isentos no ano (com motivo) saem da grade, aparecem com "Mostrar isentos" e nunca ficam atrasados.
+O filtro **Só com atrasos** (`?atrasados=1`, também no link do Início) mostra apenas quem deve. Isentos no ano (com motivo) saem da grade, aparecem com "Mostrar isentos" e nunca ficam atrasados.
 
 ## Vencimento (Configurações › Mensalidades)
 
 - Até o dia N do mês (1–28), até o N-ésimo dia útil (1–20; segunda a sexta, sem feriados nacionais fixos e móveis) ou até o último dia do mês.
 - "Atrasado" a partir do dia seguinte ao vencimento, no fuso de São Paulo. Calculado no app (`lib/fees.ts`), nunca gravado.
 
+## Valores do ano (Configurações › Mensalidades)
+
+- **Mensalidade** por ano (ex.: R$ 60,00) e **desconto percentual** para quem paga os 10 meses de uma vez **até a data-limite** (`019_fee_prices.sql`, `fee_year_settings`).
+- **Previsto × recebido**: previsto = 10 mensalidades (ou o integral com desconto, para quem pagou assim); **em aberto** = previsto − recebido, por associado e no total. Isentos não têm previsto.
+
 ## Integração com o fluxo de caixa
 
 - A **rubrica de mensalidade** (padrão: código 1.1, com as de baixo) é configurável. Rateios nela **com associado** viram sugestões: no mês da data do lançamento, se livre e entre março e dezembro; senão, no primeiro mês livre.
-- "Confirmar sugestões" grava Pago com o vínculo. Um rateio pode cobrir vários meses (vincule no popover da caixinha) e um mês pode juntar vários rateios.
+- Com o valor do ano configurado, a sugestão confere o valor: pagamento **integral** (cheio, ou com desconto lançado até a data-limite) sugere os 10 meses; um múltiplo da mensalidade sugere vários meses seguidos; o que sobra (ou um valor menor que a mensalidade) vira **Atenção** com a nota "pagou R$ 30,00 de R$ 60,00" (✓/! tracejados).
+- "Confirmar sugestões" grava Pago (ou Atenção, com a nota) com o vínculo. Um rateio pode cobrir vários meses (vincule no popover da caixinha) e um mês pode juntar vários rateios.
 - Excluir o lançamento desfaz o vínculo; o registro Pago continua.
 
 ## Valores recebidos

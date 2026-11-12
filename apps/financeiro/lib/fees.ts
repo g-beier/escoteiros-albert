@@ -81,27 +81,81 @@ export function cellState(record: FeeRecord | undefined, due: string, today: str
 }
 
 export type FeeSplit = { splitId: string; associateId: string; entryId: string; entryDate: string; amountCents: number; description: string; linkedPeriods: number[] };
-export type FeeSuggestion = { associateId: string; month: number; splitId: string };
+
+/** Valor do ano: mensal e desconto percentual para o pagamento integral (10 meses) até a data-limite. */
+export type FeePrice = { monthlyCents: number; discountPct: number; deadline: string | null };
+
+export function annualAmounts(price: FeePrice) {
+  const full = price.monthlyCents * FEE_MONTHS.length;
+  const discounted = Math.round(full * (100 - price.discountPct) / 100);
+  return { full, discounted };
+}
+
+/** O rateio é o pagamento integral do ano: valor cheio, ou com desconto se lançado até a data-limite. */
+export function isIntegralPayment(split: Pick<FeeSplit, "amountCents" | "entryDate">, price: FeePrice) {
+  const { full, discounted } = annualAmounts(price);
+  if (split.amountCents === full) return true;
+  return price.discountPct > 0 && price.deadline !== null && split.entryDate <= price.deadline && split.amountCents === discounted;
+}
+
+export type FeeSuggestion = {
+  associateId: string; month: number; splitId: string;
+  /** pago, ou atencao quando o valor não fecha uma mensalidade inteira. */
+  status: FeeStatus;
+  note?: string;
+  /** Faz parte de um pagamento integral do ano. */
+  integral?: boolean;
+};
+
+const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 /**
- * Rateios de mensalidade ainda sem caixinha viram sugestões: no mês da data do lançamento se ele estiver entre
- * março e dezembro e livre; senão, no mês mais antigo ainda livre do associado. Um rateio por caixinha.
+ * Rateios de mensalidade ainda sem caixinha viram sugestões, a partir do mês da data do lançamento (se estiver entre
+ * março e dezembro e livre; senão, o primeiro mês livre), seguindo pelos meses livres seguintes:
+ * - sem valor do ano configurado: um mês por rateio;
+ * - pagamento integral (cheio, ou com desconto até a data-limite): todos os meses livres;
+ * - senão, um mês por mensalidade inteira paga; o que sobrar vira Atenção ("pagou R$ 30,00 de R$ 60,00").
  */
-export function suggestFeeMonths(year: number, splits: FeeSplit[], records: FeeRecord[]): FeeSuggestion[] {
+export function suggestFeeMonths(year: number, splits: FeeSplit[], records: FeeRecord[], price?: FeePrice | null): FeeSuggestion[] {
   const taken = new Set(records.map((r) => `${r.associateId}:${r.month}`));
   const result: FeeSuggestion[] = [];
   const pending = splits
     .filter((s) => s.linkedPeriods.length === 0 && s.amountCents > 0 && s.entryDate.startsWith(`${year}-`))
     .sort((a, b) => a.entryDate.localeCompare(b.entryDate) || a.splitId.localeCompare(b.splitId));
   for (const split of pending) {
+    const free = FEE_MONTHS.filter((month) => !taken.has(`${split.associateId}:${month}`));
+    if (!free.length) continue;
     const entryMonth = Number(split.entryDate.slice(5, 7));
-    const free = (month: number) => !taken.has(`${split.associateId}:${month}`);
-    const month = FEE_MONTHS.includes(entryMonth as FeeMonth) && free(entryMonth) ? entryMonth : FEE_MONTHS.find(free);
-    if (!month) continue;
-    taken.add(`${split.associateId}:${month}`);
-    result.push({ associateId: split.associateId, month, splitId: split.splitId });
+    const start = Math.max(0, free.findIndex((month) => month >= entryMonth));
+    const ordered = free.includes(entryMonth as FeeMonth) ? [...free.slice(start), ...free.slice(0, start)] : free;
+    const push = (month: number, extra: Partial<FeeSuggestion> = {}) => {
+      taken.add(`${split.associateId}:${month}`);
+      result.push({ associateId: split.associateId, month, splitId: split.splitId, status: "pago", ...extra });
+    };
+    if (!price) { push(ordered[0]); continue; }
+    if (isIntegralPayment(split, price)) { ordered.forEach((month) => push(month, { integral: true })); continue; }
+    const whole = Math.floor(split.amountCents / price.monthlyCents);
+    const rest = split.amountCents % price.monthlyCents;
+    ordered.slice(0, whole).forEach((month) => push(month));
+    if (rest > 0 && ordered[whole] !== undefined) push(ordered[whole], { status: "atencao", note: `pagou ${brl(rest)} de ${brl(price.monthlyCents)}` });
   }
   return result;
+}
+
+export type FeeBalance = { expected: number; received: number; open: number; integral: boolean };
+
+/**
+ * Previsto × recebido por associado: 10 mensalidades (ou o valor integral com desconto, se pago assim);
+ * isento não tem previsto. `open` nunca é negativo.
+ */
+export function feeBalance(row: Pick<FeeRow, "exemption">, splits: FeeSplit[], year: number, price: FeePrice | null): FeeBalance {
+  const inYear = splits.filter((s) => s.entryDate.startsWith(`${year}-`));
+  const received = inYear.reduce((sum, s) => sum + s.amountCents, 0);
+  if (!price || row.exemption) return { expected: 0, received, open: 0, integral: false };
+  const { full, discounted } = annualAmounts(price);
+  const integral = inYear.some((s) => isIntegralPayment(s, price) && s.amountCents === discounted && discounted !== full);
+  const expected = integral ? discounted : full;
+  return { expected, received, open: Math.max(0, expected - received), integral };
 }
 
 export type MonthSummary = { pago: number; atencao: number; atrasado: number };

@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchPaged } from "@/lib/supabase/paged";
 import {
   buildFeeRows, DEFAULT_FEE_SETTINGS, suggestFeeMonths, todayInSaoPaulo,
-  type DueRule, type FeeAssociate, type FeeExemption, type FeeRecord, type FeeRow, type FeeSettings, type FeeSplit, type FeeSuggestion,
+  type DueRule, type FeeAssociate, type FeeExemption, type FeePrice, type FeeRecord, type FeeRow, type FeeSettings, type FeeSplit, type FeeSuggestion,
 } from "@/lib/fees";
 
 type SettingsRow = { due_rule: DueRule; due_day: number; category_id: string | null };
@@ -15,9 +15,21 @@ export async function fetchFeeSettings(supabase: SupabaseClient, groupId: string
   return row ? { dueRule: row.due_rule, dueDay: row.due_day, categoryId: row.category_id } : DEFAULT_FEE_SETTINGS;
 }
 
+/** Valor da mensalidade e desconto do integral, por ano. */
+export async function fetchFeePrices(supabase: SupabaseClient, groupId: string): Promise<Record<number, FeePrice>> {
+  const { data } = await supabase.from("fee_year_settings").select("year, monthly_cents, annual_discount_pct, annual_deadline").eq("group_id", groupId);
+  const prices: Record<number, FeePrice> = {};
+  for (const row of (data ?? []) as { year: number; monthly_cents: number; annual_discount_pct: number; annual_deadline: string | null }[]) {
+    prices[row.year] = { monthlyCents: Number(row.monthly_cents), discountPct: Number(row.annual_discount_pct), deadline: row.annual_deadline };
+  }
+  return prices;
+}
+
 export type FeeYear = {
   year: number;
   settings: FeeSettings;
+  /** Nulo quando o valor do ano ainda não foi configurado. */
+  price: FeePrice | null;
   rows: FeeRow[];
   suggestions: FeeSuggestion[];
   /** Rateios de mensalidade do ano (e os ligados a caixinhas do ano), por associado. */
@@ -27,8 +39,9 @@ export type FeeYear = {
 
 /** Tudo o que a grade de um ano precisa: configurações, associados, registros, isenções e rateios de mensalidade. */
 export async function fetchFeeYear(supabase: SupabaseClient, groupId: string, year: number, today = todayInSaoPaulo()): Promise<FeeYear> {
-  const [settings, associates, records, exemptions, splits] = await Promise.all([
+  const [settings, prices, associates, records, exemptions, splits] = await Promise.all([
     fetchFeeSettings(supabase, groupId),
+    fetchFeePrices(supabase, groupId),
     fetchPaged<FeeAssociate>((from, to) => supabase.from("associates").select("id, name, branch, section, active")
       .eq("group_id", groupId).order("name").order("id").range(from, to), 20_000),
     fetchPaged<RecordRow>((from, to) => supabase.from("fee_records").select("associate_id, month, status, note, fee_record_splits(split_id)")
@@ -50,12 +63,13 @@ export async function fetchFeeYear(supabase: SupabaseClient, groupId: string, ye
   }));
   // no ano: lançados no ano ou já ligados a uma caixinha do ano
   const relevant = feeSplits.filter((s) => s.entryDate.startsWith(`${year}-`) || s.linkedPeriods.some((p) => Math.floor(p / 100) === year));
-  const suggestions = suggestFeeMonths(year, relevant, feeRecords);
+  const price = prices[year] ?? null;
+  const suggestions = suggestFeeMonths(year, relevant, feeRecords, price);
   const fees: FeeExemption[] = exemptions.data.map((e) => ({ associateId: e.associate_id, reason: e.reason }));
   const splitsByAssociate: Record<string, FeeSplit[]> = {};
   for (const split of relevant) (splitsByAssociate[split.associateId] ??= []).push(split);
   return {
-    year, settings, suggestions, splitsByAssociate, error,
+    year, settings, price, suggestions, splitsByAssociate, error,
     rows: buildFeeRows({ year, today, settings, associates: associates.data, records: feeRecords, exemptions: fees, suggestions }),
   };
 }

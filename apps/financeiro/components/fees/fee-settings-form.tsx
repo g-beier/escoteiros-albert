@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { saveFeeSettings, type FeeSettingsState } from "@/app/mensalidades/actions";
+import { saveFeeSettings, saveFeeYearSettings, type FeeSettingsState } from "@/app/mensalidades/actions";
 import { CategoryPicker } from "@/components/entries/category-picker";
 import { OptionSelect } from "@/components/option-controls";
 import { SectionCard, SectionHeader } from "@/components/section-card";
@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { CategoryItem } from "@/lib/categories";
-import { dateBR } from "@/lib/format";
-import { DUE_RULE_LABELS, dueDate, FEE_MONTH_LABELS, FEE_MONTHS, type DueRule, type FeeSettings } from "@/lib/fees";
+import { centsToInput, dateBR, money } from "@/lib/format";
+import { parseMoneyToCents } from "@/lib/money";
+import { annualAmounts, DUE_RULE_LABELS, dueDate, FEE_MONTH_LABELS, FEE_MONTHS, type DueRule, type FeePrice, type FeeSettings } from "@/lib/fees";
 import { useActionToast } from "@/lib/use-action-toast";
 
 const initial: FeeSettingsState = {};
@@ -55,4 +56,46 @@ export function FeeSettingsForm({ settings, categories, defaultCategoryId, year 
       <Button type="submit" className="w-fit" disabled={pending || !validDay}>{pending ? "Salvando…" : "Salvar"}</Button>
     </form>
   </SectionCard>;
+}
+
+/** Valor da mensalidade por ano e desconto do pagamento integral (10 meses de uma vez) até a data-limite. */
+export function FeeYearForm({ prices, currentYear }: { prices: Record<number, FeePrice>; currentYear: number }) {
+  const years = [...new Set([currentYear - 1, currentYear, currentYear + 1, ...Object.keys(prices).map(Number)])].sort((a, b) => b - a);
+  const [year, setYear] = useState(currentYear);
+  return <SectionCard aria-labelledby="fee-year-title">
+    <SectionHeader title="Valores por ano" titleId="fee-year-title" description="Mensalidade de março a dezembro e desconto para quem paga os 10 meses de uma vez até a data-limite. Usados no previsto × recebido e para reconhecer pagamentos nas sugestões." />
+    <div className="grid gap-4 p-4">
+      <div className="grid w-fit gap-1.5"><Label htmlFor="fee-year">Ano</Label>
+        <OptionSelect id="fee-year" value={String(year)} onValueChange={(value) => setYear(Number(value))}
+          options={years.map((y) => ({ value: String(y), label: prices[y] ? String(y) : `${y} (sem valor)` }))} /></div>
+      <FeeYearFields key={year} year={year} price={prices[year]} />
+    </div>
+  </SectionCard>;
+}
+
+function FeeYearFields({ year, price }: { year: number; price?: FeePrice }) {
+  const [state, action, pending] = useActionState(saveFeeYearSettings, initial);
+  useActionToast(state);
+  const [monthly, setMonthly] = useState(price ? centsToInput(price.monthlyCents) : "");
+  const [discount, setDiscount] = useState(price ? String(price.discountPct).replace(".", ",") : "0");
+  const [deadline, setDeadline] = useState(price?.deadline ?? `${year}-03-31`);
+  const monthlyCents = parseMoneyToCents(monthly);
+  const discountPct = Number(discount.replace(",", ".")) || 0;
+  const preview = monthlyCents && monthlyCents > 0 ? annualAmounts({ monthlyCents, discountPct, deadline: deadline || null }) : null;
+  return <form action={action} className="grid gap-3">
+    <input type="hidden" name="year" value={year} />
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="grid gap-1.5"><Label htmlFor="fee-monthly">Mensalidade (R$)</Label>
+        <Input id="fee-monthly" name="monthly" inputMode="decimal" placeholder="Ex.: 60,00" value={monthly} onChange={(e) => setMonthly(e.target.value)} className="w-32 text-right num" required /></div>
+      <div className="grid gap-1.5"><Label htmlFor="fee-discount">Desconto do integral (%)</Label>
+        <Input id="fee-discount" name="discount" inputMode="decimal" value={discount} onChange={(e) => setDiscount(e.target.value)} className="w-28 text-right num" /></div>
+      <div className="grid gap-1.5"><Label htmlFor="fee-deadline">Pagando até</Label>
+        <Input id="fee-deadline" name="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} required={discountPct > 0} className="num" /></div>
+      <Button type="submit" disabled={pending}>{pending ? "Salvando…" : `Salvar ${year}`}</Button>
+    </div>
+    {preview && <p className="m-0 text-xs text-muted-foreground">
+      Ano completo: <strong className="num text-foreground">{money(preview.full / 100)}</strong>
+      {discountPct > 0 && deadline && <> · integral até <span className="num">{dateBR(deadline)}</span>: <strong className="num text-success">{money(preview.discounted / 100)}</strong></>}
+    </p>}
+  </form>;
 }

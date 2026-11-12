@@ -10,7 +10,7 @@ import { pageSession } from "@/lib/session";
 
 export const metadata = { title: "Mensalidades · GEAS Financeiro" };
 
-type Params = { ano?: string; secao?: string };
+type Params = { ano?: string; secao?: string; atrasados?: string };
 
 export default async function FeesPage({ searchParams }: { searchParams: Promise<Params> }) {
   const params = await searchParams;
@@ -52,7 +52,7 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
         </div>}
       </PageHeader>
       {data.error && <p role="alert" className="m-0 rounded-lg bg-destructive/10 px-3 py-2 text-destructive">Não foi possível carregar as mensalidades: {data.error}</p>}
-      <FeeGrid key={`${year}|${sectionFilter ?? ""}`} year={year} rows={rows} suggestions={suggestions} splitsByAssociate={data.splitsByAssociate} canEdit={member.canEdit} />
+      <FeeGrid key={`${year}|${sectionFilter ?? ""}`} year={year} rows={rows} suggestions={suggestions} splitsByAssociate={data.splitsByAssociate} canEdit={member.canEdit} price={data.price} onlyOverdue={params.atrasados === "1"} />
     </PageBody>
   </div>;
 }
