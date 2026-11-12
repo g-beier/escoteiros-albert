@@ -62,7 +62,12 @@ export function SettingsTabs({ current, canEdit }: { current: SettingsTab; canEd
   return <SectionTabs label="Configurações" tabs={tabs} />;
 }
 
-/** Corpo padrão das telas que não ocupam a largura toda. */
+/**
+ * Corpo das telas: o mesmo contêiner (largura total, margens de 16px) em todas, alinhado ao header,
+ * para não haver saltos de largura ao navegar. O conteúdo pode não ocupar tudo.
+ */
+export const PAGE_BODY = "grid w-full content-start gap-5 px-4 py-6";
+
 export function PageBody({ className, ...props }: React.ComponentProps<"main">) {
-  return <main className={cn("mx-auto grid w-full max-w-6xl gap-5 px-4 py-6", className)} {...props} />;
+  return <main className={cn(PAGE_BODY, className)} {...props} />;
 }

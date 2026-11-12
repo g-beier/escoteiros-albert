@@ -262,7 +262,7 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
     <ClosingCard closing={data.closing} />
 
     {canEdit && hasSelection && <div role="region" aria-label="Seleção" className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 px-4 py-3 shadow-lg backdrop-blur">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-5 gap-y-2">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         <span>Extrato ({chosenLines.length}): <strong className="num">{brl(summary.lines)}</strong></span>
         <span>Lançamentos ({chosenEntries.length}): <strong className="num">{brl(summary.entries)}</strong></span>
         <span role="status" aria-live="polite" className={cn("font-semibold", summary.difference === 0 && !summary.manyToMany ? "text-success" : "text-destructive")}>

@@ -16,9 +16,10 @@ const SECTIONS = [
 
 export const isSettingsPath = (path: string) => path.startsWith("/cadastros") || path.startsWith("/associados");
 
-export function AppHeader({ role, email, current, wide = false }: { role: string; email: string; current: string; wide?: boolean }) {
+/** Mesma largura em todas as telas (largura total, margens de 16px), como o corpo das páginas. */
+export function AppHeader({ role, email, current }: { role: string; email: string; current: string }) {
   const settingsActive = isSettingsPath(current);
-  return <header className={wide ? "topbar topbar-wide" : "topbar"}>
+  return <header className="topbar topbar-wide">
     <Brand />
     <nav className="flex items-center gap-1 sm:gap-2" aria-label="Navegação principal">
       {SECTIONS.map((section) => {

@@ -30,8 +30,8 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
   const accountName = accounts.find((account) => account.id === accountId)?.name ?? "";
 
   return <div className="shell">
-    <AppHeader role={membership.role} email={user.email ?? ""} current="/importacao" wide />
-    <PageBody className="max-w-7xl">
+    <AppHeader role={membership.role} email={user.email ?? ""} current="/importacao" />
+    <PageBody>
       <PageHeader title="Extrato" tabs={<ExtratoTabs current="importar" accountId={accountId || undefined} />}
         description="Escolha o banco (a conta) e envie o extrato OFX, exportado pelo banco ou convertido. Confira as linhas antes de importar; depois, concilie com os lançamentos." />
       <div className="grid gap-5">

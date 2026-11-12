@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { IconArrowRight, IconFolderExclamation } from "@tabler/icons-react";
 import { AppHeader } from "@/components/app-header";
+import { PAGE_BODY } from "@/components/nav/page-header";
 import { NewEntryButton } from "@/components/entries/entry-editor";
 import { SetupNeeded } from "@/components/setup-needed";
 import { buttonVariants } from "@/components/ui/button";
@@ -56,8 +57,8 @@ export default async function Dashboard() {
   const recentRows = (recent ?? []) as LedgerRow[];
 
   return <div className="shell">
-    <AppHeader role={membership.role} email={user.email ?? ""} current="/" wide />
-    <main className="mx-auto grid max-w-6xl gap-5 px-4 py-6">
+    <AppHeader role={membership.role} email={user.email ?? ""} current="/" />
+    <main className={PAGE_BODY}>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <h1 className="m-0 text-xl leading-tight font-bold tracking-tight">Resumo de {year}</h1>
         <div className="ml-auto flex flex-wrap items-center gap-2">

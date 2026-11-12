@@ -4,7 +4,8 @@ import { ReconciliationBoard, type BoardData, type LinkSet } from "@/components/
 import { ReconciliationFilters } from "@/components/reconciliation/reconciliation-filters";
 import { byDateThenAmount, closingCheck, parsePeriod, suggestMatches, type OpenEntry, type OpenLine } from "@/lib/reconciliation";
 import { pageSession } from "@/lib/session";
-import { ExtratoTabs, PageHeader } from "@/components/nav/page-header";
+import { ExtratoTabs, PAGE_BODY, PageHeader } from "@/components/nav/page-header";
+import { cn } from "@/lib/utils";
 import { fetchPaged } from "@/lib/supabase/paged";
 import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
 
@@ -35,9 +36,9 @@ export default async function ReconciliationPage({ searchParams }: { searchParam
   const requested = first(params.conta);
   const account = accounts.find((a) => a.id === requested) ?? accounts.find((a) => a.active && a.kind !== "outro") ?? accounts.find((a) => a.active) ?? accounts[0];
 
-  const header = <AppHeader role={membership.role} email={user.email ?? ""} current="/conciliacao" wide />;
+  const header = <AppHeader role={membership.role} email={user.email ?? ""} current="/conciliacao" />;
   if (!account) {
-    return <div className="shell">{header}<main className="mx-auto grid max-w-7xl gap-4 px-4 py-6">
+    return <div className="shell">{header}<main className={PAGE_BODY}>
       <h1 className="m-0 text-xl font-bold tracking-tight">Conciliação</h1>
       <p className="text-muted-foreground">{accountError ? `Não foi possível carregar as contas: ${accountError.message}` : "Cadastre uma conta em Cadastros para começar."}</p>
     </main></div>;
@@ -105,7 +106,7 @@ export default async function ReconciliationPage({ searchParams }: { searchParam
 
   return <div className="shell">
     {header}
-    <main className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-6 pb-28">
+    <main className={cn(PAGE_BODY, "pb-28")}>
       <PageHeader title="Extrato" tabs={<ExtratoTabs current="conciliar" accountId={account.id} />}
         description={<>Pendentes: <strong className="num text-foreground">{openLines.length}</strong> {openLines.length === 1 ? "linha do extrato" : "linhas do extrato"} · <strong className="num text-foreground">{openEntries.length}</strong> {openEntries.length === 1 ? "lançamento" : "lançamentos"}</>}>
         <ReconciliationFilters key={`${account.id}|${period.from}|${period.to}`}

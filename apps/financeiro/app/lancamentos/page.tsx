@@ -65,7 +65,7 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
   const viewHref = (visao: string) => { const next = new URLSearchParams(returnQuery); next.set("visao", visao); return `/lancamentos?${next}`; };
 
   return <div className="shell shell-workspace">
-    <AppHeader role={membership.role} email={user.email ?? ""} current="/lancamentos" wide />
+    <AppHeader role={membership.role} email={user.email ?? ""} current="/lancamentos" />
     <main className="workspace">
       <FilterOptionsProvider dimensions={dimensions}>
       <EntryListProvider canEdit={canEdit} returnQuery={returnQuery}>
