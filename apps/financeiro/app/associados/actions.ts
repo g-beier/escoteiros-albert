@@ -63,3 +63,32 @@ export async function updateAssociate(_previous: AssociateFormState, formData: F
     return fail(error, "Não foi possível salvar.");
   }
 }
+
+const importRow = z.object({
+  id: z.uuid().optional(),
+  name: z.string().trim().min(2).max(120),
+  branch: z.enum(SCOUT_BRANCHES),
+  section: z.string().trim().max(60).nullable().optional(),
+  active: z.boolean(),
+});
+
+/** Importação em massa (CSV lido no navegador): cadastra novos e, com `id`, atualiza ramo, seção e status. Tudo ou nada. */
+export async function importAssociates(rows: unknown): Promise<AssociateFormState> {
+  try {
+    const parsed = z.array(importRow).min(1, "Nenhum associado para importar.").max(5000, "Importe no máximo 5.000 associados por vez.").safeParse(rows);
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+    const { supabase, groupId } = await requireEditor("Sem permissão para gerir associados.");
+    const { data, error } = await supabase.rpc("import_associates", { p_group_id: groupId, p_rows: parsed.data });
+    if (error) return { error: error.message };
+    const result = z.object({ created: z.number(), updated: z.number() }).catch({ created: 0, updated: 0 }).parse(data);
+    revalidatePath("/associados");
+    revalidatePath("/", "layout");
+    const parts = [
+      result.created && `${result.created} ${result.created === 1 ? "cadastrado" : "cadastrados"}`,
+      result.updated && `${result.updated} ${result.updated === 1 ? "atualizado" : "atualizados"}`,
+    ].filter(Boolean);
+    return { success: `Associados importados: ${parts.join(", ")}.` };
+  } catch (error) {
+    return fail(error, "Não foi possível importar.");
+  }
+}

@@ -5,7 +5,6 @@ import { IconChevronDown, IconFilter, IconFilterFilled, IconSearch } from "@tabl
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useDimension, useListParams, type FilterKey, type FilterOption } from "./filter-options";
@@ -104,12 +103,9 @@ export function MultiFilter({ filterKey, variant = "button" }: { filterKey: Filt
         <span className="text-xs text-muted-foreground num">{checked.size} de {all.length}</span>
       </div>
       <div className="grid gap-2 p-3 pb-2">
-        {dimension.options.length > 6 && <div className="grid gap-1">
-          <Label htmlFor={`filter-${filterKey}-search`} className="text-xs">Buscar em {dimension.label.toLowerCase()}</Label>
-          <div className="relative">
-            <IconSearch className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
-            <Input id={`filter-${filterKey}-search`} autoFocus type="search" className="pl-7" value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
+        {dimension.options.length > 6 && <div className="relative">
+          <IconSearch className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Input autoFocus type="search" aria-label={`Buscar em ${dimension.label}`} placeholder="Buscar" className="pl-7" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>}
         <div className="flex gap-3 text-xs">
           <button type="button" className="font-semibold text-primary hover:underline" onClick={() => setVisible(true)}>Selecionar {search ? "visíveis" : "tudo"}</button>

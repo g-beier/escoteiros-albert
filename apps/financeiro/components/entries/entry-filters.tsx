@@ -50,12 +50,9 @@ export function EntryFilters() {
     <MultiFilter filterKey="pasta" />
     <MultiFilter filterKey="associado" />
     <MultiFilter filterKey="rubrica" />
-    <div className="flex min-w-56 flex-1 items-center gap-1">
-      <Label htmlFor="filter-search" className="text-muted-foreground">Buscar</Label>
-      <div className="relative flex-1">
-        <IconSearch className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
-        <Input id="filter-search" type="search" title="Histórico, descrição do rateio ou ID OFX" className={cn("h-7 pl-7", q.trim() && "border-primary")} placeholder="Histórico, descrição ou ID OFX" value={q} onChange={(e) => onSearch(e.target.value)} />
-      </div>
+    <div className="relative min-w-48 flex-1">
+      <IconSearch className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+      <Input type="search" aria-label="Buscar por histórico, descrição ou ID OFX" className={cn("h-7 pl-7", q.trim() && "border-primary")} placeholder="Buscar histórico, descrição ou ID OFX" value={q} onChange={(e) => onSearch(e.target.value)} />
     </div>
     {params.get("ofx") && <Button variant="secondary" className="h-7 max-w-64" onClick={() => apply({ ofx: null })} title="Remover o filtro por ID OFX">
       <span className="truncate">ID OFX <span className="num">{params.get("ofx")}</span></span> <IconX />

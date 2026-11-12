@@ -81,6 +81,12 @@
 - Conciliação: sugestões com até 3 dias de diferença (nome desempata), "Marcar todas", "Criar lançamentos (N)" e "Ignorar (N)" na barra de seleção.
 - Teste SQL `supabase/tests/import_scenarios.sql` (digitado antes → parcial → completo reconvertido → órfã → massa → desfazer).
 
+## Concluído (2026-11-12)
+
+- Navegação: Início · Lançamentos · Extrato (Conciliar/Importar), Configurações na engrenagem, menu da pessoa; mesmo cabeçalho e mesma largura em todas as telas.
+- Criação em massa cria as linhas prontas e deixa as sem forma de pagamento para depois; conciliação lê até 5.000 linhas por lado.
+- Associados: importação por CSV (`016_import_associates.sql`) e visualização por seção com filtro.
+
 ## A verificar
 
 - Validar com o contador: código estruturado × reduzido, lançamento múltiplo, histórico padrão e contas de contrapartida (ver `docs/contabilidade.md`).
