@@ -23,6 +23,8 @@ export const statementLineSchema = z.object({
   checkNumber: optionalText(60),
   reference: optionalText(60),
   payee: optionalText(200),
+  /** Desmarcada na conferência (suspeita): enviada só para numerar as ocorrências, não é gravada. */
+  skip: z.boolean().optional(),
 });
 
 export type StatementLineInput = z.infer<typeof statementLineSchema>;
@@ -73,6 +75,7 @@ export function toRpcLines(lines: StatementLineInput[]) {
     ...(line.checkNumber ? { checkNumber: line.checkNumber } : {}),
     ...(line.reference ? { reference: line.reference } : {}),
     ...(line.payee ? { payee: line.payee } : {}),
+    ...(line.skip ? { skip: true } : {}),
   }));
 }
 
@@ -86,18 +89,48 @@ export const importProfileSchema = z.object({
 
 export type ImportProfileInput = z.infer<typeof importProfileSchema>;
 
-export type ImportResult = { importId: string; inserted: number; skippedDuplicates: number };
+export type ImportResult = { importId: string; inserted: number; skippedDuplicates: number; skippedByUser: number };
 
 /** Converte o jsonb devolvido por `import_statement_lines`. */
 export function fromRpcImportResult(data: unknown): ImportResult | null {
-  const parsed = z.object({ import_id: z.uuid(), inserted: z.number().int(), skipped_duplicates: z.number().int() }).safeParse(data);
-  return parsed.success ? { importId: parsed.data.import_id, inserted: parsed.data.inserted, skippedDuplicates: parsed.data.skipped_duplicates } : null;
+  const parsed = z.object({
+    import_id: z.uuid(), inserted: z.number().int(), skipped_duplicates: z.number().int(), skipped_by_user: z.number().int().catch(0),
+  }).safeParse(data);
+  return parsed.success ? {
+    importId: parsed.data.import_id, inserted: parsed.data.inserted, skippedDuplicates: parsed.data.skipped_duplicates, skippedByUser: parsed.data.skipped_by_user,
+  } : null;
 }
 
 /** Resumo para o toast: "12 linhas importadas, 3 já existiam." */
-export function importSummary({ inserted, skippedDuplicates }: Pick<ImportResult, "inserted" | "skippedDuplicates">) {
+export function importSummary({ inserted, skippedDuplicates, skippedByUser = 0 }: Pick<ImportResult, "inserted" | "skippedDuplicates"> & { skippedByUser?: number }) {
   const lines = (n: number) => `${n} ${n === 1 ? "linha" : "linhas"}`;
   const head = inserted === 0 ? "Nenhuma linha nova" : `${lines(inserted)} ${inserted === 1 ? "importada" : "importadas"}`;
-  if (!skippedDuplicates) return `${head}.`;
-  return `${head}, ${skippedDuplicates} ${skippedDuplicates === 1 ? "já existia" : "já existiam"}.`;
+  const parts = [
+    skippedDuplicates ? `${skippedDuplicates} ${skippedDuplicates === 1 ? "já existia" : "já existiam"}` : "",
+    skippedByUser ? `${lines(skippedByUser)} ${skippedByUser === 1 ? "suspeita deixada" : "suspeitas deixadas"} de fora` : "",
+  ].filter(Boolean);
+  return parts.length ? `${head}, ${parts.join(", ")}.` : `${head}.`;
+}
+
+// Pré-conferência -------------------------------------------------------------------
+
+export type PreviewStatus = "nova" | "importada" | "suspeita";
+export type PreviewLine = { index: number; status: PreviewStatus; matchDescription: string | null; matchStatus: string | null };
+export type Orphan = { id: string; date: string; description: string; amountCents: number; status: "aberta" | "conciliada" | "ignorada" };
+export type ImportPreview = { lines: PreviewLine[]; orphans: Orphan[] };
+
+const previewSchema = z.object({
+  lines: z.array(z.object({
+    index: z.number().int(), status: z.enum(["nova", "importada", "suspeita"]),
+    matchDescription: z.string().nullable().catch(null), matchStatus: z.string().nullable().catch(null),
+  })),
+  orphans: z.array(z.object({
+    id: z.uuid(), date: z.string(), description: z.string(), amountCents: z.number().int(), status: z.enum(["aberta", "conciliada", "ignorada"]),
+  })),
+});
+
+/** Converte o jsonb de `preview_statement_lines`. */
+export function fromRpcPreview(data: unknown): ImportPreview | null {
+  const parsed = previewSchema.safeParse(data);
+  return parsed.success ? parsed.data : null;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromRpcImportResult, importLinesSchema, importProfileSchema, importSummary, parseStatementLines, toRpcLines } from "./import-schema";
+import { fromRpcImportResult, fromRpcPreview, importLinesSchema, importProfileSchema, importSummary, parseStatementLines, toRpcLines } from "./import-schema";
 
 const id = "0b6c7a4e-5d1f-4c1e-9a8b-2f3d4e5f6a7b";
 
@@ -18,6 +18,17 @@ describe("parseStatementLines", () => {
     expect(parseStatementLines([{ date: "2026-11-03", amountCents: 1.5, description: "a" }])).toEqual({ error: "Linha 1: Use centavos inteiros." });
     expect(parseStatementLines([{ date: "2026-11-03", amountCents: 0, description: "a" }])).toEqual({ error: "Linha 1: O valor não pode ser zero." });
     expect(parseStatementLines([{ date: "2026-11-03", amountCents: 5, description: " " }])).toEqual({ error: "Linha 1: Histórico obrigatório." });
+  });
+});
+
+describe("importSummary e pré-conferência", () => {
+  it("resume duplicadas e suspeitas deixadas de fora", () => {
+    expect(importSummary({ inserted: 2, skippedDuplicates: 1, skippedByUser: 1 })).toBe("2 linhas importadas, 1 já existia, 1 linha suspeita deixada de fora.");
+  });
+  it("lê a pré-conferência e envia skip", () => {
+    expect(fromRpcPreview({ lines: [{ index: 1, status: "suspeita", matchDescription: "X", matchStatus: "aberta" }], orphans: [] })?.lines[0].status).toBe("suspeita");
+    expect(fromRpcPreview({ lines: [{ index: 1, status: "outra" }], orphans: [] })).toBeNull();
+    expect(toRpcLines([{ date: "2026-01-01", amountCents: 1, description: "x", skip: true }])[0]).toMatchObject({ skip: true });
   });
 });
 
@@ -56,7 +67,8 @@ describe("importProfileSchema", () => {
 
 describe("resultado da importação", () => {
   it("converte o jsonb do banco", () => {
-    expect(fromRpcImportResult({ import_id: id, inserted: 3, skipped_duplicates: 1 })).toEqual({ importId: id, inserted: 3, skippedDuplicates: 1 });
+    expect(fromRpcImportResult({ import_id: id, inserted: 3, skipped_duplicates: 1 })).toEqual({ importId: id, inserted: 3, skippedDuplicates: 1, skippedByUser: 0 });
+    expect(fromRpcImportResult({ import_id: id, inserted: 3, skipped_duplicates: 1, skipped_by_user: 2 })).toMatchObject({ skippedByUser: 2 });
     expect(fromRpcImportResult(null)).toBeNull();
   });
 

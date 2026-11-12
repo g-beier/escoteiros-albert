@@ -5,7 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { IconArrowBackUp, IconCheck, IconChevronRight, IconLink, IconPlus, IconSparkles, IconX } from "@tabler/icons-react";
 import {
-  acceptSuggestions, ignoreStatementLine, linkReconciliation, rejectSuggestion, reopenStatementLine, setEntryAccount,
+  acceptSuggestions, createEntriesFromLines, ignoreStatementLines, linkReconciliation, rejectSuggestion, reopenStatementLine, setEntryAccount,
   setOutsideStatement, unlinkReconciliation, type ReconciliationResult,
 } from "@/app/conciliacao/actions";
 import { OptionSelect, type Option } from "@/components/option-controls";
@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { dateBR, shortOfxId, money } from "@/lib/format";
 import {
-  IGNORE_REASONS, OTHER_REASON, ignoreReasonText, lineText, selectionSummary,
+  IGNORE_REASONS, OTHER_REASON, guessPaymentMethod, ignoreReasonText, lineText, selectionSummary, suggestedEntryName,
   type Closing, type OpenEntry, type OpenLine, type Suggestions,
 } from "@/lib/reconciliation";
 import { cn } from "@/lib/utils";
@@ -35,6 +35,8 @@ export type BoardData = {
   outside: OpenEntry[];
   linked: LinkSet[];
   otherAccounts: Option[];
+  /** Formas de pagamento, para a criação em massa. */
+  paymentMethods: { id: string; name: string; active: boolean }[];
   closing: Closing;
   truncated: boolean;
 };
@@ -64,6 +66,7 @@ function EntryCell({ entry }: { entry: OpenEntry }) {
     <span className="min-w-0 flex-1">
       <Link href={`/lancamentos/${entry.id}`} className="font-medium break-words hover:underline">{entry.name}</Link>
       {entry.paymentMethodName && <span className="ml-1.5 text-xs text-muted-foreground">{entry.paymentMethodName}</span>}
+      {entry.unassigned && <Badge variant="outline" className="ml-1.5" title="Digitado sem conta; ao vincular, passa para esta conta">A definir</Badge>}
     </span>
     <Amount cents={entry.totalCents} />
   </div>;
@@ -84,9 +87,9 @@ function Row({ checked, onToggle, label, children, actions, hint }: {
   </li>;
 }
 
-function Column({ title, count, empty, children }: { title: string; count: number; empty: string; children: React.ReactNode }) {
+function Column({ title, count, empty, action, children }: { title: string; count: number; empty: string; action?: React.ReactNode; children: React.ReactNode }) {
   return <section aria-label={title} className="min-w-0 overflow-hidden rounded-lg border bg-card">
-    <h2 className="m-0 flex items-center justify-between border-b bg-muted/60 px-3 py-2 text-sm font-semibold">{title} <span className="num text-xs font-medium text-muted-foreground">{count}</span></h2>
+    <h2 className="m-0 flex items-center gap-2 border-b bg-muted/60 px-3 py-2 text-sm font-semibold">{title} <span className="num text-xs font-medium text-muted-foreground">{count}</span>{action && <span className="ml-auto">{action}</span>}</h2>
     {count ? <ul className="m-0 list-none p-0">{children}</ul> : <p className="m-0 px-3 py-4 text-muted-foreground">{empty}</p>}
   </section>;
 }
@@ -110,15 +113,18 @@ const toggle = (set: Set<string>, id: string) => {
 export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdit: boolean }) {
   const [selectedLines, setSelectedLines] = useState<Set<string>>(new Set());
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
-  const [ignoring, setIgnoring] = useState<OpenLine | null>(null);
+  const [ignoring, setIgnoring] = useState<OpenLine[] | null>(null);
+  const [creating, setCreating] = useState<OpenLine[] | null>(null);
   const [moving, setMoving] = useState<OpenEntry | null>(null);
   const [pending, startTransition] = useTransition();
 
   const lineById = useMemo(() => new Map(data.lines.map((l) => [l.id, l])), [data.lines]);
   const entryById = useMemo(() => new Map(data.entries.map((e) => [e.id, e])), [data.entries]);
-  const { exact, ambiguous } = data.suggestions;
+  const { exact, ambiguous, near } = data.suggestions;
   // itens de sugestões e grupos ambíguos aparecem só na área de sugestões
-  const suggested = useMemo(() => new Set([...exact.flatMap((s) => [s.lineId, s.entryId]), ...ambiguous.flatMap((g) => [...g.lineIds, ...g.entryIds])]), [exact, ambiguous]);
+  const suggested = useMemo(() => new Set([
+    ...exact.flatMap((s) => [s.lineId, s.entryId]), ...near.flatMap((s) => [s.lineId, s.entryId]), ...ambiguous.flatMap((g) => [...g.lineIds, ...g.entryIds]),
+  ]), [exact, near, ambiguous]);
   const columnLines = data.lines.filter((l) => !suggested.has(l.id));
   const columnEntries = data.entries.filter((e) => !suggested.has(e.id));
 
@@ -143,14 +149,15 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
 
   const lineActions = (line: OpenLine) => canEdit && <>
     <Link href={`/lancamentos/novo?linha=${line.id}&voltar=${encodeURIComponent(data.returnQuery)}`} className={buttonVariants({ variant: "ghost", size: "sm" })}><IconPlus /> Criar lançamento</Link>
-    <Button variant="ghost" size="sm" onClick={() => setIgnoring(line)} disabled={pending}>Ignorar</Button>
+    <Button variant="ghost" size="sm" onClick={() => setIgnoring([line])} disabled={pending}>Ignorar</Button>
   </>;
   const entryActions = (entry: OpenEntry) => canEdit && <>
     <Button variant="ghost" size="sm" disabled={pending} onClick={() => run(() => setOutsideStatement(entry.id, true))}>Fora do extrato</Button>
     <Button variant="ghost" size="sm" disabled={pending || !data.otherAccounts.length} onClick={() => setMoving(entry)}>Trocar conta</Button>
   </>;
 
-  const suggestionCount = exact.length + ambiguous.length;
+  const suggestionCount = exact.length + near.length + ambiguous.length;
+  const allColumnLinesSelected = columnLines.length > 0 && columnLines.every((l) => selectedLines.has(l.id));
 
   return <div className="grid gap-4">
     {data.truncated && <p className="m-0 rounded-lg bg-secondary px-3 py-2 text-xs">Período com muitas linhas: só as primeiras 2.000 de cada lado foram carregadas. Reduza o período.</p>}
@@ -158,7 +165,7 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
     {suggestionCount > 0 && <section aria-label="Sugestões" className="overflow-hidden rounded-lg border border-primary/30 bg-card">
       <div className="flex flex-wrap items-center gap-2 border-b bg-primary/5 px-3 py-2">
         <h2 className="m-0 flex items-center gap-1.5 text-sm font-semibold"><IconSparkles className="size-4 text-primary" aria-hidden /> Sugestões <span className="num text-xs font-medium text-muted-foreground">({suggestionCount})</span></h2>
-        <span className="text-xs text-muted-foreground">mesmo dia e mesmo valor</span>
+        <span className="text-xs text-muted-foreground">mesmo valor, no mesmo dia ou até 3 dias de diferença</span>
         {canEdit && exact.length > 0 && <Button size="sm" className="ml-auto" disabled={pending}
           onClick={() => run(() => acceptSuggestions(exact))}><IconCheck /> Aceitar todas ({exact.length})</Button>}
       </div>
@@ -168,6 +175,19 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
           const entry = entryById.get(s.entryId)!;
           return <li key={`${s.lineId}:${s.entryId}`} className="grid gap-2 border-b px-3 py-2 last:border-b-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center md:gap-4">
             <div className="flex items-center gap-2"><Badge variant="secondary" className="shrink-0">Sugestão</Badge><LineCell line={line} /></div>
+            <EntryCell entry={entry} />
+            {canEdit && <div className="flex gap-1 justify-self-end">
+              <Button size="sm" disabled={pending} onClick={() => run(() => linkReconciliation([line.id], [entry.id]))}><IconCheck /> Aceitar</Button>
+              <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => rejectSuggestion(line.id, entry.id))}><IconX /> Recusar</Button>
+            </div>}
+          </li>;
+        })}
+        {near.map((s) => {
+          const line = lineById.get(s.lineId)!;
+          const entry = entryById.get(s.entryId)!;
+          const days = Math.abs(s.days);
+          return <li key={`near:${s.lineId}:${s.entryId}`} className="grid gap-2 border-b px-3 py-2 last:border-b-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center md:gap-4">
+            <div className="flex items-center gap-2"><Badge variant="outline" className="shrink-0" title="Mesmo valor, data diferente">{days} {days === 1 ? "dia" : "dias"} {s.days < 0 ? "antes" : "depois"}</Badge><LineCell line={line} /></div>
             <EntryCell entry={entry} />
             {canEdit && <div className="flex gap-1 justify-self-end">
               <Button size="sm" disabled={pending} onClick={() => run(() => linkReconciliation([line.id], [entry.id]))}><IconCheck /> Aceitar</Button>
@@ -200,7 +220,12 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
     </section>}
 
     <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-      <Column title="Extrato" count={columnLines.length} empty={data.lines.length ? "As linhas abertas restantes estão nas sugestões." : "Nenhuma linha aberta neste período."}>
+      <Column title="Extrato" count={columnLines.length} empty={data.lines.length ? "As linhas abertas restantes estão nas sugestões." : "Nenhuma linha aberta neste período."}
+        action={canEdit && columnLines.length > 1 && <Button variant="ghost" size="sm" onClick={() => setSelectedLines((set) => {
+          const next = new Set(set);
+          for (const line of columnLines) { if (allColumnLinesSelected) next.delete(line.id); else next.add(line.id); }
+          return next;
+        })}>{allColumnLinesSelected ? "Desmarcar todas" : "Marcar todas"}</Button>}>
         {columnLines.map((line) => <Row key={line.id} label={`Selecionar linha do extrato ${lineText(line)}`} checked={selectedLines.has(line.id)} onToggle={lineToggle(line.id)} actions={lineActions(line)}>
           <LineCell line={line} />
         </Row>)}
@@ -243,15 +268,24 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
         <span role="status" aria-live="polite" className={cn("font-semibold", summary.difference === 0 && !summary.manyToMany ? "text-success" : "text-destructive")}>
           {summary.manyToMany ? "Escolha uma linha para vários lançamentos ou um lançamento para várias linhas" : summary.difference === 0 ? "✓ Somas conferem" : `Diferença: ${brl(summary.difference)}`}
         </span>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex flex-wrap gap-2">
           <Button variant="outline" onClick={clearSelection} disabled={pending}>Limpar</Button>
+          {chosenLines.length > 0 && chosenEntries.length === 0 && <>
+            <Button variant="outline" disabled={pending} onClick={() => setIgnoring(chosenLines)}>Ignorar ({chosenLines.length})</Button>
+            <Button variant="outline" disabled={pending} onClick={() => setCreating(chosenLines)}><IconPlus /> Criar lançamentos ({chosenLines.length})</Button>
+          </>}
           <Button disabled={!summary.canLink || pending} onClick={() => run(() => linkReconciliation(chosenLines.map((l) => l.id), chosenEntries.map((e) => e.id)), clearSelection)}><IconLink /> Vincular</Button>
         </div>
       </div>
     </div>}
 
-    <IgnoreDialog line={ignoring} pending={pending} onClose={() => setIgnoring(null)}
-      onConfirm={(line, reason) => run(() => ignoreStatementLine(line.id, reason), () => { setIgnoring(null); setSelectedLines((s) => { const next = new Set(s); next.delete(line.id); return next; }); })} />
+    <IgnoreDialog lines={ignoring} pending={pending} onClose={() => setIgnoring(null)}
+      onConfirm={(lines, reason) => run(() => ignoreStatementLines(lines.map((l) => l.id), reason), () => {
+        setIgnoring(null);
+        setSelectedLines((s) => { const next = new Set(s); for (const l of lines) next.delete(l.id); return next; });
+      })} />
+    <BulkCreateDialog lines={creating} paymentMethods={data.paymentMethods} pending={pending} onClose={() => setCreating(null)}
+      onConfirm={(items) => run(() => createEntriesFromLines(items), () => { setCreating(null); clearSelection(); })} />
     <MoveDialog entry={moving} accounts={data.otherAccounts} pending={pending} onClose={() => setMoving(null)}
       onConfirm={(entry, accountId) => run(() => setEntryAccount(entry.id, accountId), () => setMoving(null))} />
   </div>;
@@ -275,18 +309,21 @@ function ClosingCard({ closing }: { closing: Closing }) {
   </section>;
 }
 
-function IgnoreDialog({ line, pending, onClose, onConfirm }: { line: OpenLine | null; pending: boolean; onClose: () => void; onConfirm: (line: OpenLine, reason: string) => void }) {
+function IgnoreDialog({ lines, pending, onClose, onConfirm }: { lines: OpenLine[] | null; pending: boolean; onClose: () => void; onConfirm: (lines: OpenLine[], reason: string) => void }) {
+  const line = lines?.length === 1 ? lines[0] : null;
   const [choice, setChoice] = useState<string>(IGNORE_REASONS[0]);
   const [detail, setDetail] = useState("");
   const reason = ignoreReasonText(choice, detail);
   const options = [...IGNORE_REASONS, OTHER_REASON].map((value) => ({ value, label: value }));
-  return <Dialog open={line !== null} onOpenChange={(open) => { if (!open) { onClose(); setDetail(""); } }}>
+  return <Dialog open={lines !== null} onOpenChange={(open) => { if (!open) { onClose(); setDetail(""); } }}>
     <DialogContent>
       <DialogHeader>
-        <DialogTitle>Ignorar linha do extrato?</DialogTitle>
-        <DialogDescription>{line && <>“{lineText(line)}” de <span className="num">{dateBR(line.date)}</span>, <span className="num">{brl(line.amountCents)}</span>, sai das pendências. Dá para reabrir depois em Ignoradas.</>}</DialogDescription>
+        <DialogTitle>{line ? "Ignorar linha do extrato?" : `Ignorar ${lines?.length ?? 0} linhas do extrato?`}</DialogTitle>
+        <DialogDescription>{line
+          ? <>“{lineText(line)}” de <span className="num">{dateBR(line.date)}</span>, <span className="num">{brl(line.amountCents)}</span>, sai das pendências. Dá para reabrir depois em Ignoradas.</>
+          : lines && <>As linhas selecionadas (<span className="num">{brl(lines.reduce((sum, l) => sum + l.amountCents, 0))}</span> no total) saem das pendências com o mesmo motivo. Dá para reabrir depois em Ignoradas.</>}</DialogDescription>
       </DialogHeader>
-      <form id="ignore-form" className="grid gap-3" onSubmit={(event) => { event.preventDefault(); if (line && reason) onConfirm(line, reason); }}>
+      <form id="ignore-form" className="grid gap-3" onSubmit={(event) => { event.preventDefault(); if (lines?.length && reason) onConfirm(lines, reason); }}>
         <div className="grid gap-1.5"><Label htmlFor="ignore-reason">Motivo</Label><OptionSelect id="ignore-reason" value={choice} onValueChange={(value) => value && setChoice(value)} options={options} /></div>
         <div className="grid gap-1.5"><Label htmlFor="ignore-detail">{choice === OTHER_REASON ? "Explique" : "Observação (opcional)"}</Label>
           <Input id="ignore-detail" maxLength={150} value={detail} onChange={(e) => setDetail(e.target.value)} required={choice === OTHER_REASON} /></div>
@@ -314,4 +351,71 @@ function MoveDialog({ entry, accounts, pending, onClose, onConfirm }: { entry: O
       </DialogFooter>
     </DialogContent>
   </Dialog>;
+}
+
+type BulkItem = { lineId: string; name: string; paymentMethodId: string };
+
+/**
+ * Cria um lançamento por linha selecionada, já conciliado. Rubrica automática pelo sinal
+ * (entrada → 1 Receitas, saída → 2 Despesas); histórico e forma editáveis por linha.
+ */
+function BulkCreateDialog({ lines, paymentMethods, pending, onClose, onConfirm }: {
+  lines: OpenLine[] | null; paymentMethods: BoardData["paymentMethods"]; pending: boolean; onClose: () => void; onConfirm: (items: BulkItem[]) => void;
+}) {
+  return <Dialog open={lines !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <DialogContent className="sm:max-w-4xl">
+      {lines && <BulkCreateForm key={lines.map((l) => l.id).join()} lines={lines} paymentMethods={paymentMethods} pending={pending} onClose={onClose} onConfirm={onConfirm} />}
+    </DialogContent>
+  </Dialog>;
+}
+
+function BulkCreateForm({ lines, paymentMethods, pending, onClose, onConfirm }: {
+  lines: OpenLine[]; paymentMethods: BoardData["paymentMethods"]; pending: boolean; onClose: () => void; onConfirm: (items: BulkItem[]) => void;
+}) {
+  const [items, setItems] = useState<BulkItem[]>(() => lines.map((line) => ({
+    lineId: line.id, name: suggestedEntryName(line), paymentMethodId: guessPaymentMethod(line, paymentMethods) ?? "",
+  })));
+  const [allMethod, setAllMethod] = useState("");
+  const options = paymentMethods.filter((m) => m.active).map((m) => ({ value: m.id, label: m.name }));
+  const update = (index: number, patch: Partial<BulkItem>) => setItems((current) => current.map((item, i) => i === index ? { ...item, ...patch } : item));
+  const missing = items.filter((item) => !item.paymentMethodId || item.name.trim().length < 2).length;
+  const income = lines.filter((l) => l.amountCents > 0).length;
+  return <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); if (!missing) onConfirm(items); }}>
+    <DialogHeader>
+      <DialogTitle>Criar {lines.length} {lines.length === 1 ? "lançamento" : "lançamentos"} a partir do extrato</DialogTitle>
+      <DialogDescription>
+        Cada linha vira um lançamento com uma rubrica, já conciliado. A rubrica é automática:
+        {income > 0 && <> {income} {income === 1 ? "entrada vai" : "entradas vão"} para <strong>1 Receitas</strong></>}
+        {income > 0 && income < lines.length && " e"}
+        {income < lines.length && <> {lines.length - income} {lines.length - income === 1 ? "saída vai" : "saídas vão"} para <strong>2 Despesas</strong></>}.
+        Depois, recategorize em Lançamentos › Por rubrica (filtrando pelas rubricas raiz).
+      </DialogDescription>
+    </DialogHeader>
+    <div className="flex flex-wrap items-end gap-2">
+      <div className="grid gap-1.5"><Label htmlFor="bulk-method">Forma de pagamento para todas</Label>
+        <OptionSelect id="bulk-method" className="w-56" value={allMethod} onValueChange={setAllMethod} options={options} placeholder="Escolha…" /></div>
+      <Button type="button" variant="outline" disabled={!allMethod} onClick={() => setItems((current) => current.map((item) => ({ ...item, paymentMethodId: allMethod })))}>Aplicar a todas</Button>
+    </div>
+    <div className="max-h-[50vh] overflow-y-auto rounded-md border">
+      <table className="w-full min-w-0 text-xs">
+        <thead className="sticky top-0 z-10 bg-muted text-left"><tr>
+          <th className="px-2 py-1.5 font-semibold">Data</th><th className="px-2 py-1.5 font-semibold">Histórico</th>
+          <th className="px-2 py-1.5 font-semibold">Forma</th><th className="px-2 py-1.5 text-right font-semibold">Valor</th>
+        </tr></thead>
+        <tbody>{lines.map((line, index) => <tr key={line.id} className="border-t">
+          <td className="px-2 py-1 num whitespace-nowrap">{dateBR(line.date)}</td>
+          <td className="px-2 py-1"><Input aria-label={`Histórico da linha de ${dateBR(line.date)}`} value={items[index].name} maxLength={200} title={line.description}
+            onChange={(event) => update(index, { name: event.target.value })} aria-invalid={items[index].name.trim().length < 2 || undefined} /></td>
+          <td className="px-2 py-1"><OptionSelect aria-label={`Forma de pagamento da linha de ${dateBR(line.date)}`} className="w-40" value={items[index].paymentMethodId}
+            onValueChange={(value) => update(index, { paymentMethodId: value })} options={options} invalid={!items[index].paymentMethodId} /></td>
+          <td className="px-2 py-1 text-right"><Amount cents={line.amountCents} /></td>
+        </tr>)}</tbody>
+      </table>
+    </div>
+    <DialogFooter>
+      {missing > 0 && <span className="mr-auto self-center text-xs text-destructive">{missing} {missing === 1 ? "linha sem" : "linhas sem"} forma de pagamento ou histórico</span>}
+      <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+      <Button type="submit" disabled={pending || missing > 0}>{pending ? "Criando…" : `Criar ${lines.length} ${lines.length === 1 ? "lançamento" : "lançamentos"}`}</Button>
+    </DialogFooter>
+  </form>;
 }

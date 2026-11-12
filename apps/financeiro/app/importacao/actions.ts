@@ -1,9 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { memberOrError } from "@/lib/session";
 import {
-  fromRpcImportResult, importLinesSchema, importProfileSchema, importSummary, parseStatementLines, toRpcLines,
+  fromRpcImportResult, fromRpcPreview, type ImportPreview, importLinesSchema, MAX_IMPORT_LINES, importProfileSchema, importSummary, parseStatementLines, toRpcLines,
   type ImportResult,
 } from "@/lib/import-schema";
 
@@ -73,4 +74,44 @@ export async function importStatementLines(payload: unknown): Promise<ActionResu
   if (!result) return { error: "Resposta inesperada do banco ao importar." };
   revalidatePath("/", "layout");
   return { success: importSummary(result), data: result };
+}
+
+const previewPayload = z.object({
+  accountId: z.uuid({ message: "Escolha a conta." }),
+  periodFrom: z.iso.date().optional().nullable(),
+  periodTo: z.iso.date().optional().nullable(),
+  lines: z.array(z.unknown()).max(MAX_IMPORT_LINES),
+});
+
+/** Conferência antes de importar: novas, já importadas, suspeitas e órfãs (nada é gravado). */
+export async function previewStatementImport(payload: unknown): Promise<ActionResult<ImportPreview>> {
+  const parsed = previewPayload.safeParse(payload);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  const lines = parseStatementLines(parsed.data.lines);
+  if ("error" in lines) return { error: lines.error };
+  const ctx = await memberOrError();
+  if ("error" in ctx) return { error: ctx.error };
+  if (!ctx.canEdit) return { error: "Sem permissão para importar extratos." };
+  const { data, error } = await ctx.supabase.rpc("preview_statement_lines", {
+    p_account_id: parsed.data.accountId, p_period_from: parsed.data.periodFrom ?? null, p_period_to: parsed.data.periodTo ?? null,
+    p_lines: toRpcLines(lines.lines),
+  });
+  if (error) return { error: error.message };
+  const preview = fromRpcPreview(data);
+  return preview ? { data: preview } : { error: "Resposta inesperada do banco na conferência." };
+}
+
+/** Desfaz uma importação inteira: apaga as linhas e desfaz os vínculos de conciliação delas. */
+export async function deleteStatementImport(importId: unknown): Promise<ActionResult> {
+  const id = z.uuid().safeParse(importId);
+  if (!id.success) return { error: "Importação inválida." };
+  const ctx = await memberOrError();
+  if ("error" in ctx) return { error: ctx.error };
+  if (!ctx.canEdit) return { error: "Sem permissão para desfazer importações." };
+  const { data, error } = await ctx.supabase.rpc("delete_statement_import", { p_import_id: id.data });
+  if (error) return { error: error.message };
+  const result = z.object({ lines: z.number(), unlinked: z.number() }).catch({ lines: 0, unlinked: 0 }).parse(data);
+  revalidatePath("/", "layout");
+  const lines = `${result.lines} ${result.lines === 1 ? "linha removida" : "linhas removidas"}`;
+  return { success: result.unlinked ? `Importação desfeita: ${lines}; ${result.unlinked} ${result.unlinked === 1 ? "conciliação desfeita" : "conciliações desfeitas"}.` : `Importação desfeita: ${lines}.` };
 }

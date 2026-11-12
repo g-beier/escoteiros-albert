@@ -19,6 +19,8 @@ export type OpenEntry = {
   totalCents: number;
   name: string;
   paymentMethodName?: string;
+  /** Digitado sem conta ("A definir"): candidato em qualquer conta; ao vincular, vai para a conta do extrato. */
+  unassigned?: boolean;
 };
 
 export type Rejection = { lineId: string; entryId: string };
@@ -35,7 +37,14 @@ export type AmbiguousGroup = {
   candidates: Record<string, string[]>;
 };
 
-export type Suggestions = { exact: ExactSuggestion[]; ambiguous: AmbiguousGroup[] };
+/** Mesmo valor, data a até `NEAR_DAYS` dias (ex.: Pix de sexta compensado na segunda). Aceita-se um a um. */
+export type NearSuggestion = { lineId: string; entryId: string; days: number };
+
+export type Suggestions = { exact: ExactSuggestion[]; ambiguous: AmbiguousGroup[]; near: NearSuggestion[] };
+
+export const NEAR_DAYS = 3;
+
+const dayNumber = (iso: string) => Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10))) / 86_400_000;
 
 /** Minúsculas, sem acentos nem pontuação, palavras de 2+ letras. */
 export function nameTokens(text: string) {
@@ -115,7 +124,37 @@ export function suggestMatches(lines: OpenLine[], entries: OpenEntry[], rejectio
       candidates,
     });
   }
-  return { exact, ambiguous };
+  return { exact, ambiguous, near: nearMatches(lines, entries, rejected, new Set([
+    ...exact.flatMap((x) => [x.lineId, x.entryId]), ...ambiguous.flatMap((g) => [...g.lineIds, ...g.entryIds]),
+  ])) };
+}
+
+/**
+ * Regra ampliada: entre o que sobrou, mesmo valor e data a até NEAR_DAYS dias. Só sugere quando a linha
+ * tem um único candidato e o lançamento só essa linha; nome parecido desempata quando há mais de um.
+ */
+function nearMatches(lines: OpenLine[], entries: OpenEntry[], rejected: Set<string>, taken: Set<string>): NearSuggestion[] {
+  const freeLines = lines.filter((l) => !taken.has(l.id));
+  const freeEntries = entries.filter((e) => !taken.has(e.id));
+  const close = (line: OpenLine, entry: OpenEntry) => line.amountCents === entry.totalCents
+    && Math.abs(dayNumber(line.date) - dayNumber(entry.date)) <= NEAR_DAYS && !rejected.has(pairKey(line.id, entry.id));
+  const best = (line: OpenLine, options: OpenEntry[]) => {
+    if (options.length <= 1) return options[0];
+    const scored = options.map((entry) => ({ entry, score: similarity(lineText(line), entry.name) })).sort((a, b) => b.score - a.score);
+    return scored[0].score > 0 && scored[0].score > scored[1].score ? scored[0].entry : undefined;
+  };
+  const result: NearSuggestion[] = [];
+  const used = new Set<string>();
+  for (const line of freeLines) {
+    const entry = best(line, freeEntries.filter((e) => !used.has(e.id) && close(line, e)));
+    if (!entry) continue;
+    // outra linha disputa o mesmo lançamento com nome tão parecido quanto: deixa para a pessoa escolher
+    const score = similarity(lineText(line), entry.name);
+    if (freeLines.some((other) => other.id !== line.id && close(other, entry) && similarity(lineText(other), entry.name) >= score)) continue;
+    used.add(entry.id);
+    result.push({ lineId: line.id, entryId: entry.id, days: dayNumber(entry.date) - dayNumber(line.date) });
+  }
+  return result;
 }
 
 /** Ordena os lançamentos de um grupo ambíguo para que o mais parecido de cada linha fique na mesma altura. */

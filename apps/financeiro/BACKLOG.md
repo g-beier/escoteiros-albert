@@ -75,11 +75,18 @@
 - `lib/session.ts` substitui as 15 cópias da consulta de grupo/papel; `SectionCard` substitui as classes `card`/`card-head` nos cadastros, importação, associados e lançamentos.
 - Teste SQL `supabase/tests/accounting.sql`.
 
+## Concluído (2026-11-11, décima primeira rodada — cenários de importação)
+
+- `015_import_scenarios.sql`: pré-conferência (novas, já importadas, suspeitas, órfãs) antes de importar; linhas desmarcadas com `skip`; desfazer importação; criação em massa de lançamentos conciliados (rubrica raiz pelo sinal); ignorar em massa; lançamentos "A definir" vinculáveis em qualquer conta.
+- Conciliação: sugestões com até 3 dias de diferença (nome desempata), "Marcar todas", "Criar lançamentos (N)" e "Ignorar (N)" na barra de seleção.
+- Teste SQL `supabase/tests/import_scenarios.sql` (digitado antes → parcial → completo reconvertido → órfã → massa → desfazer).
+
 ## A verificar
 
 - Validar com o contador: código estruturado × reduzido, lançamento múltiplo, histórico padrão e contas de contrapartida (ver `docs/contabilidade.md`).
 - Abrir o CSV contábil no sistema do contador (leiaute de importação) e o CSV do fluxo no Excel/LibreOffice.
-- `/importacao` no navegador com `nubank.ofx` e `itau.ofx` e com um OFX convertido: escolha da conta, perfil lembrado na segunda importação da conta.
+- `/importacao` no navegador com `nubank.ofx` e `itau.ofx` e com um OFX convertido: escolha da conta, perfil lembrado na segunda importação, suspeitas/órfãs na conferência e desfazer.
+- `/conciliacao` no navegador: sugestões aproximadas, criação e ignorar em massa.
 
 
 - Aplicar `013` no banco local e testar `/conciliacao` no navegador (desktop e celular), inclusive "Criar lançamento" e o retorno de `/importacao`.
@@ -100,11 +107,13 @@
 - Virtualizar a tabela se a rolagem infinita ficar pesada com milhares de linhas carregadas.
 - Histórico de alterações (auditoria) na página de detalhes.
 - Testes pgTAP das políticas RLS e funções; Playwright para OTP, lançamentos e gestão de usuários.
-- Importação: mostrar na conferência as duplicatas já importadas antes de gravar (hoje só o resultado informa), conferir o saldo inicial do arquivo com o saldo da conta e lista de perfis editável fora da importação.
+- Importação: conferir o saldo inicial do arquivo com o saldo da conta e lista de perfis editável fora da importação.
 - Remover o código CSV de importação (`csv.ts`, `apply.ts`, `csv-profile-builder.tsx`) se o CSV não voltar.
 - Exportação contábil: código reduzido e histórico padrão, se o contador pedir; lançamento múltiplo agrupado pelo ID OFX.
 - Mover em lote os lançamentos de "A definir" para a conta certa.
-- Conciliação, fase 4: tolerância de datas, semelhança de nomes nas sugestões, combinações 1:N sugeridas; vínculo N:M (hoje recusado).
+- Conciliação: sugerir combinações 1:N (uma linha = soma de vários lançamentos); vínculo N:M (hoje recusado).
+- Criação em massa: lembrar a rubrica usada antes para a mesma contraparte, se a recategorização manual pesar.
+- Importação: conferir se o arquivo é mesmo da conta escolhida (ex.: saldo inicial do arquivo × saldo da conta).
 - Filtro "Conciliado" em `/lancamentos` (hoje só o indicador ✓ na visão Por extrato).
 - Anexos de comprovantes em bucket privado (complementa a "pasta").
 - Mensalidades por associado.

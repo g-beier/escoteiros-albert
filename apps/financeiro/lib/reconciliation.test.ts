@@ -18,9 +18,9 @@ describe("suggestMatches", () => {
     expect(result.ambiguous).toEqual([]);
   });
 
-  it("does not match opposite signs or different dates", () => {
-    const result = suggestMatches([line("l1", "2026-05-18", 5000)], [entry("e1", "2026-05-18", -5000), entry("e2", "2026-05-17", 5000)]);
-    expect(result).toEqual({ exact: [], ambiguous: [] });
+  it("does not match opposite signs; a different date is only a near suggestion", () => {
+    const result = suggestMatches([line("l1", "2026-05-18", 5000)], [entry("e1", "2026-05-18", -5000), entry("e2", "2026-05-17", 5000), entry("e3", "2026-05-10", 5000)]);
+    expect(result).toEqual({ exact: [], ambiguous: [], near: [{ lineId: "l1", entryId: "e2", days: -1 }] });
   });
 
   it("groups several candidates without auto pairing, ranked by name similarity", () => {
@@ -47,7 +47,7 @@ describe("suggestMatches", () => {
 
   it("never suggests a rejected 1:1 pair again", () => {
     const result = suggestMatches([line("l1", "2026-05-18", -100)], [entry("e1", "2026-05-18", -100)], [{ lineId: "l1", entryId: "e1" }]);
-    expect(result).toEqual({ exact: [], ambiguous: [] });
+    expect(result).toEqual({ exact: [], ambiguous: [], near: [] });
   });
 
   it("keeps one line with two candidate entries ambiguous", () => {
@@ -93,6 +93,27 @@ describe("safeReconciliationHref", () => {
     expect(safeReconciliationHref(`?conta=${id}&de=2026-05-01&ate=2026-05-31&x=1`)).toBe(`/conciliacao?conta=${id}&de=2026-05-01&ate=2026-05-31`);
     expect(safeReconciliationHref("conta=https://mal.com")).toBe("/conciliacao");
     expect(safeReconciliationHref(undefined)).toBe("/conciliacao");
+  });
+});
+
+describe("suggestMatches — datas próximas", () => {
+  it("sugere mesmo valor a até 3 dias, com a diferença em dias", () => {
+    const result = suggestMatches([line("l1", "2026-06-08", -9000, "Papelaria")], [entry("e1", "2026-06-05", -9000, "Papelaria Central"), entry("e2", "2026-06-01", -9000)]);
+    expect(result.exact).toEqual([]);
+    expect(result.near).toEqual([{ lineId: "l1", entryId: "e1", days: -3 }]);
+  });
+  it("desempata pelo nome e não sugere quando duas linhas disputam o mesmo lançamento", () => {
+    const tie = suggestMatches([line("l1", "2026-06-08", 2000, "Ana"), line("l2", "2026-06-09", 2000, "Ana")], [entry("e1", "2026-06-07", 2000, "Ana")]);
+    expect(tie.near).toEqual([]);
+    const named = suggestMatches([line("l1", "2026-06-08", 2000, "Ana Souza"), line("l2", "2026-06-09", 2000, "Bia Lima")],
+      [entry("e1", "2026-06-07", 2000, "Mensalidade Bia"), entry("e2", "2026-06-07", 2000, "Mensalidade Ana")]);
+    expect(named.near).toEqual([{ lineId: "l1", entryId: "e2", days: -1 }, { lineId: "l2", entryId: "e1", days: -2 }]);
+  });
+  it("não repete o que já é sugestão exata e respeita recusas", () => {
+    const result = suggestMatches([line("l1", "2026-06-08", 100), line("l2", "2026-06-08", 200)], [entry("e1", "2026-06-08", 100), entry("e2", "2026-06-06", 200)],
+      [{ lineId: "l2", entryId: "e2" }]);
+    expect(result.exact).toEqual([{ lineId: "l1", entryId: "e1" }]);
+    expect(result.near).toEqual([]);
   });
 });
 

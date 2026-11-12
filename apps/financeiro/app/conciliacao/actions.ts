@@ -130,3 +130,40 @@ export async function createEntryFromStatementLine(lineId: unknown, payload: unk
   if (error) return { error: error.message };
   return done("Lançamento criado e conciliado.", data as string);
 }
+
+const bulkItem = z.object({
+  lineId: z.uuid(),
+  name: z.string().trim().max(200).optional(),
+  paymentMethodId: z.uuid({ message: "Escolha a forma de pagamento de todas as linhas." }),
+  categoryId: z.uuid().optional(),
+  description: z.string().trim().max(200).optional(),
+});
+
+/**
+ * Cria um lançamento por linha do extrato, já conciliado, tudo numa transação. Sem rubrica,
+ * entradas vão para 1 Receitas e saídas para 2 Despesas, para recategorizar depois.
+ */
+export async function createEntriesFromLines(items: unknown): Promise<ReconciliationResult> {
+  const parsed = z.array(bulkItem).min(1, "Selecione ao menos uma linha.").max(500, "Crie no máximo 500 lançamentos por vez.").safeParse(items);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  const ctx = await editorOrError("Sem permissão para conciliar.");
+  if ("error" in ctx) return { error: ctx.error };
+  const { data, error } = await ctx.supabase.rpc("create_entries_from_statement_lines", { p_items: parsed.data });
+  if (error) return { error: error.message };
+  const count = Number(data);
+  return done(`${count} ${count === 1 ? "lançamento criado e conciliado" : "lançamentos criados e conciliados"}. Recategorize em Lançamentos › Por rubrica.`);
+}
+
+/** Ignora várias linhas abertas com o mesmo motivo. */
+export async function ignoreStatementLines(lineIds: unknown, reason: unknown): Promise<ReconciliationResult> {
+  const parsedIds = z.array(z.uuid()).min(1).max(1000).safeParse(lineIds);
+  const text = z.string().trim().min(2, "Informe o motivo.").max(200, "Motivo: no máximo 200 caracteres.").safeParse(reason);
+  if (!parsedIds.success) return { error: "Selecione ao menos uma linha." };
+  if (!text.success) return { error: text.error.issues[0]?.message };
+  const ctx = await editorOrError("Sem permissão para conciliar.");
+  if ("error" in ctx) return { error: ctx.error };
+  const { data, error } = await ctx.supabase.rpc("ignore_statement_lines", { p_ids: parsedIds.data, p_reason: text.data });
+  if (error) return { error: error.message };
+  const count = Number(data);
+  return done(count === 1 ? "Linha ignorada." : `${count} linhas ignoradas.`);
+}

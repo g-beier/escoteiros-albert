@@ -2,13 +2,14 @@ import Link from "next/link";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { dateBR } from "@/lib/format";
 import { SectionCard, SectionHeader } from "@/components/section-card";
+import { UndoImport } from "@/components/import/undo-import";
 import { reconciliationHref } from "@/lib/import-flow";
 import type { RecentImport } from "@/lib/import-queries";
 
 const dateTime = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
 
 /** Últimas importações da conta escolhida. */
-export function RecentImports({ accountId, accountName, rows, error }: { accountId: string; accountName: string; rows: RecentImport[]; error?: string }) {
+export function RecentImports({ accountId, accountName, rows, error, canEdit = false }: { accountId: string; accountName: string; rows: RecentImport[]; error?: string; canEdit?: boolean }) {
   return <SectionCard aria-labelledby="recent-imports-title">
     <SectionHeader title="Importações recentes" titleId="recent-imports-title" description={accountName} />
     {error && <p className="m-0 px-5 py-3 text-xs text-destructive">Não foi possível carregar as importações: {error}</p>}
@@ -32,7 +33,10 @@ export function RecentImports({ accountId, accountName, rows, error }: { account
         <TableCell className="px-3 py-1.5 num">{dateBR(row.period_from)} a {dateBR(row.period_to)}</TableCell>
         <TableCell className="px-3 py-1.5 text-right num">{row.line_count}</TableCell>
         <TableCell className="px-3 py-1.5 text-right num">{row.duplicate_count}</TableCell>
-        <TableCell className="px-3 py-1.5 text-right"><Link className="text-primary underline-offset-4 hover:underline" href={reconciliationHref(accountId, row.period_from, row.period_to)}>Conciliar</Link></TableCell>
+        <TableCell className="px-3 py-1.5 text-right whitespace-nowrap">
+          <Link className="text-primary underline-offset-4 hover:underline" href={reconciliationHref(accountId, row.period_from, row.period_to)}>Conciliar</Link>
+          {canEdit && <UndoImport importId={row.id} fileName={row.file_name} lineCount={row.line_count} />}
+        </TableCell>
       </TableRow>)}</TableBody>
     </Table>}
   </SectionCard>;

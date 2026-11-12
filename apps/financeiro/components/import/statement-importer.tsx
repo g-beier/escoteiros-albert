@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo, useState, useTransition, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, useTransition, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconFileUpload } from "@tabler/icons-react";
-import { importStatementLines, saveImportProfile, type ImportProfile } from "@/app/importacao/actions";
+import { importStatementLines, previewStatementImport, saveImportProfile, type ImportProfile } from "@/app/importacao/actions";
+import { ignoreStatementLines } from "@/app/conciliacao/actions";
+import type { ImportPreview } from "@/lib/import-schema";
+import { dateBR, money } from "@/lib/format";
 import { ImportReview } from "@/components/import/import-review";
 import { IgnoreList, KindPrefixes } from "@/components/import/profile-options";
 import { OptionSelect } from "@/components/option-controls";
@@ -23,6 +26,13 @@ export type ImportAccount = { id: string; name: string; bank: string | null };
 type LoadedFile = { name: string; statement: OfxStatement };
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
+
+/** Hash curto (djb2) para comparar listas de linhas sem guardá-las. */
+function hashText(text: string) {
+  let hash = 5381;
+  for (let i = 0; i < text.length; i += 1) hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0;
+  return (hash >>> 0).toString(36);
+}
 
 /** Período da importação: o declarado no arquivo, ampliado para cobrir todas as linhas. */
 function importPeriod(statement: OfxStatement) {
@@ -94,8 +104,38 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
   }, [file, settings, ignoreText]);
 
   const statement = view?.statement ?? null;
+
+  // Pré-conferência no banco: novas, já importadas, suspeitas (desmarcadas por padrão) e órfãs.
+  const [preview, setPreview] = useState<{ key: string; data: ImportPreview | null; error?: string } | null>(null);
+  const [includedSuspects, setIncludedSuspects] = useState<Set<number>>(new Set());
+  const [ignoreOrphans, setIgnoreOrphans] = useState(true);
+  // muda quando a conta ou o que define a impressão digital muda (não ao separar tipo/contraparte)
+  const linesHash = useMemo(() => statement ? hashText(statement.lines.map((l) => `${l.date};${l.amountCents};${l.description};${l.externalId ?? ""}`).join("\n")) : "", [statement]);
+  const previewKey = account && statement ? `${account.id}|${statement.lines.length}|${linesHash}` : "";
+  useEffect(() => {
+    if (!previewKey || !account || !statement) return;
+    let current = true;
+    const period = importPeriod(statement);
+    previewStatementImport({ accountId: account.id, periodFrom: period.from ?? null, periodTo: period.to ?? null, lines: toImportLines(statement.lines) })
+      .then((result) => {
+        if (!current) return;
+        setPreview({ key: previewKey, data: result.data ?? null, error: result.error });
+        setIncludedSuspects(new Set());
+      });
+    return () => { current = false; };
+    // previewKey resume conta + linhas; statement/account vêm junto
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewKey]);
+  const checked = preview?.key === previewKey ? preview.data : null;
+  const previewLoading = !!previewKey && preview?.key !== previewKey;
+  const statusOf = (index: number) => checked?.lines[index]?.status;
+  const counts = { nova: 0, importada: 0, suspeita: 0 };
+  checked?.lines.forEach((line) => { counts[line.status] += 1; });
+  const openOrphans = checked?.orphans.filter((orphan) => orphan.status === "aberta") ?? [];
+  const willInsert = counts.nova + includedSuspects.size;
+
   const changed = profile === null || (view !== null && (!sameSettings(profile.settings, view.settings) || profile.header_signature !== file?.statement.signature));
-  const canImport = !!account && !!statement && statement.lines.length > 0 && !pending;
+  const canImport = !!account && !!statement && statement.lines.length > 0 && !!checked && willInsert > 0 && !pending;
 
   function profileName() {
     const base = `${account?.name ?? "Banco"} OFX`;
@@ -130,10 +170,16 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
         periodTo: period.to ?? null,
         openingBalanceCents: statement.openingBalanceCents ?? null,
         closingBalanceCents: statement.closingBalanceCents ?? null,
-        lines: toImportLines(statement.lines),
+        // suspeitas desmarcadas vão com skip: o banco numera as ocorrências pelo arquivo inteiro
+        lines: toImportLines(statement.lines).map((line, index) =>
+          statusOf(index) === "suspeita" && !includedSuspects.has(index) ? { ...line, skip: true } : line),
       });
       if (result.error || !result.data) { toast.error(result.error ?? "Não foi possível importar o extrato."); return; }
       toast.success(result.success);
+      if (ignoreOrphans && openOrphans.length) {
+        const ignored = await ignoreStatementLines(openOrphans.map((orphan) => orphan.id), "Não consta no extrato importado depois");
+        if (ignored.error) toast.error(`Órfãs não ignoradas: ${ignored.error}`);
+      }
       router.push(reconciliationHref(account.id, period.from, period.to));
     });
   }
@@ -159,7 +205,7 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
     {file && view && statement && <SectionCard aria-labelledby="import-review-title">
       <SectionHeader title="2. Conferência" titleId="import-review-title"
         description={`As linhas entram abertas, para conciliar. Duplicatas de importações anteriores são puladas.${profile ? ` Leitura pelo perfil “${profile.name}”.` : ""}`}>
-        <Button onClick={runImport} disabled={!canImport}>{pending ? "Importando…" : `Importar ${statement.lines.length} ${statement.lines.length === 1 ? "linha" : "linhas"}`}</Button>
+        <Button onClick={runImport} disabled={!canImport}>{pending ? "Importando…" : previewLoading ? "Conferindo…" : `Importar ${willInsert} ${willInsert === 1 ? "linha" : "linhas"}`}</Button>
       </SectionHeader>
       <div className="grid gap-4 p-5">
         <details className="rounded-md border bg-muted/30 px-3 py-2 text-xs">
@@ -174,7 +220,34 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
           </div>
         </details>
         {statement.lines.length === 0 && <p role="alert" className="m-0 text-xs text-destructive">Nenhuma linha para importar.</p>}
-        <ImportReview statement={statement} />
+        {!account && <p className="m-0 text-xs text-muted-foreground">Escolha a conta para conferir o que já foi importado nela.</p>}
+        {preview?.key === previewKey && preview.error && <p role="alert" className="m-0 text-xs text-destructive">Não foi possível conferir com o que já existe: {preview.error}</p>}
+        {checked && <div className="grid gap-2 rounded-md border px-3 py-2 text-xs">
+          <p className="m-0">
+            <strong className="num">{counts.nova}</strong> {counts.nova === 1 ? "nova" : "novas"}
+            {" · "}<strong className="num">{counts.importada}</strong> já {counts.importada === 1 ? "importada (será pulada)" : "importadas (serão puladas)"}
+            {counts.suspeita > 0 && <>{" · "}<strong className="num text-destructive">{counts.suspeita}</strong> {counts.suspeita === 1 ? "suspeita" : "suspeitas"}</>}
+            {checked.orphans.length > 0 && <>{" · "}<strong className="num text-destructive">{checked.orphans.length}</strong> {checked.orphans.length === 1 ? "órfã" : "órfãs"}</>}
+          </p>
+          {counts.suspeita > 0 && <p className="m-0 text-muted-foreground">
+            <strong className="text-foreground">Suspeitas</strong> têm a mesma data e valor de uma linha já importada, mas ID ou histórico diferentes — comum em OFX convertido de novo.
+            Ficam de fora; marque na tabela as que são movimentos diferentes de verdade.
+          </p>}
+          {checked.orphans.length > 0 && <details>
+            <summary className="cursor-pointer"><strong>Órfãs:</strong> linhas já importadas neste período que não aparecem no arquivo (ex.: lançamento pendente de um extrato parcial).</summary>
+            <ul className="m-0 mt-2 grid gap-1 pl-4">{checked.orphans.map((orphan) => <li key={orphan.id}>
+              <span className="num">{dateBR(orphan.date)}</span> {orphan.description} <span className="num">{money(orphan.amountCents / 100)}</span>
+              {orphan.status === "conciliada" && <strong className="text-destructive"> — conciliada com um lançamento: confira</strong>}
+            </li>)}</ul>
+            {openOrphans.length > 0 && <Label className="mt-2 font-normal">
+              <Checkbox checked={ignoreOrphans} onCheckedChange={(value) => setIgnoreOrphans(value === true)} />
+              Ignorar as {openOrphans.length} órfãs abertas ao importar (motivo “Não consta no extrato importado depois”; dá para reabrir na conciliação)
+            </Label>}
+          </details>}
+        </div>}
+        <ImportReview statement={statement} statuses={checked?.lines}
+          includedSuspects={includedSuspects}
+          onToggleSuspect={(index) => setIncludedSuspects((set) => { const next = new Set(set); if (next.has(index)) next.delete(index); else next.add(index); return next; })} />
       </div>
     </SectionCard>}
   </>;

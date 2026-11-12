@@ -140,6 +140,16 @@ Conteúdo do perfil (`settings`):
 - O perfil de leitura (separar MEMO do Nubank, prefixos de tipo, linhas a ignorar) é o da **última importação da conta escolhida**; sem histórico, o que reconhece o arquivo pela assinatura `ofx:<ORG ou BANKID>`; senão, sugestões. É aplicado sem perguntar e salvo/atualizado ao importar (nome padrão "<conta> OFX"). Os ajustes ficam recolhidos em "Ajustes de leitura". Trocar a conta com o arquivo carregado recarrega a leitura daquela conta.
 - Cada linha guarda `external_id` (FITID), `trn_type`, `check_number`, `reference` e `payee`. O TRNTYPE ajuda a sugerir a forma de pagamento ao criar o lançamento (PAYMENT → Boleto, FEE → Tarifa, XFER → Transferência, CASH → Dinheiro), depois das regras pelo histórico.
 
+### Cenários de importação (`015`)
+
+| Situação | Como o app trata |
+|---|---|
+| **Lançamentos digitados antes**, extrato completo depois | Sugestões por mesmo valor no mesmo dia ou **até 3 dias** de diferença (pix de sexta compensado na segunda), com o nome desempatando. Lançamentos sem conta (**"A definir"**) aparecem como candidatos em qualquer conta e passam para a conta do extrato ao vincular. Um lançamento para várias linhas (N:1) e uma linha para vários lançamentos (1:N) continuam aceitos. |
+| **Extrato parcial, depois o completo** | **Pré-conferência** antes de gravar (`preview_statement_lines`, nada é gravado): cada linha sai como *nova*, *já importada* (mesmo ID OFX + data + valor, ou mesma impressão digital; será pulada) ou *suspeita* (mesma data e valor de uma linha existente que o arquivo não repete, mas ID/histórico diferentes — típico de OFX convertido de novo). Suspeitas ficam desmarcadas; a pessoa marca as que são movimentos distintos. **Órfãs** são linhas já gravadas no período que o arquivo não traz (ex.: pendente que sumiu no extrato completo); as abertas podem ser ignoradas ao importar. Linhas desmarcadas vão com `skip`, para que a numeração de ocorrências da impressão digital siga o arquivo inteiro. |
+| **Muitas linhas viram lançamentos** | Na conciliação, marcar várias linhas (ou "Marcar todas") → **Criar lançamentos**: um lançamento por linha, já conciliado, numa transação (`create_entries_from_statement_lines`, até 500). Histórico = contraparte (editável), forma sugerida pelo histórico/TRNTYPE (com "aplicar a todas"), rubrica automática pelo sinal: entrada → **1 Receitas**, saída → **2 Despesas**, para recategorizar em Lançamentos › Por rubrica. Lançamentos com várias rubricas seguem pelo "Criar lançamento" individual. |
+| **Linhas sem lançamento** (tarifas, transferências entre contas próprias) | **Ignorar** várias linhas de uma vez com o mesmo motivo (`ignore_statement_lines`). |
+| **Extrato importado na conta errada** (ou para refazer) | **Desfazer importação** em Importações recentes (`delete_statement_import`): apaga as linhas daquela importação e desfaz as conciliações delas; os lançamentos continuam, pendentes. |
+
 ### ID OFX como agregador
 
 O FITID não é único (o Itaú reaproveita `data + sequência`), nem combinado com a conta. Mesmo assim, é o que liga a movimentação do banco ao que foi discriminado: as visões `ledger_entry_rows` e `entry_split_rows` expõem `external_ids` (FITIDs das linhas vinculadas), e a lista de lançamentos mostra a coluna **ID OFX** nas duas visões. Clicar no ID filtra por `?ofx=<FITID>` e traz o lançamento, todos os seus rateios e, numa linha 1:N, os outros lançamentos pagos por ela. A busca também encontra o ID; os detalhes do lançamento mostram as linhas do extrato vinculadas; as exportações levam a coluna ID OFX.
@@ -201,7 +211,7 @@ Objetivo: cruzar o que **já foi lançado à mão** com o que **veio do banco**,
 1. **Contas**: cadastro, conta padrão por forma de pagamento, conta no lançamento (com migração dos dados atuais), filtro e coluna Conta.
 2. **Importação**: upload, montagem e reuso de perfis (CSV e OFX), conferência, deduplicação, lista de linhas importadas.
 3. **Conciliação**: tela em duas colunas logo após a importação, sugestões por mesmo dia + mesmo valor (aceitar/recusar/aceitar todas), vínculo manual com conferência de somas, criar lançamento a partir da linha, ignorar, sobressalentes, fechamento do mês.
-4. **Sugestões ampliadas**: tolerância de datas, semelhança de nomes, combinações 1:N.
+4. **Sugestões ampliadas**: tolerância de datas e semelhança de nomes feitas (`015`); falta sugerir combinações 1:N.
 5. **Transferências entre contas** (um movimento que sai de uma conta e entra em outra sem virar receita ou despesa).
 
 ## Decisões
@@ -213,6 +223,7 @@ Objetivo: cruzar o que **já foi lançado à mão** com o que **veio do banco**,
 - Importação só por OFX; CSV desativado na interface (2026-11-11, `014`).
 - O ID OFX (FITID) aparece nos lançamentos e rateios como agregador, derivado da conciliação (2026-11-11).
 - "Nome do lançamento" passa a se chamar **Histórico** na interface (a coluna continua `name`) (2026-11-11).
+- Criação em massa a partir do extrato usa a rubrica raiz pelo sinal (1 Receitas / 2 Despesas); a recategorização vem depois (2026-11-11).
 
 ## Perguntas em aberto
 

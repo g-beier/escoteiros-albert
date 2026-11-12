@@ -40,7 +40,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
         {!canEdit && <SectionCard><p className="m-0 p-5 text-sm text-muted-foreground">Somente tesouraria e administração podem importar extratos. Você pode consultar as importações já feitas.</p></SectionCard>}
         {canEdit && accounts.length === 0 && <SectionCard><p className="m-0 p-5 text-sm text-muted-foreground">Nenhuma conta ativa. Cadastre a conta do banco em <Link href="/cadastros" className="underline">Cadastros</Link> antes de importar.</p></SectionCard>}
         {canEdit && accounts.length > 0 && <StatementImporter accounts={accounts} profiles={profiles} lastProfiles={lastProfiles} accountId={accountId} />}
-        {accountId && <RecentImports accountId={accountId} accountName={accountName} rows={recent.rows} error={recent.error} />}
+        {accountId && <RecentImports accountId={accountId} accountName={accountName} rows={recent.rows} error={recent.error} canEdit={canEdit} />}
       </div>
     </main>
   </div>;
