@@ -5,13 +5,14 @@ import { UserMenu } from "@/components/nav/user-menu";
 import { cn } from "@/lib/utils";
 
 /**
- * Navegação principal: Início · Lançamentos · Extrato (conciliar e importar).
+ * Navegação principal: Início · Lançamentos · Extrato (conciliar e importar) · Mensalidades.
  * Configurações (contas, rubricas, formas de pagamento, associados) na engrenagem; email, Usuários e Sair no menu da pessoa.
  */
 const SECTIONS = [
   { href: "/", label: "Início", match: (path: string) => path === "/" },
   { href: "/lancamentos", label: "Lançamentos", match: (path: string) => path.startsWith("/lancamentos") },
   { href: "/conciliacao", label: "Extrato", match: (path: string) => path.startsWith("/conciliacao") || path.startsWith("/importacao") },
+  { href: "/mensalidades", label: "Mensalidades", match: (path: string) => path.startsWith("/mensalidades") },
 ];
 
 export const isSettingsPath = (path: string) => path.startsWith("/cadastros") || path.startsWith("/associados");

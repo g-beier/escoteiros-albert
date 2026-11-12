@@ -11,6 +11,8 @@ import { MONTHS } from "@/lib/export/period";
 import { ALL_DATES, currentYear } from "@/lib/filters";
 import { dateBR, money } from "@/lib/format";
 import { pageSession } from "@/lib/session";
+import { fetchFeeYear } from "@/lib/fee-queries";
+import { overdueRanking } from "@/lib/fees";
 import { cn } from "@/lib/utils";
 
 type Sum = { category_id: string; month: number; amount_cents: number };
@@ -35,12 +37,13 @@ export default async function Dashboard() {
   const canEdit = membership.canEdit;
   const year = currentYear();
 
-  const [{ data: categories }, { data: sums }, { count: pendingDocs }, { data: recent }] = await Promise.all([
+  const [{ data: categories }, { data: sums }, { count: pendingDocs }, { data: recent }, feeYear] = await Promise.all([
     supabase.from("categories").select("id, kind").eq("group_id", groupId),
     supabase.rpc("realized_by_month", { p_group_id: groupId, p_year: year }),
     supabase.from("ledger_entries").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("document_filed", false),
     supabase.from("ledger_entry_rows").select("entry_id, entry_date, name, payment_method_name, document, document_filed, total_cents")
       .eq("group_id", groupId).order("entry_date", { ascending: false }).order("created_at", { ascending: false }).limit(12),
+    fetchFeeYear(supabase, groupId, year),
   ]);
 
   const kinds = new Map((categories ?? []).map((c) => [c.id as string, c.kind as CategoryKind | null]));
@@ -55,6 +58,8 @@ export default async function Dashboard() {
     accumulated: months.slice(0, i + 1).reduce((sum, x) => sum + x.income - x.expense, 0),
   }));
   const recentRows = (recent ?? []) as LedgerRow[];
+  const overdue = overdueRanking(feeYear.rows);
+  const OVERDUE_SHOWN = 12;
 
   return <div className="shell">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/" />
@@ -75,24 +80,24 @@ export default async function Dashboard() {
           href={(pendingDocs ?? 0) > 0 ? `/lancamentos?pasta=pendente&de=${ALL_DATES}` : undefined} icon={(pendingDocs ?? 0) > 0} />
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <div className="grid items-start gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <section aria-labelledby="monthly-title" className="overflow-hidden rounded-lg border bg-card">
           <h2 id="monthly-title" className="m-0 border-b px-4 py-2.5 text-sm font-semibold">Mês a mês</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead className="bg-muted text-muted-foreground"><tr>
-                <th className="px-3 py-1.5 text-left font-semibold">Mês</th>
-                <th className="px-3 py-1.5 text-right font-semibold">Receitas</th>
-                <th className="px-3 py-1.5 text-right font-semibold">Despesas</th>
-                <th className="px-3 py-1.5 text-right font-semibold">Saldo</th>
-                <th className="px-3 py-1.5 text-right font-semibold">Acumulado</th>
+                <th className="px-2 py-1.5 text-left font-semibold">Mês</th>
+                <th className="px-2 py-1.5 text-right font-semibold">Receitas</th>
+                <th className="px-2 py-1.5 text-right font-semibold">Despesas</th>
+                <th className="px-2 py-1.5 text-right font-semibold">Saldo</th>
+                <th className="px-2 py-1.5 text-right font-semibold">Acumulado</th>
               </tr></thead>
               <tbody>{monthRows.map((m) => <tr key={m.label} className="border-t">
-                <td className="px-3 py-1.5">{m.label}</td>
-                <td className="num px-3 py-1.5 text-right text-success">{money(m.income / 100)}</td>
-                <td className="num px-3 py-1.5 text-right text-destructive">{money(m.expense / 100)}</td>
-                <td className={cn("num px-3 py-1.5 text-right font-semibold", m.balance < 0 && "text-destructive")}>{money(m.balance / 100)}</td>
-                <td className={cn("num px-3 py-1.5 text-right text-muted-foreground", m.accumulated < 0 && "text-destructive")}>{money(m.accumulated / 100)}</td>
+                <td className="px-2 py-1.5">{m.label}</td>
+                <td className="num px-2 py-1.5 text-right text-success">{money(m.income / 100)}</td>
+                <td className="num px-2 py-1.5 text-right text-destructive">{money(m.expense / 100)}</td>
+                <td className={cn("num px-2 py-1.5 text-right font-semibold", m.balance < 0 && "text-destructive")}>{money(m.balance / 100)}</td>
+                <td className={cn("num px-2 py-1.5 text-right text-muted-foreground", m.accumulated < 0 && "text-destructive")}>{money(m.accumulated / 100)}</td>
               </tr>)}</tbody>
             </table>
           </div>
@@ -112,6 +117,24 @@ export default async function Dashboard() {
                 <span className={cn("num shrink-0 font-semibold", r.total_cents < 0 ? "text-destructive" : "text-success")}>{money(r.total_cents / 100)}</span>
               </Link>
             </li>)}</ul>}
+        </section>
+
+        <section aria-labelledby="overdue-title" className="overflow-hidden rounded-lg border bg-card">
+          <div className="flex items-center justify-between border-b px-4 py-2.5">
+            <h2 id="overdue-title" className="m-0 text-sm font-semibold">Mensalidades atrasadas</h2>
+            <Link href="/mensalidades" className="text-xs font-semibold text-primary hover:underline">Ver mensalidades</Link>
+          </div>
+          {overdue.length === 0
+            ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhuma mensalidade atrasada em {year}.</p>
+            : <ul className="m-0 list-none p-0">{overdue.slice(0, OVERDUE_SHOWN).map(({ associate, overdue: count }) => <li key={associate.id} className="border-t first:border-t-0">
+              <Link href={associate.section ? `/mensalidades?${new URLSearchParams({ secao: associate.section })}` : "/mensalidades"} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-muted">
+                <span className="min-w-0 flex-1 truncate">{associate.name}{associate.section && <span className="text-muted-foreground"> · {associate.section}</span>}</span>
+                <span className="num shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 font-semibold text-destructive" title={`${count} ${count === 1 ? "mês atrasado" : "meses atrasados"}`}>
+                  {count} <span className="sr-only">{count === 1 ? "mês atrasado" : "meses atrasados"}</span></span>
+              </Link>
+            </li>)}
+              {overdue.length > OVERDUE_SHOWN && <li className="border-t px-4 py-2 text-xs text-muted-foreground">e mais {overdue.length - OVERDUE_SHOWN} {overdue.length - OVERDUE_SHOWN === 1 ? "associado" : "associados"}</li>}
+            </ul>}
         </section>
       </div>
     </main>

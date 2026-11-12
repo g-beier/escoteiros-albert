@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { pageMember } from "@/lib/session";
 import { AppHeader } from "@/components/app-header";
+import { FeeSettingsForm } from "@/components/fees/fee-settings-form";
+import { fetchFeeSettings } from "@/lib/fee-queries";
+import { currentYear } from "@/lib/filters";
 import { PageBody, PageHeader, SettingsTabs } from "@/components/nav/page-header";
 import { AccountsManager, type AccountItem } from "@/components/accounts-manager";
 import { CatalogManager } from "@/components/catalog-manager";
@@ -15,21 +18,23 @@ const TABS = {
   contas: "Onde o dinheiro está (conta corrente, poupança, caixa), com saldo inicial e conta contábil de contrapartida.",
   rubricas: "Classificação dos rateios, em árvore pelo código, com a conta contábil usada na exportação para a contabilidade. Para recategorizar, clique no número de uso.",
   formas: "Como o dinheiro se moveu; a conta padrão é sugerida nos novos lançamentos.",
+  mensalidades: "Regra de vencimento das mensalidades e rubrica usada para sugerir pagamentos.",
 } as const;
 type Tab = keyof typeof TABS;
 
 export default async function CatalogsPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
   const { aba } = await searchParams;
-  const tab: Tab = aba === "rubricas" || aba === "formas" ? aba : "contas";
+  const tab: Tab = aba === "rubricas" || aba === "formas" || aba === "mensalidades" ? aba : "contas";
   const membership = await pageMember();
   const { supabase, user } = membership;
   const canEdit = membership.canEdit;
   if (!canEdit) notFound();
 
-  const [{ data: categories }, { data: paymentMethods }, { data: accountRows }] = await Promise.all([
+  const [{ data: categories }, { data: paymentMethods }, { data: accountRows }, feeSettings] = await Promise.all([
     supabase.from("categories").select("id, name, active, code, kind, parent_id, ledger_code, usage:entry_splits(count)").eq("group_id", membership.groupId),
     supabase.from("payment_methods").select("id, name, active, default_account_id, usage:ledger_entries(count)").eq("group_id", membership.groupId).order("active", { ascending: false }).order("name"),
     supabase.from("accounts").select("id, name, kind, bank, branch, number, opening_balance_cents, opening_date, active, ledger_code, usage:ledger_entries(count)").eq("group_id", membership.groupId).order("active", { ascending: false }).order("name"),
+    fetchFeeSettings(supabase, membership.groupId),
   ]);
   const accounts: AccountItem[] = ((accountRows ?? []) as AccountRow[]).map((row) => ({ ...row, usage: row.usage?.[0]?.count ?? 0 }));
   const accountOptions = accounts.filter((a) => a.active).map((a) => ({ value: a.id, label: a.name }));
@@ -54,6 +59,8 @@ export default async function CatalogsPage({ searchParams }: { searchParams: Pro
         description={`${TABS[tab]} Inativos saem dos novos lançamentos e continuam nos antigos.`} />
       {tab === "contas" && <AccountsManager accounts={accounts} canEdit={canEdit} />}
       {tab === "formas" && <CatalogManager kind="payment_methods" {...CATALOG_KINDS.payment_methods} items={paymentMethodItems} canEdit={canEdit} accounts={accountOptions} />}
+      {tab === "mensalidades" && <FeeSettingsForm settings={feeSettings} categories={tree} year={currentYear()}
+        defaultCategoryId={tree.find((c) => c.code === "1.1")?.id ?? null} />}
       {tab === "rubricas" && <CatalogManager kind="categories" {...CATALOG_KINDS.categories} items={categoryItems} canEdit={canEdit} />}
     </PageBody>
   </div>;

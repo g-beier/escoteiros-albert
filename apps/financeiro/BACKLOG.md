@@ -86,6 +86,8 @@
 - Navegação: Início · Lançamentos · Extrato (Conciliar/Importar), Configurações na engrenagem, menu da pessoa; mesmo cabeçalho e mesma largura em todas as telas.
 - Criação em massa cria as linhas prontas e deixa as sem forma de pagamento para depois; conciliação lê até 5.000 linhas por lado.
 - Associados: importação por CSV (`016_import_associates.sql`) e visualização por seção com filtro.
+- Observações nos lançamentos (`017_entry_notes.sql`).
+- **Mensalidades** (`018_fees.sql`, `/mensalidades`): grade março–dezembro, vencimento configurável com atraso automático, sugestões e vínculo aos rateios, isenção por ano; coluna de atrasadas no Início.
 
 ## A verificar
 

@@ -12,6 +12,9 @@ Termos usados na interface, no código e na documentação. Quando um termo apar
 | **Rateio** | Parte do lançamento numa rubrica, com descrição e associado opcional. O sinal vem da rubrica. | `entry_splits` |
 | **Rubrica** | Classificação gerencial do grupo, em árvore pelo código (`1.x` receita, `2.x` despesa). Traduzida para a contabilidade pela conta contábil. | `categories.code` |
 | **Conciliação** | Vínculo entre linhas do extrato e lançamentos da mesma conta cujas somas batem (1:1, 1:N, N:1). | `reconciliation_links` |
+| **Mensalidade** | Caixinha associado × mês (março a dezembro): pago ou atenção (registrados), atrasado (calculado pelo vencimento). Ligada aos rateios da rubrica de mensalidade. | `fee_records`, `fee_record_splits` |
+| **Isenção** | Associado que não paga mensalidade naquele ano (voluntário, bolsa…), com motivo. | `fee_exemptions` |
+| **Vencimento** | Regra do grupo: dia N, N-ésimo dia útil ou fim do mês. | `fee_settings` |
 | **Documentos** | Situação do comprovante: Pendente ou Arquivado (parâmetro de URL `pasta`, por compatibilidade). | `ledger_entries.document_filed` |
 
 ## Visões de `/lancamentos`

@@ -15,9 +15,10 @@ Modelo principal: `accounts` (contas, com saldo inicial), `payment_methods` (com
 
 ## Telas
 
-Navegação: **Início · Lançamentos · Extrato** no menu principal; **Configurações** (engrenagem) com as abas Contas, Rubricas, Formas de pagamento e Associados; menu da pessoa (iniciais) com email, papel, **Usuários** (administração) e Sair. Extrato tem as abas **Conciliar** (`/conciliacao`) e **Importar** (`/importacao`), que levam a conta de uma para a outra. Exportar fica em Lançamentos. Todas as telas usam o mesmo cabeçalho (`components/nav/page-header.tsx`).
+Navegação: **Início · Lançamentos · Extrato · Mensalidades** no menu principal; **Configurações** (engrenagem) com as abas Contas, Rubricas, Formas de pagamento, Associados e Mensalidades; menu da pessoa (iniciais) com email, papel, **Usuários** (administração) e Sair. Extrato tem as abas **Conciliar** (`/conciliacao`) e **Importar** (`/importacao`), que levam a conta de uma para a outra. Exportar fica em Lançamentos. Todas as telas usam o mesmo cabeçalho (`components/nav/page-header.tsx`).
 
-- `/` — resumo do ano: receitas, despesas, saldo, documentos pendentes, mês a mês e últimos lançamentos.
+- `/` — resumo do ano: receitas, despesas, saldo, documentos pendentes; mês a mês, últimos lançamentos e mensalidades atrasadas (do maior número de meses para o menor).
+- `/mensalidades?ano=` — grade de mensalidades (março a dezembro) por associado: pago, atenção, atrasado (pelo vencimento configurado) e sugestões a partir dos rateios da rubrica de mensalidade; isenção por ano. Ver `docs/mensalidades.md`.
 - `/lancamentos` — lançamentos: visões **Por lançamento** (uma linha por lançamento, com ✓ nos conciliados) e **Por rubrica** (um rateio por linha), colunas Conta e **ID OFX**, filtros na URL (`de`, `ate`, `conta`, `forma`, `pasta` = documentos, `associado`, `rubrica`, `q`, `ofx`; sem `de`, começa em 1º de janeiro do ano atual, `de=tudo` mostra todos) e conferência rápida dos documentos.
 - `/exportar/fluxo` (XLSX ou CSV), `/exportar/realizado` (XLSX) e `/exportar/contabil` (CSV em partida dobrada para o sistema contábil).
 - `/lancamentos/novo` — novo lançamento; com `?linha=<id>` ("Criar lançamento" na conciliação) vem preenchido pela linha do extrato e já sai conciliado.
