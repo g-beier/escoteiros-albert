@@ -126,6 +126,7 @@ export async function createEntryFromStatementLine(lineId: unknown, payload: unk
     p_document_filed: parsed.data.documentFiled,
     p_total_cents: parsed.data.totalCents,
     p_splits: toRpcSplits(parsed.data.splits),
+    p_notes: parsed.data.notes?.trim() || null,
   });
   if (error) return { error: error.message };
   return done("Lançamento criado e conciliado.", data as string);

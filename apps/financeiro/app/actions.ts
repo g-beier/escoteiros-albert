@@ -26,6 +26,7 @@ export async function createEntry(payload: unknown): Promise<Result> {
     p_document_filed: parsed.data.documentFiled,
     p_total_cents: parsed.data.totalCents,
     p_splits: toRpcSplits(parsed.data.splits),
+    p_notes: parsed.data.notes?.trim() || null,
   });
   if (error) return { error: error.message };
   revalidatePath("/", "layout");
@@ -48,6 +49,7 @@ export async function updateEntry(entryId: unknown, payload: unknown): Promise<R
     p_document_filed: parsed.data.documentFiled,
     p_total_cents: parsed.data.totalCents,
     p_splits: toRpcSplits(parsed.data.splits),
+    p_notes: parsed.data.notes?.trim() || null,
   });
   if (error) return { error: error.message };
   revalidatePath("/", "layout");

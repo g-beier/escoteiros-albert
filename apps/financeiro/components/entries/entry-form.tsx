@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { NOTES_MAX } from "@/lib/entry-schema";
 import { Label } from "@/components/ui/label";
 import { accountAfterPaymentChange } from "@/lib/accounts";
 import type { EditableEntry } from "@/lib/entries";
@@ -28,7 +30,7 @@ type Direction = "entrada" | "saida";
 type SplitDraft = { key: number; categoryId: string; amount: string; description: string; associateId: string };
 /** Linha do extrato que origina o lançamento: data, valor e conta vêm dela (valor e conta ficam travados). */
 export type StatementLinePrefill = { id: string; date: string; name: string; totalCents: number; accountId: string; paymentMethodId: string };
-type Draft = { direction: Direction | null; date: string; name: string; total: string; paymentMethodId: string; accountId: string; document: string; documentFiled: boolean; splits: SplitDraft[] };
+type Draft = { direction: Direction | null; date: string; name: string; total: string; paymentMethodId: string; accountId: string; document: string; documentFiled: boolean; notes: string; splits: SplitDraft[] };
 
 let splitKey = 0;
 const emptySplit = (): SplitDraft => ({ key: ++splitKey, categoryId: "", amount: "", description: "", associateId: "" });
@@ -37,9 +39,9 @@ function toDraft(entry: EditableEntry | null, fromLine?: StatementLinePrefill): 
   if (!entry && fromLine) return {
     direction: fromLine.totalCents < 0 ? "saida" : "entrada", date: fromLine.date, name: fromLine.name,
     total: centsToInput(Math.abs(fromLine.totalCents)), paymentMethodId: fromLine.paymentMethodId, accountId: fromLine.accountId,
-    document: "", documentFiled: false, splits: [emptySplit()],
+    document: "", documentFiled: false, notes: "", splits: [emptySplit()],
   };
-  if (!entry) return { direction: null, date: new Date().toISOString().slice(0, 10), name: "", total: "", paymentMethodId: "", accountId: "", document: "", documentFiled: false, splits: [emptySplit()] };
+  if (!entry) return { direction: null, date: new Date().toISOString().slice(0, 10), name: "", total: "", paymentMethodId: "", accountId: "", document: "", documentFiled: false, notes: "", splits: [emptySplit()] };
   return {
     direction: entry.totalCents < 0 ? "saida" : "entrada",
     date: entry.date,
@@ -49,6 +51,7 @@ function toDraft(entry: EditableEntry | null, fromLine?: StatementLinePrefill): 
     accountId: entry.accountId,
     document: entry.document,
     documentFiled: entry.documentFiled,
+    notes: entry.notes,
     splits: entry.splits.map((s) => ({ key: ++splitKey, categoryId: s.categoryId, amount: centsToInput(Math.abs(s.amountCents)), description: s.description, associateId: s.associateId ?? "" })),
   };
 }
@@ -127,6 +130,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
       accountId: draft.accountId,
       document: draft.document,
       documentFiled: draft.documentFiled,
+      notes: draft.notes,
       totalCents,
       splits: draft.splits.map((s) => ({ categoryId: s.categoryId, amountCents: signedSplit(s), description: s.description, associateId: s.associateId || null })),
     };
@@ -197,6 +201,16 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
       </div>
       {!readOnly && !balanced && remaining !== 0 && totalCents !== 0 && <Button type="button" variant="outline" size="sm" className="w-fit" onClick={fillRemaining}>Lançar diferença na última rubrica</Button>}
     </fieldset>
+
+    <div className="grid gap-1.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <Label htmlFor="entry-notes">Observações (opcional)</Label>
+        <span className="num text-xs text-muted-foreground" aria-live="polite">{draft.notes.length}/{NOTES_MAX}</span>
+      </div>
+      <Textarea id="entry-notes" rows={5} maxLength={NOTES_MAX} value={draft.notes} readOnly={readOnly}
+        onChange={(e) => update({ notes: e.target.value })} className="min-h-28 resize-y" />
+      <p className="m-0 text-xs text-muted-foreground">Algum detalhe do lançamento: combinado, quem autorizou, pendência… Entra na busca dos lançamentos.</p>
+    </div>
 
     {!readOnly && <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
       <div>{entry && <Button type="button" variant="destructive" onClick={() => setConfirmDelete(true)}><IconTrash /> Excluir lançamento</Button>}</div>

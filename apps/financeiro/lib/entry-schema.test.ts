@@ -43,3 +43,11 @@ describe("toRpcSplits", () => {
     expect(toRpcSplits(base.splits)[1]).toEqual({ category_id: id, amount_cents: 2000, description: "Lanche", associate_id: null });
   });
 });
+
+describe("observações", () => {
+  it("são opcionais e limitadas a 2.000 caracteres", () => {
+    expect(entrySchema.safeParse({ ...base, notes: "" }).success).toBe(true);
+    expect(entrySchema.safeParse({ ...base, notes: "Pago na reunião de pais" }).success).toBe(true);
+    expect(entrySchema.safeParse({ ...base, notes: "x".repeat(2001) }).error?.issues[0]?.message).toMatch(/2\.000 caracteres/);
+  });
+});

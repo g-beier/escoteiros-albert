@@ -4,6 +4,9 @@ const nonZeroCents = z.number().int().safe().refine((value) => value !== 0, {
   message: "O valor não pode ser zero.",
 });
 
+/** Observações do lançamento: texto livre opcional (mesmo limite da coluna `notes`). */
+export const NOTES_MAX = 2000;
+
 export const entrySchema = z.object({
   date: z.iso.date({ message: "Informe a data." }),
   name: z.string().trim().min(2, "Informe o histórico do lançamento (quem pagou/recebeu, emitente da nota…).").max(200),
@@ -11,6 +14,7 @@ export const entrySchema = z.object({
   accountId: z.uuid({ message: "Escolha a conta." }),
   document: z.string().trim().max(60).optional(),
   documentFiled: z.boolean(),
+  notes: z.string().max(NOTES_MAX, `Observações: no máximo ${NOTES_MAX.toLocaleString("pt-BR")} caracteres.`).optional(),
   totalCents: nonZeroCents,
   splits: z.array(z.object({
     categoryId: z.uuid({ message: "Escolha a rubrica." }),

@@ -8,6 +8,7 @@ export type EditableEntry = {
   accountId: string;
   document: string;
   documentFiled: boolean;
+  notes: string;
   totalCents: number;
   createdAt: string;
   updatedAt: string;
@@ -19,7 +20,7 @@ type SplitRow = { category_id: string; amount_cents: number; description: string
 /** Carrega um lançamento com seus rateios na ordem em que foram gravados (RLS restringe ao grupo). */
 export async function fetchEntry(supabase: SupabaseClient, id: string): Promise<EditableEntry | null> {
   const { data } = await supabase.from("ledger_entries")
-    .select("id, entry_date, name, payment_method_id, account_id, document, document_filed, total_cents, created_at, updated_at, entry_splits(id, category_id, amount_cents, description, associate_id, created_at)")
+    .select("id, entry_date, name, payment_method_id, account_id, document, document_filed, notes, total_cents, created_at, updated_at, entry_splits(id, category_id, amount_cents, description, associate_id, created_at)")
     .eq("id", id).maybeSingle();
   if (!data) return null;
   const splits = [...(data.entry_splits as SplitRow[])].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
@@ -31,6 +32,7 @@ export async function fetchEntry(supabase: SupabaseClient, id: string): Promise<
     accountId: data.account_id,
     document: data.document ?? "",
     documentFiled: data.document_filed,
+    notes: data.notes ?? "",
     totalCents: data.total_cents,
     createdAt: data.created_at,
     updatedAt: data.updated_at,

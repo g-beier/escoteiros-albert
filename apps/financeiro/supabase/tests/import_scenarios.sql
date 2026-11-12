@@ -102,5 +102,18 @@ do $$ begin
   end if;
 end $$;
 
+\echo '--- 9. observações: gravadas, na busca e apagadas na edição'
+select public.create_ledger_entry(:'gid', '2026-06-30', 'Com observação', :'pix', null, false, 100,
+  jsonb_build_array(jsonb_build_object('category_id', :'cat_r', 'amount_cents', 100, 'description', 'teste')), :'acc', '  Pago em espécie na reunião  ') as e_obs \gset
+do $$ begin
+  if (select notes from public.ledger_entries where name = 'Com observação') <> 'Pago em espécie na reunião' then raise exception 'FALHOU: observações'; end if;
+  if not exists (select 1 from public.ledger_entry_rows where search_text like '%espécie%') then raise exception 'FALHOU: busca nas observações'; end if;
+end $$;
+select public.update_ledger_entry(:'e_obs', '2026-06-30', 'Com observação', :'pix', null, false, 100,
+  jsonb_build_array(jsonb_build_object('category_id', :'cat_r', 'amount_cents', 100, 'description', 'teste')), null, '');
+do $$ begin
+  if (select notes from public.ledger_entries where name = 'Com observação') is not null then raise exception 'FALHOU: observação vazia deveria apagar'; end if;
+end $$;
+
 reset role;
 \echo 'TUDO OK'
