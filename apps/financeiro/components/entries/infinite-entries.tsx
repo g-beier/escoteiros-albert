@@ -1,15 +1,32 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { loadEntryPage } from "@/app/actions";
-import { SplitTable, LedgerTable } from "@/components/entry-tables";
+import { LedgerCards, LedgerTable, SplitCards, SplitTable } from "@/components/entry-tables";
 import { Button } from "@/components/ui/button";
 import { useEntryOverrides } from "@/components/entries/entry-editor";
 import { PAGE_SIZE, type EntryPage, type SplitRow, type LedgerRow } from "@/lib/entry-queries";
 import type { SortOrder } from "@/lib/filters";
+import { cn } from "@/lib/utils";
 
 type Status = "idle" | "loading" | "done" | "error";
 const number = new Intl.NumberFormat("pt-BR");
+
+/** Abaixo do breakpoint `md` do Tailwind a lista vira cartões. */
+const NARROW_QUERY = "(max-width: 767.98px)";
+const subscribeNarrow = (onChange: () => void) => {
+  const media = window.matchMedia(NARROW_QUERY);
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+};
+
+/**
+ * true em telas estreitas, false nas largas e null no servidor/hidratação, quando
+ * as duas versões vão no HTML e o CSS escolhe; depois só a versão visível é montada.
+ */
+function useNarrow() {
+  return useSyncExternalStore<boolean | null>(subscribeNarrow, () => window.matchMedia(NARROW_QUERY).matches, () => null);
+}
 
 /**
  * Lista com rolagem infinita: a primeira página vem do servidor; as seguintes são
@@ -71,22 +88,32 @@ export function InfiniteEntries({ initial, query, filtered, order, sortHref }: {
     });
   }, [pages, overrides]);
 
+  const narrow = useNarrow();
+
   const unit = view === "rubricas" ? ["rateio", "rateios"] : ["lançamento", "lançamentos"];
   const deleted = Object.values(overrides).filter((o) => o.deleted).length;
   const knownTotal = total === null ? null : Math.max(total - deleted, rows.length);
 
   return <>
-    <div ref={scrollerRef} className="min-h-0 flex-1 overflow-auto overscroll-contain" data-slot="entries-scroller">
-      {view === "rubricas"
-        ? <SplitTable rows={rows as SplitRow[]} filtered={filtered} order={order} sortHref={sortHref} />
-        : <LedgerTable rows={rows as LedgerRow[]} filtered={filtered} order={order} sortHref={sortHref} />}
+    {/* No desktop só esta área rola, sob o cabeçalho fixo da tabela; no celular a página inteira rola. */}
+    <div ref={scrollerRef} className="md:min-h-0 md:flex-1 md:overflow-auto md:overscroll-contain" data-slot="entries-scroller">
+      {narrow !== true && <div className={cn(narrow === null && "max-md:hidden")}>
+        {view === "rubricas"
+          ? <SplitTable rows={rows as SplitRow[]} filtered={filtered} order={order} sortHref={sortHref} />
+          : <LedgerTable rows={rows as LedgerRow[]} filtered={filtered} order={order} sortHref={sortHref} />}
+      </div>}
+      {narrow !== false && <div className={cn(narrow === null && "md:hidden")}>
+        {view === "rubricas"
+          ? <SplitCards rows={rows as SplitRow[]} filtered={filtered} order={order} sortHref={sortHref} />
+          : <LedgerCards rows={rows as LedgerRow[]} filtered={filtered} order={order} sortHref={sortHref} />}
+      </div>}
       {rows.length > 0 && <div ref={sentinel} className="flex h-10 items-center justify-center text-xs text-muted-foreground" aria-live="polite">
         {status === "loading" && "Carregando mais…"}
         {status === "done" && "Fim da lista"}
         {status === "error" && <span className="flex items-center gap-2 text-destructive">{error || "Não foi possível carregar."} <Button variant="outline" size="sm" onClick={loadMore}>Tentar de novo</Button></span>}
       </div>}
     </div>
-    <footer className="flex items-center justify-between border-t bg-muted/60 px-3 py-1 text-xs text-muted-foreground">
+    <footer className="sticky bottom-0 flex items-center justify-between border-t bg-muted px-3 py-1 md:static md:bg-muted/60 text-xs text-muted-foreground">
       <span>
         {knownTotal !== null && rows.length < knownTotal
           ? `${number.format(rows.length)} de ${number.format(knownTotal)} ${unit[1]}`

@@ -1,6 +1,7 @@
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { EntryLink, EntryRow, EntryRowActions, FolderStatus, useEntrySelection } from "@/components/entries/entry-editor";
+import { EntryCard, EntryLink, EntryRow, EntryRowActions, FolderStatus, useEntrySelection } from "@/components/entries/entry-editor";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { dateBR, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -45,7 +46,7 @@ function Head({ columns, order, sortHref, select }: { columns: { label: string; 
 
 /** Rubrica com código e cor do tipo, como na planilha: verde receita, vermelho despesa. */
 function CategoryTag({ code, name, kind }: { code: string | null; name: string; kind: "receita" | "despesa" | null }) {
-  return <span className={cn("inline-flex max-w-72 items-center gap-1 truncate rounded px-1.5 py-0.5 font-medium",
+  return <span className={cn("inline-flex max-w-full items-center md:max-w-72 gap-1 truncate rounded px-1.5 py-0.5 font-medium",
     kind === "receita" ? "bg-success-soft text-success" : kind === "despesa" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground")} title={code ? `${code} ${name}` : name}>
     {code && <span className="num opacity-80">{code}</span>}{name}
   </span>;
@@ -120,4 +121,77 @@ export function SplitTable({ rows, filtered, order, sortHref }: { rows: SplitRow
       </EntryRow>;
     })}</TableBody>
   </Table>;
+}
+
+/* Telas estreitas (< md): um cartão por lançamento ou rateio, com as informações principais. */
+
+const cardAmount = (cents: number) => cn("num shrink-0 text-sm font-semibold whitespace-nowrap", cents < 0 && "text-destructive");
+const Meta = ({ parts }: { parts: (React.ReactNode | null | undefined)[] }) => <p className="m-0 flex flex-wrap gap-x-1.5 text-xs text-muted-foreground">
+  {parts.filter(Boolean).map((part, index) => <span key={index}>{index > 0 && <span aria-hidden>· </span>}{part}</span>)}
+</p>;
+
+/** Barra acima dos cartões: marcar todos (quem edita) e inverter a ordem por data. */
+function CardsBar({ order, sortHref, select }: Sort & { select?: React.ReactNode }) {
+  return <div className="flex items-center gap-2 border-b bg-muted px-3 py-1.5 text-xs">
+    {select && <Label className="gap-2 text-xs font-normal">{select} Selecionar todos</Label>}
+    <Link href={sortHref} scroll={false} className="ml-auto inline-flex items-center gap-1 font-semibold text-muted-foreground hover:text-foreground">
+      {order === "desc" ? "Mais recentes primeiro" : "Mais antigos primeiro"}
+      {order === "desc" ? <IconArrowDown className="size-3.5" aria-hidden /> : <IconArrowUp className="size-3.5" aria-hidden />}
+      <span className="sr-only">. Inverter ordem</span>
+    </Link>
+  </div>;
+}
+
+export function LedgerCards({ rows, filtered, order, sortHref }: { rows: LedgerRow[]; filtered: boolean } & Sort) {
+  const { canEdit } = useEntrySelection();
+  if (!rows.length) return <Empty>{filtered ? "Nenhum lançamento corresponde aos filtros." : "Nenhum lançamento ainda. Comece pelo botão “Novo lançamento”."}</Empty>;
+  return <>
+    <CardsBar order={order} sortHref={sortHref} select={canEdit ? <SelectAll rows={rows} /> : undefined} />
+    <ul aria-label="Lançamentos, um por cartão" className="m-0 list-none p-0">{rows.map((row) => <EntryCard key={row.entry_id} entryId={row.entry_id} className="flex items-start gap-2.5 border-b px-3 py-2.5 even:bg-muted/40">
+      {canEdit && <span className="pt-0.5"><SelectRow row={row} /></span>}
+      <div className="grid min-w-0 flex-1 gap-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <EntryLink entryId={row.entry_id} className="min-w-0 text-sm break-words">{row.name}</EntryLink>
+          <span className={cardAmount(row.total_cents)}>{row.reconciled && <ReconciledMark />}{money(row.total_cents / 100)}</span>
+        </div>
+        <Meta parts={[<span key="date" className="num">{dateBR(row.entry_date)}</span>, row.account_name, row.payment_method_name]} />
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+          <FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} />
+          <AttachmentClip count={row.attachment_count} />
+          {(row.external_ids ?? []).length > 0 && <OfxIds ids={row.external_ids ?? []} />}
+        </div>
+      </div>
+      <EntryRowActions entryId={row.entry_id} filed={row.document_filed} />
+    </EntryCard>)}</ul>
+  </>;
+}
+
+export function SplitCards({ rows, filtered, order, sortHref }: { rows: SplitRow[]; filtered: boolean } & Sort) {
+  if (!rows.length) return <Empty>{filtered ? "Nenhum rateio corresponde aos filtros." : "Os rateios aparecerão depois do primeiro lançamento."}</Empty>;
+  return <>
+    <CardsBar order={order} sortHref={sortHref} />
+    <ul aria-label="Rateios, um por cartão" className="m-0 list-none p-0">{rows.map((row, index) => {
+      const continued = index > 0 && rows[index - 1].entry_id === row.entry_id;
+      return <EntryCard key={row.split_id} entryId={row.entry_id} data-entry-id={row.entry_id} className={cn("flex items-start gap-2.5 border-t px-3 py-2.5 first:border-t-0", continued && "border-dashed")}>
+        <div className="grid min-w-0 flex-1 gap-1">
+          <div className="flex items-baseline justify-between gap-3">
+            <EntryLink entryId={row.entry_id} className="min-w-0 text-sm break-words">{row.entry_name}</EntryLink>
+            <span className={cardAmount(row.amount_cents)}>{row.reconciled && !continued && <ReconciledMark />}{money(row.amount_cents / 100)}</span>
+          </div>
+          <Meta parts={[<span key="date" className="num">{dateBR(row.entry_date)}</span>, row.account_name, row.payment_method_name]} />
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+            <CategoryTag code={row.category_code} name={row.category_name} kind={row.category_kind} />
+            {row.description && <span className="min-w-0 break-words">{row.description}</span>}
+          </div>
+          {row.associate_name && <p className="m-0 text-xs"><span className="text-muted-foreground">Associado:</span> {row.associate_name}</p>}
+          {!continued && <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+            <FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} />
+            <AttachmentClip count={row.attachment_count} />
+            {(row.external_ids ?? []).length > 0 && <OfxIds ids={row.external_ids ?? []} />}
+          </div>}
+        </div>
+        {!continued && <EntryRowActions entryId={row.entry_id} filed={row.document_filed} />}
+      </EntryCard>;
+    })}</ul>
+  </>;
 }

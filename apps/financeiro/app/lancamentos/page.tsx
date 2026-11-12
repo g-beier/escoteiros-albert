@@ -73,10 +73,11 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
   const sortHref = `/lancamentos?${sortQuery}`;
   const viewHref = (visao: string) => { const next = new URLSearchParams(returnQuery); next.set("visao", visao); return `/lancamentos?${next}`; };
 
-  // A página não rola; só as linhas da tabela rolam, sob cabeçalhos fixos.
-  return <div className="shell flex h-dvh min-h-0 flex-col overflow-hidden before:hidden after:hidden">
+  // No desktop a página não rola; só as linhas da tabela rolam, sob cabeçalhos fixos.
+  // No celular (cartões) a página inteira rola; overflow-clip mantém o cabeçalho e o rodapé fixos funcionando.
+  return <div className="shell flex min-h-dvh flex-col overflow-clip before:hidden after:hidden md:h-dvh md:min-h-0 md:overflow-hidden">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/lancamentos" />
-    <main className="flex min-h-0 flex-1 flex-col gap-2.5 px-4 py-3">
+    <main className="flex flex-1 flex-col gap-2.5 px-4 py-3 md:min-h-0">
       <FilterOptionsProvider dimensions={dimensions}>
       <EntryListProvider canEdit={canEdit} returnQuery={returnQuery}>
         <PageHeader title="Lançamentos"
@@ -92,7 +93,7 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
           </>} />
         <EntryFilters />
         {canEdit && !byCategory && <BulkAccountBar accounts={(accounts ?? []).filter((account) => account.active).map((account) => ({ value: account.id, label: account.name }))} />}
-        <section aria-label={byCategory ? "Rateios por rubrica" : "Lançamentos"} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-card">
+        <section aria-label={byCategory ? "Rateios por rubrica" : "Lançamentos"} className="flex flex-col overflow-clip rounded-lg border bg-card md:min-h-0 md:flex-1 md:overflow-hidden">
           <InfiniteEntries key={returnQuery} initial={firstPage} query={returnQuery} filtered={filtered} order={order} sortHref={sortHref} />
         </section>
       </EntryListProvider>

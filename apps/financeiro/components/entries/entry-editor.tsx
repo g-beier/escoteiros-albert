@@ -118,20 +118,32 @@ export function useEntrySelection() {
   return { canEdit, selected, setSelected, clearSelection, override };
 }
 
-/** Linha clicável: abre os detalhes, exceto quando o clique é em um controle interno. */
-export function EntryRow({ entryId, className, children, ...props }: { entryId: string; className?: string; children: React.ReactNode } & React.HTMLAttributes<HTMLTableRowElement>) {
+/** Abre os detalhes ao clicar, exceto quando o clique é em um controle interno ou seleciona texto. */
+function useOpenOnClick(entryId: string) {
   const { detailHref } = useList();
   const router = useRouter();
+  return (event: React.MouseEvent<HTMLElement>) => {
+    if ((event.target as HTMLElement).closest("a, button, label, [role=menuitem], [role=checkbox], input, select")) return;
+    if (window.getSelection()?.toString()) return;
+    router.push(detailHref(entryId));
+  };
+}
+
+/** Linha clicável: abre os detalhes, exceto quando o clique é em um controle interno. */
+export function EntryRow({ entryId, className, children, ...props }: { entryId: string; className?: string; children: React.ReactNode } & React.HTMLAttributes<HTMLTableRowElement>) {
+  const open = useOpenOnClick(entryId);
   return <tr
     {...props}
     data-slot="table-row"
     className={cn("cursor-pointer border-b transition-colors even:bg-muted/40 hover:bg-accent/50", className)}
-    onClick={(event) => {
-      if ((event.target as HTMLElement).closest("a, button, label, [role=menuitem], [role=checkbox], input, select")) return;
-      if (window.getSelection()?.toString()) return;
-      router.push(detailHref(entryId));
-    }}
+    onClick={open}
   >{children}</tr>;
+}
+
+/** Cartão clicável (telas estreitas): mesmo comportamento da linha da tabela. */
+export function EntryCard({ entryId, className, children, ...props }: { entryId: string; className?: string; children: React.ReactNode } & React.HTMLAttributes<HTMLLIElement>) {
+  const open = useOpenOnClick(entryId);
+  return <li {...props} className={cn("cursor-pointer transition-colors hover:bg-accent/50", className)} onClick={open}>{children}</li>;
 }
 
 /** Link acessível para os detalhes (alvo de teclado e leitores de tela). */
