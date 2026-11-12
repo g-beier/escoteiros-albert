@@ -40,3 +40,7 @@ OFX → linhas do extrato (abertas) → conciliação (vincular a lançamentos e
 ## Regras de escrita
 
 Toda escrita passa por funções SQL `security definer` que validam o papel (`can_edit_group`) e gravam `audit_events`. Não há políticas de escrita direta em `categories`, `payment_methods`, `accounts` nem nas tabelas de extrato e conciliação. No app, a sessão e o grupo vêm de `lib/session.ts` (`pageSession`, `pageMember`, `memberOrError`, `editorOrError`, `requireEditor`, `requireAdmin`).
+
+## Histórico de alterações
+
+`audit_events` só é lido diretamente por administradores. A página de detalhes do lançamento mostra a qualquer membro do grupo o histórico daquele lançamento pela função `ledger_entry_history` (`023`): criação, edições (antes → depois, inclusive rateios incluídos e removidos), documentos, comprovantes anexados ou removidos, conta, fora do extrato e vínculos de conciliação que o incluem, com data, hora e e-mail de quem fez.
