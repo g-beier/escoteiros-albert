@@ -59,9 +59,11 @@ describe("suggestFeeMonths", () => {
 });
 
 describe("monthSummary", () => {
-  it("conta pagos, atenção e atrasados por mês", () => {
+  it("conta cada estado por mês e soma atrasados com não pagos", () => {
     const row = (first: string) => [first, ...Array(9).fill("vazio")] as never;
-    expect(monthSummary([row("pago"), row("atrasado"), row("atrasado"), row("sugestao")])[0]).toEqual({ pago: 1, atencao: 0, atrasado: 2 });
+    expect(monthSummary([row("pago"), row("atrasado"), row("nao_pago"), row("sugestao")])[0])
+      .toEqual({ pago: 1, atencao: 0, nao_pago: 1, atrasado: 1, sugestao: 1, vazio: 0, fora: 0, late: 2 });
+    expect(monthSummary([row("pago")])[1].vazio).toBe(1);
   });
 });
 
@@ -145,7 +147,7 @@ describe("valor individual e não pago", () => {
     });
     expect(rows[0].cells[0].state).toBe("nao_pago");
     expect(rows[0].overdue).toBe(1);
-    expect(monthSummary([rows[0].cells.map((c) => c.state)])[0].atrasado).toBe(1);
+    expect(monthSummary([rows[0].cells.map((c) => c.state)])[0].late).toBe(1);
   });
 });
 

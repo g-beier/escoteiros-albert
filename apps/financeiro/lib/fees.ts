@@ -201,17 +201,18 @@ export function feeBalance(row: Pick<FeeRow, "exemption"> & { monthsInGroup?: nu
   return { expected, received, open: Math.max(0, expected - received), integral };
 }
 
-/** `atrasado` soma os atrasados calculados e os "não pago" registrados. */
-export type MonthSummary = { pago: number; atencao: number; atrasado: number };
+/** Contagem de cada estado no mês; `late` soma os atrasados calculados e os "não pago" registrados. */
+export type MonthSummary = Record<CellState, number> & { late: number };
 
-/** Totais por mês (pessoas não isentas). */
+/** Totais por mês (as linhas passadas; a grade exclui os ocultos). */
 export function monthSummary(states: CellState[][]): MonthSummary[] {
   return FEE_MONTHS.map((_, column) => {
-    const summary: MonthSummary = { pago: 0, atencao: 0, atrasado: 0 };
+    const summary: MonthSummary = { pago: 0, atencao: 0, nao_pago: 0, atrasado: 0, sugestao: 0, vazio: 0, fora: 0, late: 0 };
     for (const row of states) {
       const state = row[column];
-      if (state === "pago" || state === "atencao" || state === "atrasado") summary[state] += 1;
-      else if (state === "nao_pago") summary.atrasado += 1;
+      if (!state) continue;
+      summary[state] += 1;
+      if (state === "atrasado" || state === "nao_pago") summary.late += 1;
     }
     return summary;
   });

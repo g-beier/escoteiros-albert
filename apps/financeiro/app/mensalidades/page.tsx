@@ -37,9 +37,10 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
   const rule = data.settings.dueRule === "fim_do_mes" ? DUE_RULE_LABELS.fim_do_mes
     : data.settings.dueRule === "dia_util" ? `até o ${data.settings.dueDay}º dia útil` : `até o dia ${data.settings.dueDay}`;
 
-  return <div className="shell">
+  // No desktop a página não rola: a grade ocupa o resto da tela e só as linhas rolam, com cabeçalho e totais fixos.
+  return <div className="shell flex min-h-dvh flex-col overflow-clip md:h-dvh md:min-h-0 md:overflow-hidden">
     <AppHeader role={member.role} email={user.email ?? ""} current="/mensalidades" />
-    <PageBody>
+    <PageBody className="md:flex md:min-h-0 md:flex-1 md:flex-col">
       <PageHeader title="Mensalidades"
         tabs={<SectionTabs label="Ano" tabs={years.map((y) => ({ href: href({ ano: y === thisYear ? undefined : String(y) }), label: String(y), active: y === year }))} />}
         description={<>Março a dezembro. Vencimento {rule.toLowerCase()}; depois disso, sem registro, fica atrasado. Pagamentos lançados na rubrica de mensalidade com o associado aparecem como sugestão.{member.canEdit && " Regra e rubrica em Configurações › Mensalidades."}</>}>
