@@ -11,9 +11,13 @@ import { MONTHS } from "@/lib/export/period";
 import { ALL_DATES, currentYear } from "@/lib/filters";
 import { dateBR, money } from "@/lib/format";
 import { pageSession } from "@/lib/session";
+import { recentListStart, recentWindowStart } from "@/lib/dashboard";
 import { fetchFeeYear } from "@/lib/fee-queries";
-import { overdueRanking } from "@/lib/fees";
+import { overdueRanking, todayInSaoPaulo } from "@/lib/fees";
 import { cn } from "@/lib/utils";
+
+/** Teto de segurança da lista do Início (a janela é de dias, não de quantidade). */
+const RECENT_LIMIT = 300;
 
 type Sum = { category_id: string; month: number; amount_cents: number };
 type MonthTotals = { income: number; expense: number };
@@ -36,15 +40,21 @@ export default async function Dashboard() {
   const groupId = membership.groupId;
   const canEdit = membership.canEdit;
   const year = currentYear();
+  // Últimos lançamentos: hoje e os 7 dias anteriores, mais o último dia com movimento antes disso.
+  const windowStart = recentWindowStart(todayInSaoPaulo());
+  const recentColumns = "entry_id, entry_date, name, payment_method_name, document, document_filed, total_cents";
 
-  const [{ data: categories }, { data: sums }, { count: pendingDocs }, { data: recent }, feeYear] = await Promise.all([
+  const [{ data: categories }, { data: sums }, { count: pendingDocs }, { data: previous }, feeYear] = await Promise.all([
     supabase.from("categories").select("id, kind").eq("group_id", groupId),
     supabase.rpc("realized_by_month", { p_group_id: groupId, p_year: year }),
     supabase.from("ledger_entries").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("document_filed", false),
-    supabase.from("ledger_entry_rows").select("entry_id, entry_date, name, payment_method_name, document, document_filed, total_cents")
-      .eq("group_id", groupId).order("entry_date", { ascending: false }).order("created_at", { ascending: false }).limit(12),
+    supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).lt("entry_date", windowStart)
+      .order("entry_date", { ascending: false }).limit(1).maybeSingle(),
     fetchFeeYear(supabase, groupId, year),
   ]);
+  const recentStart = recentListStart(windowStart, previous?.entry_date as string | undefined);
+  const { data: recent } = await supabase.from("ledger_entry_rows").select(recentColumns).eq("group_id", groupId).gte("entry_date", recentStart)
+    .order("entry_date", { ascending: false }).order("created_at", { ascending: false }).limit(RECENT_LIMIT);
 
   const kinds = new Map((categories ?? []).map((c) => [c.id as string, c.kind as CategoryKind | null]));
   const months = monthlyTotals((sums ?? []) as Sum[], kinds);
@@ -77,11 +87,11 @@ export default async function Dashboard() {
           href={(pendingDocs ?? 0) > 0 ? `/lancamentos?pasta=pendente&de=${ALL_DATES}` : undefined} icon={(pendingDocs ?? 0) > 0} />
       </section>
 
-      <div className="grid items-start gap-5 lg:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)]">
-        <section aria-labelledby="monthly-title" className="overflow-hidden rounded-lg border bg-card">
+      <div className="grid gap-5 lg:grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[auto_minmax(0,2fr)_minmax(0,1fr)]">
+        <section aria-labelledby="monthly-title" className="self-start overflow-hidden rounded-lg border bg-card">
           <h2 id="monthly-title" className="m-0 border-b px-4 py-2.5 text-sm font-semibold">Mês a mês</h2>
           <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+            <table className="w-auto min-w-0 text-xs whitespace-nowrap">
               <thead className="bg-muted text-muted-foreground"><tr>
                 <th className="px-2 py-1.5 text-left font-semibold">Mês</th>
                 <th className="px-2 py-1.5 text-right font-semibold">Receitas</th>
@@ -100,14 +110,15 @@ export default async function Dashboard() {
           </div>
         </section>
 
-        <section aria-labelledby="recent-title" className="overflow-hidden rounded-lg border bg-card">
-          <div className="flex items-center justify-between border-b px-4 py-2.5">
-            <h2 id="recent-title" className="m-0 text-sm font-semibold">Últimos lançamentos</h2>
+        {/* No desktop as listas não definem a altura da linha (contain:size): acompanham o "Mês a mês" e rolam por dentro. */}
+        <section aria-labelledby="recent-title" className="flex flex-col overflow-hidden rounded-lg border bg-card">
+          <div className="flex items-center justify-between gap-3 border-b px-4 py-2.5">
+            <h2 id="recent-title" className="m-0 text-sm font-semibold">Últimos lançamentos {recentRows.length > 0 && <span className="font-normal text-muted-foreground">desde <span className="num">{dateBR(recentStart)}</span></span>}</h2>
             <Link href="/lancamentos" className="text-xs font-semibold text-primary hover:underline">Ver todos</Link>
           </div>
           {recentRows.length === 0
             ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhum lançamento ainda.</p>
-            : <ul className="m-0 list-none p-0">{recentRows.map((r) => <li key={r.entry_id} className="border-t first:border-t-0">
+            : <ul className="m-0 max-h-96 list-none overflow-auto overscroll-contain p-0 lg:max-h-none lg:min-h-64 lg:flex-1 lg:[contain:size]">{recentRows.map((r) => <li key={r.entry_id} className="border-t first:border-t-0">
               <Link href={`/lancamentos/${r.entry_id}`} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-muted">
                 <span className="num w-20 shrink-0 text-muted-foreground">{dateBR(r.entry_date)}</span>
                 <span className="min-w-0 flex-1 truncate">{r.name}</span>
@@ -116,14 +127,14 @@ export default async function Dashboard() {
             </li>)}</ul>}
         </section>
 
-        <section aria-labelledby="overdue-title" className="overflow-hidden rounded-lg border bg-card">
+        <section aria-labelledby="overdue-title" className="flex flex-col overflow-hidden rounded-lg border bg-card lg:max-xl:col-span-2">
           <div className="flex items-center justify-between border-b px-4 py-2.5">
             <h2 id="overdue-title" className="m-0 text-sm font-semibold">Mensalidades atrasadas</h2>
             <Link href="/mensalidades?atrasados=1" className="text-xs font-semibold text-primary hover:underline">Ver atrasados</Link>
           </div>
           {overdue.length === 0
             ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhuma mensalidade atrasada em {year}.</p>
-            : <ul className="m-0 list-none p-0">{overdue.slice(0, OVERDUE_SHOWN).map(({ associate, overdue: count }) => <li key={associate.id} className="border-t first:border-t-0">
+            : <ul className="m-0 max-h-96 list-none overflow-auto overscroll-contain p-0 xl:max-h-none xl:min-h-64 xl:flex-1 xl:[contain:size]">{overdue.slice(0, OVERDUE_SHOWN).map(({ associate, overdue: count }) => <li key={associate.id} className="border-t first:border-t-0">
               <Link href={associate.section ? `/mensalidades?${new URLSearchParams({ secao: associate.section })}` : "/mensalidades"} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-muted">
                 <span className="min-w-0 flex-1 truncate">{associate.name}{associate.section && <span className="text-muted-foreground"> · {associate.section}</span>}</span>
                 <span className="num shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 font-semibold text-destructive" title={`${count} ${count === 1 ? "mês atrasado" : "meses atrasados"}`}>
