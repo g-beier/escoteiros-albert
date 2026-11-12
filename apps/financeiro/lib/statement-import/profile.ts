@@ -1,19 +1,9 @@
 import { normalizeText } from "./text";
-import type {
-  KindPrefixSuggestion,
-  OfxAccount,
-  ParsedStatement,
-  StatementLine,
-  StatementTotals,
-} from "./types";
+import type { KindPrefixSuggestion, OfxAccount, StatementLine, StatementTotals } from "./types";
 
-/**
- * Stable key to find the saved profile for a file: normalized header cells joined by "|",
- * or `ofx:<org or bankId>` for an OFX account.
- */
-export function headerSignature(input: string[] | OfxAccount): string {
-  if (Array.isArray(input)) return input.map(normalizeText).join("|");
-  return `ofx:${normalizeText(input.org || input.bankId || "")}`;
+/** Stable key to find the saved profile for an OFX file: `ofx:<org or bankId>`. */
+export function headerSignature(account: OfxAccount): string {
+  return `ofx:${normalizeText(account.org || account.bankId || "")}`;
 }
 
 const SEPARATOR_TOKEN = /^[-–—:|/]+$/;
@@ -138,36 +128,4 @@ export function computePeriod(lines: StatementLine[]) {
   if (lines.length === 0) return {};
   const dates = lines.map((line) => line.date).sort();
   return { periodFrom: dates[0], periodTo: dates[dates.length - 1] };
-}
-
-/**
- * Check that each line's balance equals the previous balance plus its amount.
- * Tries file order first, then reverse (statements listed newest first).
- */
-export function checkBalanceChain(lines: StatementLine[]) {
-  const withBalance = lines.filter((line) => line.balanceCents !== undefined);
-  if (withBalance.length === 0) return null;
-  const firstMismatch = (ordered: StatementLine[]) => {
-    for (let i = 1; i < ordered.length; i += 1) {
-      if (ordered[i - 1].balanceCents! + ordered[i].amountCents !== ordered[i].balanceCents) return ordered[i];
-    }
-    return null;
-  };
-  const forward = firstMismatch(withBalance);
-  const reversed = [...withBalance].reverse();
-  const ordered = forward && !firstMismatch(reversed) ? reversed : withBalance;
-  const mismatch = ordered === reversed ? null : forward;
-  const first = ordered[0];
-  const last = ordered[ordered.length - 1];
-  return {
-    ok: mismatch === null,
-    firstMismatchRow: mismatch?.sourceRow,
-    openingBalanceCents: first.balanceCents! - first.amountCents,
-    closingBalanceCents: last.balanceCents!,
-  };
-}
-
-/** Recompute totals after lines change. */
-export function withTotals<T extends ParsedStatement>(statement: T): T {
-  return { ...statement, totals: computeTotals(statement.lines) };
 }

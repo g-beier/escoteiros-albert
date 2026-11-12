@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
-  detectFormat, dropZeroLines, newOfxSettings, ofxSettingsFromProfile, parseTextList, profileForAccount, reconciliationHref,
+  dropZeroLines, isOfx, newOfxSettings, ofxSettingsFromProfile, parseTextList, profileForAccount, reconciliationHref,
   sameSettings, toImportLines,
 } from "@/lib/import-flow";
 import { applyOfxProfile, decodeBytes, readOfx, suggestKindPrefixes, type OfxProfileSettings, type OfxStatement } from "@/lib/statement-import";
@@ -46,7 +46,6 @@ function importPeriod(statement: OfxStatement) {
  * Importação de extrato OFX. A conta (o banco) é escolhida pela pessoa em cada importação: alguns OFX
  * são convertidos de outros formatos e não trazem banco/conta confiáveis. O perfil de leitura (separar MEMO,
  * prefixos de tipo, linhas a ignorar) é o da última importação da conta, aplicado sozinho e salvo ao importar.
- * A importação CSV foi desativada na interface; a biblioteca continua em lib/statement-import.
  */
 export function StatementImporter({ accounts, profiles, lastProfiles, accountId: initialAccountId }: {
   accounts: ImportAccount[];
@@ -87,7 +86,7 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
     if (!chosen) return;
     if (chosen.size > MAX_FILE_BYTES) { toast.error("Arquivo grande demais (máximo 10 MB)."); return; }
     const { text } = decodeBytes(new Uint8Array(await chosen.arrayBuffer()));
-    if (detectFormat(text) !== "ofx") { toast.error("Envie o extrato em OFX. Nos bancos, procure por “Exportar extrato” → OFX (Money/Quicken)."); return; }
+    if (!isOfx(text)) { toast.error("Envie o extrato em OFX. Nos bancos, procure por “Exportar extrato” → OFX (Money/Quicken)."); return; }
     const statement = readOfx(text);
     setFile({ name: chosen.name, statement });
     loadReading(accountId, statement);

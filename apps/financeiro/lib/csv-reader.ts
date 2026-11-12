@@ -1,5 +1,20 @@
-import type { CsvSniff, CsvTable, DateFormat, Decimal } from "./types";
-import { DATE_FORMATS, parseDate } from "./values";
+/**
+ * Leitura genérica de CSV (usada pela importação de associados): registros RFC 4180, cabeçalho
+ * e detecção de separador e linha do cabeçalho. Extratos bancários são só OFX (`lib/statement-import`).
+ */
+
+export type CsvTable = {
+  header: string[];
+  rows: string[][];
+  /** Non-blank records before the header row. */
+  preamble: string[][];
+  /** 1-based record number of each entry in `rows`. */
+  rowNumbers: number[];
+  /** 1-based record number of the header row. */
+  headerRow: number;
+};
+
+export type CsvLayout = { delimiter: string; headerRow: number };
 
 /** RFC 4180 records: quoted fields with "" escapes, embedded delimiters and newlines; CRLF, LF or CR line ends. */
 export function parseCsvRecords(text: string, delimiter: string): string[][] {
@@ -56,12 +71,12 @@ export function parseCsvRecords(text: string, delimiter: string): string[][] {
   return records;
 }
 
-export function isBlankRecord(record: string[]) {
+function isBlankRecord(record: string[]) {
   return record.every((cell) => cell.trim() === "");
 }
 
 /** Split CSV text into preamble, header and data rows. `headerRow` is the 1-based record number of the header. */
-export function readCsv(text: string, options: { delimiter: string; headerRow: number }): CsvTable {
+export function readCsv(text: string, options: CsvLayout): CsvTable {
   const records = parseCsvRecords(text, options.delimiter);
   const headerIndex = Math.max(0, options.headerRow - 1);
   const header = (records[headerIndex] ?? []).map((cell) => cell.trim());
@@ -78,10 +93,11 @@ export function readCsv(text: string, options: { delimiter: string; headerRow: n
 
 const DELIMITERS = [";", ",", "\t", "|"];
 const NUMBER_LIKE = /^\(?[-+]?\s*(?:R\$)?\s*[-+]?[\d.,]*\d\)?[-+]?$/i;
+const DATE_LIKE = /^(\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{4}[-/]\d{1,2}[-/]\d{1,2})(?:[\sT].*)?$/;
 
 function looksLikeData(cell: string) {
   const value = cell.trim();
-  return value !== "" && (NUMBER_LIKE.test(value) || DATE_FORMATS.some((format) => parseDate(value, format)));
+  return value !== "" && (NUMBER_LIKE.test(value) || DATE_LIKE.test(value));
 }
 
 type DelimiterScore = { delimiter: string; headerIndex: number; score: number };
@@ -106,42 +122,11 @@ function scoreDelimiter(text: string, delimiter: string): DelimiterScore | null 
   return { delimiter, headerIndex, score };
 }
 
-function inferDateFormat(rows: string[][]): DateFormat {
-  const cells = rows.flat().map((cell) => cell.trim().split(/[\sT]/)[0]).filter(Boolean);
-  let best: { format: DateFormat; hits: number } = { format: "DD/MM/YYYY", hits: 0 };
-  // Order matters: DD/MM wins ties over MM/DD (Brazilian files).
-  for (const format of DATE_FORMATS) {
-    const hits = cells.filter((cell) => parseDate(cell, format)).length;
-    if (hits > best.hits) best = { format, hits };
-  }
-  return best.format;
-}
-
-function inferDecimal(rows: string[][]): Decimal {
-  let comma = 0;
-  let dot = 0;
-  for (const cell of rows.flat()) {
-    const value = cell.trim();
-    if (!NUMBER_LIKE.test(value) || DATE_FORMATS.some((format) => parseDate(value, format))) continue;
-    const digits = value.replace(/[^\d.,]/g, "");
-    if (/,\d{1,2}$/.test(digits) || /\.\d{3},/.test(digits)) comma += 1;
-    else if (/\.\d{1,2}$/.test(digits) || /,\d{3}\./.test(digits)) dot += 1;
-  }
-  return dot > comma ? "dot" : "comma";
-}
-
-/** Guess delimiter, header row (1-based), date format and decimal separator from the file text. */
-export function sniffCsv(text: string): CsvSniff {
+/** Guess the delimiter and the header row (1-based) from the file text. */
+export function sniffCsvLayout(text: string): CsvLayout {
   const scores = DELIMITERS.map((delimiter) => scoreDelimiter(text, delimiter)).filter(
     (score): score is DelimiterScore => score !== null,
   );
   const best = scores.sort((a, b) => b.score - a.score)[0] ?? { delimiter: ";", headerIndex: 0, score: 0 };
-  const table = readCsv(text, { delimiter: best.delimiter, headerRow: best.headerIndex + 1 });
-  const sample = table.rows.slice(0, 200);
-  return {
-    delimiter: best.delimiter,
-    headerRow: best.headerIndex + 1,
-    dateFormat: inferDateFormat(sample),
-    decimal: inferDecimal(sample),
-  };
+  return { delimiter: best.delimiter, headerRow: best.headerIndex + 1 };
 }

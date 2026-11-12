@@ -1,6 +1,0 @@
-Data,Transação,Tipo Transação,Identificação,Valor
-18/05/2026,Transf Pix enviada,DÉBITO,ASSOCIACAO INVENTADA DE TESTE,-150
-18/05/2026,Transf Pix enviada,DÉBITO,Fulano de Tal Exemplo,-150.5
-19/05/2026,Transf Pix recebida,CRÉDITO,"Beltrana Exemplo, ME",200
-20/05/2026,Transf Pix enviada,DÉBITO,Loja Fictícia do Bairro,-1311.75
-25/05/2026,Boleto pago,DÉBITO,Companhia de Agua Inventada,-89.9

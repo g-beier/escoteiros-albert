@@ -11,6 +11,7 @@ import {
 export type ImportProfile = {
   id: string;
   name: string;
+  /** Perfis "csv" antigos podem continuar no banco, mas a importação só usa os "ofx". */
   format: "csv" | "ofx";
   header_signature: string | null;
   settings: Record<string, unknown>;
@@ -18,17 +19,6 @@ export type ImportProfile = {
 };
 
 type ActionResult<T = undefined> = { error?: string; success?: string; data?: T };
-
-/** Perfis de importação do grupo (um por banco/formato), mais recentes primeiro. */
-export async function listImportProfiles(): Promise<ActionResult<ImportProfile[]>> {
-  const ctx = await memberOrError();
-  if ("error" in ctx) return { error: ctx.error };
-  const { data, error } = await ctx.supabase.from("import_profiles")
-    .select("id, name, format, header_signature, settings, updated_at")
-    .eq("group_id", ctx.groupId).order("updated_at", { ascending: false });
-  if (error) return { error: error.message };
-  return { data: (data ?? []) as ImportProfile[] };
-}
 
 /** Cria (sem `id`) ou atualiza um perfil de importação. */
 export async function saveImportProfile(payload: unknown): Promise<ActionResult<{ id: string }>> {

@@ -45,7 +45,7 @@ describe("toRpcLines", () => {
 });
 
 describe("importLinesSchema", () => {
-  const base = { accountId: id, fileName: "extrato.csv", lines: [{}] };
+  const base = { accountId: id, fileName: "extrato.ofx", lines: [{}] };
   it("exige conta e linhas", () => {
     expect(importLinesSchema.safeParse(base).success).toBe(true);
     expect(importLinesSchema.safeParse({ ...base, accountId: "" }).error?.issues[0]?.message).toBe("Escolha a conta.");
@@ -59,9 +59,9 @@ describe("importLinesSchema", () => {
 
 describe("importProfileSchema", () => {
   it("valida nome, formato e configurações", () => {
-    expect(importProfileSchema.safeParse({ name: "Sicredi CSV", format: "csv", settings: { delimiter: ";" } }).success).toBe(true);
-    expect(importProfileSchema.safeParse({ name: "Sicredi", format: "xls", settings: {} }).error?.issues[0]?.message).toBe("Formato de arquivo inválido.");
-    expect(importProfileSchema.safeParse({ name: "Sicredi", format: "csv", settings: [] }).success).toBe(false);
+    expect(importProfileSchema.safeParse({ name: "Sicredi OFX", format: "ofx", settings: { memoSplit: true } }).success).toBe(true);
+    expect(importProfileSchema.safeParse({ name: "Sicredi", format: "csv", settings: {} }).error?.issues[0]?.message).toBe("Formato de arquivo inválido.");
+    expect(importProfileSchema.safeParse({ name: "Sicredi", format: "ofx", settings: [] }).success).toBe(false);
   });
 });
 

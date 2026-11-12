@@ -1,4 +1,5 @@
-import { normalizeText, readCsv, sniffCsv } from "@/lib/statement-import";
+import { readCsv, sniffCsvLayout } from "@/lib/csv-reader";
+import { normalizeText } from "@/lib/statement-import";
 import { SCOUT_BRANCHES, branchLabels, type ScoutBranch } from "@/lib/associates";
 
 /**
@@ -60,8 +61,7 @@ export function parseStatus(value: string): boolean | null {
 /** Lê o CSV: separador e linha do cabeçalho detectados; nome e ramo obrigatórios. */
 export function parseAssociatesCsv(text: string): AssociateCsv {
   if (!text.trim()) return { rows: [], error: "Arquivo vazio." };
-  const sniff = sniffCsv(text);
-  const table = readCsv(text, { delimiter: sniff.delimiter, headerRow: sniff.headerRow });
+  const table = readCsv(text, sniffCsvLayout(text));
   const header = table.header.map(normalizeText);
   const column = (aliases: readonly string[]) => header.findIndex((cell) => aliases.includes(cell));
   const index = {

@@ -36,7 +36,7 @@ export async function fetchLastProfileByAccount(supabase: SupabaseClient, groupI
   return last;
 }
 
-/** Perfis de importação do grupo, mais recentes primeiro (mesma consulta de `listImportProfiles`). */
+/** Perfis de importação do grupo, mais recentes primeiro. */
 export async function fetchImportProfiles(supabase: SupabaseClient, groupId: string) {
   const { data, error } = await supabase.from("import_profiles")
     .select("id, name, format, header_signature, settings, updated_at")

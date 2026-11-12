@@ -82,7 +82,7 @@ export function toRpcLines(lines: StatementLineInput[]) {
 export const importProfileSchema = z.object({
   id: z.uuid().optional().nullable(),
   name: z.string().trim().min(2, "Informe um nome de perfil com ao menos 2 caracteres.").max(80),
-  format: z.enum(["csv", "ofx"], { message: "Formato de arquivo inválido." }),
+  format: z.enum(["ofx"], { message: "Formato de arquivo inválido." }),
   headerSignature: z.string().trim().max(2000).optional().nullable(),
   settings: settingsSchema,
 });

@@ -21,8 +21,7 @@ export function ImportReview({ statement, statuses, includedSuspects, onToggleSu
   includedSuspects?: Set<number>;
   onToggleSuspect?: (index: number) => void;
 }) {
-  const { lines, errors, ignored, totals, balanceCheck } = statement;
-  const mismatchRow = balanceCheck?.ok === false ? balanceCheck.firstMismatchRow : undefined;
+  const { lines, errors, ignored, totals } = statement;
   const hasBalance = lines.some((line) => line.balanceCents !== undefined);
   const hasId = lines.some((line) => line.externalId);
   const hasType = lines.some((line) => line.trnType);
@@ -36,7 +35,7 @@ export function ImportReview({ statement, statuses, includedSuspects, onToggleSu
       <Stat label="Líquido" value={brl(totals.netCents)} />
     </dl>
 
-    <BalanceStatus statement={statement} mismatchRow={mismatchRow} />
+    <BalanceStatus statement={statement} />
 
     {errors.length > 0 && <details open className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs">
       <summary className="cursor-pointer font-semibold text-destructive">Linhas que não puderam ser lidas ({errors.length}) — não serão importadas</summary>
@@ -66,7 +65,7 @@ export function ImportReview({ statement, statuses, includedSuspects, onToggleSu
         const preview = statuses?.[index];
         const skipped = preview?.status === "importada" || (preview?.status === "suspeita" && !includedSuspects?.has(index));
         return <TableRow key={line.sourceRow} id={`linha-${line.sourceRow}`}
-        className={cn(line.sourceRow === mismatchRow && "bg-destructive/10 hover:bg-destructive/15", skipped && "text-muted-foreground line-through decoration-muted-foreground/40")}>
+        className={cn(skipped && "text-muted-foreground line-through decoration-muted-foreground/40")}>
         <TableCell className="px-2 py-1 text-right text-muted-foreground num">{line.sourceRow}</TableCell>
         {statuses && <TableCell className="px-2 py-1 whitespace-nowrap no-underline" title={preview?.matchDescription ? `Já existe: ${preview.matchDescription}` : undefined}>
           {preview?.status === "suspeita"
@@ -95,7 +94,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: str
   </div>;
 }
 
-function BalanceStatus({ statement, mismatchRow }: { statement: ParsedStatement; mismatchRow?: number }) {
+function BalanceStatus({ statement }: { statement: ParsedStatement }) {
   const { balanceCheck, openingBalanceCents, closingBalanceCents } = statement;
   const balances = [
     openingBalanceCents !== undefined && `saldo inicial ${brl(openingBalanceCents)}`,
@@ -110,7 +109,5 @@ function BalanceStatus({ statement, mismatchRow }: { statement: ParsedStatement;
       Saldos conferem{balances ? `: ${balances}` : ""}.</p>;
   }
   return <p role="alert" className="m-0 flex items-center gap-2 text-xs text-destructive"><IconAlertTriangle className="size-4 shrink-0" />
-    <span>Os saldos não fecham{mismatchRow !== undefined
-      ? <> a partir da <a href={`#linha-${mismatchRow}`} className="font-semibold underline num">linha {mismatchRow}</a> do arquivo</>
-      : <> com o total dos movimentos</>}{balances ? ` (${balances})` : ""}. Confira as linhas ignoradas nos ajustes de leitura.</span></p>;
+    <span>Os saldos não fecham com o total dos movimentos{balances ? ` (${balances})` : ""}. Confira as linhas ignoradas nos ajustes de leitura.</span></p>;
 }

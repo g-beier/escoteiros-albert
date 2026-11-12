@@ -2,7 +2,9 @@
 
 Status: fases 1 a 3 implementadas (2026-11-11): contas (`011`), importação no banco (`012`) e conciliação (`013`, `/conciliacao`). Vínculo N:M ainda é recusado.
 
-**Atualização (2026-11-11, `014`): a importação passou a ser só OFX.** A interface não aceita mais CSV; o código CSV (`lib/statement-import/csv.ts`, `apply.ts`, `components/import/csv-profile-builder.tsx`) fica no repositório, sem uso, caso volte a ser necessário. Ver a seção [Importação OFX](#importação-ofx-desde-014) e o glossário em [`modelo.md`](modelo.md). As seções sobre perfis CSV abaixo descrevem o desenho original.
+**Atualização (2026-11-11, `014`): a importação passou a ser só OFX.** Ver a seção [Importação OFX](#importação-ofx-desde-014) e o glossário em [`modelo.md`](modelo.md). As seções sobre perfis CSV abaixo descrevem o desenho original, que não será retomado.
+
+**Atualização (2026-11-12): o código de importação CSV foi removido** (`lib/statement-import/csv.ts`, `apply.ts`, seus testes e fixtures, `components/import/csv-profile-builder.tsx`, a montagem de colunas em `lib/import-flow.ts`). CSV de extrato não volta. O leitor genérico de CSV que a importação de associados usa ficou em `lib/csv-reader.ts`; as exportações CSV (`lib/export/`) não mudaram. No banco, `import_profiles.format` ainda aceita `'csv'` e `save_import_profile` também (migrations antigas não foram alteradas); perfis CSV que existam são ignorados pela importação, e o servidor só salva perfis `ofx`.
 
 ## Objetivo
 
@@ -128,8 +130,7 @@ Conteúdo do perfil (`settings`):
 
 - Leitura e aplicação do perfil no **navegador**, para a pré-visualização ser instantânea. O servidor recebe linhas já normalizadas e uma função SQL (`import_statement_lines`) valida, deduplica, grava e audita.
 - Núcleo como funções puras, testadas com vitest e fixtures anonimizadas dos formatos acima:
-  - `readCsv(text, {delimiter, encoding, headerRow})` e `readOfx(text)`;
-  - `applyProfile(rows, profile) => ParsedStatement`.
+  - `readOfx(text)` e `applyOfxProfile(statement, settings) => OfxStatement` (o leitor CSV e `applyProfile` foram removidos em 2026-11-12).
 - Parser OFX tolerante por regex (`<TAG>valor` até `<` ou fim da linha), cobrindo SGML com e sem tags de fechamento, sem depender do encoding declarado.
 - Dedup: `external_id + data + valor` quando há ID; senão impressão digital `conta + data + valor + descrição + nº de ocorrência no dia`.
 
@@ -220,7 +221,7 @@ Objetivo: cruzar o que **já foi lançado à mão** com o que **veio do banco**,
 - CSV e OFX na mesma fase; o OFX usa o mesmo mecanismo de perfil, sem a grade de colunas.
 - Perfis são do grupo inteiro, funcionam como template editável e são atualizados quando ajustados numa importação (2026-11-11).
 - Após importar, o usuário vai direto para a conciliação em duas colunas (extrato × lançamentos); mesmo dia + mesmo valor já aparece como sugestão desde a primeira versão (2026-11-11).
-- Importação só por OFX; CSV desativado na interface (2026-11-11, `014`).
+- Importação só por OFX; CSV desativado na interface (2026-11-11, `014`) e o código CSV removido (2026-11-12): não volta.
 - O ID OFX (FITID) aparece nos lançamentos e rateios como agregador, derivado da conciliação (2026-11-11).
 - "Nome do lançamento" passa a se chamar **Histórico** na interface (a coluna continua `name`) (2026-11-11).
 - Criação em massa a partir do extrato usa a rubrica raiz pelo sinal (1 Receitas / 2 Despesas); a recategorização vem depois (2026-11-11).
