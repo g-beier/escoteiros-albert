@@ -17,6 +17,8 @@ npm run dev:financeiro      # Next dev server at localhost:3000
 npm run build               # build all apps
 npm run lint                # lint all apps
 npm test                    # vitest (financeiro)
+npm run test:db             # pgTAP + SQL scripts (supabase test db, local Supabase)
+npm run test:e2e            # Playwright, desktop Chromium, own next dev on :3210
 npm run typecheck
 npm run infra:start         # local Supabase (Docker) + writes apps/financeiro/.env.local
 ```

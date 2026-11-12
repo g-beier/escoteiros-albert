@@ -88,37 +88,58 @@
 - Associados: importação por CSV (`016_import_associates.sql`) e visualização por seção com filtro.
 - Observações nos lançamentos (`017_entry_notes.sql`).
 - **Mensalidades** (`018_fees.sql`, `/mensalidades`): grade março–dezembro, vencimento configurável com atraso automático, sugestões e vínculo aos rateios, isenção por ano; coluna de atrasadas no Início.
+- Mensalidades: valor por ano e desconto do pagamento integral até a data-limite (`019_fee_prices.sql`); valor individual por associado com motivo (`020_fee_associate_prices.sql`); estado "não pago" registrado à mão (`021_fee_not_paid.sql`); entradas, saídas e retornos de associados, sem cobrança nos meses fora do grupo (`022_associate_movements.sql`); recebido por associado e por mês; filtro "Só com atrasos"; seções recolhíveis.
+- `PageHeader` em todas as telas; Início em colunas 2:2:1.
+
+## Concluído (2026-11-12, frentes A, C, D e F)
+
+- **A — interface legada:** `/usuarios` e `/login` em componentes shadcn; classes sem uso removidas do `@layer legacy` (ficam `.shell` e as regras de `table`/`th`/`td`, ainda usadas por tabelas cruas).
+- **C — lançamentos:** histórico de alterações nos detalhes (`023_entry_history.sql`, `ledger_entry_history`, também para Consulta); filtro "Conciliado" (`?conciliado=sim|nao`) e ✓ nas duas visões; seleção e movimento em lote de conta com atalho "N em 'A definir'" (`024_move_entries_account.sql`). Teste `supabase/tests/entries.sql`.
+- **D — importação:** código CSV de extrato removido (leitor genérico em `lib/csv-reader.ts` para associados); conferência compara saldo inicial do OFX com o saldo da conta (`025_account_balance_before.sql`); aba "Perfis de leitura" em `/cadastros?aba=perfis` para renomear/excluir (`026_import_profile_admin.sql`). Testes `account_balance.sql`, `import_profiles.sql`.
+- **F — comprovantes:** anexos em bucket privado `comprovantes` (PDF, JPG, PNG, HEIC; 10 MB), envio direto ao Storage por URL assinada, abrir/baixar por URL de 60 s, clipe na lista, exclusão junto com o lançamento (`027_entry_attachments.sql`). Teste `entry_attachments.sql`.
+
+## Concluído (2026-11-12, frentes B e E)
+
+- **B — tabelas:** `/lancamentos` em cartões abaixo de `md` nas duas visões (seleção, mover em lote, rolagem infinita e filtros mantidos); tabela desktop virtualizada acima de 300 linhas carregadas (`@tanstack/react-virtual`), cabeçalho fixo e `aria-rowcount`/`aria-rowindex`.
+- **E — testes:** pgTAP (`npm run test:db`): isolamento entre grupos, papéis, ausência de escrita direta e auditoria (`*.test.sql`, dados em `_fixture.psql`); scripts SQL antigos com TAP mínimo, também rodáveis via psql. Playwright (`npm run test:e2e`, Chromium desktop, porta 3210, OTP pelo Mailpit, grupo "Grupo E2E"): login, lançamentos, usuários, mover em lote, comprovantes, importação OFX → conciliação → filtro Conciliado → desfazer. Como rodar no `README.md`.
+- Corrigido: ids dos campos de rateio estáveis no formulário (erro de hidratação).
 
 ## A verificar
 
-- Validar com o contador: código estruturado × reduzido, lançamento múltiplo, histórico padrão e contas de contrapartida (ver `docs/contabilidade.md`).
-- Abrir o CSV contábil no sistema do contador (leiaute de importação) e o CSV do fluxo no Excel/LibreOffice.
-- `/importacao` no navegador com `nubank.ofx` e `itau.ofx` e com um OFX convertido: escolha da conta, perfil lembrado na segunda importação, suspeitas/órfãs na conferência e desfazer.
-- `/conciliacao` no navegador: sugestões aproximadas, criação e ignorar em massa.
+Com o contador:
 
+- Código estruturado × reduzido, lançamento múltiplo, histórico padrão e contas de contrapartida (ver `docs/contabilidade.md`).
+- Abrir o CSV contábil no sistema do contador (leiaute de importação).
 
-- Aplicar `013` no banco local e testar `/conciliacao` no navegador (desktop e celular), inclusive "Criar lançamento" e o retorno de `/importacao`.
+No navegador (desktop e celular):
 
-- Aplicar `011`/`012` no banco local (`npx supabase migration up`) e conferir `/cadastros`, formulário e lista com a coluna Conta no navegador.
-- `/importacao` no navegador, ponta a ponta, com as fixtures de `lib/statement-import/__fixtures__/` (ainda não exercitada: o banco local não tinha `011`/`012`).
+- `/importacao` com `nubank.ofx`, `itau.ofx` e um OFX convertido: escolha da conta, perfil lembrado na segunda importação, suspeitas/órfãs na conferência, desfazer e retorno para `/conciliacao`.
+- `/conciliacao`: sugestões aproximadas, "Criar lançamento", criação e ignorar em massa.
+- `/cadastros` (contas, conta contábil), formulário com rateio misto (receita + despesa), seletor de rubrica e painel de filtros.
+- Dashboard e rolagem da tabela de lançamentos.
+- `/mensalidades`: valores individuais, não pago, entradas/saídas/retornos.
+- Celular: cartões de `/lancamentos` (seleção, rodapé fixo); desktop com mais de 300 lançamentos carregados (virtualização, teclado).
+- Comprovantes: HEIC real e arquivo perto de 10 MB (fluxo básico coberto pelo e2e).
+- `/lancamentos`: "Limpar filtros" seguido de busca antes da navegação terminar pode trazer de volta o filtro antigo.
+- Importação: bloco de saldo inicial na conferência e aba "Perfis de leitura".
+- `/login` e `/usuarios` com a aparência de antes.
+- Exportações (XLSX e CSV do fluxo) abertas no Excel/LibreOffice/Google Sheets (cores, fórmulas) e download pelo navegador logado.
 
-- Dashboard e rolagem da tabela no navegador (desktop e celular).
-- Exportações abertas no Excel/Google Sheets (cores, fórmulas) e download pelo navegador logado.
-- Formulário com rateio misto (receita + despesa), seletor de rubrica e painel de filtros ainda não passaram pelo teste automatizado no navegador (compilam e as rotas respondem).
-- Confirmar se "conta" é um campo distinto da forma de pagamento.
+Decidido (2026-11-12):
+
+- Conta (banco: Itaú, Caixa…) é campo distinto da forma de pagamento (Pix, dinheiro…).
+- CSV de importação não volta; código pode ser removido.
+- Mensalidades por associado: concluído com a grade e o valor individual (`020`); novas melhorias virão dos testes.
 
 ## Próximos
 
-- Migrar `/usuarios` e `/login` para os componentes shadcn (ainda usam classes legadas em `globals.css`, inclusive `card`/`card-head`).
-- Remover do `@layer legacy` as classes que deixarem de ser usadas (`.button`, `.input`, `.modal*`, `.split-row` etc.).
-- Responsivo das tabelas: hoje rolam na horizontal no celular; avaliar cartões por lançamento em telas estreitas.
-- Virtualizar a tabela se a rolagem infinita ficar pesada com milhares de linhas carregadas.
-- Histórico de alterações (auditoria) na página de detalhes.
-- Testes pgTAP das políticas RLS e funções; Playwright para OTP, lançamentos e gestão de usuários.
-- Importação: conferir o saldo inicial do arquivo com o saldo da conta e lista de perfis editável fora da importação.
-- Remover o código CSV de importação (`csv.ts`, `apply.ts`, `csv-profile-builder.tsx`) se o CSV não voltar.
-- Exportação contábil: código reduzido e histórico padrão, se o contador pedir; lançamento múltiplo agrupado pelo ID OFX.
-- Mover em lote os lançamentos de "A definir" para a conta certa.
-- Filtro "Conciliado" em `/lancamentos` (hoje só o indicador ✓ na visão Por extrato).
-- Anexos de comprovantes em bucket privado (complementa a "pasta").
-- Mensalidades por associado.
+### D — Contabilidade (aguarda o contador)
+
+- Exportação contábil: código reduzido e histórico padrão, lançamento múltiplo agrupado pelo ID OFX.
+
+### Regras para os agentes
+
+- Cada frente em worktree própria, um commit por item, `npm run lint`, `npm run typecheck` e `npm test` verdes; SQL testado com `supabase/tests/`.
+- Worktree criada a partir de `feat/financeiro-contabilidade` (não de `main`); numeração de migrations reservada por frente para evitar colisão.
+- Seguir `CLAUDE.md` (PageHeader, rótulos visíveis, escrita só por funções SQL auditadas, `lib/session.ts`) e `AGENTS.md` (Next.js desta versão).
+- Atualizar este BACKLOG e os `docs/` ao concluir.
