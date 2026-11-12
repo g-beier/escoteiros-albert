@@ -224,7 +224,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Excluir lançamento?</DialogTitle>
-          <DialogDescription>“{entry.name}” e todos os seus rateios serão excluídos. A exclusão fica registrada na auditoria.</DialogDescription>
+          <DialogDescription>“{entry.name}”, todos os seus rateios e os comprovantes anexados serão excluídos. A exclusão fica registrada na auditoria.</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => setConfirmDelete(false)}>Cancelar</Button>

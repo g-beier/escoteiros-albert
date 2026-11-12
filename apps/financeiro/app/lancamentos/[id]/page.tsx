@@ -9,6 +9,8 @@ import { dateBR, money } from "@/lib/format";
 import { loadEntryContext } from "../context";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SectionCard, SectionHeader } from "@/components/section-card";
+import { EntryAttachments } from "@/components/entries/entry-attachments";
+import { ATTACHMENT_COLUMNS, type Attachment } from "@/lib/attachments";
 
 type LinkedLine = {
   statement_line_id: string; line_date: string; line_description: string; line_kind: string | null; line_counterparty: string | null;
@@ -47,11 +49,12 @@ export default async function EntryDetailPage({ params, searchParams }: { params
   const [{ id }, { voltar }] = await Promise.all([params, searchParams]);
   if (!z.uuid().safeParse(id).success) notFound();
   const { supabase, user, role, canEdit, catalogs } = await loadEntryContext();
-  const [entry, { data: statementLines }] = await Promise.all([
+  const [entry, { data: statementLines }, { data: attachments }] = await Promise.all([
     fetchEntry(supabase, id),
     supabase.from("reconciliation_link_rows")
       .select("statement_line_id, line_date, line_description, line_kind, line_counterparty, line_amount_cents, line_external_id, line_trn_type")
       .eq("ledger_entry_id", id).order("line_date"),
+    supabase.from("entry_attachments").select(ATTACHMENT_COLUMNS).eq("entry_id", id).order("created_at").order("id"),
   ]);
   if (!entry) notFound();
   const backHref = listHref(voltar);
@@ -69,6 +72,7 @@ export default async function EntryDetailPage({ params, searchParams }: { params
         </>} />
       {(statementLines?.length ?? 0) > 0 && <StatementLines lines={statementLines as LinkedLine[]} />}
       <SectionCard className="p-5"><EntryForm entry={entry} catalogs={catalogs} canEdit={canEdit} backHref={backHref} /></SectionCard>
+      <EntryAttachments entryId={id} attachments={(attachments ?? []) as Attachment[]} canEdit={canEdit} />
     </PageBody>
   </div>;
 }

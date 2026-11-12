@@ -8,6 +8,7 @@ import { memberOrError } from "@/lib/session";
 import { entrySchema, toRpcSplits } from "@/lib/entry-schema";
 import { fetchEntryPage, type EntryPage } from "@/lib/entry-queries";
 import { parseFilters, parseOrder } from "@/lib/filters";
+import { ATTACHMENT_BUCKET } from "@/lib/attachments";
 
 type Result = { error?: string; success?: boolean; id?: string };
 
@@ -61,8 +62,15 @@ export async function deleteEntry(entryId: unknown): Promise<Result> {
   const id = z.uuid().safeParse(entryId);
   if (!id.success) return { error: "Lançamento inválido." };
   const supabase = await createClient();
+  // Os registros de anexo saem em cascata; os arquivos do Storage são apagados aqui, depois.
+  const { data: attachments } = await supabase.from("entry_attachments").select("storage_path").eq("entry_id", id.data);
   const { error } = await supabase.rpc("delete_ledger_entry", { p_entry_id: id.data });
   if (error) return { error: error.message };
+  const paths = (attachments ?? []).map((row) => row.storage_path as string);
+  if (paths.length) {
+    const { error: storageError } = await supabase.storage.from(ATTACHMENT_BUCKET).remove(paths);
+    if (storageError) console.error("remover anexos do lançamento excluído", id.data, storageError.message);
+  }
   revalidatePath("/", "layout");
   return { success: true };
 }

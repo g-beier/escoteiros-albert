@@ -18,6 +18,8 @@ export type LedgerRow = {
   reconciled?: boolean;
   /** IDs OFX (FITID) das linhas do extrato vinculadas; juntam o lançamento à movimentação do banco. */
   external_ids: string[];
+  /** Comprovantes anexados (entry_attachments); preenchido por fetchEntryPage. */
+  attachment_count?: number;
 };
 
 export type SplitRow = {
@@ -38,6 +40,7 @@ export type SplitRow = {
   category_ledger_code: string | null;
   account_ledger_code: string | null;
   external_ids: string[];
+  attachment_count?: number;
 };
 
 export type EntryPage =
@@ -79,7 +82,7 @@ export async function fetchEntryPage(
     const { data, error, count: total } = await query
       .order("entry_date", { ascending }).order("entry_id", { ascending }).order("split_id", { ascending })
       .range(...range);
-    return { view, rows: (data ?? []) as SplitRow[], total: total ?? null, error: error?.message };
+    return { view, rows: await withAttachmentCounts(supabase, (data ?? []) as SplitRow[]), total: total ?? null, error: error?.message };
   }
 
   let query = supabase.from("ledger_entry_rows")
@@ -99,5 +102,18 @@ export async function fetchEntryPage(
   const { data, error, count: total } = await query
     .order("entry_date", { ascending }).order("created_at", { ascending }).order("entry_id", { ascending })
     .range(...range);
-  return { view, rows: (data ?? []) as LedgerRow[], total: total ?? null, error: error?.message };
+  return { view, rows: await withAttachmentCounts(supabase, (data ?? []) as LedgerRow[]), total: total ?? null, error: error?.message };
+}
+
+/**
+ * Quantos comprovantes cada lançamento da página tem (o clipe da lista). Uma consulta indexada
+ * por página, fora das visões, para não pesar na busca e na contagem de `ledger_entry_rows`.
+ */
+async function withAttachmentCounts<T extends { entry_id: string }>(supabase: SupabaseClient, rows: T[]): Promise<T[]> {
+  const ids = [...new Set(rows.map((row) => row.entry_id))];
+  if (!ids.length) return rows;
+  const { data } = await supabase.from("entry_attachments").select("entry_id").in("entry_id", ids);
+  const counts = new Map<string, number>();
+  for (const { entry_id } of (data ?? []) as { entry_id: string }[]) counts.set(entry_id, (counts.get(entry_id) ?? 0) + 1);
+  return rows.map((row) => ({ ...row, attachment_count: counts.get(row.entry_id) ?? 0 }));
 }

@@ -72,7 +72,7 @@ export function EntryListProvider({ canEdit, returnQuery, children }: { canEdit:
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Excluir lançamento?</DialogTitle>
-          <DialogDescription>A linha do extrato e todos os seus rateios serão excluídos. A exclusão fica registrada na auditoria.</DialogDescription>
+          <DialogDescription>O lançamento, todos os seus rateios e os comprovantes anexados serão excluídos. A exclusão fica registrada na auditoria.</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => setDeleteId(null)}>Cancelar</Button>

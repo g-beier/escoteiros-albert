@@ -16,12 +16,22 @@ Termos usados na interface, no código e na documentação. Quando um termo apar
 | **Isenção** | Associado que não paga mensalidade naquele ano (voluntário, bolsa…), com motivo. | `fee_exemptions` |
 | **Vencimento** | Regra do grupo: dia N, N-ésimo dia útil ou fim do mês. | `fee_settings` |
 | **Documentos** | Situação do comprovante: Pendente ou Arquivado (parâmetro de URL `pasta`, por compatibilidade). | `ledger_entries.document_filed` |
+| **Comprovante (anexo)** | Cópia digital (PDF, JPG, PNG ou HEIC, até 10 MB) anexada ao lançamento. Não muda **Documentos**, que continua sendo a pasta física. | `entry_attachments`; arquivo no bucket privado `comprovantes` |
 
 ## Visões de `/lancamentos`
 
 - **Por lançamento** (`visao` ausente; `visao=extrato` ainda é aceito): um lançamento por linha.
 - **Por rubrica** (`visao=rubricas`): um rateio por linha.
 - `ofx=<FITID>` filtra pelo ID OFX: o lançamento, seus rateios e os demais lançamentos pagos pela mesma movimentação.
+
+## Comprovantes anexados
+
+- Arquivo no bucket privado `comprovantes` (migration 027), caminho `<group_id>/<entry_id>/<uuid>.<ext>`. As políticas de `storage.objects` leem o grupo e o lançamento do caminho: membros do grupo leem; tesouraria/administração enviam (só para um lançamento do próprio grupo) e apagam; não há sobrescrita.
+- Envio em dois passos (`app/lancamentos/actions.ts`): `prepareAttachmentUpload` valida tipo/tamanho e cria uma URL de envio assinada; o navegador manda o arquivo direto ao Storage (não passa pelo servidor do app); `registerAttachment` chama `add_entry_attachment`, que confere o objeto em `storage.objects` (tipo e tamanho vêm do Storage) e audita. Se o registro falhar, o arquivo é apagado.
+- Abrir/baixar: `GET /lancamentos/<id>/anexos/<anexoId>[?baixar=1]` redireciona para uma URL assinada de 60 s. Consulta pode abrir e baixar.
+- Excluir: `delete_entry_attachment` remove o registro, audita e devolve o caminho; o app apaga o arquivo pela API do Storage (o banco não apaga `storage.objects`). Excluir o lançamento apaga os registros em cascata e o app apaga os arquivos em seguida.
+- Na lista `/lancamentos`, um clipe ao lado de Documentos mostra quantos comprovantes o lançamento tem (uma consulta por página em `entry_attachments`, fora das visões).
+- Regras compartilhadas (tipos, limite, caminho): `lib/attachments.ts`, iguais às da migration.
 
 ## Fluxo
 

@@ -3,7 +3,7 @@ import { EntryLink, EntryRow, EntryRowActions, FolderStatus } from "@/components
 import { dateBR, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { IconArrowDown, IconArrowUp, IconCircleCheck } from "@tabler/icons-react";
+import { IconArrowDown, IconArrowUp, IconCircleCheck, IconPaperclip } from "@tabler/icons-react";
 import type { SplitRow, LedgerRow } from "@/lib/entry-queries";
 import type { SortOrder } from "@/lib/filters";
 import { MultiFilter } from "@/components/entries/multi-filter";
@@ -49,6 +49,15 @@ function CategoryTag({ code, name, kind }: { code: string | null; name: string; 
   </span>;
 }
 
+/** Clipe com a quantidade de comprovantes anexados ao lançamento. */
+function AttachmentClip({ count }: { count?: number }) {
+  if (!count) return null;
+  const label = count === 1 ? "1 comprovante anexado" : `${count} comprovantes anexados`;
+  return <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground" title={label}>
+    <IconPaperclip className="size-3.5" aria-hidden />{count > 1 && <span className="num" aria-hidden>{count}</span>}<span className="sr-only">{label}</span>
+  </span>;
+}
+
 const Empty = ({ children }: { children: React.ReactNode }) => <div className="px-6 py-12 text-center text-muted-foreground">{children}</div>;
 
 export function LedgerTable({ rows, filtered, order, sortHref }: { rows: LedgerRow[]; filtered: boolean } & Sort) {
@@ -61,7 +70,7 @@ export function LedgerTable({ rows, filtered, order, sortHref }: { rows: LedgerR
       <TableCell className={wrapCell}><EntryLink entryId={row.entry_id}>{row.name}</EntryLink></TableCell>
       <TableCell className={cell}>{row.account_name}</TableCell>
       <TableCell className={cell}>{row.payment_method_name}</TableCell>
-      <TableCell className={cell}><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} /></TableCell>
+      <TableCell className={cell}><span className="inline-flex items-center gap-1.5"><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} /><AttachmentClip count={row.attachment_count} /></span></TableCell>
       <TableCell className={cell}><OfxIds ids={row.external_ids ?? []} /></TableCell>
       <TableCell className={amountCell(row.total_cents)}>{row.reconciled && <IconCircleCheck className="mr-1 inline size-3.5 align-[-2px] text-success" aria-label="Conciliado com o extrato" title="Conciliado com o extrato" />}{money(row.total_cents / 100)}</TableCell>
       <TableCell className="px-1 py-0.5 align-middle"><EntryRowActions entryId={row.entry_id} filed={row.document_filed} /></TableCell>
@@ -81,7 +90,7 @@ export function SplitTable({ rows, filtered, order, sortHref }: { rows: SplitRow
         <TableCell className={wrapCell}><EntryLink entryId={row.entry_id} className="font-medium">{row.entry_name}</EntryLink></TableCell>
         <TableCell className={cell}>{row.account_name}</TableCell>
         <TableCell className={cell}>{row.payment_method_name}</TableCell>
-        <TableCell className={cell}><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} /></TableCell>
+        <TableCell className={cell}><span className="inline-flex items-center gap-1.5"><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} />{!continued && <AttachmentClip count={row.attachment_count} />}</span></TableCell>
         <TableCell className={cell}>{!continued && <OfxIds ids={row.external_ids ?? []} />}</TableCell>
         <TableCell className={amountCell(row.amount_cents)}>{money(row.amount_cents / 100)}</TableCell>
         <TableCell className={cell}>{row.associate_name ?? <span className="text-muted-foreground">—</span>}</TableCell>
