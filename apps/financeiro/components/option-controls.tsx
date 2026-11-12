@@ -23,8 +23,10 @@ type SelectProps = {
 /** Select acessível (Base UI) que trabalha com strings; "" representa nenhuma opção. */
 export function OptionSelect({ id, value, onValueChange, options, placeholder = "Selecione…", emptyLabel, className, invalid, disabled, ...aria }: SelectProps) {
   const items = emptyLabel ? [{ value: "", label: emptyLabel }, ...options] : options;
+  // largura mínima para o rótulo mais longo caber (até 24 caracteres; acima disso, corta com "…")
+  const longest = Math.min(24, Math.max(placeholder.length, ...items.map((item) => item.label.length)));
   return <Select disabled={disabled} items={items} value={value || (emptyLabel ? "" : null)} onValueChange={(next) => onValueChange((next as string | null) ?? "")}>
-    <SelectTrigger id={id} className={cn("w-full min-w-0", className)} aria-invalid={invalid || undefined} aria-label={aria["aria-label"]}>
+    <SelectTrigger id={id} style={{ minWidth: `calc(${longest}ch + 2.75rem)` }} className={cn("w-full", className)} aria-invalid={invalid || undefined} aria-label={aria["aria-label"]}>
       <SelectValue className="block min-w-0 truncate" placeholder={emptyLabel ?? placeholder} />
     </SelectTrigger>
     <SelectContent alignItemWithTrigger={false} align="start" className="w-auto min-w-(--anchor-width)">

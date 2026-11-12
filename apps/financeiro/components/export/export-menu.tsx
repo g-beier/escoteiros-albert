@@ -119,11 +119,11 @@ export function ExportMenu({ view, from, to, years, accounts = [] }: { view: Vie
             <DialogDescription>{mode && DESCRIPTIONS[mode]}</DialogDescription>
           </DialogHeader>
 
-          {mode === "fluxo" && <div className="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
+          {mode === "fluxo" && <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5"><Label htmlFor="export-view">Visão</Label><OptionSelect id="export-view" value={flowView} onValueChange={(v) => setFlowView(v as View)} options={viewOptions} /></div>
             <div className="grid gap-1.5"><Label htmlFor="export-format">Formato</Label><OptionSelect id="export-format" value={format} onValueChange={(v) => setFormat(v as Format)} options={formatOptions} /></div>
           </div>}
-          {mode === "contabil" && <div className="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
+          {mode === "contabil" && <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5"><Label htmlFor="export-account">Conta</Label><OptionSelect id="export-account" value={accountId} onValueChange={setAccountId} emptyLabel="Todas as contas" options={accounts} /></div>
             <div className="grid gap-1.5"><Label htmlFor="export-encoding">Codificação</Label><OptionSelect id="export-encoding" value={encoding} onValueChange={(v) => setEncoding(v as CsvEncoding)} options={CSV_ENCODINGS} /></div>
           </div>}
@@ -133,12 +133,12 @@ export function ExportMenu({ view, from, to, years, accounts = [] }: { view: Vie
                 <button key={value} type="button" role="radio" aria-checked={preset === value} onClick={() => setPreset(value)}
                   className={cn("rounded-full px-3 py-1 text-xs font-semibold transition-colors", preset === value ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}>{label}</button>)}
             </div>
-            {preset === "mes" && <div className="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
+            {preset === "mes" && <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5"><Label htmlFor="export-month">Mês</Label><OptionSelect id="export-month" value={month} onValueChange={setMonth} options={monthOptions} /></div>
               <div className="grid gap-1.5"><Label htmlFor="export-year">Ano</Label><OptionSelect id="export-year" value={year} onValueChange={setYear} options={yearOptions} /></div>
             </div>}
             {preset === "ano" && <div className="grid gap-1.5"><Label htmlFor="export-year">Ano</Label><OptionSelect id="export-year" value={year} onValueChange={setYear} options={yearOptions} /></div>}
-            {preset === "personalizado" && <div className="grid gap-3 sm:grid-cols-2 [&>*]:min-w-0">
+            {preset === "personalizado" && <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5"><Label htmlFor="export-from">De</Label><Input id="export-from" type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} required /></div>
               <div className="grid gap-1.5"><Label htmlFor="export-to">Até (inclusive)</Label><Input id="export-to" type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} required /></div>
             </div>}
