@@ -41,6 +41,7 @@ export type SplitRow = {
   account_ledger_code: string | null;
   external_ids: string[];
   attachment_count?: number;
+  reconciled?: boolean;
 };
 
 export type EntryPage =
@@ -48,7 +49,7 @@ export type EntryPage =
   | { view: "rubricas"; rows: SplitRow[]; total: number | null; error?: string };
 
 export const LEDGER_COLUMNS = "entry_id, entry_date, name, account_name, payment_method_name, document, document_filed, total_cents, reconciled, external_ids";
-export const SPLIT_COLUMNS = "split_id, entry_id, entry_date, entry_name, account_name, payment_method_name, document, document_filed, amount_cents, description, category_name, category_code, category_kind, associate_name, category_ledger_code, account_ledger_code, external_ids";
+export const SPLIT_COLUMNS = "split_id, entry_id, entry_date, entry_name, account_name, payment_method_name, document, document_filed, amount_cents, description, category_name, category_code, category_kind, associate_name, category_ledger_code, account_ledger_code, external_ids, reconciled";
 
 // IDs chegam validados como UUID por parseFilters, então podem compor filtros `or` com segurança.
 
@@ -73,6 +74,7 @@ export async function fetchEntryPage(
     if (filters.accountIds.length) query = query.in("account_id", filters.accountIds);
     if (filters.paymentMethodIds.length) query = query.in("payment_method_id", filters.paymentMethodIds);
     if (filters.folder) query = query.eq("document_filed", filters.folder === "na-pasta");
+    if (filters.reconciled !== undefined) query = query.eq("reconciled", filters.reconciled);
     if (filters.associateIds.length && filters.withoutAssociate) query = query.or(`associate_id.is.null,associate_id.in.(${filters.associateIds.join(",")})`);
     else if (filters.associateIds.length) query = query.in("associate_id", filters.associateIds);
     else if (filters.withoutAssociate) query = query.is("associate_id", null);
@@ -93,6 +95,7 @@ export async function fetchEntryPage(
   if (filters.accountIds.length) query = query.in("account_id", filters.accountIds);
   if (filters.paymentMethodIds.length) query = query.in("payment_method_id", filters.paymentMethodIds);
   if (filters.folder) query = query.eq("document_filed", filters.folder === "na-pasta");
+  if (filters.reconciled !== undefined) query = query.eq("reconciled", filters.reconciled);
   if (filters.associateIds.length && filters.withoutAssociate) query = query.or(`has_split_without_associate.is.true,associate_ids.ov.{${filters.associateIds.join(",")}}`);
   else if (filters.associateIds.length) query = query.overlaps("associate_ids", filters.associateIds);
   else if (filters.withoutAssociate) query = query.eq("has_split_without_associate", true);

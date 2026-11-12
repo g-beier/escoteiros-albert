@@ -3,6 +3,7 @@ import { listHref, listQuery } from "./entries";
 
 describe("listHref", () => {
   it("volta para a lista sem filtros", () => expect(listHref(undefined)).toBe("/lancamentos"));
+  it("preserva o filtro de conciliação", () => expect(listHref("conciliado=nao")).toBe("/lancamentos?conciliado=nao"));
   it("preserva filtros conhecidos", () => expect(listHref("visao=rubricas&q=lanche&pasta=pendente")).toBe("/lancamentos?visao=rubricas&pasta=pendente&q=lanche"));
   it("descarta destinos externos e chaves desconhecidas", () => {
     expect(listHref("//evil.test")).toBe("/lancamentos");

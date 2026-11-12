@@ -30,6 +30,13 @@ describe("parseFilters", () => {
     expect(parseFilters({ pasta: ["na-pasta"] }).folder).toBe("na-pasta");
   });
 
+  it("lê o filtro de conciliação; as duas opções equivalem a todos", () => {
+    expect(parseFilters({ conciliado: "sim" }).reconciled).toBe(true);
+    expect(parseFilters({ conciliado: "nao" }).reconciled).toBe(false);
+    expect(parseFilters({ conciliado: "sim,nao" }).reconciled).toBeUndefined();
+    expect(parseFilters({ conciliado: "talvez" }).reconciled).toBeUndefined();
+  });
+
   it("limita a busca", () => expect(parseFilters({ q: "a".repeat(300) }).q).toHaveLength(100));
 });
 
@@ -52,6 +59,7 @@ describe("hasAnyFilter", () => {
     expect(hasAnyFilter({ ...empty, withoutAssociate: true })).toBe(true);
     expect(hasAnyFilter({ ...empty, categoryIds: [id] })).toBe(true);
     expect(hasAnyFilter({ ...empty, accountIds: [id] })).toBe(true);
+    expect(hasAnyFilter({ ...empty, reconciled: false })).toBe(true);
   });
 });
 

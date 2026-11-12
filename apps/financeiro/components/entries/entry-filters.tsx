@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useListParams } from "./filter-options";
 import { MultiFilter } from "./multi-filter";
 
-const FILTER_KEYS = ["de", "ate", "conta", "forma", "pasta", "associado", "rubrica", "q", "ofx"] as const;
+const FILTER_KEYS = ["de", "ate", "conta", "forma", "pasta", "conciliado", "associado", "rubrica", "q", "ofx"] as const;
 
 export function EntryFilters() {
   const { params, apply, pending } = useListParams();
@@ -48,6 +48,7 @@ export function EntryFilters() {
     <MultiFilter filterKey="conta" />
     <MultiFilter filterKey="forma" />
     <MultiFilter filterKey="pasta" />
+    <MultiFilter filterKey="conciliado" />
     <MultiFilter filterKey="associado" />
     <MultiFilter filterKey="rubrica" />
     <div className="relative min-w-48 flex-1">

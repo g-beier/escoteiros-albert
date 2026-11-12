@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-export type FilterKey = "conta" | "forma" | "pasta" | "associado" | "rubrica";
+export type FilterKey = "conta" | "forma" | "pasta" | "conciliado" | "associado" | "rubrica";
 export type FilterOption = { value: string; label: string; depth?: number; tone?: "receita" | "despesa" };
 export type FilterDimension = {
   label: string;

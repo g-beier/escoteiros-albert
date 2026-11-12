@@ -1,4 +1,5 @@
 export type FolderStatus = "pendente" | "na-pasta";
+export type ReconciledStatus = "sim" | "nao";
 
 export type EntryFilters = {
   from?: string;
@@ -6,6 +7,8 @@ export type EntryFilters = {
   accountIds: string[];
   paymentMethodIds: string[];
   folder?: FolderStatus;
+  /** Conciliado com o extrato (`conciliado=sim`) ou não (`conciliado=nao`); ausente = todos. */
+  reconciled?: boolean;
   associateIds: string[];
   /** Inclui rateios sem associado ("(Sem associado)" no filtro). */
   withoutAssociate: boolean;
@@ -59,6 +62,7 @@ const uuids = (value: string | string[] | undefined) => listValues(value).filter
  */
 export function parseFilters(params: RawSearchParams, now = new Date()): EntryFilters {
   const folders = listValues(params.pasta).filter((v): v is FolderStatus => v === "pendente" || v === "na-pasta");
+  const reconciled = listValues(params.conciliado).filter((v): v is ReconciledStatus => v === "sim" || v === "nao");
   const associates = listValues(params.associado);
   const q = first(params.q)?.slice(0, 100);
   return {
@@ -68,6 +72,7 @@ export function parseFilters(params: RawSearchParams, now = new Date()): EntryFi
     paymentMethodIds: uuids(params.forma),
     // as duas opções marcadas equivalem a não filtrar
     folder: folders.length === 1 ? folders[0] : undefined,
+    reconciled: reconciled.length === 1 ? reconciled[0] === "sim" : undefined,
     associateIds: associates.filter((v) => UUID.test(v)),
     withoutAssociate: associates.includes(NO_ASSOCIATE),
     categoryIds: uuids(params.rubrica),
@@ -88,7 +93,7 @@ export function likePattern(q: string) {
 }
 
 export function hasAnyFilter(filters: EntryFilters) {
-  return Boolean(filters.from || filters.to || filters.folder || filters.q || filters.ofx || filters.withoutAssociate
+  return Boolean(filters.from || filters.to || filters.folder || filters.reconciled !== undefined || filters.q || filters.ofx || filters.withoutAssociate
     || filters.accountIds.length || filters.paymentMethodIds.length || filters.associateIds.length || filters.categoryIds.length);
 }
 

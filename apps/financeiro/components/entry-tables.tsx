@@ -58,6 +58,8 @@ function AttachmentClip({ count }: { count?: number }) {
   </span>;
 }
 
+const ReconciledMark = () => <IconCircleCheck className="mr-1 inline size-3.5 align-[-2px] text-success" aria-label="Conciliado com o extrato" title="Conciliado com o extrato" />;
+
 const Empty = ({ children }: { children: React.ReactNode }) => <div className="px-6 py-12 text-center text-muted-foreground">{children}</div>;
 
 export function LedgerTable({ rows, filtered, order, sortHref }: { rows: LedgerRow[]; filtered: boolean } & Sort) {
@@ -72,7 +74,7 @@ export function LedgerTable({ rows, filtered, order, sortHref }: { rows: LedgerR
       <TableCell className={cell}>{row.payment_method_name}</TableCell>
       <TableCell className={cell}><span className="inline-flex items-center gap-1.5"><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} /><AttachmentClip count={row.attachment_count} /></span></TableCell>
       <TableCell className={cell}><OfxIds ids={row.external_ids ?? []} /></TableCell>
-      <TableCell className={amountCell(row.total_cents)}>{row.reconciled && <IconCircleCheck className="mr-1 inline size-3.5 align-[-2px] text-success" aria-label="Conciliado com o extrato" title="Conciliado com o extrato" />}{money(row.total_cents / 100)}</TableCell>
+      <TableCell className={amountCell(row.total_cents)}>{row.reconciled && <ReconciledMark />}{money(row.total_cents / 100)}</TableCell>
       <TableCell className="px-1 py-0.5 align-middle"><EntryRowActions entryId={row.entry_id} filed={row.document_filed} /></TableCell>
     </EntryRow>)}</TableBody>
   </Table>;
@@ -92,7 +94,7 @@ export function SplitTable({ rows, filtered, order, sortHref }: { rows: SplitRow
         <TableCell className={cell}>{row.payment_method_name}</TableCell>
         <TableCell className={cell}><span className="inline-flex items-center gap-1.5"><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} />{!continued && <AttachmentClip count={row.attachment_count} />}</span></TableCell>
         <TableCell className={cell}>{!continued && <OfxIds ids={row.external_ids ?? []} />}</TableCell>
-        <TableCell className={amountCell(row.amount_cents)}>{money(row.amount_cents / 100)}</TableCell>
+        <TableCell className={amountCell(row.amount_cents)}>{row.reconciled && !continued && <ReconciledMark />}{money(row.amount_cents / 100)}</TableCell>
         <TableCell className={cell}>{row.associate_name ?? <span className="text-muted-foreground">—</span>}</TableCell>
         <TableCell className={wrapCell}>{row.description}</TableCell>
         <TableCell className={cell}><CategoryTag code={row.category_code} name={row.category_name} kind={row.category_kind} /></TableCell>

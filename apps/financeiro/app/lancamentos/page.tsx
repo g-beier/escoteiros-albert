@@ -47,6 +47,7 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
     conta: { label: "Conta", options: toOptions(accounts) },
     forma: { label: "Forma pgto", options: toOptions(paymentMethods) },
     pasta: { label: "Documentos", options: [{ value: "pendente", label: "Pendente" }, { value: "na-pasta", label: "Arquivado" }] },
+    conciliado: { label: "Conciliado", options: [{ value: "sim", label: "Conciliado" }, { value: "nao", label: "Não conciliado" }] },
     associado: { label: "Associado", options: [{ value: NO_ASSOCIATE, label: "(Sem associado)" }, ...toOptions(associates)] },
     rubrica: {
       label: "Rubrica",
