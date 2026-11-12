@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { pageMember } from "@/lib/session";
 import { AppHeader } from "@/components/app-header";
+import { PageBody, PageHeader, SettingsTabs } from "@/components/nav/page-header";
 import { AccountsManager, type AccountItem } from "@/components/accounts-manager";
 import { CatalogManager } from "@/components/catalog-manager";
 import { CATALOG_KINDS } from "@/lib/catalogs";
@@ -10,7 +11,16 @@ type Row = { id: string; name: string; active: boolean; usage: { count: number }
 type PaymentMethodRow = Row & { default_account_id: string | null };
 type AccountRow = Omit<AccountItem, "usage"> & { usage: { count: number }[] };
 
-export default async function CatalogsPage() {
+const TABS = {
+  contas: "Onde o dinheiro está (conta corrente, poupança, caixa), com saldo inicial e conta contábil de contrapartida.",
+  rubricas: "Classificação dos rateios, em árvore pelo código, com a conta contábil usada na exportação para a contabilidade. Para recategorizar, clique no número de uso.",
+  formas: "Como o dinheiro se moveu; a conta padrão é sugerida nos novos lançamentos.",
+} as const;
+type Tab = keyof typeof TABS;
+
+export default async function CatalogsPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
+  const { aba } = await searchParams;
+  const tab: Tab = aba === "rubricas" || aba === "formas" ? aba : "contas";
   const membership = await pageMember();
   const { supabase, user } = membership;
   const canEdit = membership.canEdit;
@@ -39,13 +49,12 @@ export default async function CatalogsPage() {
 
   return <div className="shell">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/cadastros" />
-    <main className="main">
-      <div className="page-head"><div><span className="eyebrow">Cadastros</span><h1>Contas, rubricas e formas de pagamento</h1><p className="lede">Inativos saem dos novos lançamentos e continuam nos antigos. Para recategorizar, clique no número de uso ou filtre a lista por rubricas inativas.</p></div></div>
-      <div className="grid gap-5">
-        <AccountsManager accounts={accounts} canEdit={canEdit} />
-        <CatalogManager kind="payment_methods" {...CATALOG_KINDS.payment_methods} items={paymentMethodItems} canEdit={canEdit} accounts={accountOptions} />
-        <CatalogManager kind="categories" {...CATALOG_KINDS.categories} items={categoryItems} canEdit={canEdit} />
-      </div>
-    </main>
+    <PageBody>
+      <PageHeader title="Configurações" tabs={<SettingsTabs current={tab} canEdit={canEdit} />}
+        description={`${TABS[tab]} Inativos saem dos novos lançamentos e continuam nos antigos.`} />
+      {tab === "contas" && <AccountsManager accounts={accounts} canEdit={canEdit} />}
+      {tab === "formas" && <CatalogManager kind="payment_methods" {...CATALOG_KINDS.payment_methods} items={paymentMethodItems} canEdit={canEdit} accounts={accountOptions} />}
+      {tab === "rubricas" && <CatalogManager kind="categories" {...CATALOG_KINDS.categories} items={categoryItems} canEdit={canEdit} />}
+    </PageBody>
   </div>;
 }

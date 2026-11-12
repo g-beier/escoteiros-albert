@@ -15,15 +15,17 @@ Modelo principal: `accounts` (contas, com saldo inicial), `payment_methods` (com
 
 ## Telas
 
+Navegação: **Início · Lançamentos · Extrato** no menu principal; **Configurações** (engrenagem) com as abas Contas, Rubricas, Formas de pagamento e Associados; menu da pessoa (iniciais) com email, papel, **Usuários** (administração) e Sair. Extrato tem as abas **Conciliar** (`/conciliacao`) e **Importar** (`/importacao`), que levam a conta de uma para a outra. Exportar fica em Lançamentos. Todas as telas usam o mesmo cabeçalho (`components/nav/page-header.tsx`).
+
 - `/` — resumo do ano: receitas, despesas, saldo, documentos pendentes, mês a mês e últimos lançamentos.
 - `/lancamentos` — lançamentos: visões **Por lançamento** (uma linha por lançamento, com ✓ nos conciliados) e **Por rubrica** (um rateio por linha), colunas Conta e **ID OFX**, filtros na URL (`de`, `ate`, `conta`, `forma`, `pasta` = documentos, `associado`, `rubrica`, `q`, `ofx`; sem `de`, começa em 1º de janeiro do ano atual, `de=tudo` mostra todos) e conferência rápida dos documentos.
 - `/exportar/fluxo` (XLSX ou CSV), `/exportar/realizado` (XLSX) e `/exportar/contabil` (CSV em partida dobrada para o sistema contábil).
 - `/lancamentos/novo` — novo lançamento; com `?linha=<id>` ("Criar lançamento" na conciliação) vem preenchido pela linha do extrato e já sai conciliado.
 - `/conciliacao` — extrato × lançamentos de uma conta e período (`conta`, `de`, `ate`; padrão: primeira conta ativa, mês atual): sugestões por mesmo valor no mesmo dia ou até 3 dias depois/antes, lançamentos "A definir" como candidatos, vínculo manual com conferência das somas, criar lançamentos e ignorar linhas em massa, fora do extrato, trocar conta, desfazer e fechamento com o saldo do extrato. Somente leitura para consulta.
 - `/lancamentos/[id]` — detalhes com o formulário completo e as linhas do extrato vinculadas (com ID OFX); edição e exclusão para tesouraria/administração, somente leitura para consulta.
-- `/associados` — associados (nome, ramo, seção, ativo).
+- `/associados` — Configurações › Associados (nome, ramo, seção, ativo); única aba de Configurações para consulta.
 - `/importacao` — importar extrato **OFX** numa conta (tesouraria e administração): a conta (banco) é escolhida em cada importação — vale para OFX convertidos —, o perfil de leitura da última importação da conta é aplicado sozinho (ajustes recolhidos), conferência com o que já existe na conta (novas, já importadas, suspeitas, órfãs), totais, saldos, TRNTYPE e ID OFX, e lista das importações recentes da conta com **desfazer** (`conta` na URL). Depois de importar, segue para `/conciliacao?conta=…&de=…&ate=…`.
-- `/cadastros` — contas (banco, agência, número, saldo inicial, conta contábil), formas de pagamento com conta padrão e rubricas com conta contábil (tesouraria e administração).
+- `/cadastros?aba=contas|rubricas|formas` — Configurações: contas (banco, agência, número, saldo inicial, conta contábil), rubricas com conta contábil e formas de pagamento com conta padrão (tesouraria e administração).
 - `/usuarios` — convites e papéis (administração).
 
 ## Componentes

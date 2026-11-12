@@ -4,6 +4,7 @@ import { ReconciliationBoard, type BoardData, type LinkSet } from "@/components/
 import { ReconciliationFilters } from "@/components/reconciliation/reconciliation-filters";
 import { byDateThenAmount, closingCheck, parsePeriod, suggestMatches, type OpenEntry, type OpenLine } from "@/lib/reconciliation";
 import { pageSession } from "@/lib/session";
+import { ExtratoTabs, PageHeader } from "@/components/nav/page-header";
 import { fetchPaged } from "@/lib/supabase/paged";
 import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
 
@@ -105,17 +106,12 @@ export default async function ReconciliationPage({ searchParams }: { searchParam
   return <div className="shell">
     {header}
     <main className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-6 pb-28">
-      <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-        <div className="grid gap-0.5">
-          <h1 className="m-0 text-xl leading-tight font-bold tracking-tight">Conciliação</h1>
-          <p className="m-0 text-xs text-muted-foreground">
-            Pendentes: <strong className="num text-foreground">{openLines.length}</strong> {openLines.length === 1 ? "linha do extrato" : "linhas do extrato"} · <strong className="num text-foreground">{openEntries.length}</strong> {openEntries.length === 1 ? "lançamento" : "lançamentos"}
-          </p>
-        </div>
+      <PageHeader title="Extrato" tabs={<ExtratoTabs current="conciliar" accountId={account.id} />}
+        description={<>Pendentes: <strong className="num text-foreground">{openLines.length}</strong> {openLines.length === 1 ? "linha do extrato" : "linhas do extrato"} · <strong className="num text-foreground">{openEntries.length}</strong> {openEntries.length === 1 ? "lançamento" : "lançamentos"}</>}>
         <ReconciliationFilters key={`${account.id}|${period.from}|${period.to}`}
           accounts={accounts.map((a) => ({ value: a.id, label: a.active ? a.name : `${a.name} (inativa)` }))}
           accountId={account.id} from={period.from} to={period.to} />
-      </div>
+      </PageHeader>
       {loadError && <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-destructive">Não foi possível carregar a conciliação: {loadError}</p>}
       <ReconciliationBoard data={data} canEdit={canEdit} />
     </main>

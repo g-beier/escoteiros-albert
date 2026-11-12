@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const missing = missingLedgerCodes(splits);
     if (missing.length) {
       const list = missing.slice(0, 8).join(", ") + (missing.length > 8 ? ` e mais ${missing.length - 8}` : "");
-      return errorResponse(`Rubricas sem conta contábil: ${list}. Cadastre a conta contábil em Cadastros antes de exportar.`, 422);
+      return errorResponse(`Rubricas sem conta contábil: ${list}. Cadastre a conta contábil em Configurações › Rubricas antes de exportar.`, 422);
     }
     const csv = toCsv(ACCOUNTING_COLUMNS, toAccountingRows(splits));
     return csvResponse(encodeCsv(csv, encoding), `contabil_${period.from}_${period.to}.csv`, encoding);

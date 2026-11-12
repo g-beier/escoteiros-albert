@@ -1,6 +1,7 @@
 import { pageMember } from "@/lib/session";
 import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
 import { AppHeader } from "@/components/app-header";
+import { PageBody, PageHeader, SettingsTabs } from "@/components/nav/page-header";
 import { AssociateRow, NewAssociate, type AssociateItem } from "@/components/new-associate";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { branchLabels, isScoutBranch } from "@/lib/associates";
@@ -17,9 +18,10 @@ export default async function AssociatesPage() {
 
   return <div className="shell">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/associados" />
-    <main className="main">
-      <div className="page-head"><div><span className="eyebrow">Cadastros</span><h1>Associados</h1><p className="lede">Lista usada para vincular rateios a associados. Inativos deixam de aparecer nos novos lançamentos.</p></div></div>
-      {canEdit && <SectionCard className="mb-5"><SectionHeader title="Novo associado" /><div className="p-4"><NewAssociate /></div></SectionCard>}
+    <PageBody>
+      <PageHeader title="Configurações" tabs={<SettingsTabs current="associados" canEdit={canEdit} />}
+        description="Lista usada para vincular rateios a associados. Inativos deixam de aparecer nos novos lançamentos." />
+      {canEdit && <SectionCard><SectionHeader title="Novo associado" /><div className="p-4"><NewAssociate /></div></SectionCard>}
       <SectionCard><SectionHeader title="Cadastrados"><SectionCount>{associates.filter((a) => a.active).length} ativos de {associates.length}</SectionCount></SectionHeader>
         {!associates.length ? <div className="px-6 py-12 text-center text-muted-foreground">Nenhum associado cadastrado.</div> : <div className="overflow-x-auto"><Table className="min-w-[720px]">
           <TableCaption className="sr-only">Associados do grupo</TableCaption>
@@ -30,6 +32,6 @@ export default async function AssociatesPage() {
           </TableBody>
         </Table></div>}
       </SectionCard>
-    </main>
+    </PageBody>
   </div>;
 }

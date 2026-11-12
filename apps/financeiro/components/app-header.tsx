@@ -1,22 +1,39 @@
 import Link from "next/link";
-import { logout } from "@/app/actions";
+import { IconSettings } from "@tabler/icons-react";
 import { Brand } from "@/components/brand";
-import { canManageEntries } from "@/lib/auth";
+import { UserMenu } from "@/components/nav/user-menu";
+import { cn } from "@/lib/utils";
 
-const links = [
-  { href: "/", label: "Início", show: () => true },
-  { href: "/lancamentos", label: "Lançamentos", show: () => true },
-  { href: "/conciliacao", label: "Conciliação", show: () => true },
-  { href: "/associados", label: "Associados", show: () => true },
-  { href: "/importacao", label: "Importar extrato", show: (role: string) => canManageEntries(role) },
-  { href: "/cadastros", label: "Cadastros", show: (role: string) => canManageEntries(role) },
-  { href: "/usuarios", label: "Usuários", show: (role: string) => role === "admin" },
+/**
+ * Navegação principal: Início · Lançamentos · Extrato (conciliar e importar).
+ * Configurações (contas, rubricas, formas de pagamento, associados) na engrenagem; email, Usuários e Sair no menu da pessoa.
+ */
+const SECTIONS = [
+  { href: "/", label: "Início", match: (path: string) => path === "/" },
+  { href: "/lancamentos", label: "Lançamentos", match: (path: string) => path.startsWith("/lancamentos") },
+  { href: "/conciliacao", label: "Extrato", match: (path: string) => path.startsWith("/conciliacao") || path.startsWith("/importacao") },
 ];
 
+export const isSettingsPath = (path: string) => path.startsWith("/cadastros") || path.startsWith("/associados");
+
 export function AppHeader({ role, email, current, wide = false }: { role: string; email: string; current: string; wide?: boolean }) {
-  return <header className={wide ? "topbar topbar-wide" : "topbar"}><Brand /><nav className="nav-actions" aria-label="Navegação principal">
-    {links.filter((link) => link.href !== current && link.show(role)).map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}
-    <span className="nav-email">{email}</span>
-    <form action={logout}><button className="link-button">Sair</button></form>
-  </nav></header>;
+  const settingsActive = isSettingsPath(current);
+  return <header className={wide ? "topbar topbar-wide" : "topbar"}>
+    <Brand />
+    <nav className="flex items-center gap-1 sm:gap-2" aria-label="Navegação principal">
+      {SECTIONS.map((section) => {
+        const active = section.match(current);
+        return <Link key={section.href} href={section.href} aria-current={active ? "page" : undefined}
+          className={cn("rounded-full px-2.5 py-1.5 text-sm font-semibold no-underline transition-colors sm:px-3",
+            active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-accent hover:text-foreground")}>{section.label}</Link>;
+      })}
+      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+      <Link href={role === "viewer" ? "/associados" : "/cadastros"} aria-label="Configurações" title="Configurações: contas, rubricas, formas de pagamento e associados"
+        aria-current={settingsActive ? "page" : undefined}
+        className={cn("grid size-8 place-items-center rounded-full transition-colors", settingsActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-accent hover:text-foreground")}>
+        <IconSettings className="size-[18px]" aria-hidden />
+      </Link>
+      <UserMenu email={email} role={role} active={current.startsWith("/usuarios")} />
+    </nav>
+  </header>;
 }

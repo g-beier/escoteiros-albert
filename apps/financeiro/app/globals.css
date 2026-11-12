@@ -119,14 +119,10 @@ a { color: inherit; }
 .brand-product { color: var(--purple); border-left: 1px solid var(--line); padding: 4px 0 4px 12px; font-size: 10px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; }
 .brand-light { color: white; width: fit-content; }
 .brand-light .brand-product { color: var(--green); border-color: #66626a; }
-.nav-actions { display: flex; align-items: center; gap: 18px; font-size: 14px; }
-.nav-actions a { font-weight: 650; text-decoration: none; }
-.link-button { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 8px; }
 .main { max-width: 1180px; margin: 0 auto; padding: 52px 24px 78px; }
 .eyebrow { text-transform: uppercase; letter-spacing: .12em; font-size: 11px; font-weight: 700; color: var(--purple); }
 h1 { margin: 8px 0 10px; font-size: clamp(40px, 5vw, 60px); font-weight: 700; letter-spacing: -.055em; line-height: .98; }
 .lede { color: var(--ink-muted); margin: 0; max-width: 680px; line-height: 1.55; }
-.page-head { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: 32px; }
 .tabs { display: flex; gap: 5px; padding: 5px; background: #ebe7df; border: 1px solid var(--line); border-radius: 999px; margin: 30px 0 20px; width: fit-content; }
 .tab { text-decoration: none; color: var(--ink-muted); padding: 10px 17px; border-radius: 999px; font-size: 14px; font-weight: 700; }
 .tab.active { background: var(--ink); color: white; }
@@ -223,15 +219,12 @@ tr.continued td { border-top: 1px dashed #ebece8; }
   .auth-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; padding: 28px 22px 36px; }
   .mobile-login-brand { display: block; width: min(430px, 100%); }
   .mobile-login-brand .brand-logo { width: 190px; }
-  .page-head { align-items: flex-start; flex-direction: column; }
   .summary, .summary-4 { grid-template-columns: 1fr 1fr; }
   .grid-2 { grid-template-columns: 1fr; }
   .split-row { grid-template-columns: minmax(0, 1fr) 110px 38px; grid-template-areas: "category amount remove" "description description description" "associate associate associate"; }
   .associate-form { grid-template-columns: 1fr; }
-  .nav-email { display: none; }
   .topbar { flex-wrap: wrap; gap: 6px 12px; padding-block: 10px; }
   .brand { flex-shrink: 0; }
-  .nav-actions { gap: 12px; font-size: 13px; flex-wrap: wrap; }
   .invite-form { grid-template-columns: 1fr; }
   .full-row { grid-column: auto; }
   .inline-form { align-items: stretch; flex-direction: column; }

@@ -2,12 +2,11 @@ import Link from "next/link";
 import { IconArrowRight, IconFolderExclamation } from "@tabler/icons-react";
 import { AppHeader } from "@/components/app-header";
 import { NewEntryButton } from "@/components/entries/entry-editor";
-import { ExportMenu } from "@/components/export/export-menu";
 import { SetupNeeded } from "@/components/setup-needed";
 import { buttonVariants } from "@/components/ui/button";
 import type { CategoryKind } from "@/lib/categories";
 import type { LedgerRow } from "@/lib/entry-queries";
-import { exportYears, MONTHS } from "@/lib/export/period";
+import { MONTHS } from "@/lib/export/period";
 import { ALL_DATES, currentYear } from "@/lib/filters";
 import { dateBR, money } from "@/lib/format";
 import { pageSession } from "@/lib/session";
@@ -35,14 +34,12 @@ export default async function Dashboard() {
   const canEdit = membership.canEdit;
   const year = currentYear();
 
-  const [{ data: categories }, { data: sums }, { count: pendingDocs }, { data: recent }, { data: firstEntry }, { data: lastEntry }] = await Promise.all([
+  const [{ data: categories }, { data: sums }, { count: pendingDocs }, { data: recent }] = await Promise.all([
     supabase.from("categories").select("id, kind").eq("group_id", groupId),
     supabase.rpc("realized_by_month", { p_group_id: groupId, p_year: year }),
     supabase.from("ledger_entries").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("document_filed", false),
     supabase.from("ledger_entry_rows").select("entry_id, entry_date, name, payment_method_name, document, document_filed, total_cents")
-      .eq("group_id", groupId).order("entry_date", { ascending: false }).order("created_at", { ascending: false }).limit(8),
-    supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date").limit(1).maybeSingle(),
-    supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date", { ascending: false }).limit(1).maybeSingle(),
+      .eq("group_id", groupId).order("entry_date", { ascending: false }).order("created_at", { ascending: false }).limit(12),
   ]);
 
   const kinds = new Map((categories ?? []).map((c) => [c.id as string, c.kind as CategoryKind | null]));
@@ -65,7 +62,6 @@ export default async function Dashboard() {
         <h1 className="m-0 text-xl leading-tight font-bold tracking-tight">Resumo de {year}</h1>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Link href="/lancamentos" className={buttonVariants({ variant: "outline", size: "lg" })}>Ver lançamentos <IconArrowRight data-icon="inline-end" /></Link>
-          <ExportMenu view="lancamentos" years={exportYears(firstEntry?.entry_date, lastEntry?.entry_date)} />
           {canEdit && <NewEntryButton returnQuery="" />}
         </div>
       </div>

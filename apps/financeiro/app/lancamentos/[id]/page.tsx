@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { IconArrowLeft } from "@tabler/icons-react";
 import { z } from "zod";
 import { AppHeader } from "@/components/app-header";
+import { PageBody, PageHeader } from "@/components/nav/page-header";
 import { EntryForm } from "@/components/entries/entry-form";
 import { fetchEntry, listHref } from "@/lib/entries";
 import { dateBR, money } from "@/lib/format";
@@ -18,7 +18,7 @@ type LinkedLine = {
 /** Linhas do extrato (OFX) vinculadas: o "fato" do banco por trás deste lançamento. */
 function StatementLines({ lines }: { lines: LinkedLine[] }) {
   const unique = [...new Map(lines.map((line) => [line.statement_line_id, line])).values()];
-  return <SectionCard className="mb-4" aria-labelledby="statement-lines-title">
+  return <SectionCard aria-labelledby="statement-lines-title">
     <SectionHeader title="Extrato" titleId="statement-lines-title" description="Movimentação do banco conciliada com este lançamento. O ID OFX junta os rateios à movimentação." />
     <Table>
       <TableCaption className="sr-only">Linhas do extrato vinculadas</TableCaption>
@@ -59,21 +59,16 @@ export default async function EntryDetailPage({ params, searchParams }: { params
 
   return <div className="shell">
     <AppHeader role={role} email={user.email ?? ""} current={`/lancamentos/${id}`} />
-    <main className="main">
-      <Link href={backHref} className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"><IconArrowLeft className="size-4" aria-hidden /> Voltar aos lançamentos</Link>
-      <div className="page-head">
-        <div>
-          <span className="eyebrow">{dateBR(entry.date)} · {entry.splits.length} {entry.splits.length === 1 ? "rubrica" : "rubricas"}</span>
-          <h1 className="break-words text-[clamp(28px,4vw,44px)]">{entry.name}</h1>
-          <p className="lede">
-            <span className={entry.totalCents < 0 ? "font-semibold text-destructive" : "font-semibold text-foreground"}>{money(entry.totalCents / 100)}</span>
-            {" · "}Criado em {dateTime.format(new Date(entry.createdAt))}{edited && <> · alterado em {dateTime.format(new Date(entry.updatedAt))}</>}
-          </p>
-        </div>
-      </div>
-      {!canEdit && <p className="mb-3 text-xs text-muted-foreground">Seu acesso é somente de consulta.</p>}
+    <PageBody>
+      <PageHeader title={entry.name} back={{ href: backHref, label: "Voltar aos lançamentos" }}
+        description={<>
+          <span className="num">{dateBR(entry.date)}</span> · <span className={entry.totalCents < 0 ? "num font-semibold text-destructive" : "num font-semibold text-foreground"}>{money(entry.totalCents / 100)}</span>
+          {" · "}{entry.splits.length} {entry.splits.length === 1 ? "rubrica" : "rubricas"}
+          {" · "}criado em {dateTime.format(new Date(entry.createdAt))}{edited && <> · alterado em {dateTime.format(new Date(entry.updatedAt))}</>}
+          {!canEdit && " · somente consulta"}
+        </>} />
       {(statementLines?.length ?? 0) > 0 && <StatementLines lines={statementLines as LinkedLine[]} />}
       <SectionCard className="p-5"><EntryForm entry={entry} catalogs={catalogs} canEdit={canEdit} backHref={backHref} /></SectionCard>
-    </main>
+    </PageBody>
   </div>;
 }

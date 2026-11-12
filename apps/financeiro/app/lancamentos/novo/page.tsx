@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { IconArrowLeft } from "@tabler/icons-react";
 import { SectionCard } from "@/components/section-card";
 import { AppHeader } from "@/components/app-header";
+import { PageBody, PageHeader } from "@/components/nav/page-header";
 import { EntryForm, type StatementLinePrefill } from "@/components/entries/entry-form";
 import { listHref } from "@/lib/entries";
 import { dateBR, money } from "@/lib/format";
@@ -36,16 +36,14 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
 
   return <div className="shell">
     <AppHeader role={role} email={user.email ?? ""} current="/lancamentos/novo" />
-    <main className="main">
-      <Link href={backHref} className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"><IconArrowLeft className="size-4" aria-hidden /> {line ? "Voltar à conciliação" : "Voltar aos lançamentos"}</Link>
-      <div className="page-head"><div><span className="eyebrow">Linha do extrato</span><h1>Novo lançamento</h1>
-        {line
-          ? <p className="lede">A partir do extrato: <strong>{line.description}</strong> em <span className="num">{dateBR(line.line_date)}</span>, <span className="num">{money(Number(line.amount_cents) / 100)}</span>. Valor e conta vêm da linha; distribua o valor entre as rubricas. Ao salvar, o lançamento já fica conciliado.</p>
-          : <p className="lede">Informe os dados do extrato e distribua o valor total entre as rubricas, cada uma com sua descrição.</p>}
-      </div></div>
+    <PageBody>
+      <PageHeader title="Novo lançamento" back={{ href: backHref, label: line ? "Voltar à conciliação" : "Voltar aos lançamentos" }}
+        description={line
+          ? <>A partir do extrato: <strong>{line.description}</strong> em <span className="num">{dateBR(line.line_date)}</span>, <span className="num">{money(Number(line.amount_cents) / 100)}</span>. Valor e conta vêm da linha; distribua o valor entre as rubricas. Ao salvar, o lançamento já fica conciliado.</>
+          : "Informe o histórico, a conta e a forma de pagamento e distribua o valor total entre as rubricas, cada uma com sua descrição."} />
       {line && line.status !== "aberta"
         ? <SectionCard className="p-5"><p className="m-0">Esta linha do extrato já foi {line.status === "conciliada" ? "conciliada" : "ignorada"}. <Link href={backHref} className="font-semibold underline">Voltar à conciliação</Link></p></SectionCard>
         : <SectionCard className="p-5"><EntryForm entry={null} catalogs={catalogs} canEdit backHref={backHref} fromLine={fromLine} /></SectionCard>}
-    </main>
+    </PageBody>
   </div>;
 }

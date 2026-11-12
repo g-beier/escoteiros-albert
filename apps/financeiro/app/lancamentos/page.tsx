@@ -2,6 +2,7 @@ import Link from "next/link";
 import { IconFolderExclamation } from "@tabler/icons-react";
 import { pageSession } from "@/lib/session";
 import { AppHeader } from "@/components/app-header";
+import { SectionTabs } from "@/components/nav/page-header";
 import { InfiniteEntries } from "@/components/entries/infinite-entries";
 import { fetchEntryPage } from "@/lib/entry-queries";
 import { EntryListProvider, NewEntryButton } from "@/components/entries/entry-editor";
@@ -63,8 +64,6 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
   const sortHref = `/lancamentos?${sortQuery}`;
   const viewHref = (visao: string) => { const next = new URLSearchParams(returnQuery); next.set("visao", visao); return `/lancamentos?${next}`; };
 
-  const tab = (active: boolean) => `rounded-full px-3 py-1 text-xs font-semibold transition-colors ${active ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground"}`;
-
   return <div className="shell shell-workspace">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/lancamentos" wide />
     <main className="workspace">
@@ -72,10 +71,10 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
       <EntryListProvider canEdit={canEdit} returnQuery={returnQuery}>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <h1 className="m-0 text-xl leading-tight font-bold tracking-tight">Lançamentos</h1>
-          <nav aria-label="Visões" className="inline-flex rounded-full bg-secondary p-0.5">
-            <Link aria-current={!byCategory ? "page" : undefined} className={tab(!byCategory)} href={viewHref("lancamentos")}>Por lançamento</Link>
-            <Link aria-current={byCategory ? "page" : undefined} className={tab(byCategory)} href={viewHref("rubricas")}>Por rubrica</Link>
-          </nav>
+          <SectionTabs label="Visões" tabs={[
+            { href: viewHref("lancamentos"), label: "Por lançamento", active: !byCategory },
+            { href: viewHref("rubricas"), label: "Por rubrica", active: byCategory },
+          ]} />
           <div className="ml-auto flex items-center gap-2">
             {(pendingDocs ?? 0) > 0 && filters.folder !== "pendente" && <Link href={`/lancamentos?pasta=pendente&de=${ALL_DATES}`} className="inline-flex items-center gap-1.5 rounded-full bg-[#f5eed1] px-3 py-1 text-xs font-semibold text-[#725d0d] hover:ring-1 hover:ring-current"><IconFolderExclamation className="size-4" aria-hidden /> {pendingDocs} {pendingDocs === 1 ? "documento pendente" : "documentos pendentes"}</Link>}
             <ExportMenu view={byCategory ? "rubricas" : "lancamentos"} from={filters.from} to={filters.to} years={years} accounts={toOptions(accounts)} />
