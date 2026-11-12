@@ -418,12 +418,14 @@ function BulkCreateForm({ lines, paymentMethods, pending, onClose, onConfirm }: 
       <strong className="num text-success">{ready.length.toLocaleString("pt-BR")}</strong> {ready.length === 1 ? "pronta" : "prontas"} (forma de pagamento sugerida)
       {missing > 0 && <> · <strong className="num text-destructive">{missing.toLocaleString("pt-BR")}</strong> sem forma de pagamento: completam aqui ou ficam selecionadas para depois</>}
     </p>
-    <div className="flex flex-wrap items-end gap-2">
-      <div className="grid gap-1.5"><Label htmlFor="bulk-method">Forma de pagamento</Label>
-        <OptionSelect id="bulk-method" className="w-56" value={allMethod} onValueChange={setAllMethod} options={options} placeholder="Escolha…" /></div>
+    <div className="grid gap-1.5">
+      <Label htmlFor="bulk-method">Forma de pagamento</Label>
+      <div className="flex flex-wrap items-center gap-2">
+      <OptionSelect id="bulk-method" className="w-56" value={allMethod} onValueChange={setAllMethod} options={options} placeholder="Escolha…" />
       <Button type="button" variant="outline" disabled={!allMethod || !missing} onClick={() => setItems((current) => current.map((item) => item.paymentMethodId ? item : { ...item, paymentMethodId: allMethod }))}>Aplicar às que faltam</Button>
       <Button type="button" variant="ghost" disabled={!allMethod} onClick={() => setItems((current) => current.map((item) => ({ ...item, paymentMethodId: allMethod })))}>Aplicar a todas</Button>
-      <Label className="ml-auto font-normal"><Checkbox checked={showAll} onCheckedChange={(value) => setShowAll(value === true)} /> Mostrar também as prontas</Label>
+      <Label className="ml-auto h-7 items-center font-normal"><Checkbox checked={showAll} onCheckedChange={(value) => setShowAll(value === true)} /> Mostrar também as prontas</Label>
+      </div>
     </div>
     {rows.length > 0 ? <div className="max-h-[50vh] overflow-y-auto rounded-md border">
       <table className="w-full min-w-0 text-xs">
