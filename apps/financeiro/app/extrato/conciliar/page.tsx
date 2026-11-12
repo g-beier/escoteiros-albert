@@ -36,7 +36,7 @@ export default async function ReconciliationPage({ searchParams }: { searchParam
   const requested = first(params.conta);
   const account = accounts.find((a) => a.id === requested) ?? accounts.find((a) => a.active && a.kind !== "outro") ?? accounts.find((a) => a.active) ?? accounts[0];
 
-  const header = <AppHeader role={membership.role} email={user.email ?? ""} current="/conciliacao" />;
+  const header = <AppHeader role={membership.role} email={user.email ?? ""} current="/extrato/conciliar" />;
   if (!account) {
     return <div className="shell">{header}<main className={PAGE_BODY}>
       <PageHeader title="Extrato" crumbs={extratoCrumbs("conciliar")} tabs={<ExtratoTabs current="conciliar" />}

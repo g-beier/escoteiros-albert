@@ -8,12 +8,12 @@ import { ledgerWorkbook } from "./xlsx";
 const row = (entry_date: string, total_cents: number, external_ids: string[] = []): LedgerRow =>
   ({ entry_id: entry_date, entry_date, name: "Fulano", account_name: "Conta corrente", payment_method_name: "PIX", document: null, document_filed: false, total_cents, external_ids });
 
-it("fluxo por lançamento: datas, valores, ID OFX e totais", async () => {
+it("fluxo, movimentações: datas, valores, ID OFX e totais", async () => {
   const buffer = await ledgerWorkbook([row("2026-03-01", 9000, ["FIT-1"]), row("2026-03-31", -2500)], { from: "2026-03-01", to: "2026-03-31" });
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
-  const sheet = workbook.getWorksheet("Fluxo por lançamento")!;
-  expect(sheet.getCell("A1").value).toBe("Fluxo de caixa por lançamento — 01/03/2026 a 31/03/2026");
+  const sheet = workbook.getWorksheet("Movimentações")!;
+  expect(sheet.getCell("A1").value).toBe("Fluxo de caixa: movimentações — 01/03/2026 a 31/03/2026");
   expect(sheet.getCell("A4").value).toBe("Data");
   expect((sheet.getCell("A5").value as Date).toISOString().slice(0, 10)).toBe("2026-03-01");
   expect(sheet.getCell("C5").value).toBe("Conta corrente");

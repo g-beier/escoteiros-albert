@@ -8,7 +8,7 @@ describe("parseFilters", () => {
   it("lê filtros com vários valores", () => {
     expect(parseFilters({ de: "2026-01-01", ate: "2026-01-31", conta: id2, forma: `${id},${id2}`, pasta: "pendente", associado: `${id},nenhum`, rubrica: id, q: " lanche " })).toEqual({
       from: "2026-01-01", to: "2026-01-31", accountIds: [id2], paymentMethodIds: [id, id2], folder: "pendente",
-      associateIds: [id], withoutAssociate: true, categoryIds: [id], q: "lanche",
+      associateIds: [id], withoutAssociate: true, categoryTokens: [id], q: "lanche",
     });
   });
 
@@ -21,7 +21,7 @@ describe("parseFilters", () => {
 
   it("descarta valores malformados", () => {
     expect(parseFilters({ de: "01/01/2026", conta: "y", forma: "x", pasta: "talvez", rubrica: "' or 1=1", q: "  " })).toEqual({
-      from: defaultFrom(), to: undefined, accountIds: [], paymentMethodIds: [], folder: undefined, associateIds: [], withoutAssociate: false, categoryIds: [], q: undefined,
+      from: defaultFrom(), to: undefined, accountIds: [], paymentMethodIds: [], folder: undefined, associateIds: [], withoutAssociate: false, categoryTokens: [], q: undefined,
     });
   });
 
@@ -57,7 +57,7 @@ describe("hasAnyFilter", () => {
     const empty = parseFilters({ de: ALL_DATES });
     expect(hasAnyFilter(empty)).toBe(false);
     expect(hasAnyFilter({ ...empty, withoutAssociate: true })).toBe(true);
-    expect(hasAnyFilter({ ...empty, categoryIds: [id] })).toBe(true);
+    expect(hasAnyFilter({ ...empty, categoryTokens: [id] })).toBe(true);
     expect(hasAnyFilter({ ...empty, accountIds: [id] })).toBe(true);
     expect(hasAnyFilter({ ...empty, reconciled: false })).toBe(true);
   });

@@ -1,9 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { decodeCategorySelection } from "@/lib/categories";
 import { likePattern, type EntryFilters, type SortOrder } from "@/lib/filters";
 
 export const PAGE_SIZE = 100;
 
-export type EntryView = "lancamentos" | "rubricas";
+/** Movimentações: um lançamento por linha; Detalhamento: um rateio por linha. */
+export type EntryView = "movimentacoes" | "detalhamento";
 
 export type LedgerRow = {
   entry_id: string;
@@ -45,8 +47,8 @@ export type SplitRow = {
 };
 
 export type EntryPage =
-  | { view: "lancamentos"; rows: LedgerRow[]; total: number | null; error?: string }
-  | { view: "rubricas"; rows: SplitRow[]; total: number | null; error?: string };
+  | { view: "movimentacoes"; rows: LedgerRow[]; total: number | null; error?: string }
+  | { view: "detalhamento"; rows: SplitRow[]; total: number | null; error?: string };
 
 export const LEDGER_COLUMNS = "entry_id, entry_date, name, account_name, payment_method_name, document, document_filed, total_cents, reconciled, external_ids";
 export const SPLIT_COLUMNS = "split_id, entry_id, entry_date, entry_name, account_name, payment_method_name, document, document_filed, amount_cents, description, category_name, category_code, category_kind, associate_name, category_ledger_code, account_ledger_code, external_ids, reconciled";
@@ -58,14 +60,25 @@ export const SPLIT_COLUMNS = "split_id, entry_id, entry_date, entry_name, accoun
  * que páginas consecutivas não repitam nem pulem linhas; o cliente ainda descarta duplicados
  * caso algo seja lançado durante a rolagem.
  */
+/** IDs das rubricas do filtro (null = sem filtro). Seleção vazia vira um ID impossível, para não listar nada. */
+async function resolveCategoryTokens(supabase: SupabaseClient, groupId: string, tokens: string[]): Promise<{ ids: string[] | null; error?: string }> {
+  if (!tokens.length) return { ids: null };
+  const { data, error } = await supabase.from("categories").select("id, parent_id").eq("group_id", groupId);
+  if (error) return { ids: null, error: error.message };
+  const ids = decodeCategorySelection(tokens, data ?? []);
+  return { ids: ids.length ? ids : ["00000000-0000-0000-0000-000000000000"] };
+}
+
 export async function fetchEntryPage(
   supabase: SupabaseClient, groupId: string, view: EntryView, filters: EntryFilters, order: SortOrder, offset: number, withTotal: boolean,
 ): Promise<EntryPage> {
   const ascending = order === "asc";
   const range = [offset, offset + PAGE_SIZE - 1] as const;
   const count = withTotal ? "exact" as const : undefined;
+  const { ids: categoryIds, error: categoryError } = await resolveCategoryTokens(supabase, groupId, filters.categoryTokens);
+  if (categoryError) return { view, rows: [], total: null, error: categoryError };
 
-  if (view === "rubricas") {
+  if (view === "detalhamento") {
     let query = supabase.from("entry_split_rows")
       .select(SPLIT_COLUMNS, { count })
       .eq("group_id", groupId);
@@ -78,7 +91,7 @@ export async function fetchEntryPage(
     if (filters.associateIds.length && filters.withoutAssociate) query = query.or(`associate_id.is.null,associate_id.in.(${filters.associateIds.join(",")})`);
     else if (filters.associateIds.length) query = query.in("associate_id", filters.associateIds);
     else if (filters.withoutAssociate) query = query.is("associate_id", null);
-    if (filters.categoryIds.length) query = query.in("category_id", filters.categoryIds);
+    if (categoryIds) query = query.in("category_id", categoryIds);
     if (filters.q) query = query.ilike("search_text", likePattern(filters.q));
     if (filters.ofx) query = query.contains("external_ids", [filters.ofx]);
     const { data, error, count: total } = await query
@@ -99,7 +112,7 @@ export async function fetchEntryPage(
   if (filters.associateIds.length && filters.withoutAssociate) query = query.or(`has_split_without_associate.is.true,associate_ids.ov.{${filters.associateIds.join(",")}}`);
   else if (filters.associateIds.length) query = query.overlaps("associate_ids", filters.associateIds);
   else if (filters.withoutAssociate) query = query.eq("has_split_without_associate", true);
-  if (filters.categoryIds.length) query = query.overlaps("category_ids", filters.categoryIds);
+  if (categoryIds) query = query.overlaps("category_ids", categoryIds);
   if (filters.q) query = query.ilike("search_text", likePattern(filters.q));
   if (filters.ofx) query = query.contains("external_ids", [filters.ofx]);
   const { data, error, count: total } = await query

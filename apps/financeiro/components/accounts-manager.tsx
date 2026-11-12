@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { IconPencil, IconPlus } from "@tabler/icons-react";
-import { createAccount, setAccountActive, updateAccount, type CatalogFormState } from "@/app/cadastros/actions";
+import { createAccount, setAccountActive, updateAccount, type CatalogFormState } from "@/app/configuracoes/actions";
 import { OptionSelect } from "@/components/option-controls";
 import { LedgerCodeInput } from "@/components/ledger-code-input";
 import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";

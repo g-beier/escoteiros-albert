@@ -18,7 +18,7 @@ test("criar, filtrar, editar e excluir lançamentos", async ({ page }) => {
   });
 
   await test.step("buscar pelo histórico", async () => {
-    await page.goto("/lancamentos");
+    await page.goto("/lancamentos/movimentacoes");
     await search(page, tag);
     await expect(entryRow(page, income)).toBeVisible();
     await expect(entryRow(page, expense)).toBeVisible();
@@ -80,7 +80,7 @@ test("criar, filtrar, editar e excluir lançamentos", async ({ page }) => {
     await page.getByRole("button", { name: "Excluir lançamento" }).click();
     await page.getByRole("dialog", { name: "Excluir lançamento?" }).getByRole("button", { name: "Excluir" }).click();
     await expect(page.getByText("Lançamento excluído.")).toBeVisible();
-    await expect(page).toHaveURL(/\/lancamentos(\?|$)/);
+    await expect(page).toHaveURL(/\/lancamentos\/movimentacoes(\?|$)/);
     await search(page, tag);
     await expect(entriesTable(page).getByRole("link", { name: new RegExp(tag) })).toHaveCount(0);
   });

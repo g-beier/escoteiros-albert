@@ -11,7 +11,7 @@ import { ProfilesManager, type ProfileItem } from "@/components/import/profiles-
 import { profileAccountUses, profileSettingsSummary, type ProfileImport } from "@/lib/import-flow";
 import { fetchImportProfiles } from "@/lib/import-queries";
 import { CATALOG_KINDS } from "@/lib/catalogs";
-import { depthOf, descendantsMap, sortCategories, type CategoryItem } from "@/lib/categories";
+import { depthOf, sortCategories, type CategoryItem } from "@/lib/categories";
 
 type Row = { id: string; name: string; active: boolean; usage: { count: number }[] };
 type PaymentMethodRow = Row & { default_account_id: string | null };
@@ -26,9 +26,11 @@ const TABS = {
 } as const;
 type Tab = keyof typeof TABS;
 
-export default async function CatalogsPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
-  const { aba } = await searchParams;
-  const tab: Tab = aba === "rubricas" || aba === "formas" || aba === "perfis" || aba === "mensalidades" ? aba : "contas";
+/** Configurações › Contas, Rubricas, Formas de pagamento, Perfis de leitura e Mensalidades (`/configuracoes/<aba>`). */
+export default async function SettingsPage({ params }: { params: Promise<{ aba: string }> }) {
+  const { aba } = await params;
+  if (!(aba in TABS)) notFound();
+  const tab = aba as Tab;
   const membership = await pageMember();
   const { supabase, user } = membership;
   const canEdit = membership.canEdit;
@@ -61,17 +63,16 @@ export default async function CatalogsPage({ searchParams }: { searchParams: Pro
   }
 
   const tree = sortCategories((categories ?? []) as (CategoryItem & { ledger_code: string | null; usage: { count: number }[] })[]);
-  const descendants = descendantsMap(tree);
   const parents = new Set(tree.map((c) => c.parent_id).filter(Boolean));
   const categoryItems = tree.map((c) => ({
     id: c.id, name: c.name, active: c.active, code: c.code, kind: c.kind, depth: depthOf(c.code), isGroup: parents.has(c.id), ledgerCode: c.ledger_code,
     usage: c.usage?.[0]?.count ?? 0,
-    // abre a visão por rubrica filtrada nesta rubrica (e nas de baixo) para recategorizar
-    usageHref: `/lancamentos?visao=rubricas&de=tudo&rubrica=${[c.id, ...(descendants[c.id] ?? [])].join(",")}`,
+    // abre o Detalhamento filtrado nesta rubrica (e nas de baixo) para recategorizar
+    usageHref: `/lancamentos/detalhamento?de=tudo&rubrica=${c.id}`,
   }));
 
   return <div className="shell">
-    <AppHeader role={membership.role} email={user.email ?? ""} current="/cadastros" />
+    <AppHeader role={membership.role} email={user.email ?? ""} current="/configuracoes" />
     <PageBody>
       <PageHeader title="Configurações" crumbs={settingsCrumbs(tab, canEdit)} tabs={<SettingsTabs current={tab} canEdit={canEdit} />}
         description={tab === "perfis" ? TABS[tab] : `${TABS[tab]} Inativos saem dos novos lançamentos e continuam nos antigos.`} />

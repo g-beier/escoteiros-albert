@@ -30,13 +30,13 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
   const accountName = accounts.find((account) => account.id === accountId)?.name ?? "";
 
   return <div className="shell">
-    <AppHeader role={membership.role} email={user.email ?? ""} current="/importacao" />
+    <AppHeader role={membership.role} email={user.email ?? ""} current="/extrato/importar" />
     <PageBody>
       <PageHeader title="Extrato" crumbs={extratoCrumbs("importar")} tabs={<ExtratoTabs current="importar" accountId={accountId || undefined} />}
         description="Escolha o banco (a conta) e envie o extrato OFX, exportado pelo banco ou convertido. Confira as linhas antes de importar; depois, concilie com os lançamentos." />
       <div className="grid gap-5">
         {!canEdit && <SectionCard><p className="m-0 p-5 text-sm text-muted-foreground">Somente tesouraria e administração podem importar extratos. Você pode consultar as importações já feitas.</p></SectionCard>}
-        {canEdit && accounts.length === 0 && <SectionCard><p className="m-0 p-5 text-sm text-muted-foreground">Nenhuma conta ativa. Cadastre a conta do banco em <Link href="/cadastros?aba=contas" className="underline">Configurações › Contas</Link> antes de importar.</p></SectionCard>}
+        {canEdit && accounts.length === 0 && <SectionCard><p className="m-0 p-5 text-sm text-muted-foreground">Nenhuma conta ativa. Cadastre a conta do banco em <Link href="/configuracoes/contas" className="underline">Configurações › Contas</Link> antes de importar.</p></SectionCard>}
         {canEdit && accounts.length > 0 && <StatementImporter accounts={accounts} profiles={profiles} lastProfiles={lastProfiles} accountId={accountId} />}
         {accountId && <RecentImports accountId={accountId} accountName={accountName} rows={recent.rows} error={recent.error} canEdit={canEdit} />}
       </div>

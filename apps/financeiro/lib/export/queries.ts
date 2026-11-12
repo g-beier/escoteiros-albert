@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SPLIT_COLUMNS, LEDGER_COLUMNS, type SplitRow, type LedgerRow } from "@/lib/entry-queries";
+import type { CategoryItem } from "@/lib/categories";
 import type { Period } from "./period";
+import { buildRealizedModel, type RealizedSum } from "./realized";
 
 const BATCH = 1000;
 /** Teto de segurança para uma planilha; acima disso, pedir um período menor. */
@@ -37,4 +39,15 @@ export function fetchAllSplitRows(supabase: SupabaseClient, groupId: string, { f
     if (accountId) query = query.eq("account_id", accountId);
     return query.order("entry_date").order("entry_id").order("split_id").range(start, end);
   });
+}
+
+/** Rubricas e somas por mês do ano: base do Realizado (tela e planilha). */
+export async function fetchRealizedModel(supabase: SupabaseClient, groupId: string, year: number) {
+  const [{ data: categories, error: categoriesError }, { data: sums, error: sumsError }] = await Promise.all([
+    supabase.from("categories").select("id, name, active, code, kind, parent_id").eq("group_id", groupId),
+    supabase.rpc("realized_by_month", { p_group_id: groupId, p_year: year }),
+  ]);
+  const error = categoriesError ?? sumsError;
+  if (error) throw new Error(error.message);
+  return buildRealizedModel((categories ?? []) as CategoryItem[], (sums ?? []) as RealizedSum[], year);
 }

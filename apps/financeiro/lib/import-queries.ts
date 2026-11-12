@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ImportProfile } from "@/app/importacao/actions";
+import type { ImportProfile } from "@/app/extrato/importar/actions";
 
 export type RecentImport = {
   id: string;
@@ -14,7 +14,7 @@ export type RecentImport = {
 
 type RecentImportRow = Omit<RecentImport, "profile_name"> & { profile: { name: string } | { name: string }[] | null };
 
-/** Importações mais recentes de uma conta, para a lista em `/importacao`. */
+/** Importações mais recentes de uma conta, para a lista em `/extrato/importar`. */
 export async function fetchRecentImports(supabase: SupabaseClient, groupId: string, accountId: string, limit = 10) {
   const { data, error } = await supabase.from("statement_imports")
     .select("id, file_name, imported_at, period_from, period_to, line_count, duplicate_count, profile:import_profiles(name)")

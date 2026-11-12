@@ -1,7 +1,7 @@
 import ExcelJS from "exceljs";
 import { describe, expect, it } from "vitest";
 import type { CategoryItem } from "@/lib/categories";
-import { buildRealizedModel } from "./realized";
+import { buildRealizedModel, rowFilterTokens } from "./realized";
 import { realizedWorkbook } from "./xlsx";
 
 const cat = (id: string, code: string | null, name: string, parent_id: string | null, active = true, kind?: CategoryItem["kind"]): CategoryItem =>
@@ -46,6 +46,17 @@ describe("buildRealizedModel", () => {
   it("mostra despesas positivas e omite inativas sem movimento", () => {
     expect(row("d").total.slice(0, 3)).toEqual([2000, 500, 300]);
     expect(model.rows.some((r) => r.id === "d9")).toBe(false);
+  });
+
+  it("filtra cada linha pela própria rubrica (que cobre as filhas) e pelas adotadas", () => {
+    const index = (id: string) => model.rows.findIndex((r) => r.id === id);
+    expect(rowFilterTokens(model, index("r6"))).toEqual(["r6"]);
+    // a rubrica antiga sem código e sem pai fica sob Despesas: entra à parte
+    expect(rowFilterTokens(model, model.roots.despesa!)).toEqual(["d", "old"]);
+    // sem a rubrica "2", a raiz é sintética: só as adotadas
+    const synthetic = buildRealizedModel(categories.filter((c) => c.id !== "d"), sums, 2026);
+    expect(synthetic.rows[synthetic.roots.despesa!].id).toBe("root-despesa");
+    expect(rowFilterTokens(synthetic, synthetic.roots.despesa!)).toEqual(["d1", "d8", "old"]);
   });
 });
 

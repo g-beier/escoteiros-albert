@@ -2,7 +2,7 @@
 
 import { Fragment, useActionState, useState } from "react";
 import { IconCheck, IconPlus } from "@tabler/icons-react";
-import { createPatrol, createSection, updateSectionOrPatrol, type AssociateFormState } from "@/app/associados/actions";
+import { createPatrol, createSection, updateSectionOrPatrol, type AssociateFormState } from "@/app/configuracoes/associados/actions";
 import { OptionSelect } from "@/components/option-controls";
 import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
 import { Button } from "@/components/ui/button";

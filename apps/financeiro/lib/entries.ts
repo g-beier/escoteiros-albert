@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { EntryView } from "@/lib/entry-queries";
 
 export type EditableEntry = {
   id: string;
@@ -40,9 +41,14 @@ export async function fetchEntry(supabase: SupabaseClient, id: string): Promise<
   };
 }
 
-const LIST_KEYS = ["visao", "ordem", "de", "ate", "conta", "forma", "pasta", "conciliado", "associado", "rubrica", "q", "ofx"] as const;
+const LIST_KEYS = ["ordem", "de", "ate", "conta", "forma", "pasta", "conciliado", "associado", "rubrica", "q", "ofx"] as const;
 
-/** Query string da lista (só chaves conhecidas), para voltar dos detalhes com os mesmos filtros. */
+/** Caminho de uma visão da lista (`/lancamentos/movimentacoes` ou `/lancamentos/detalhamento`), com a query dos filtros. */
+export function entriesPath(view: EntryView, query = "") {
+  return `/lancamentos/${view}${query ? `?${query}` : ""}`;
+}
+
+/** Query string da lista (só chaves conhecidas): os filtros, que seguem de uma visão para a outra e voltam dos detalhes. */
 export function listQuery(params: Record<string, string | string[] | undefined> | URLSearchParams) {
   const get = (key: string) => params instanceof URLSearchParams ? params.get(key) : [params[key]].flat()[0];
   const allowed = new URLSearchParams();
@@ -53,10 +59,12 @@ export function listQuery(params: Record<string, string | string[] | undefined> 
   return allowed.toString();
 }
 
-/** Aceita apenas uma query string de volta para a lista, evitando redirecionamentos externos. */
+const LIST_PATH = /^\/lancamentos\/(movimentacoes|detalhamento)(?:\?(.*))?$/;
+
+/** Volta para a lista de onde se veio (`voltar` = caminho da visão + filtros); qualquer outra coisa vai para Movimentações. */
 export function listHref(voltar: string | string[] | undefined) {
   const raw = Array.isArray(voltar) ? voltar[0] : voltar;
-  if (!raw) return "/lancamentos";
-  const query = listQuery(new URLSearchParams(raw.startsWith("?") ? raw.slice(1) : raw));
-  return query ? `/lancamentos?${query}` : "/lancamentos";
+  const match = raw ? LIST_PATH.exec(raw) : null;
+  if (!match) return entriesPath("movimentacoes");
+  return entriesPath(match[1] as EntryView, listQuery(new URLSearchParams(match[2] ?? "")));
 }

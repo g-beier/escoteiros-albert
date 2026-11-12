@@ -210,7 +210,7 @@ export function reconciliationHref(params: { conta?: string; de?: string; ate?: 
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) if (value) query.set(key, value);
   const text = query.toString();
-  return text ? `/conciliacao?${text}` : "/conciliacao";
+  return text ? `/extrato/conciliar?${text}` : "/extrato/conciliar";
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

@@ -90,9 +90,9 @@ describe("parsePeriod", () => {
 describe("safeReconciliationHref", () => {
   it("keeps only known, valid params", () => {
     const id = "123e4567-e89b-12d3-a456-426614174000";
-    expect(safeReconciliationHref(`?conta=${id}&de=2026-05-01&ate=2026-05-31&x=1`)).toBe(`/conciliacao?conta=${id}&de=2026-05-01&ate=2026-05-31`);
-    expect(safeReconciliationHref("conta=https://mal.com")).toBe("/conciliacao");
-    expect(safeReconciliationHref(undefined)).toBe("/conciliacao");
+    expect(safeReconciliationHref(`?conta=${id}&de=2026-05-01&ate=2026-05-31&x=1`)).toBe(`/extrato/conciliar?conta=${id}&de=2026-05-01&ate=2026-05-31`);
+    expect(safeReconciliationHref("conta=https://mal.com")).toBe("/extrato/conciliar");
+    expect(safeReconciliationHref(undefined)).toBe("/extrato/conciliar");
   });
 });
 

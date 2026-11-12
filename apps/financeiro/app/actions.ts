@@ -104,9 +104,9 @@ export async function moveEntriesAccount(entryIds: unknown, accountId: unknown):
 }
 
 /** Próxima página da rolagem infinita; os filtros chegam como a query string da lista. */
-export async function loadEntryPage(query: unknown, offset: unknown): Promise<EntryPage> {
+export async function loadEntryPage(viewInput: unknown, query: unknown, offset: unknown): Promise<EntryPage> {
   const params = Object.fromEntries(new URLSearchParams(typeof query === "string" ? query : ""));
-  const view = params.visao === "rubricas" ? "rubricas" : "lancamentos";
+  const view = viewInput === "detalhamento" ? "detalhamento" : "movimentacoes";
   const start = z.number().int().min(0).max(1_000_000).safeParse(offset);
   if (!start.success) return { view, rows: [], total: null, error: "Página inválida." };
   const ctx = await memberOrError();

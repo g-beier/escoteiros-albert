@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { decodeCategorySelection, encodeCategorySelection } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { useDimension, useListParams, type FilterKey, type FilterOption } from "./filter-options";
 
@@ -19,10 +20,20 @@ function topLevel(selected: string[], descendants: Record<string, string[]> | un
 }
 
 /** Resumo do filtro para o rótulo do botão, ou null quando não há filtro. */
-export function useFilterSummary(key: FilterKey) {
+/** Valores marcados na URL; nas listas hierárquicas, a seção compacta é expandida. */
+function useSelected(key: FilterKey) {
   const dimension = useDimension(key);
   const { values } = useListParams();
-  const selected = values(key).filter((v) => dimension.options.some((o) => o.value === v));
+  return () => {
+    const raw = values(key);
+    const expanded = dimension.hierarchy ? decodeCategorySelection(raw, dimension.hierarchy) : raw;
+    return expanded.filter((v) => dimension.options.some((o) => o.value === v));
+  };
+}
+
+export function useFilterSummary(key: FilterKey) {
+  const dimension = useDimension(key);
+  const selected = useSelected(key)();
   if (!selected.length) return null;
   const labels = topLevel(selected, dimension.descendants).map((v) => dimension.options.find((o) => o.value === v)?.label ?? v);
   return labels.length <= 2 ? labels.join(", ") : `${selected.length} de ${dimension.options.length}`;
@@ -34,7 +45,8 @@ export function useFilterSummary(key: FilterKey) {
  */
 export function MultiFilter({ filterKey, variant = "button" }: { filterKey: FilterKey; variant?: "button" | "icon" }) {
   const dimension = useDimension(filterKey);
-  const { values, apply } = useListParams();
+  const { apply } = useListParams();
+  const selectedNow = useSelected(filterKey);
   const summary = useFilterSummary(filterKey);
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState<Set<string>>(new Set());
@@ -44,7 +56,7 @@ export function MultiFilter({ filterKey, variant = "button" }: { filterKey: Filt
 
   function onOpenChange(next: boolean) {
     if (next) {
-      const current = values(filterKey).filter((v) => all.includes(v));
+      const current = selectedNow();
       setChecked(new Set(current.length ? current : all));
       setSearch("");
     }
@@ -79,7 +91,8 @@ export function MultiFilter({ filterKey, variant = "button" }: { filterKey: Filt
 
   function submit() {
     const selected = all.filter((v) => checked.has(v));
-    apply({ [filterKey]: selected.length === all.length ? null : selected.join(",") });
+    const encoded = dimension.hierarchy ? encodeCategorySelection(selected, dimension.hierarchy) : selected;
+    apply({ [filterKey]: selected.length === all.length ? null : encoded.join(",") });
     setOpen(false);
   }
 

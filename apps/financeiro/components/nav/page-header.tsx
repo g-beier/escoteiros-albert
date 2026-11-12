@@ -58,12 +58,24 @@ export function PageHeader({ title, description, crumbs, hideTitle, tabs, action
   </div>;
 }
 
+export type EntryView = "movimentacoes" | "detalhamento" | "realizado";
+
+/** Visões de Lançamentos. `hrefs` permite levar os filtros da lista de uma visão para a outra. */
+export function EntryViewTabs({ current, hrefs }: { current: EntryView; hrefs?: Partial<Record<EntryView, string>> }) {
+  const href = (view: EntryView) => hrefs?.[view] ?? `/lancamentos/${view}`;
+  return <SectionTabs label="Visões" tabs={[
+    { href: href("movimentacoes"), label: "Movimentações", active: current === "movimentacoes" },
+    { href: href("detalhamento"), label: "Detalhamento", active: current === "detalhamento" },
+    { href: href("realizado"), label: "Realizado", active: current === "realizado" },
+  ]} />;
+}
+
 /** Área do Extrato: a mesma conta segue de uma aba para a outra. */
 export function ExtratoTabs({ current, accountId }: { current: "conciliar" | "importar"; accountId?: string }) {
   const query = accountId ? `?conta=${encodeURIComponent(accountId)}` : "";
   return <SectionTabs label="Extrato" tabs={[
-    { href: `/conciliacao${query}`, label: "Conciliar", active: current === "conciliar" },
-    { href: `/importacao${query}`, label: "Importar", active: current === "importar" },
+    { href: `/extrato/conciliar${query}`, label: "Conciliar", active: current === "conciliar" },
+    { href: `/extrato/importar${query}`, label: "Importar", active: current === "importar" },
   ]} />;
 }
 
@@ -75,25 +87,25 @@ export const SETTINGS_LABELS: Record<SettingsTab, string> = {
 
 /** Caminho das telas de Configurações: Início › Configurações › aba. */
 export function settingsCrumbs(current: SettingsTab, canEdit: boolean): Crumb[] {
-  return [{ label: "Configurações", href: canEdit ? "/cadastros" : "/associados" }, { label: SETTINGS_LABELS[current] }];
+  return [{ label: "Configurações", href: canEdit ? "/configuracoes" : "/configuracoes/associados" }, { label: SETTINGS_LABELS[current] }];
 }
 
 /** Caminho das telas do Extrato: Início › Extrato › Conciliar/Importar. */
 export function extratoCrumbs(current: "conciliar" | "importar"): Crumb[] {
-  return [{ label: "Extrato", href: "/conciliacao" }, { label: current === "conciliar" ? "Conciliar" : "Importar" }];
+  return [{ label: "Extrato", href: "/extrato/conciliar" }, { label: current === "conciliar" ? "Conciliar" : "Importar" }];
 }
 
 /** Configurações: cadastros do grupo. Consulta vê só Associados. */
 export function SettingsTabs({ current, canEdit }: { current: SettingsTab; canEdit: boolean }) {
   const tabs: Tab[] = [
     ...(canEdit ? [
-      { href: "/cadastros?aba=contas", label: "Contas", active: current === "contas" },
-      { href: "/cadastros?aba=rubricas", label: "Rubricas", active: current === "rubricas" },
-      { href: "/cadastros?aba=formas", label: "Formas de pagamento", active: current === "formas" },
-      { href: "/cadastros?aba=perfis", label: "Perfis de leitura", active: current === "perfis" },
+      { href: "/configuracoes/contas", label: "Contas", active: current === "contas" },
+      { href: "/configuracoes/rubricas", label: "Rubricas", active: current === "rubricas" },
+      { href: "/configuracoes/formas", label: "Formas de pagamento", active: current === "formas" },
+      { href: "/configuracoes/perfis", label: "Perfis de leitura", active: current === "perfis" },
     ] : []),
-    { href: "/associados", label: "Associados", active: current === "associados" },
-    ...(canEdit ? [{ href: "/cadastros?aba=mensalidades", label: "Mensalidades", active: current === "mensalidades" }] : []),
+    { href: "/configuracoes/associados", label: "Associados", active: current === "associados" },
+    ...(canEdit ? [{ href: "/configuracoes/mensalidades", label: "Mensalidades", active: current === "mensalidades" }] : []),
   ];
   return <SectionTabs label="Configurações" tabs={tabs} />;
 }

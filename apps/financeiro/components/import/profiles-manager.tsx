@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { IconPencil, IconTrash } from "@tabler/icons-react";
-import { deleteImportProfile, renameImportProfile, type CatalogFormState } from "@/app/cadastros/actions";
+import { deleteImportProfile, renameImportProfile, type CatalogFormState } from "@/app/configuracoes/actions";
 import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ export function ProfilesManager({ profiles }: { profiles: ProfileItem[] }) {
   const [renaming, setRenaming] = useState<ProfileItem | null>(null);
   return <SectionCard aria-labelledby="profiles-title">
     <SectionHeader title="Perfis de leitura" titleId="profiles-title"
-      description={<>Criados e atualizados ao importar em <Link href="/importacao" className="underline">Extrato › Importar</Link>; ajustes de leitura (separar MEMO, prefixos, linhas a ignorar) se mudam lá.</>}>
+      description={<>Criados e atualizados ao importar em <Link href="/extrato/importar" className="underline">Extrato › Importar</Link>; ajustes de leitura (separar MEMO, prefixos, linhas a ignorar) se mudam lá.</>}>
       <SectionCount>{profiles.length} {profiles.length === 1 ? "perfil" : "perfis"}</SectionCount>
     </SectionHeader>
     {profiles.length === 0

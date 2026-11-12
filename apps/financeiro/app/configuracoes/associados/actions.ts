@@ -41,7 +41,7 @@ export async function createAssociate(_previous: AssociateFormState, formData: F
     const { supabase, groupId } = await requireEditor("Sem permissão para gerir associados.");
     const { error } = await supabase.from("associates").insert({ group_id: groupId, ...parsed.data });
     if (error) return { error: writeError(error) };
-    revalidatePath("/associados");
+    revalidatePath("/configuracoes/associados");
     revalidatePath("/", "layout");
     return { success: `${parsed.data.name} cadastrado.` };
   } catch (error) {
@@ -67,7 +67,7 @@ export async function updateAssociate(_previous: AssociateFormState, formData: F
     }
     const { error } = await supabase.from("associates").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", id).eq("group_id", groupId);
     if (error) return { error: writeError(error) };
-    revalidatePath("/associados");
+    revalidatePath("/configuracoes/associados");
     revalidatePath("/", "layout");
     return result;
   } catch (error) {
@@ -93,7 +93,7 @@ export async function importAssociates(rows: unknown): Promise<AssociateFormStat
     const { data, error } = await supabase.rpc("import_associates", { p_group_id: groupId, p_rows: parsed.data });
     if (error) return { error: error.message };
     const result = z.object({ created: z.number(), updated: z.number() }).catch({ created: 0, updated: 0 }).parse(data);
-    revalidatePath("/associados");
+    revalidatePath("/configuracoes/associados");
     revalidatePath("/", "layout");
     const parts = [
       result.created && `${result.created} ${result.created === 1 ? "cadastrado" : "cadastrados"}`,
@@ -117,7 +117,7 @@ async function runSectionRpc(fn: string, args: RpcArgs, success: string, tone?: 
     const { supabase, groupId } = await requireEditor("Sem permissão para gerir seções.");
     const { error } = await supabase.rpc(fn, typeof args === "function" ? args(groupId) : args);
     if (error) return { error: error.message };
-    revalidatePath("/associados");
+    revalidatePath("/configuracoes/associados");
     revalidatePath("/", "layout");
     return { success, ...(tone ? { tone } : {}) };
   } catch (error) {

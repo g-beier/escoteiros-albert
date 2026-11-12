@@ -79,7 +79,7 @@ export async function saveFeeSettings(_previous: FeeSettingsState, formData: For
     p_group_id: ctx.groupId, p_due_rule: parsed.data.dueRule, p_due_day: parsed.data.dueDay, p_category_id: parsed.data.categoryId,
   });
   if (error) return { error: error.message };
-  revalidatePath("/cadastros");
+  revalidatePath("/configuracoes", "layout");
   done();
   return { success: "Configurações de mensalidade salvas." };
 }
@@ -104,7 +104,7 @@ export async function saveFeeYearSettings(_previous: FeeSettingsState, formData:
     p_group_id: ctx.groupId, p_year: parsed.data.year, p_monthly_cents: parsed.data.monthly, p_discount_pct: parsed.data.discount, p_deadline: parsed.data.deadline,
   });
   if (error) return { error: error.message };
-  revalidatePath("/cadastros");
+  revalidatePath("/configuracoes", "layout");
   done();
   return { success: `Valores de ${parsed.data.year} salvos.` };
 }
@@ -141,7 +141,7 @@ export async function addAssociateMovement(associateId: unknown, date: unknown, 
     p_associate_id: parsed.data.associateId, p_date: parsed.data.date, p_kind: parsed.data.kind, p_reason: parsed.data.reason || null,
   });
   if (error) return { error: error.message };
-  revalidatePath("/associados");
+  revalidatePath("/configuracoes/associados");
   return done(parsed.data.kind === "saida" ? "Saída registrada." : "Entrada registrada.");
 }
 
@@ -152,6 +152,6 @@ export async function deleteAssociateMovement(movementId: unknown): Promise<FeeR
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("delete_associate_movement", { p_movement_id: id.data });
   if (error) return { error: error.message };
-  revalidatePath("/associados");
+  revalidatePath("/configuracoes/associados");
   return done("Movimentação removida.");
 }

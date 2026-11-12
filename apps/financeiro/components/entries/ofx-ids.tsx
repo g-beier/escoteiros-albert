@@ -5,21 +5,20 @@ import { toast } from "sonner";
 import { IconCopy } from "@tabler/icons-react";
 import { ALL_DATES } from "@/lib/filters";
 import { shortOfxId } from "@/lib/format";
-import { useListParams } from "./filter-options";
+import { usePathname } from "next/navigation";
+import { entriesPath } from "@/lib/entries";
 
 /**
  * ID OFX (FITID) das linhas do extrato vinculadas ao lançamento. Não é único: clicar filtra a lista
  * por ele e junta o lançamento, seus rateios e os demais lançamentos da mesma movimentação.
  */
 export function OfxIds({ ids }: { ids: string[] }) {
-  const { params } = useListParams();
+  const pathname = usePathname();
   if (!ids.length) return <span className="text-muted-foreground">—</span>;
   const [first, ...rest] = ids;
   const href = (id: string) => {
-    const next = new URLSearchParams({ de: ALL_DATES, ofx: id });
-    const view = params.get("visao");
-    if (view) next.set("visao", view);
-    return `/lancamentos?${next}`;
+    // fica na visão atual (Movimentações ou Detalhamento)
+    return entriesPath(pathname.startsWith(entriesPath("detalhamento")) ? "detalhamento" : "movimentacoes", new URLSearchParams({ de: ALL_DATES, ofx: id }).toString());
   };
   const copy = () => navigator.clipboard.writeText(ids.join("\n")).then(() => toast.success(ids.length > 1 ? "IDs OFX copiados." : "ID OFX copiado."), () => toast.error("Não foi possível copiar."));
   return <span className="inline-flex items-center gap-1 whitespace-nowrap">

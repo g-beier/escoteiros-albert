@@ -14,6 +14,8 @@ export type RealizedRow = {
   children: number[];
   /** Total por mês: próprio + filhos. */
   total: number[];
+  /** Rubrica sem pai no cadastro, colocada sob a raiz do seu tipo (o filtro por subárvore da raiz não a alcança). */
+  adopted?: boolean;
 };
 
 export type RealizedModel = { year: number; rows: RealizedRow[]; roots: Partial<Record<CategoryKind, number>> };
@@ -66,7 +68,8 @@ export function buildRealizedModel(categories: CategoryItem[], sums: RealizedSum
     const label = c ? (c.code ? `${c.code}. ${c.name}` : `${c.name} (sem código)`) : `${kind === "receita" ? 1 : 2}. ${ROOT_NAMES[kind]}`;
     const row: RealizedRow = { id: c?.id ?? `root-${kind}`, label, depth, kind, own: (c ? raw.get(c.id) ?? zeros() : zeros()).map((v) => sign * v || 0), children: [], total: zeros() };
     rows.push(row);
-    for (const child of [...(c ? children.get(c.id) ?? [] : []), ...extra]) row.children.push(add(child, kind, depth + 1));
+    for (const child of c ? children.get(c.id) ?? [] : []) row.children.push(add(child, kind, depth + 1));
+    for (const child of extra) { const i = add(child, kind, depth + 1); rows[i].adopted = true; row.children.push(i); }
     row.total = row.own.map((v, m) => v + row.children.reduce((sum, i) => sum + rows[i].total[m], 0));
     return index;
   };
@@ -77,4 +80,14 @@ export function buildRealizedModel(categories: CategoryItem[], sums: RealizedSum
     roots[kind] = add(root ?? null, kind, 0, extra);
   }
   return { year, rows, roots };
+}
+
+/**
+ * Filtro da lista para uma linha (tokens de `encodeCategorySelection`): a própria rubrica já cobre os descendentes
+ * do cadastro; só as adotadas (sem pai, postas sob a raiz) e a raiz sintética precisam de tokens próprios.
+ */
+export function rowFilterTokens(model: RealizedModel, index: number): string[] {
+  const row = model.rows[index];
+  const own = row.id.startsWith("root-") ? [] : [row.id];
+  return [...own, ...row.children.filter((i) => model.rows[i].adopted).map((i) => model.rows[i].id)];
 }

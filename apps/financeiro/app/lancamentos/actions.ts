@@ -54,7 +54,7 @@ export async function registerAttachment(entryId: unknown, path: unknown, fileNa
     return { error: error.message };
   }
   revalidatePath(`/lancamentos/${id.data}`);
-  revalidatePath("/lancamentos");
+  revalidatePath("/lancamentos", "layout");
   return { success: true };
 }
 

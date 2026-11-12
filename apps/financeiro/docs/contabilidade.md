@@ -2,10 +2,10 @@
 
 ## Conta contábil
 
-- Cada **rubrica** recebe, em `/cadastros`, a **conta contábil** do plano de contas do sistema de destino, no formato `0.0.0.0.0000`. Várias rubricas podem apontar para a mesma conta contábil.
+- Cada **rubrica** recebe, em `/configuracoes`, a **conta contábil** do plano de contas do sistema de destino, no formato `0.0.0.0.0000`. Várias rubricas podem apontar para a mesma conta contábil.
 - Cada **conta** (banco, caixa) pode receber a conta contábil de contrapartida (por exemplo, "Bancos – Cora" no plano). Sem ela, a contrapartida sai em branco e a contabilidade completa.
 - A máscara está em dois lugares, que mudam juntos: o domínio `public.ledger_code` (`014_accounting.sql`) e `lib/ledger-code.ts`.
-- Em `/cadastros`, rubricas usadas e sem conta contábil aparecem com um alerta; o filtro "Só sem conta contábil" lista as que faltam.
+- Em `/configuracoes`, rubricas usadas e sem conta contábil aparecem com um alerta; o filtro "Só sem conta contábil" lista as que faltam.
 
 ## Arquivo (`Exportar → Contabilidade (CSV)`, rota `/exportar/contabil`)
 
@@ -41,4 +41,4 @@ Domínio (Thomson Reuters), Alterdata, Questor, Fortes e Nasajon importam lança
 
 ## Fluxo de caixa em CSV
 
-`Exportar → Fluxo de caixa` também gera CSV (UTF-8 com BOM) com as mesmas colunas da planilha, inclusive ID OFX e conta contábil na visão por rubrica. As colunas ficam em `lib/export/columns.ts` e servem aos dois formatos.
+`Exportar → Fluxo de caixa` também gera CSV (UTF-8 com BOM) com as mesmas colunas da planilha, inclusive ID OFX e conta contábil na visão Detalhamento. As colunas ficam em `lib/export/columns.ts` e servem aos dois formatos.

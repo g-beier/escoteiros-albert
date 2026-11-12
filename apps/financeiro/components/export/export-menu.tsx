@@ -14,13 +14,13 @@ import { CSV_ENCODINGS, type CsvEncoding } from "@/lib/export/csv";
 import type { Option } from "@/components/option-controls";
 import { cn } from "@/lib/utils";
 
-type View = "lancamentos" | "rubricas";
+type View = "movimentacoes" | "detalhamento";
 type PresetKind = PeriodPreset["kind"];
 type Mode = "fluxo" | "realizado" | "contabil" | null;
 type Format = "xlsx" | "csv";
 
 const monthOptions = MONTHS.map((label, i) => ({ value: String(i + 1), label }));
-const viewOptions = [{ value: "lancamentos", label: "Por lançamento" }, { value: "rubricas", label: "Por rubrica" }];
+const viewOptions = [{ value: "movimentacoes", label: "Movimentações" }, { value: "detalhamento", label: "Detalhamento" }];
 const formatOptions = [{ value: "xlsx", label: "Planilha XLSX" }, { value: "csv", label: "CSV" }];
 const TITLES = { fluxo: "Exportar fluxo de caixa", realizado: "Exportar Realizado anual", contabil: "Exportar para a contabilidade" } as const;
 const DESCRIPTIONS = {

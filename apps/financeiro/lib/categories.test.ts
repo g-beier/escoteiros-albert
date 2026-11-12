@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categoryLabel, compareCodes, depthOf, descendantsMap, sortCategories, type CategoryItem } from "./categories";
+import { categoryLabel, compareCodes, decodeCategorySelection, encodeCategorySelection, depthOf, descendantsMap, sortCategories, type CategoryItem } from "./categories";
 
 const item = (id: string, code: string | null, name: string, parent_id: string | null): CategoryItem =>
   ({ id, code, name, parent_id, active: true, kind: code?.startsWith("1") ? "receita" : "despesa" });
@@ -35,5 +35,37 @@ describe("descendantsMap / depthOf", () => {
     expect(map.p).toEqual(["i"]);
     expect(map.i).toEqual([]);
     expect(depthOf("2.5.2")).toBe(2);
+  });
+});
+
+describe("encodeCategorySelection / decodeCategorySelection", () => {
+  // d › d1 › (d11, d12); d › d2; e é outra raiz
+  const tree = [
+    { id: "d", parent_id: null }, { id: "d1", parent_id: "d" }, { id: "d11", parent_id: "d1" },
+    { id: "d12", parent_id: "d1" }, { id: "d2", parent_id: "d" }, { id: "e", parent_id: null },
+  ];
+  const roundTrip = (selected: string[]) => decodeCategorySelection(encodeCategorySelection(selected, tree), tree).sort();
+
+  it("um grupo inteiro vira um só token", () => {
+    expect(encodeCategorySelection(["d", "d1", "d11", "d12", "d2"], tree)).toEqual(["d"]);
+    expect(decodeCategorySelection(["d"], tree)).toEqual(["d", "d1", "d11", "d12", "d2"]);
+  });
+
+  it("desmarcados dentro de um grupo vão com sinal de menos", () => {
+    expect(encodeCategorySelection(["d", "d1", "d11", "d2"], tree)).toEqual(["d", "-d12"]);
+    // pai sem as filhas
+    expect(encodeCategorySelection(["d1"], tree)).toEqual(["d1", "-d11", "-d12"]);
+    // folha dentro de grupo desmarcado
+    expect(encodeCategorySelection(["d", "d2", "d12"], tree)).toEqual(["d", "-d1", "d12"]);
+  });
+
+  it("ida e volta preserva qualquer seleção", () => {
+    for (const selected of [[], ["e"], ["d11"], ["d", "d2"], ["d1", "d12", "e"], tree.map((t) => t.id)]) {
+      expect(roundTrip(selected)).toEqual([...selected].sort());
+    }
+  });
+
+  it("ignora tokens de rubricas desconhecidas", () => {
+    expect(decodeCategorySelection(["x", "-y"], tree)).toEqual([]);
   });
 });

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { exportYears } from "@/lib/export/period";
 import { fetchPaged } from "@/lib/supabase/paged";
 import {
   buildFeeRows, DEFAULT_FEE_SETTINGS, priceForAssociate, suggestFeeMonths, todayInSaoPaulo,
@@ -84,4 +85,20 @@ export async function fetchFeeYear(supabase: SupabaseClient, groupId: string, ye
       movements: movements.data.map((m) => ({ id: m.id, associateId: m.associate_id, date: m.movement_date, kind: m.kind, reason: m.reason })),
     }),
   };
+}
+
+/**
+ * Anos do seletor de Mensalidades: do primeiro ao último ano com algo para mostrar (registros de mensalidade,
+ * valores do ano ou lançamentos, que viram sugestões), sempre com o ano atual; mais recentes primeiro.
+ */
+export async function fetchFeeYears(supabase: SupabaseClient, groupId: string) {
+  const edge = (table: "fee_records" | "fee_year_settings", ascending: boolean) =>
+    supabase.from(table).select("year").eq("group_id", groupId).order("year", { ascending }).limit(1).maybeSingle();
+  const entry = (ascending: boolean) =>
+    supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date", { ascending }).limit(1).maybeSingle();
+  const [r1, r2, s1, s2, e1, e2] = await Promise.all([edge("fee_records", true), edge("fee_records", false), edge("fee_year_settings", true), edge("fee_year_settings", false), entry(true), entry(false)]);
+  const years = [r1.data?.year, r2.data?.year, s1.data?.year, s2.data?.year, e1.data?.entry_date?.slice(0, 4), e2.data?.entry_date?.slice(0, 4)]
+    .filter((value) => value !== undefined && value !== null).map(Number);
+  if (!years.length) return exportYears();
+  return exportYears(`${Math.min(...years)}-01-01`, `${Math.max(...years)}-01-01`);
 }

@@ -9,11 +9,11 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { branchLabels, groupBySection, isScoutBranch, matchesSection, NO_SECTION, NO_SECTION_PARAM, sectionsOf, type PatrolItem, type SectionItem } from "@/lib/associates";
 import { cn } from "@/lib/utils";
 
-type Params = { visao?: string; secao?: string };
+type Params = { agrupar?: string; secao?: string };
 
 export default async function AssociatesPage({ searchParams }: { searchParams: Promise<Params> }) {
   const params = await searchParams;
-  const bySection = params.visao === "secoes";
+  const bySection = params.agrupar === "secao";
   const membership = await pageMember();
   const { supabase, user } = membership;
   const canEdit = membership.canEdit;
@@ -35,15 +35,15 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
   const shown = associates.filter((a) => matchesSection(a, sectionFilter));
   const href = (patch: Params) => {
     const next = new URLSearchParams();
-    const merged = { visao: bySection ? "secoes" : undefined, secao: sectionFilter, ...patch };
-    if (merged.visao) next.set("visao", merged.visao);
+    const merged = { agrupar: bySection ? "secao" : undefined, secao: sectionFilter, ...patch };
+    if (merged.agrupar) next.set("agrupar", merged.agrupar);
     if (merged.secao) next.set("secao", merged.secao);
-    return next.size ? `/associados?${next}` : "/associados";
+    return next.size ? `/configuracoes/associados?${next}` : "/configuracoes/associados";
   };
   const headClass = "h-8 px-3 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase";
 
   return <div className="shell">
-    <AppHeader role={membership.role} email={user.email ?? ""} current="/associados" />
+    <AppHeader role={membership.role} email={user.email ?? ""} current="/configuracoes/associados" />
     <PageBody>
       <PageHeader title="Configurações" crumbs={settingsCrumbs("associados", canEdit)} tabs={<SettingsTabs current="associados" canEdit={canEdit} />}
         description="Lista usada para vincular rateios a associados. Inativos deixam de aparecer nos novos lançamentos." />
@@ -52,8 +52,8 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
       {canEdit && <AssociatesImport existing={associates} {...catalog} />}
       <SectionCard><SectionHeader title="Cadastrados"><SectionCount>{shown.filter((a) => a.active).length} ativos de {shown.length}</SectionCount>
           <SectionTabs label="Visualização" tabs={[
-            { href: href({ visao: undefined }), label: "Lista", active: !bySection },
-            { href: href({ visao: "secoes" }), label: "Por seção", active: bySection },
+            { href: href({ agrupar: undefined }), label: "Lista", active: !bySection },
+            { href: href({ agrupar: "secao" }), label: "Por seção", active: bySection },
           ]} />
         </SectionHeader>
         {sections.length > 1 && <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">

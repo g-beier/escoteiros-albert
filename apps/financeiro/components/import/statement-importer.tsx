@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState, useTransition, type ChangeEvent } from "r
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconFileUpload } from "@tabler/icons-react";
-import { importStatementLines, previewStatementImport, saveImportProfile, type ImportProfile } from "@/app/importacao/actions";
-import { ignoreStatementLines } from "@/app/conciliacao/actions";
+import { importStatementLines, previewStatementImport, saveImportProfile, type ImportProfile } from "@/app/extrato/importar/actions";
+import { ignoreStatementLines } from "@/app/extrato/conciliar/actions";
 import type { ImportPreview } from "@/lib/import-schema";
 import { dateBR, money } from "@/lib/format";
 import { ImportReview } from "@/components/import/import-review";
@@ -79,7 +79,7 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
     setAccountId(id);
     if (file) loadReading(id, file.statement);
     // recarrega a lista de importações recentes da conta, sem perder o arquivo carregado
-    startNavigation(() => router.replace(`/importacao?conta=${encodeURIComponent(id)}`, { scroll: false }));
+    startNavigation(() => router.replace(`/extrato/importar?conta=${encodeURIComponent(id)}`, { scroll: false }));
   }
 
   async function onFile(event: ChangeEvent<HTMLInputElement>) {

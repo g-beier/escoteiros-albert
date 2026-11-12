@@ -152,7 +152,7 @@ export async function createEntriesFromLines(items: unknown): Promise<Reconcilia
   const { data, error } = await ctx.supabase.rpc("create_entries_from_statement_lines", { p_items: parsed.data });
   if (error) return { error: error.message };
   const count = Number(data);
-  return done(`${count} ${count === 1 ? "lançamento criado e conciliado" : "lançamentos criados e conciliados"}. Recategorize em Lançamentos › Por rubrica.`);
+  return done(`${count} ${count === 1 ? "lançamento criado e conciliado" : "lançamentos criados e conciliados"}. Recategorize em Lançamentos › Detalhamento.`);
 }
 
 /** Ignora várias linhas abertas com o mesmo motivo. */

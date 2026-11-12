@@ -12,7 +12,8 @@ export type EntryFilters = {
   associateIds: string[];
   /** Inclui rateios sem associado ("(Sem associado)" no filtro). */
   withoutAssociate: boolean;
-  categoryIds: string[];
+  /** Seleção compacta de rubricas (`id` = rubrica e descendentes, `-id` = fora); ver `decodeCategorySelection`. */
+  categoryTokens: string[];
   q?: string;
   /** ID OFX (FITID): o lançamento e os rateios ligados a essa movimentação do banco. */
   ofx?: string;
@@ -75,7 +76,7 @@ export function parseFilters(params: RawSearchParams, now = new Date()): EntryFi
     reconciled: reconciled.length === 1 ? reconciled[0] === "sim" : undefined,
     associateIds: associates.filter((v) => UUID.test(v)),
     withoutAssociate: associates.includes(NO_ASSOCIATE),
-    categoryIds: uuids(params.rubrica),
+    categoryTokens: listValues(params.rubrica).filter((v) => UUID.test(v.replace(/^-/, ""))),
     q: q || undefined,
     ofx: ofxId(params.ofx),
   };
@@ -94,7 +95,7 @@ export function likePattern(q: string) {
 
 export function hasAnyFilter(filters: EntryFilters) {
   return Boolean(filters.from || filters.to || filters.folder || filters.reconciled !== undefined || filters.q || filters.ofx || filters.withoutAssociate
-    || filters.accountIds.length || filters.paymentMethodIds.length || filters.associateIds.length || filters.categoryIds.length);
+    || filters.accountIds.length || filters.paymentMethodIds.length || filters.associateIds.length || filters.categoryTokens.length);
 }
 
 export type SortOrder = "desc" | "asc";

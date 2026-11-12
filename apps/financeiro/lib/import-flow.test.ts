@@ -71,8 +71,8 @@ describe("envio", () => {
   });
 
   it("monta o link da conciliação", () => {
-    expect(reconciliationHref("abc", "2026-10-01", "2026-10-31")).toBe("/conciliacao?conta=abc&de=2026-10-01&ate=2026-10-31");
-    expect(reconciliationHref("abc")).toBe("/conciliacao?conta=abc");
+    expect(reconciliationHref("abc", "2026-10-01", "2026-10-31")).toBe("/extrato/conciliar?conta=abc&de=2026-10-01&ate=2026-10-31");
+    expect(reconciliationHref("abc")).toBe("/extrato/conciliar?conta=abc");
   });
 });
 

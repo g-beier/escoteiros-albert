@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconDownload, IconFileUpload, IconUpload } from "@tabler/icons-react";
-import { importAssociates } from "@/app/associados/actions";
+import { importAssociates } from "@/app/configuracoes/associados/actions";
 import { SectionCard, SectionHeader } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";

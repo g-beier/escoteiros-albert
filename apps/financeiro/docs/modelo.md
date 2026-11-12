@@ -20,12 +20,13 @@ Termos usados na interface, no código e na documentação. Quando um termo apar
 | **Documentos** | Situação do comprovante: Pendente ou Arquivado (parâmetro de URL `pasta`, por compatibilidade). | `ledger_entries.document_filed` |
 | **Comprovante (anexo)** | Cópia digital (PDF, JPG, PNG ou HEIC, até 10 MB) anexada ao lançamento. Não muda **Documentos**, que continua sendo a pasta física. | `entry_attachments`; arquivo no bucket privado `comprovantes` |
 
-## Visões de `/lancamentos`
+## Abas de Lançamentos
 
-- **Por lançamento** (`visao` ausente; `visao=extrato` ainda é aceito): um lançamento por linha.
-- **Por rubrica** (`visao=rubricas`): um rateio por linha.
+- **Movimentações** (`/lancamentos/movimentacoes`): um lançamento por linha.
+- **Detalhamento** (`/lancamentos/detalhamento`): um rateio por linha.
+- **Realizado** (`/lancamentos/realizado?ano=`): rubricas × meses do ano, como a planilha do Realizado.
 - `ofx=<FITID>` filtra pelo ID OFX: o lançamento, seus rateios e os demais lançamentos pagos pela mesma movimentação.
-- Tesouraria e administração podem marcar lançamentos na visão Por lançamento e movê-los em lote para outra conta (ex.: tirar de "A definir"); conciliados que mudam de conta perdem o vínculo, como em Trocar conta.
+- Tesouraria e administração podem marcar lançamentos na visão Movimentações e movê-los em lote para outra conta (ex.: tirar de "A definir"); conciliados que mudam de conta perdem o vínculo, como em Trocar conta.
 - `conciliado=sim` / `conciliado=nao` filtra pelo vínculo com o extrato (coluna `reconciled` das duas visões); sem o parâmetro, ou com as duas opções, mostra todos. O ✓ ao lado do valor marca o lançamento conciliado nas duas visões.
 
 ## Comprovantes anexados
@@ -34,7 +35,7 @@ Termos usados na interface, no código e na documentação. Quando um termo apar
 - Envio em dois passos (`app/lancamentos/actions.ts`): `prepareAttachmentUpload` valida tipo/tamanho e cria uma URL de envio assinada; o navegador manda o arquivo direto ao Storage (não passa pelo servidor do app); `registerAttachment` chama `add_entry_attachment`, que confere o objeto em `storage.objects` (tipo e tamanho vêm do Storage) e audita. Se o registro falhar, o arquivo é apagado.
 - Abrir/baixar: `GET /lancamentos/<id>/anexos/<anexoId>[?baixar=1]` redireciona para uma URL assinada de 60 s. Consulta pode abrir e baixar.
 - Excluir: `delete_entry_attachment` remove o registro, audita e devolve o caminho; o app apaga o arquivo pela API do Storage (o banco não apaga `storage.objects`). Excluir o lançamento apaga os registros em cascata e o app apaga os arquivos em seguida.
-- Na lista `/lancamentos`, um clipe ao lado de Documentos mostra quantos comprovantes o lançamento tem (uma consulta por página em `entry_attachments`, fora das visões).
+- Nas listas de Lançamentos, um clipe ao lado de Documentos mostra quantos comprovantes o lançamento tem (uma consulta por página em `entry_attachments`, fora das visões).
 - Regras compartilhadas (tipos, limite, caminho): `lib/attachments.ts`, iguais às da migration.
 
 ## Fluxo

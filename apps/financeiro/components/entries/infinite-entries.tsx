@@ -50,12 +50,12 @@ export function InfiniteEntries({ initial, query, filtered, order, sortHref }: {
     if (loading.current) return;
     loading.current = true;
     setStatus("loading");
-    const page = await loadEntryPage(query, offset).catch(() => ({ ...initial, rows: [], error: "Falha de conexão." }) as EntryPage);
+    const page = await loadEntryPage(view, query, offset).catch(() => ({ ...initial, rows: [], error: "Falha de conexão." }) as EntryPage);
     loading.current = false;
     if (page.error) { setError(page.error); setStatus("error"); return; }
     setPages((current) => [...current, page]);
     setStatus(page.rows.length < PAGE_SIZE ? "done" : "idle");
-  }, [query, offset, initial]);
+  }, [view, query, offset, initial]);
 
   useEffect(() => {
     const target = sentinel.current;
@@ -90,7 +90,7 @@ export function InfiniteEntries({ initial, query, filtered, order, sortHref }: {
 
   const narrow = useNarrow();
 
-  const unit = view === "rubricas" ? ["rateio", "rateios"] : ["lançamento", "lançamentos"];
+  const unit = view === "detalhamento" ? ["rateio", "rateios"] : ["lançamento", "lançamentos"];
   const deleted = Object.values(overrides).filter((o) => o.deleted).length;
   const knownTotal = total === null ? null : Math.max(total - deleted, rows.length);
 
@@ -98,12 +98,12 @@ export function InfiniteEntries({ initial, query, filtered, order, sortHref }: {
     {/* No desktop só esta área rola, sob o cabeçalho fixo da tabela; no celular a página inteira rola. */}
     <div ref={scrollerRef} className="md:min-h-0 md:flex-1 md:overflow-auto md:overscroll-contain" data-slot="entries-scroller">
       {narrow !== true && <div className={cn(narrow === null && "max-md:hidden")}>
-        {view === "rubricas"
+        {view === "detalhamento"
           ? <SplitTable rows={rows as SplitRow[]} filtered={filtered} order={order} sortHref={sortHref} scroller={scrollerRef} />
           : <LedgerTable rows={rows as LedgerRow[]} filtered={filtered} order={order} sortHref={sortHref} scroller={scrollerRef} />}
       </div>}
       {narrow !== false && <div className={cn(narrow === null && "md:hidden")}>
-        {view === "rubricas"
+        {view === "detalhamento"
           ? <SplitCards rows={rows as SplitRow[]} filtered={filtered} order={order} sortHref={sortHref} />
           : <LedgerCards rows={rows as LedgerRow[]} filtered={filtered} order={order} sortHref={sortHref} />}
       </div>}

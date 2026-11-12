@@ -10,6 +10,8 @@ export type FilterDimension = {
   options: FilterOption[];
   /** Para listas hierárquicas: marcar um item marca todos abaixo dele. */
   descendants?: Record<string, string[]>;
+  /** Árvore (id, pai): com ela, a URL guarda a seleção compacta (`encodeCategorySelection`) em vez de todos os IDs. */
+  hierarchy?: { id: string; parent_id: string | null }[];
   /** Atalhos que marcam um conjunto pronto (ex.: só rubricas inativas). */
   shortcuts?: { label: string; values: string[] }[];
 };

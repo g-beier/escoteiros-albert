@@ -4,7 +4,7 @@ import { useActionState, useState, useTransition } from "react";
 import Link from "next/link";
 import { IconAlertTriangle, IconCheck, IconExternalLink, IconPlus } from "@tabler/icons-react";
 import { toast } from "sonner";
-import { createCatalogItem, setPaymentMethodDefaultAccount, updateCatalogItem, type CatalogFormState } from "@/app/cadastros/actions";
+import { createCatalogItem, setPaymentMethodDefaultAccount, updateCatalogItem, type CatalogFormState } from "@/app/configuracoes/actions";
 import { OptionSelect, type Option } from "@/components/option-controls";
 import { LedgerCodeInput } from "@/components/ledger-code-input";
 import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";

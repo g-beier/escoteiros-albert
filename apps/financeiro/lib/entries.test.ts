@@ -2,18 +2,21 @@ import { describe, expect, it } from "vitest";
 import { listHref, listQuery } from "./entries";
 
 describe("listHref", () => {
-  it("volta para a lista sem filtros", () => expect(listHref(undefined)).toBe("/lancamentos"));
-  it("preserva o filtro de conciliação", () => expect(listHref("conciliado=nao")).toBe("/lancamentos?conciliado=nao"));
-  it("preserva filtros conhecidos", () => expect(listHref("visao=rubricas&q=lanche&pasta=pendente")).toBe("/lancamentos?visao=rubricas&pasta=pendente&q=lanche"));
+  it("volta para Movimentações sem filtros", () => expect(listHref(undefined)).toBe("/lancamentos/movimentacoes"));
+  it("volta para a visão de onde se veio, com os filtros", () => {
+    expect(listHref("/lancamentos/movimentacoes?conciliado=nao")).toBe("/lancamentos/movimentacoes?conciliado=nao");
+    expect(listHref("/lancamentos/detalhamento?q=lanche&pasta=pendente")).toBe("/lancamentos/detalhamento?pasta=pendente&q=lanche");
+  });
   it("descarta destinos externos e chaves desconhecidas", () => {
-    expect(listHref("//evil.test")).toBe("/lancamentos");
-    expect(listHref("https://evil.test/?q=x")).toBe("/lancamentos");
-    expect(listHref("next=//evil.test&q=ok")).toBe("/lancamentos?q=ok");
+    expect(listHref("//evil.test")).toBe("/lancamentos/movimentacoes");
+    expect(listHref("https://evil.test/lancamentos/detalhamento")).toBe("/lancamentos/movimentacoes");
+    expect(listHref("/lancamentos/detalhamento/../../x")).toBe("/lancamentos/movimentacoes");
+    expect(listHref("/lancamentos/detalhamento?next=//evil.test&q=ok")).toBe("/lancamentos/detalhamento?q=ok");
   });
 });
 
 describe("listQuery", () => {
   it("monta a query da lista a partir dos searchParams", () => {
-    expect(listQuery({ visao: "rubricas", q: ["a", "b"], foo: "x", de: "" })).toBe("visao=rubricas&q=a");
+    expect(listQuery({ visao: "detalhamento", q: ["a", "b"], foo: "x", de: "" })).toBe("q=a");
   });
 });

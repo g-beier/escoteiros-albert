@@ -95,13 +95,13 @@ function flowSheet<T>(workbook: ExcelJS.Workbook, name: string, title: string, p
 
 export async function ledgerWorkbook(rows: LedgerRow[], period: Period) {
   const workbook = newWorkbook();
-  flowSheet(workbook, "Fluxo por lançamento", "Fluxo de caixa por lançamento", period, LEDGER_EXPORT_COLUMNS, rows, (r) => r.total_cents);
+  flowSheet(workbook, "Movimentações", "Fluxo de caixa: movimentações", period, LEDGER_EXPORT_COLUMNS, rows, (r) => r.total_cents);
   return toBuffer(workbook);
 }
 
 export async function splitWorkbook(rows: SplitRow[], period: Period) {
   const workbook = newWorkbook();
-  flowSheet(workbook, "Fluxo por rubrica", "Fluxo de caixa por rubrica", period, SPLIT_EXPORT_COLUMNS, rows, (r) => r.amount_cents);
+  flowSheet(workbook, "Detalhamento", "Fluxo de caixa: detalhamento", period, SPLIT_EXPORT_COLUMNS, rows, (r) => r.amount_cents);
   return toBuffer(workbook);
 }
 

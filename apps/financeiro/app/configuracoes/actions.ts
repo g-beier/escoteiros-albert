@@ -20,7 +20,7 @@ function readName(formData: FormData, kind: CatalogKind) {
 }
 
 function revalidate() {
-  revalidatePath("/cadastros");
+  revalidatePath("/configuracoes", "layout");
   revalidatePath("/", "layout");
 }
 

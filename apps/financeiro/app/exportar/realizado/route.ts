@@ -1,6 +1,5 @@
 import type { NextRequest } from "next/server";
-import type { CategoryItem } from "@/lib/categories";
-import { buildRealizedModel, type RealizedSum } from "@/lib/export/realized";
+import { fetchRealizedModel } from "@/lib/export/queries";
 import { errorResponse, exportContext, xlsxResponse } from "@/lib/export/route-helpers";
 import { realizedWorkbook } from "@/lib/export/xlsx";
 
@@ -11,15 +10,11 @@ export async function GET(request: NextRequest) {
 
   const context = await exportContext();
   if (context.error) return context.error;
-  const { supabase, groupId } = context;
-  const [{ data: categories, error: categoriesError }, { data: sums, error: sumsError }] = await Promise.all([
-    supabase.from("categories").select("id, name, active, code, kind, parent_id").eq("group_id", groupId),
-    supabase.rpc("realized_by_month", { p_group_id: groupId, p_year: year }),
-  ]);
-  if (categoriesError || sumsError) {
-    console.error("export realizado", categoriesError ?? sumsError);
+  try {
+    const model = await fetchRealizedModel(context.supabase, context.groupId, year);
+    return xlsxResponse(await realizedWorkbook(model), `realizado-${year}.xlsx`);
+  } catch (error) {
+    console.error("export realizado", error);
     return errorResponse("Não foi possível gerar a planilha.", 500);
   }
-  const model = buildRealizedModel((categories ?? []) as CategoryItem[], (sums ?? []) as RealizedSum[], year);
-  return xlsxResponse(await realizedWorkbook(model), `realizado-${year}.xlsx`);
 }

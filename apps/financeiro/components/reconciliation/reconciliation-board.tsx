@@ -7,7 +7,7 @@ import { IconArrowBackUp, IconCheck, IconChevronRight, IconLink, IconPlus, IconS
 import {
   acceptSuggestions, createEntriesFromLines, ignoreStatementLines, linkReconciliation, rejectSuggestion, reopenStatementLine, setEntryAccount,
   setOutsideStatement, unlinkReconciliation, type ReconciliationResult,
-} from "@/app/conciliacao/actions";
+} from "@/app/extrato/conciliar/actions";
 import { OptionSelect, type Option } from "@/components/option-controls";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -297,7 +297,7 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
           created += Math.min(BULK_BATCH, items.length - start);
         }
         const done = new Set(items.slice(0, created).map((item) => item.lineId));
-        if (created) toast.success(`${created} ${created === 1 ? "lançamento criado e conciliado" : "lançamentos criados e conciliados"}. Recategorize em Lançamentos › Por rubrica.`);
+        if (created) toast.success(`${created} ${created === 1 ? "lançamento criado e conciliado" : "lançamentos criados e conciliados"}. Recategorize em Lançamentos › Detalhamento.`);
         setCreating(null);
         setSelectedLines((set) => new Set([...set].filter((id) => !done.has(id))));
       })} />
@@ -411,7 +411,7 @@ function BulkCreateForm({ lines, paymentMethods, pending, onClose, onConfirm }: 
         {income > 0 && <> {income} {income === 1 ? "entrada vai" : "entradas vão"} para <strong>1 Receitas</strong></>}
         {income > 0 && income < lines.length && " e"}
         {income < lines.length && <> {lines.length - income} {lines.length - income === 1 ? "saída vai" : "saídas vão"} para <strong>2 Despesas</strong></>}.
-        Depois, recategorize em Lançamentos › Por rubrica (filtrando pelas rubricas raiz).
+        Depois, recategorize em Lançamentos › Detalhamento (filtrando pelas rubricas raiz).
       </DialogDescription>
     </DialogHeader>
     <p className="m-0 text-xs">

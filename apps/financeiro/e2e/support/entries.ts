@@ -29,11 +29,11 @@ export async function createEntry(page: Page, entry: NewEntry) {
   await expect(page.getByText("✓ Valores conferem")).toBeVisible();
   await page.getByRole("button", { name: "Salvar lançamento" }).click();
   await expect(page.getByText("Lançamento salvo.")).toBeVisible();
-  await expect(page).toHaveURL(/\/lancamentos(\?|$)/);
+  await expect(page).toHaveURL(/\/lancamentos\/movimentacoes(\?|$)/);
 }
 
 /** Lista de lançamentos (desktop: tabela). */
-export const entriesTable = (page: Page) => page.getByRole("region", { name: "Lançamentos" }).getByRole("table");
+export const entriesTable = (page: Page) => page.getByRole("region", { name: "Movimentações" }).getByRole("table");
 export const entryRow = (page: Page, name: string) => entriesTable(page).getByRole("row").filter({ has: page.getByRole("link", { name, exact: true }) });
 
 /** Busca pelo campo de busca dos filtros e espera a URL refletir o termo. */

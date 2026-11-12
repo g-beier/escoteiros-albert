@@ -3,7 +3,7 @@ import { normalizeText, type OfxProfileSettings, type ParsedStatement, type Stat
 import type { StatementLineInput } from "@/lib/import-schema";
 
 /**
- * Regras da tela de importação de extrato OFX (`/importacao`) que não dependem do React:
+ * Regras da tela de importação de extrato OFX (`/extrato/importar`) que não dependem do React:
  * perfil de leitura, conferência e linhas enviadas ao servidor.
  */
 
@@ -172,5 +172,5 @@ export function reconciliationHref(accountId: string, from?: string, to?: string
   const params = new URLSearchParams({ conta: accountId });
   if (from) params.set("de", from);
   if (to) params.set("ate", to);
-  return `/conciliacao?${params.toString()}`;
+  return `/extrato/conciliar?${params.toString()}`;
 }

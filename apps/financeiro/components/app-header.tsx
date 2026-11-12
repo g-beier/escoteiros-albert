@@ -10,12 +10,12 @@ import { cn } from "@/lib/utils";
  */
 const SECTIONS = [
   { href: "/", label: "Início", match: (path: string) => path === "/" },
-  { href: "/lancamentos", label: "Lançamentos", match: (path: string) => path.startsWith("/lancamentos") },
-  { href: "/conciliacao", label: "Extrato", match: (path: string) => path.startsWith("/conciliacao") || path.startsWith("/importacao") },
+  { href: "/lancamentos/movimentacoes", label: "Lançamentos", match: (path: string) => path.startsWith("/lancamentos") },
+  { href: "/extrato/conciliar", label: "Extrato", match: (path: string) => path.startsWith("/extrato") },
   { href: "/mensalidades", label: "Mensalidades", match: (path: string) => path.startsWith("/mensalidades") },
 ];
 
-export const isSettingsPath = (path: string) => path.startsWith("/cadastros") || path.startsWith("/associados");
+export const isSettingsPath = (path: string) => path.startsWith("/configuracoes");
 
 /** Mesma largura em todas as telas (largura total, margens de 16px), como o corpo das páginas. */
 export function AppHeader({ role, email, current }: { role: string; email: string; current: string }) {
@@ -30,7 +30,7 @@ export function AppHeader({ role, email, current }: { role: string; email: strin
             active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-accent hover:text-foreground")}>{section.label}</Link>;
       })}
       <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      <Link href={role === "viewer" ? "/associados" : "/cadastros"} aria-label="Configurações" title="Configurações: contas, rubricas, formas de pagamento e associados"
+      <Link href={role === "viewer" ? "/configuracoes/associados" : "/configuracoes"} aria-label="Configurações" title="Configurações: contas, rubricas, formas de pagamento e associados"
         aria-current={settingsActive ? "page" : undefined}
         className={cn("grid size-8 place-items-center rounded-full transition-colors", settingsActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-accent hover:text-foreground")}>
         <IconSettings className="size-[18px]" aria-hidden />

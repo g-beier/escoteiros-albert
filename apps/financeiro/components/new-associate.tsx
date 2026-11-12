@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { IconCheck, IconPlus } from "@tabler/icons-react";
-import { createAssociate, updateAssociate, type AssociateFormState } from "@/app/associados/actions";
+import { createAssociate, updateAssociate, type AssociateFormState } from "@/app/configuracoes/associados/actions";
 import { OptionSelect } from "@/components/option-controls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

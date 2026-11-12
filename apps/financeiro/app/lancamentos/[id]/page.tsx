@@ -35,7 +35,7 @@ function StatementLines({ lines }: { lines: LinkedLine[] }) {
         <TableCell className="px-3 py-1.5 whitespace-normal">{line.line_counterparty ?? line.line_description}{line.line_counterparty && <div className="text-xs text-muted-foreground">{line.line_description}</div>}</TableCell>
         <TableCell className="px-3 py-1.5">{[line.line_kind, line.line_trn_type].filter(Boolean).join(" · ") || "—"}</TableCell>
         <TableCell className="px-3 py-1.5 num text-xs">{line.line_external_id
-          ? <Link href={`/lancamentos?${new URLSearchParams({ de: "tudo", ofx: line.line_external_id })}`} className="text-primary hover:underline" title="Todos os lançamentos desta movimentação">{line.line_external_id}</Link>
+          ? <Link href={`/lancamentos/movimentacoes?${new URLSearchParams({ de: "tudo", ofx: line.line_external_id })}`} className="text-primary hover:underline" title="Todos os lançamentos desta movimentação">{line.line_external_id}</Link>
           : "—"}</TableCell>
         <TableCell className={`px-3 py-1.5 text-right num font-semibold ${line.line_amount_cents < 0 ? "text-destructive" : ""}`}>{money(line.line_amount_cents / 100)}</TableCell>
       </TableRow>)}</TableBody>

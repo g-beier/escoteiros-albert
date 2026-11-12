@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { IconAlertTriangle, IconCircleCheck, IconInfoCircle } from "@tabler/icons-react";
-import { accountBalanceBefore } from "@/app/importacao/actions";
+import { accountBalanceBefore } from "@/app/extrato/importar/actions";
 import { dateBR, money } from "@/lib/format";
 import { fileOpeningBalance, openingDifference } from "@/lib/import-flow";
 import type { AccountBalance } from "@/lib/import-schema";
@@ -43,7 +43,7 @@ export function OpeningBalanceCheck({ accountId, date, statement }: { accountId:
   if (system.beforeOpening || system.balanceCents === null) {
     return <p className="m-0 flex items-start gap-2 text-xs text-muted-foreground"><IconInfoCircle className="mt-0.5 size-4 shrink-0" />
       <span>{fileText}. O arquivo começa antes da data do saldo inicial da conta ({system.openingDate ? dateBR(system.openingDate) : "—"}), então não há saldo no sistema para comparar.
-        {" "}<Link href="/cadastros?aba=contas" className="underline">Ajustar a conta</Link></span></p>;
+        {" "}<Link href="/configuracoes/contas" className="underline">Ajustar a conta</Link></span></p>;
   }
 
   const difference = openingDifference(file.cents, system.balanceCents)!;

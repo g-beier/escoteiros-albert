@@ -22,7 +22,7 @@ type ListApi = {
   requestDelete: (entryId: string) => void;
   toggleFiled: (entryId: string, filed: boolean) => void;
   busyEntryId: string | null;
-  /** Seleção para ações em lote (só tesouraria/administração, na visão Por lançamento). */
+  /** Seleção para ações em lote (só tesouraria/administração, na visão Movimentações). */
   selected: Map<string, SelectedEntry>;
   setSelected: (entries: [string, SelectedEntry][], on: boolean) => void;
   clearSelection: () => void;
@@ -40,13 +40,14 @@ function useList() {
 }
 
 /** Ações rápidas da lista (documentos e exclusão) e links para a página de detalhes. */
-export function EntryListProvider({ canEdit, returnQuery, children }: { canEdit: boolean; returnQuery: string; children: React.ReactNode }) {
+/** `returnHref`: caminho da visão atual com os filtros, para os detalhes voltarem ao mesmo lugar. */
+export function EntryListProvider({ canEdit, returnHref, children }: { canEdit: boolean; returnHref: string; children: React.ReactNode }) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [busyEntryId, setBusyEntryId] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<string, EntryOverride>>({});
   // a seleção vale para a lista atual: trocar filtro, visão ou ordem começa uma seleção nova
-  const [selection, setSelection] = useState<{ query: string; entries: Map<string, SelectedEntry> }>({ query: returnQuery, entries: new Map() });
-  const selected = selection.query === returnQuery ? selection.entries : EMPTY_SELECTION;
+  const [selection, setSelection] = useState<{ query: string; entries: Map<string, SelectedEntry> }>({ query: returnHref, entries: new Map() });
+  const selected = selection.query === returnHref ? selection.entries : EMPTY_SELECTION;
   const [pending, startTransition] = useTransition();
   const override = (entryId: string, patch: EntryOverride) => setOverrides((current) => ({ ...current, [entryId]: { ...current[entryId], ...patch } }));
 
@@ -54,17 +55,17 @@ export function EntryListProvider({ canEdit, returnQuery, children }: { canEdit:
     canEdit,
     overrides,
     busyEntryId,
-    detailHref: (entryId) => `/lancamentos/${entryId}${returnQuery ? `?voltar=${encodeURIComponent(returnQuery)}` : ""}`,
+    detailHref: (entryId) => `/lancamentos/${entryId}${returnHref ? `?voltar=${encodeURIComponent(returnHref)}` : ""}`,
     requestDelete: (entryId) => setDeleteId(entryId),
     selected,
     setSelected: (entries, on) => setSelection((current) => {
-      const next = new Map(current.query === returnQuery ? current.entries : undefined);
+      const next = new Map(current.query === returnHref ? current.entries : undefined);
       for (const [id, entry] of entries) {
         if (on) next.set(id, entry); else next.delete(id);
       }
-      return { query: returnQuery, entries: next };
+      return { query: returnHref, entries: next };
     }),
-    clearSelection: () => setSelection({ query: returnQuery, entries: new Map() }),
+    clearSelection: () => setSelection({ query: returnHref, entries: new Map() }),
     override,
     toggleFiled: (entryId, filed) => {
       setBusyEntryId(entryId);
@@ -105,8 +106,8 @@ export function EntryListProvider({ canEdit, returnQuery, children }: { canEdit:
   </ListContext.Provider>;
 }
 
-export function NewEntryButton({ returnQuery }: { returnQuery: string }) {
-  return <Link href={`/lancamentos/novo${returnQuery ? `?voltar=${encodeURIComponent(returnQuery)}` : ""}`} className={buttonVariants({ size: "lg" })}><IconPlus /> Novo lançamento</Link>;
+export function NewEntryButton({ returnHref }: { returnHref: string }) {
+  return <Link href={`/lancamentos/novo${returnHref ? `?voltar=${encodeURIComponent(returnHref)}` : ""}`} className={buttonVariants({ size: "lg" })}><IconPlus /> Novo lançamento</Link>;
 }
 
 export function useEntryOverrides() {

@@ -75,16 +75,16 @@ export default async function Dashboard() {
     <AppHeader role={membership.role} email={user.email ?? ""} current="/" />
     <main className={PAGE_BODY}>
       <PageHeader title={`Resumo de ${year}`} hideTitle actions={<>
-        <Link href="/lancamentos" className={buttonVariants({ variant: "outline", size: "lg" })}>Ver lançamentos <IconArrowRight data-icon="inline-end" /></Link>
-        {canEdit && <NewEntryButton returnQuery="" />}
+        <Link href="/lancamentos/movimentacoes" className={buttonVariants({ variant: "outline", size: "lg" })}>Ver lançamentos <IconArrowRight data-icon="inline-end" /></Link>
+        {canEdit && <NewEntryButton returnHref="" />}
       </>} />
 
       <section aria-label="Totais do ano" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Receitas" value={money(income / 100)} tone="success" href={`/lancamentos?visao=rubricas&de=${year}-01-01&ate=${year}-12-31`} />
-        <Stat label="Despesas" value={money(expense / 100)} tone="destructive" href={`/lancamentos?visao=rubricas&de=${year}-01-01&ate=${year}-12-31`} />
+        <Stat label="Receitas" value={money(income / 100)} tone="success" href={`/lancamentos/detalhamento?de=${year}-01-01&ate=${year}-12-31`} />
+        <Stat label="Despesas" value={money(expense / 100)} tone="destructive" href={`/lancamentos/detalhamento?de=${year}-01-01&ate=${year}-12-31`} />
         <Stat label="Saldo do ano" value={money((income - expense) / 100)} tone={income - expense < 0 ? "destructive" : "neutral"} />
         <Stat label="Documentos pendentes" value={String(pendingDocs ?? 0)} tone={(pendingDocs ?? 0) > 0 ? "warning" : "neutral"}
-          href={(pendingDocs ?? 0) > 0 ? `/lancamentos?pasta=pendente&de=${ALL_DATES}` : undefined} icon={(pendingDocs ?? 0) > 0} />
+          href={(pendingDocs ?? 0) > 0 ? `/lancamentos/movimentacoes?pasta=pendente&de=${ALL_DATES}` : undefined} icon={(pendingDocs ?? 0) > 0} />
       </section>
 
       <div className="grid gap-5 lg:grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[auto_minmax(0,2fr)_minmax(0,1fr)]">
@@ -114,7 +114,7 @@ export default async function Dashboard() {
         <section aria-labelledby="recent-title" className="flex flex-col overflow-hidden rounded-lg border bg-card">
           <div className="flex items-center justify-between gap-3 border-b px-4 py-2.5">
             <h2 id="recent-title" className="m-0 text-sm font-semibold">Últimos lançamentos</h2>
-            <Link href="/lancamentos" className="text-xs font-semibold text-primary hover:underline">Ver todos</Link>
+            <Link href="/lancamentos/movimentacoes" className="text-xs font-semibold text-primary hover:underline">Ver todos</Link>
           </div>
           {recentRows.length === 0
             ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhum lançamento ainda.</p>
