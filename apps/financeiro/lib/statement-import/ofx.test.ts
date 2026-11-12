@@ -23,8 +23,10 @@ describe("readOfx — Nubank (com tags de fechamento)", () => {
       description:
         "Transferência enviada pelo Pix - CICRANO DA SILVA FICTICIO - •••.123.456-•• - BANCO INVENTADO S.A. (0998) Agência: 10 Conta: 99999-0",
       externalId: "a1b2c3d4-0000-4000-8000-000000000002",
+      trnType: "DEBIT",
       sourceRow: 50,
     });
+    expect(parsed.accountKey).toBe("260:00000000-0");
     expect(parsed.totals).toEqual({ creditsCents: 150312, debitsCents: -165165, netCents: -14853 });
   });
 
@@ -69,8 +71,11 @@ describe("readOfx — Itaú (SGML sem tags de fechamento)", () => {
       amountCents: 12000,
       description: "PIX TRANSF JOANA 02 10",
       externalId: "20261002001",
+      trnType: "CREDIT",
+      checkNumber: "20261002001",
       sourceRow: 48,
     });
+    expect(parsed.accountKey).toBe("341:0000000000");
   });
 
   it("descarta as pseudo-linhas de saldo com ignoreIf e recalcula os totais", () => {
@@ -118,12 +123,19 @@ describe("readOfx — casos tolerados", () => {
       "<STMTTRN><DTPOSTED>2026<TRNAMT>x</STMTTRN></BANKTRANLIST></OFX>";
     const parsed = readOfx(text);
     expect(parsed.lines).toEqual([
-      { date: "2026-01-05", amountCents: -1050, description: "Loja A & B", externalId: "A1", sourceRow: 1 },
-      { date: "2026-01-06", amountCents: 500, description: "Pix", counterparty: "Fulano", sourceRow: 1 },
+      { date: "2026-01-05", amountCents: -1050, description: "Loja A & B", externalId: "A1", trnType: "DEBIT", payee: "Loja A & B", sourceRow: 1 },
+      { date: "2026-01-06", amountCents: 500, description: "Pix", counterparty: "Fulano", trnType: "CREDIT", payee: "Fulano", sourceRow: 1 },
     ]);
     expect(parsed.errors).toEqual([{ sourceRow: 1, message: 'DTPOSTED inválido "2026"; TRNAMT inválido "x".' }]);
     expect(parsed.periodFrom).toBe("2026-01-05");
     expect(parsed.signature).toBe("ofx:999");
+    expect(parsed.accountKey).toBe("999:1");
+  });
+
+  it("lê REFNUM e deixa a conta sem chave quando não há ACCTID", () => {
+    const parsed = readOfx("<OFX><BANKACCTFROM><BANKID>1</BANKACCTFROM><STMTTRN><TRNTYPE>payment<DTPOSTED>20260105<TRNAMT>-1<REFNUM>R-9<MEMO>Conta</STMTTRN></OFX>");
+    expect(parsed.lines[0]).toMatchObject({ trnType: "PAYMENT", reference: "R-9" });
+    expect(parsed.accountKey).toBeUndefined();
   });
 
   it("rejeita texto sem <OFX>", () => {

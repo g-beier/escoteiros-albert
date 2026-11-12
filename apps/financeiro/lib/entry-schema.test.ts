@@ -29,8 +29,8 @@ describe("entrySchema", () => {
     expect(result.error?.issues[0]?.message).toBe("Descreva cada rubrica.");
   });
 
-  it("exige nome do lançamento", () => {
-    expect(entrySchema.safeParse({ ...base, name: " a " }).error?.issues[0]?.message).toMatch(/nome do lançamento/);
+  it("exige histórico do lançamento", () => {
+    expect(entrySchema.safeParse({ ...base, name: " a " }).error?.issues[0]?.message).toMatch(/histórico do lançamento/);
   });
 
   it("exige forma de pagamento", () => {

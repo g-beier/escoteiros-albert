@@ -35,7 +35,7 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
     supabase.from("payment_methods").select("id, name, active").eq("group_id", groupId).order("name"),
     supabase.from("associates").select("id, name, active").eq("group_id", groupId).order("name"),
     supabase.from("accounts").select("id, name, active").eq("group_id", groupId).order("name"),
-    fetchEntryPage(supabase, groupId, byCategory ? "rubricas" : "extrato", filters, order, 0, true),
+    fetchEntryPage(supabase, groupId, byCategory ? "rubricas" : "lancamentos", filters, order, 0, true),
     supabase.from("ledger_entries").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("document_filed", false),
     supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date").limit(1).maybeSingle(),
     supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date", { ascending: false }).limit(1).maybeSingle(),
@@ -73,17 +73,17 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <h1 className="m-0 text-xl leading-tight font-bold tracking-tight">Lançamentos</h1>
           <nav aria-label="Visões" className="inline-flex rounded-full bg-secondary p-0.5">
-            <Link aria-current={!byCategory ? "page" : undefined} className={tab(!byCategory)} href={viewHref("extrato")}>Por extrato</Link>
+            <Link aria-current={!byCategory ? "page" : undefined} className={tab(!byCategory)} href={viewHref("lancamentos")}>Por lançamento</Link>
             <Link aria-current={byCategory ? "page" : undefined} className={tab(byCategory)} href={viewHref("rubricas")}>Por rubrica</Link>
           </nav>
           <div className="ml-auto flex items-center gap-2">
             {(pendingDocs ?? 0) > 0 && filters.folder !== "pendente" && <Link href={`/lancamentos?pasta=pendente&de=${ALL_DATES}`} className="inline-flex items-center gap-1.5 rounded-full bg-[#f5eed1] px-3 py-1 text-xs font-semibold text-[#725d0d] hover:ring-1 hover:ring-current"><IconFolderExclamation className="size-4" aria-hidden /> {pendingDocs} {pendingDocs === 1 ? "documento pendente" : "documentos pendentes"}</Link>}
-            <ExportMenu view={byCategory ? "rubricas" : "extrato"} from={filters.from} to={filters.to} years={years} />
+            <ExportMenu view={byCategory ? "rubricas" : "lancamentos"} from={filters.from} to={filters.to} years={years} />
             {canEdit && <NewEntryButton returnQuery={returnQuery} />}
           </div>
         </div>
         <EntryFilters />
-        <section aria-label={byCategory ? "Rateios por rubrica" : "Movimentações do extrato"} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-card">
+        <section aria-label={byCategory ? "Rateios por rubrica" : "Lançamentos"} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-card">
           <InfiniteEntries key={returnQuery} initial={firstPage} query={returnQuery} filtered={filtered} order={order} sortHref={sortHref} />
         </section>
       </EntryListProvider>

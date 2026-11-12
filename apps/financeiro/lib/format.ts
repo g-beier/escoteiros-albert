@@ -17,3 +17,8 @@ export function centsToInput(cents: number) {
   const abs = Math.abs(cents);
   return `${sign}${Math.floor(abs / 100)},${String(abs % 100).padStart(2, "0")}`;
 }
+
+/** "a1b2c3…f9e8": o FITID do Nubank é um UUID; o começo e o fim bastam para reconhecer. */
+export function shortOfxId(id: string) {
+  return id.length > 14 ? `${id.slice(0, 6)}…${id.slice(-4)}` : id;
+}

@@ -96,6 +96,18 @@ describe("safeReconciliationHref", () => {
   });
 });
 
+describe("guessPaymentMethod by OFX TRNTYPE", () => {
+  const methods = [{ id: "pix", name: "PIX", active: true }, { id: "boleto", name: "Boleto", active: true }, { id: "tarifa", name: "Tarifa bancária", active: true }];
+  it("uses TRNTYPE when the description says nothing", () => {
+    expect(guessPaymentMethod({ kind: null, description: "CONTA LUZ", trnType: "PAYMENT" }, methods)).toBe("boleto");
+    expect(guessPaymentMethod({ kind: null, description: "MANUTENCAO", trnType: "srvchg" }, methods)).toBe("tarifa");
+    expect(guessPaymentMethod({ kind: null, description: "XYZ", trnType: "DEBIT" }, methods)).toBeUndefined();
+  });
+  it("prefers the description over TRNTYPE", () => {
+    expect(guessPaymentMethod({ kind: "Pix enviado", description: "Fulano", trnType: "PAYMENT" }, methods)).toBe("pix");
+  });
+});
+
 describe("guessPaymentMethod", () => {
   const methods = [
     { id: "pix", name: "PIX", active: true }, { id: "boleto", name: "Boleto", active: true },

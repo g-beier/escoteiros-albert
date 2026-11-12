@@ -15,6 +15,7 @@ export function ImportReview({ statement }: { statement: ParsedStatement }) {
   const mismatchRow = balanceCheck?.ok === false ? balanceCheck.firstMismatchRow : undefined;
   const hasBalance = lines.some((line) => line.balanceCents !== undefined);
   const hasId = lines.some((line) => line.externalId);
+  const hasType = lines.some((line) => line.trnType);
 
   return <div className="grid gap-4">
     <dl className="m-0 grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -43,17 +44,19 @@ export function ImportReview({ statement }: { statement: ParsedStatement }) {
         <TableHead className="h-8 px-2 text-right">Linha</TableHead>
         <TableHead className="h-8 px-2">Data</TableHead>
         <TableHead className="h-8 px-2">Tipo</TableHead>
+        {hasType && <TableHead className="h-8 px-2">TRNTYPE</TableHead>}
         <TableHead className="h-8 px-2">Contraparte</TableHead>
         <TableHead className="h-8 px-2">Descrição</TableHead>
         <TableHead className="h-8 px-2 text-right">Valor</TableHead>
         {hasBalance && <TableHead className="h-8 px-2 text-right">Saldo</TableHead>}
-        {hasId && <TableHead className="h-8 px-2">ID do banco</TableHead>}
+        {hasId && <TableHead className="h-8 px-2">ID OFX</TableHead>}
       </TableRow></TableHeader>
       <TableBody>{lines.slice(0, MAX_ROWS).map((line) => <TableRow key={line.sourceRow} id={`linha-${line.sourceRow}`}
         className={cn(line.sourceRow === mismatchRow && "bg-destructive/10 hover:bg-destructive/15")}>
         <TableCell className="px-2 py-1 text-right text-muted-foreground num">{line.sourceRow}</TableCell>
         <TableCell className="px-2 py-1 num">{dateBR(line.date)}</TableCell>
         <TableCell className="max-w-40 truncate px-2 py-1" title={line.kind}>{line.kind}</TableCell>
+        {hasType && <TableCell className="px-2 py-1 text-muted-foreground">{line.trnType}</TableCell>}
         <TableCell className="max-w-48 truncate px-2 py-1" title={line.counterparty}>{line.counterparty}</TableCell>
         <TableCell className="max-w-72 truncate px-2 py-1 text-muted-foreground" title={line.description}>{line.description}</TableCell>
         <TableCell className={cn("px-2 py-1 text-right font-medium num", line.amountCents < 0 ? "text-destructive" : "text-success")}>{brl(line.amountCents)}</TableCell>
@@ -89,5 +92,5 @@ function BalanceStatus({ statement, mismatchRow }: { statement: ParsedStatement;
   return <p role="alert" className="m-0 flex items-center gap-2 text-xs text-destructive"><IconAlertTriangle className="size-4 shrink-0" />
     <span>Os saldos não fecham{mismatchRow !== undefined
       ? <> a partir da <a href={`#linha-${mismatchRow}`} className="font-semibold underline num">linha {mismatchRow}</a> do arquivo</>
-      : <> com o total dos movimentos</>}{balances ? ` (${balances})` : ""}. Confira os papéis das colunas e as linhas ignoradas.</span></p>;
+      : <> com o total dos movimentos</>}{balances ? ` (${balances})` : ""}. Confira as linhas ignoradas nos ajustes de leitura.</span></p>;
 }

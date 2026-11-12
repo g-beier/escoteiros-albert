@@ -1,13 +1,13 @@
 import ExcelJS from "exceljs";
 import { expect, it } from "vitest";
-import type { StatementRow } from "@/lib/entry-queries";
-import { statementWorkbook } from "./xlsx";
+import type { LedgerRow } from "@/lib/entry-queries";
+import { ledgerWorkbook } from "./xlsx";
 
-const row = (entry_date: string, total_cents: number): StatementRow =>
+const row = (entry_date: string, total_cents: number): LedgerRow =>
   ({ entry_id: entry_date, entry_date, name: "Fulano", account_name: "Conta corrente", payment_method_name: "PIX", document: null, document_filed: false, total_cents });
 
 it("fluxo por extrato: datas, valores e totais", async () => {
-  const buffer = await statementWorkbook([row("2026-03-01", 9000), row("2026-03-31", -2500)], { from: "2026-03-01", to: "2026-03-31" });
+  const buffer = await ledgerWorkbook([row("2026-03-01", 9000), row("2026-03-31", -2500)], { from: "2026-03-01", to: "2026-03-31" });
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
   const sheet = workbook.getWorksheet("Fluxo por extrato")!;

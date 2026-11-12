@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { IconFilterOff, IconSearch } from "@tabler/icons-react";
+import { IconFilterOff, IconSearch, IconX } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useListParams } from "./filter-options";
 import { MultiFilter } from "./multi-filter";
 
-const FILTER_KEYS = ["de", "ate", "conta", "forma", "pasta", "associado", "rubrica", "q"] as const;
+const FILTER_KEYS = ["de", "ate", "conta", "forma", "pasta", "associado", "rubrica", "q", "ofx"] as const;
 
 export function EntryFilters() {
   const { params, apply, pending } = useListParams();
@@ -52,8 +52,11 @@ export function EntryFilters() {
     <MultiFilter filterKey="rubrica" />
     <div className="relative min-w-48 flex-1">
       <IconSearch className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
-      <Input type="search" aria-label="Buscar por nome do lançamento ou descrição" className={cn("h-7 pl-7", q.trim() && "border-primary")} placeholder="Buscar nome ou descrição" value={q} onChange={(e) => onSearch(e.target.value)} />
+      <Input type="search" aria-label="Buscar por histórico, descrição ou ID OFX" className={cn("h-7 pl-7", q.trim() && "border-primary")} placeholder="Buscar histórico, descrição ou ID OFX" value={q} onChange={(e) => onSearch(e.target.value)} />
     </div>
+    {params.get("ofx") && <Button variant="secondary" className="h-7 max-w-64" onClick={() => apply({ ofx: null })} title="Remover o filtro por ID OFX">
+      <span className="truncate">ID OFX <span className="num">{params.get("ofx")}</span></span> <IconX />
+    </Button>}
     {active && <Button variant="ghost" onClick={clear}><IconFilterOff /> Limpar filtros</Button>}
   </section>;
 }

@@ -34,6 +34,14 @@ function aggregate(text: string, name: string): string | undefined {
   return match?.[1];
 }
 
+/** `BANKID:ACCTID`, sem zeros à esquerda no banco; null sem número de conta. */
+export function ofxAccountKey(account: OfxAccount): string | null {
+  const acct = account.acctId?.replace(/\s+/g, "");
+  if (!acct) return null;
+  const bank = (account.bankId ?? account.org ?? "").replace(/\s+/g, "").replace(/^0+(?=\d)/, "");
+  return `${bank}:${acct}`.slice(0, 120);
+}
+
 /** OFX dates: YYYYMMDD[hhmmss[.xxx]][[-3:BRT]]. Only the calendar date is kept. */
 export function parseOfxDate(raw: string | undefined): string | null {
   const match = /^(\d{4})(\d{2})(\d{2})/.exec(raw?.trim() ?? "");
@@ -110,6 +118,13 @@ export function readOfx(text: string): OfxStatement {
     if (memo && name && memo !== name) line.counterparty = name;
     const fitId = tag(block, "FITID");
     if (fitId) line.externalId = fitId;
+    const trnType = tag(block, "TRNTYPE");
+    if (trnType) line.trnType = trnType.toUpperCase();
+    const checkNumber = tag(block, "CHECKNUM");
+    if (checkNumber) line.checkNumber = checkNumber;
+    const reference = tag(block, "REFNUM");
+    if (reference) line.reference = reference;
+    if (name) line.payee = name;
     lines.push(line);
   }
 
@@ -122,6 +137,8 @@ export function readOfx(text: string): OfxStatement {
     signature: headerSignature(account),
     ...computePeriod(lines),
   };
+  const key = ofxAccountKey(account);
+  if (key) result.accountKey = key;
   const transactionList = aggregate(body, "BANKTRANLIST") ?? body;
   const periodFrom = parseOfxDate(tag(transactionList, "DTSTART"));
   const periodTo = parseOfxDate(tag(transactionList, "DTEND"));

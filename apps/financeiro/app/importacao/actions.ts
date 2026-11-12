@@ -57,6 +57,20 @@ export async function importStatementLines(payload: unknown): Promise<ActionResu
   const ctx = await memberOrError();
   if ("error" in ctx) return { error: ctx.error };
   if (!ctx.canEdit) return { error: "Sem permissão para importar extratos." };
+  const ofxKey = parsed.data.ofxKey ?? null;
+  if (ofxKey) {
+    // O arquivo é da conta escolhida? Na primeira vez, a conta passa a reconhecê-lo.
+    const { data: accounts, error: accountsError } = await ctx.supabase.from("accounts").select("id, name, ofx_key").eq("group_id", ctx.groupId);
+    if (accountsError) return { error: accountsError.message };
+    const owner = accounts?.find((account) => account.ofx_key === ofxKey);
+    const chosen = accounts?.find((account) => account.id === parsed.data.accountId);
+    if (owner && owner.id !== parsed.data.accountId) return { error: `Este arquivo é da conta “${owner.name}”.` };
+    if (!owner && chosen?.ofx_key) return { error: `A conta “${chosen.name}” recebe outro arquivo OFX (${chosen.ofx_key}). Confira a conta escolhida.` };
+    if (!owner) {
+      const { error: keyError } = await ctx.supabase.rpc("set_account_ofx_key", { p_account_id: parsed.data.accountId, p_ofx_key: ofxKey });
+      if (keyError) return { error: keyError.message };
+    }
+  }
   const { data, error } = await ctx.supabase.rpc("import_statement_lines", {
     p_account_id: parsed.data.accountId,
     p_profile_id: parsed.data.profileId ?? null,

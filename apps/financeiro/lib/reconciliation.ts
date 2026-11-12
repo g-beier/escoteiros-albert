@@ -7,6 +7,10 @@ export type OpenLine = {
   description: string;
   kind: string | null;
   counterparty: string | null;
+  /** ID OFX (FITID). */
+  externalId?: string | null;
+  /** TRNTYPE do OFX (CREDIT, DEBIT, PAYMENT, XFER, FEE…). */
+  trnType?: string | null;
 };
 
 export type OpenEntry = {
@@ -187,18 +191,29 @@ export function safeReconciliationHref(raw: string | undefined) {
 
 const normalize = (text: string) => text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
+/** TRNTYPE do OFX → forma de pagamento, quando o histórico não diz nada mais específico. */
+const TRN_TYPE_METHODS: Record<string, string> = {
+  FEE: "tarifa bancaria", SRVCHG: "tarifa bancaria",
+  XFER: "transferencia",
+  PAYMENT: "boleto", DIRECTDEBIT: "boleto",
+  CASH: "dinheiro", ATM: "dinheiro",
+  CHECK: "cheque",
+};
+
 /**
  * Forma de pagamento provável pelo tipo/histórico da linha: Pix → PIX; pagamento de conta/boleto → Boleto;
- * tarifa → Tarifa bancária; TED/DOC/transferência → Transferência. Só devolve formas ativas existentes.
+ * tarifa → Tarifa bancária; TED/DOC/transferência → Transferência; depois, pelo TRNTYPE do OFX.
+ * Só devolve formas ativas existentes.
  */
-export function guessPaymentMethod(line: Pick<OpenLine, "kind" | "description">, methods: { id: string; name: string; active: boolean }[]) {
+export function guessPaymentMethod(line: Pick<OpenLine, "kind" | "description" | "trnType">, methods: { id: string; name: string; active: boolean }[]) {
   const text = normalize(`${line.kind ?? ""} ${line.description}`);
   const find = (name: string) => methods.find((m) => m.active && normalize(m.name) === name)?.id;
   if (/\bpix\b/.test(text)) return find("pix");
   if (/boleto|pagamento de conta|pagto conta|pag conta/.test(text)) return find("boleto");
   if (/tarifa|taxa|cesta/.test(text)) return find("tarifa bancaria");
   if (/\bted\b|\bdoc\b|transf/.test(text)) return find("transferencia");
-  return undefined;
+  const byType = line.trnType ? TRN_TYPE_METHODS[line.trnType.toUpperCase()] : undefined;
+  return byType ? find(byType) : undefined;
 }
 
 /** Nome do lançamento sugerido: a contraparte, senão o histórico do banco. */

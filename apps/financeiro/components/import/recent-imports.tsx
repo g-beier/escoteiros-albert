@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { dateBR } from "@/lib/format";
+import { SectionCard, SectionHeader } from "@/components/section-card";
 import { reconciliationHref } from "@/lib/import-flow";
 import type { RecentImport } from "@/lib/import-queries";
 
@@ -8,10 +9,8 @@ const dateTime = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyl
 
 /** Últimas importações da conta escolhida. */
 export function RecentImports({ accountId, accountName, rows, error }: { accountId: string; accountName: string; rows: RecentImport[]; error?: string }) {
-  return <section className="card" aria-labelledby="recent-imports-title">
-    <header className="card-head">
-      <div><h2 className="card-title" id="recent-imports-title">Importações recentes</h2><p className="m-0 text-xs text-muted-foreground">{accountName}</p></div>
-    </header>
+  return <SectionCard aria-labelledby="recent-imports-title">
+    <SectionHeader title="Importações recentes" titleId="recent-imports-title" description={accountName} />
     {error && <p className="m-0 px-5 py-3 text-xs text-destructive">Não foi possível carregar as importações: {error}</p>}
     {!error && rows.length === 0 && <p className="m-0 px-5 py-6 text-center text-xs text-muted-foreground">Nenhum extrato importado nesta conta.</p>}
     {rows.length > 0 && <Table>
@@ -36,5 +35,5 @@ export function RecentImports({ accountId, accountName, rows, error }: { account
         <TableCell className="px-3 py-1.5 text-right"><Link className="text-primary underline-offset-4 hover:underline" href={reconciliationHref(accountId, row.period_from, row.period_to)}>Conciliar</Link></TableCell>
       </TableRow>)}</TableBody>
     </Table>}
-  </section>;
+  </SectionCard>;
 }

@@ -26,6 +26,11 @@ describe("toRpcLines", () => {
     expect(toRpcLines([{ date: "2026-11-03", amountCents: -1500, description: "PIX", kind: "", counterparty: null, externalId: undefined, balanceCents: 0 }]))
       .toEqual([{ date: "2026-11-03", amountCents: -1500, description: "PIX", balanceCents: 0 }]);
   });
+
+  it("envia os campos do OFX", () => {
+    expect(toRpcLines([{ date: "2026-11-03", amountCents: -1, description: "x", trnType: "PAYMENT", checkNumber: "12", reference: "R", payee: "Loja" }]))
+      .toEqual([{ date: "2026-11-03", amountCents: -1, description: "x", trnType: "PAYMENT", checkNumber: "12", reference: "R", payee: "Loja" }]);
+  });
 });
 
 describe("importLinesSchema", () => {

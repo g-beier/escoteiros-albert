@@ -4,12 +4,13 @@ import { dateBR, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { IconArrowDown, IconArrowUp, IconCircleCheck } from "@tabler/icons-react";
-import type { SplitRow, StatementRow } from "@/lib/entry-queries";
+import type { SplitRow, LedgerRow } from "@/lib/entry-queries";
 import type { SortOrder } from "@/lib/filters";
 import { MultiFilter } from "@/components/entries/multi-filter";
 import type { FilterKey } from "@/components/entries/filter-options";
+import { OfxIds } from "@/components/entries/ofx-ids";
 
-export type { SplitRow, StatementRow };
+export type { SplitRow, LedgerRow };
 
 const cell = "px-2.5 py-1 align-middle whitespace-nowrap";
 const wrapCell = "px-2.5 py-1 align-middle whitespace-normal min-w-48";
@@ -50,17 +51,18 @@ function CategoryTag({ code, name, kind }: { code: string | null; name: string; 
 
 const Empty = ({ children }: { children: React.ReactNode }) => <div className="px-6 py-12 text-center text-muted-foreground">{children}</div>;
 
-export function StatementTable({ rows, filtered, order, sortHref }: { rows: StatementRow[]; filtered: boolean } & Sort) {
+export function LedgerTable({ rows, filtered, order, sortHref }: { rows: LedgerRow[]; filtered: boolean } & Sort) {
   if (!rows.length) return <Empty>{filtered ? "Nenhum lançamento corresponde aos filtros." : "Nenhum lançamento ainda. Comece pelo botão “Novo lançamento”."}</Empty>;
-  return <Table className="min-w-[860px]" containerClassName="overflow-visible">
-    <TableCaption className="sr-only">Linhas do extrato. Selecione uma linha para ver os detalhes e o rateio.</TableCaption>
-    <Head columns={[{ label: "Data", className: "w-28" }, { label: "Nome do lançamento" }, { label: "Conta", className: "w-40" }, { label: "Forma pgto", className: "w-40" }, { label: "Documentos", className: "w-48" }, { label: "Valor", className: "w-32 text-right" }]} order={order} sortHref={sortHref} />
+  return <Table className="min-w-[980px]" containerClassName="overflow-visible">
+    <TableCaption className="sr-only">Um lançamento por linha. Selecione uma linha para ver os detalhes e o rateio.</TableCaption>
+    <Head columns={[{ label: "Data", className: "w-28" }, { label: "Histórico" }, { label: "Conta", className: "w-40" }, { label: "Forma pgto", className: "w-40" }, { label: "Documentos", className: "w-48" }, { label: "ID OFX", className: "w-36" }, { label: "Valor", className: "w-32 text-right" }]} order={order} sortHref={sortHref} />
     <TableBody>{rows.map((row) => <EntryRow key={row.entry_id} entryId={row.entry_id}>
       <TableCell className={cn(cell, "whitespace-nowrap num")}>{dateBR(row.entry_date)}</TableCell>
       <TableCell className={wrapCell}><EntryLink entryId={row.entry_id}>{row.name}</EntryLink></TableCell>
       <TableCell className={cell}>{row.account_name}</TableCell>
       <TableCell className={cell}>{row.payment_method_name}</TableCell>
       <TableCell className={cell}><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} /></TableCell>
+      <TableCell className={cell}><OfxIds ids={row.external_ids ?? []} /></TableCell>
       <TableCell className={amountCell(row.total_cents)}>{row.reconciled && <IconCircleCheck className="mr-1 inline size-3.5 align-[-2px] text-success" aria-label="Conciliado com o extrato" title="Conciliado com o extrato" />}{money(row.total_cents / 100)}</TableCell>
       <TableCell className="px-1 py-0.5 align-middle"><EntryRowActions entryId={row.entry_id} filed={row.document_filed} /></TableCell>
     </EntryRow>)}</TableBody>
@@ -69,9 +71,9 @@ export function StatementTable({ rows, filtered, order, sortHref }: { rows: Stat
 
 export function SplitTable({ rows, filtered, order, sortHref }: { rows: SplitRow[]; filtered: boolean } & Sort) {
   if (!rows.length) return <Empty>{filtered ? "Nenhum rateio corresponde aos filtros." : "Os rateios aparecerão depois do primeiro lançamento."}</Empty>;
-  return <Table className="min-w-[1200px]" containerClassName="overflow-visible">
-    <TableCaption className="sr-only">Um rateio por linha, repetindo os dados da linha do extrato de origem. Selecione uma linha para ver o lançamento.</TableCaption>
-    <Head columns={[{ label: "Data", className: "w-24" }, { label: "Lançamento" }, { label: "Conta" }, { label: "Forma pgto" }, { label: "Documentos" }, { label: "Valor", className: "text-right" }, { label: "Nome do Associado" }, { label: "Descrição" }, { label: "Rubrica" }]} order={order} sortHref={sortHref} />
+  return <Table className="min-w-[1320px]" containerClassName="overflow-visible">
+    <TableCaption className="sr-only">Um rateio por linha, repetindo os dados do lançamento de origem. Selecione uma linha para ver o lançamento.</TableCaption>
+    <Head columns={[{ label: "Data", className: "w-24" }, { label: "Histórico" }, { label: "Conta" }, { label: "Forma pgto" }, { label: "Documentos" }, { label: "ID OFX" }, { label: "Valor", className: "text-right" }, { label: "Nome do Associado" }, { label: "Descrição" }, { label: "Rubrica" }]} order={order} sortHref={sortHref} />
     <TableBody>{rows.map((row, index) => {
       const continued = index > 0 && rows[index - 1].entry_id === row.entry_id;
       return <EntryRow key={row.split_id} entryId={row.entry_id} data-entry-id={row.entry_id} className={cn(continued && "[&_td]:border-t [&_td]:border-dashed")}>
@@ -80,6 +82,7 @@ export function SplitTable({ rows, filtered, order, sortHref }: { rows: SplitRow
         <TableCell className={cell}>{row.account_name}</TableCell>
         <TableCell className={cell}>{row.payment_method_name}</TableCell>
         <TableCell className={cell}><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} /></TableCell>
+        <TableCell className={cell}>{!continued && <OfxIds ids={row.external_ids ?? []} />}</TableCell>
         <TableCell className={amountCell(row.amount_cents)}>{money(row.amount_cents / 100)}</TableCell>
         <TableCell className={cell}>{row.associate_name ?? <span className="text-muted-foreground">—</span>}</TableCell>
         <TableCell className={wrapCell}>{row.description}</TableCell>

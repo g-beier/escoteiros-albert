@@ -38,7 +38,7 @@ export async function fetchEntry(supabase: SupabaseClient, id: string): Promise<
   };
 }
 
-const LIST_KEYS = ["visao", "ordem", "de", "ate", "conta", "forma", "pasta", "associado", "rubrica", "q"] as const;
+const LIST_KEYS = ["visao", "ordem", "de", "ate", "conta", "forma", "pasta", "associado", "rubrica", "q", "ofx"] as const;
 
 /** Query string da lista (só chaves conhecidas), para voltar dos detalhes com os mesmos filtros. */
 export function listQuery(params: Record<string, string | string[] | undefined> | URLSearchParams) {

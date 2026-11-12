@@ -11,6 +11,8 @@ export type EntryFilters = {
   withoutAssociate: boolean;
   categoryIds: string[];
   q?: string;
+  /** ID OFX (FITID): o lançamento e os rateios ligados a essa movimentação do banco. */
+  ofx?: string;
 };
 
 export type RawSearchParams = Record<string, string | string[] | undefined>;
@@ -70,7 +72,14 @@ export function parseFilters(params: RawSearchParams, now = new Date()): EntryFi
     withoutAssociate: associates.includes(NO_ASSOCIATE),
     categoryIds: uuids(params.rubrica),
     q: q || undefined,
+    ofx: ofxId(params.ofx),
   };
+}
+
+/** FITID como veio do banco (UUID no Nubank, data + sequência no Itaú); só caracteres seguros. */
+function ofxId(value: string | string[] | undefined) {
+  const v = first(value);
+  return v && v.length <= 200 && /^[\w.:\-/]+$/.test(v) ? v : undefined;
 }
 
 /** Escapa curingas do LIKE para que a busca trate o texto literalmente. */
@@ -79,7 +88,7 @@ export function likePattern(q: string) {
 }
 
 export function hasAnyFilter(filters: EntryFilters) {
-  return Boolean(filters.from || filters.to || filters.folder || filters.q || filters.withoutAssociate
+  return Boolean(filters.from || filters.to || filters.folder || filters.q || filters.ofx || filters.withoutAssociate
     || filters.accountIds.length || filters.paymentMethodIds.length || filters.associateIds.length || filters.categoryIds.length);
 }
 

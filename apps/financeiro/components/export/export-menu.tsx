@@ -12,12 +12,12 @@ import { Label } from "@/components/ui/label";
 import { describePeriod, MONTHS, periodBounds, type PeriodPreset } from "@/lib/export/period";
 import { cn } from "@/lib/utils";
 
-type View = "extrato" | "rubricas";
+type View = "lancamentos" | "rubricas";
 type PresetKind = PeriodPreset["kind"];
 type Mode = "fluxo" | "realizado" | null;
 
 const monthOptions = MONTHS.map((label, i) => ({ value: String(i + 1), label }));
-const viewOptions = [{ value: "extrato", label: "Por extrato" }, { value: "rubricas", label: "Por rubrica" }];
+const viewOptions = [{ value: "lancamentos", label: "Por lançamento" }, { value: "rubricas", label: "Por rubrica" }];
 
 /** Baixa a planilha da rota; em caso de erro, mostra a mensagem da rota em um toast. */
 async function download(url: string) {

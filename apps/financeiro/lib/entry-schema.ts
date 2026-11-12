@@ -6,7 +6,7 @@ const nonZeroCents = z.number().int().safe().refine((value) => value !== 0, {
 
 export const entrySchema = z.object({
   date: z.iso.date({ message: "Informe a data." }),
-  name: z.string().trim().min(2, "Informe o nome do lançamento (quem pagou/recebeu, emitente da nota…).").max(200),
+  name: z.string().trim().min(2, "Informe o histórico do lançamento (quem pagou/recebeu, emitente da nota…).").max(200),
   paymentMethodId: z.uuid({ message: "Escolha a forma de pagamento." }),
   accountId: z.uuid({ message: "Escolha a conta." }),
   document: z.string().trim().max(60).optional(),

@@ -12,25 +12,25 @@ export const metadata = { title: "Novo lançamento · GEAS Financeiro" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-type StatementLine = { id: string; account_id: string; line_date: string; description: string; kind: string | null; counterparty: string | null; amount_cents: number; status: string };
+type StatementLine = { id: string; account_id: string; line_date: string; description: string; kind: string | null; counterparty: string | null; amount_cents: number; status: string; trn_type: string | null };
 
 export default async function NewEntryPage({ searchParams }: { searchParams: Promise<{ voltar?: string; linha?: string }> }) {
   const { voltar, linha } = await searchParams;
   const { supabase, user, role, canEdit, catalogs } = await loadEntryContext();
   if (!canEdit) notFound();
 
-  // "Criar lançamento" na conciliação: a linha do extrato preenche data, nome, valor, conta e forma provável
+  // "Criar lançamento" na conciliação: a linha do extrato preenche data, histórico, valor, conta e forma provável
   let line: StatementLine | null = null;
   if (linha && UUID.test(linha)) {
     const { data } = await supabase.from("statement_lines")
-      .select("id, account_id, line_date, description, kind, counterparty, amount_cents, status").eq("id", linha).maybeSingle();
+      .select("id, account_id, line_date, description, kind, counterparty, amount_cents, status, trn_type").eq("id", linha).maybeSingle();
     line = data as StatementLine | null;
     if (!line) notFound();
   }
   const backHref = line ? safeReconciliationHref(voltar) : listHref(voltar);
   const fromLine: StatementLinePrefill | undefined = line ? {
     id: line.id, date: line.line_date, name: suggestedEntryName(line), totalCents: Number(line.amount_cents), accountId: line.account_id,
-    paymentMethodId: guessPaymentMethod(line, catalogs.paymentMethods) ?? "",
+    paymentMethodId: guessPaymentMethod({ ...line, trnType: line.trn_type }, catalogs.paymentMethods) ?? "",
   } : undefined;
 
   return <div className="shell">

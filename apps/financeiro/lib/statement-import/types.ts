@@ -8,6 +8,11 @@ export type StatementLine = {
   counterparty?: string;
   externalId?: string;
   balanceCents?: number;
+  /** OFX: TRNTYPE (CREDIT, DEBIT, PAYMENT, XFER, FEE…), CHECKNUM, REFNUM e NAME, como vieram do banco. */
+  trnType?: string;
+  checkNumber?: string;
+  reference?: string;
+  payee?: string;
   /** 1-based record number in the CSV, or the line of `<STMTTRN>` in an OFX file. */
   sourceRow: number;
 };
@@ -100,6 +105,8 @@ export type OfxAccount = { bankId?: string; branchId?: string; acctId?: string; 
 
 export type OfxStatement = ParsedStatement & {
   account: OfxAccount;
+  /** `BANKID:ACCTID` (ou `ORG:ACCTID`): liga o arquivo a uma conta do grupo. Ausente sem ACCTID. */
+  accountKey?: string;
   /** `ofx:<org or bankId>`, for profile matching. */
   signature: string;
 };

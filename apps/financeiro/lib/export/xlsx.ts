@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import type { SplitRow, StatementRow } from "@/lib/entry-queries";
+import type { SplitRow, LedgerRow } from "@/lib/entry-queries";
 import { describePeriod, MONTHS_SHORT, type Period } from "./period";
 import type { RealizedModel, RealizedRow } from "./realized";
 
@@ -88,7 +88,7 @@ function flowSheet<T>(workbook: ExcelJS.Workbook, name: string, title: string, p
 
 const folder = (filed: boolean) => filed ? "Arquivado" : "Pendente";
 
-export async function statementWorkbook(rows: StatementRow[], period: Period) {
+export async function ledgerWorkbook(rows: LedgerRow[], period: Period) {
   const workbook = newWorkbook();
   flowSheet(workbook, "Fluxo por extrato", "Fluxo de caixa por extrato", period, [
     { header: "Data", width: 12, date: true, value: (r) => toDate(r.entry_date) },

@@ -11,7 +11,7 @@ type RawParams = Record<string, string | string[] | undefined>;
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value)?.trim() || undefined;
 
 type AccountRow = { id: string; name: string; active: boolean; kind: string; opening_balance_cents: number; opening_date: string | null };
-type LineRow = { id: string; line_date: string; description: string; kind: string | null; counterparty: string | null; amount_cents: number; status: "aberta" | "conciliada" | "ignorada"; ignored_reason: string | null };
+type LineRow = { id: string; line_date: string; description: string; kind: string | null; counterparty: string | null; amount_cents: number; status: "aberta" | "conciliada" | "ignorada"; ignored_reason: string | null; external_id: string | null; trn_type: string | null };
 type EntryRow = { entry_id: string; entry_date: string; name: string; payment_method_name: string; total_cents: number; reconciled: boolean; outside_statement: boolean };
 type LinkRow = { link_set_id: string; statement_line_id: string; line_date: string; line_description: string; line_kind: string | null; line_counterparty: string | null; line_amount_cents: number; ledger_entry_id: string; entry_date: string; entry_name: string; entry_total_cents: number; created_at: string };
 type ImportRow = { period_from: string; period_to: string; opening_balance_cents: number | null; closing_balance_cents: number | null };
@@ -41,7 +41,7 @@ export default async function ReconciliationPage({ searchParams }: { searchParam
   }
 
   const [lines, entries, links, rejections, imports] = await Promise.all([
-    supabase.from("statement_lines").select("id, line_date, description, kind, counterparty, amount_cents, status, ignored_reason")
+    supabase.from("statement_lines").select("id, line_date, description, kind, counterparty, amount_cents, status, ignored_reason, external_id, trn_type")
       .eq("account_id", account.id).gte("line_date", period.from).lte("line_date", period.to)
       .order("line_date").order("amount_cents").limit(LIMIT),
     supabase.from("ledger_entry_rows").select("entry_id, entry_date, name, payment_method_name, total_cents, reconciled, outside_statement")
@@ -59,7 +59,7 @@ export default async function ReconciliationPage({ searchParams }: { searchParam
 
   const lineRows = (lines.data ?? []) as LineRow[];
   const entryRows = (entries.data ?? []) as EntryRow[];
-  const toLine = (l: LineRow): OpenLine => ({ id: l.id, date: l.line_date, amountCents: Number(l.amount_cents), description: l.description, kind: l.kind, counterparty: l.counterparty });
+  const toLine = (l: LineRow): OpenLine => ({ id: l.id, date: l.line_date, amountCents: Number(l.amount_cents), description: l.description, kind: l.kind, counterparty: l.counterparty, externalId: l.external_id, trnType: l.trn_type });
   const toEntry = (e: EntryRow): OpenEntry => ({ id: e.entry_id, date: e.entry_date, totalCents: Number(e.total_cents), name: e.name, paymentMethodName: e.payment_method_name });
   const openLines = lineRows.filter((l) => l.status === "aberta").map(toLine).sort(byDateThenAmount((l) => l.date, (l) => l.amountCents));
   const openEntries = entryRows.filter((e) => !e.outside_statement).map(toEntry).sort(byDateThenAmount((e) => e.date, (e) => e.totalCents));

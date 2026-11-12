@@ -3,9 +3,9 @@ import { likePattern, type EntryFilters, type SortOrder } from "@/lib/filters";
 
 export const PAGE_SIZE = 100;
 
-export type EntryView = "extrato" | "rubricas";
+export type EntryView = "lancamentos" | "rubricas";
 
-export type StatementRow = {
+export type LedgerRow = {
   entry_id: string;
   entry_date: string;
   name: string;
@@ -16,6 +16,8 @@ export type StatementRow = {
   total_cents: number;
   /** Vinculado a uma linha do extrato (conciliação). */
   reconciled?: boolean;
+  /** IDs OFX (FITID) das linhas do extrato vinculadas; juntam o lançamento à movimentação do banco. */
+  external_ids: string[];
 };
 
 export type SplitRow = {
@@ -33,14 +35,17 @@ export type SplitRow = {
   category_code: string | null;
   category_kind: "receita" | "despesa" | null;
   associate_name: string | null;
+  category_ledger_code: string | null;
+  account_ledger_code: string | null;
+  external_ids: string[];
 };
 
 export type EntryPage =
-  | { view: "extrato"; rows: StatementRow[]; total: number | null; error?: string }
+  | { view: "lancamentos"; rows: LedgerRow[]; total: number | null; error?: string }
   | { view: "rubricas"; rows: SplitRow[]; total: number | null; error?: string };
 
-export const STATEMENT_COLUMNS = "entry_id, entry_date, name, account_name, payment_method_name, document, document_filed, total_cents, reconciled";
-export const SPLIT_COLUMNS = "split_id, entry_id, entry_date, entry_name, account_name, payment_method_name, document, document_filed, amount_cents, description, category_name, category_code, category_kind, associate_name";
+export const LEDGER_COLUMNS = "entry_id, entry_date, name, account_name, payment_method_name, document, document_filed, total_cents, reconciled, external_ids";
+export const SPLIT_COLUMNS = "split_id, entry_id, entry_date, entry_name, account_name, payment_method_name, document, document_filed, amount_cents, description, category_name, category_code, category_kind, associate_name, category_ledger_code, account_ledger_code, external_ids";
 
 // IDs chegam validados como UUID por parseFilters, então podem compor filtros `or` com segurança.
 
@@ -70,6 +75,7 @@ export async function fetchEntryPage(
     else if (filters.withoutAssociate) query = query.is("associate_id", null);
     if (filters.categoryIds.length) query = query.in("category_id", filters.categoryIds);
     if (filters.q) query = query.ilike("search_text", likePattern(filters.q));
+    if (filters.ofx) query = query.contains("external_ids", [filters.ofx]);
     const { data, error, count: total } = await query
       .order("entry_date", { ascending }).order("entry_id", { ascending }).order("split_id", { ascending })
       .range(...range);
@@ -77,7 +83,7 @@ export async function fetchEntryPage(
   }
 
   let query = supabase.from("ledger_entry_rows")
-    .select(STATEMENT_COLUMNS, { count })
+    .select(LEDGER_COLUMNS, { count })
     .eq("group_id", groupId);
   if (filters.from) query = query.gte("entry_date", filters.from);
   if (filters.to) query = query.lte("entry_date", filters.to);
@@ -89,8 +95,9 @@ export async function fetchEntryPage(
   else if (filters.withoutAssociate) query = query.eq("has_split_without_associate", true);
   if (filters.categoryIds.length) query = query.overlaps("category_ids", filters.categoryIds);
   if (filters.q) query = query.ilike("search_text", likePattern(filters.q));
+  if (filters.ofx) query = query.contains("external_ids", [filters.ofx]);
   const { data, error, count: total } = await query
     .order("entry_date", { ascending }).order("created_at", { ascending }).order("entry_id", { ascending })
     .range(...range);
-  return { view, rows: (data ?? []) as StatementRow[], total: total ?? null, error: error?.message };
+  return { view, rows: (data ?? []) as LedgerRow[], total: total ?? null, error: error?.message };
 }

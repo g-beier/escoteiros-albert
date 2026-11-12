@@ -1,59 +1,42 @@
 "use client";
 
-import { useMemo, useState, useTransition, type ChangeEvent, type FormEvent } from "react";
+import { useMemo, useState, useTransition, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { IconFileUpload } from "@tabler/icons-react";
+import { IconAlertTriangle, IconCircleCheck, IconFileUpload, IconInfoCircle, IconLink } from "@tabler/icons-react";
 import { importStatementLines, saveImportProfile, type ImportProfile } from "@/app/importacao/actions";
-import { CsvProfileBuilder } from "@/components/import/csv-profile-builder";
 import { ImportReview } from "@/components/import/import-review";
 import { IgnoreList, KindPrefixes } from "@/components/import/profile-options";
 import { OptionSelect } from "@/components/option-controls";
+import { SectionCard, SectionHeader } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  csvSettingsFromProfile, descriptionValues, detectFormat, dropZeroLines, findMatchingProfile, missingRoles, newCsvSettings,
-  newOfxSettings, ofxSettingsFromProfile, parseTextList, pruneColumns, reconciliationHref, sameSettings, toImportLines,
-  type ImportFormat,
+  accountForOfxKey, detectFormat, dropZeroLines, findMatchingProfile, matchOfxAccount, newOfxSettings, ofxSettingsFromProfile,
+  parseTextList, reconciliationHref, sameSettings, toImportLines, type AccountMatch,
 } from "@/lib/import-flow";
-import {
-  applyOfxProfile, applyProfile, decodeBytes, headerSignature, readCsv, readOfx, suggestKindPrefixes,
-  type OfxProfileSettings, type ParsedStatement, type ProfileSettings,
-} from "@/lib/statement-import";
+import { applyOfxProfile, decodeBytes, readOfx, suggestKindPrefixes, type OfxProfileSettings, type OfxStatement } from "@/lib/statement-import";
 
-export type ImportAccount = { id: string; name: string; bank: string | null };
+export type ImportAccount = { id: string; name: string; bank: string | null; ofx_key: string | null };
 
-type LoadedFile = { name: string; bytes: Uint8Array; format: ImportFormat };
-type Draft = { format: "csv"; settings: ProfileSettings } | { format: "ofx"; settings: OfxProfileSettings };
-type SaveChoice = { mode: "keep" } | { mode: "update"; id: string; name: string } | { mode: "create"; name: string };
+type LoadedFile = { name: string; statement: OfxStatement };
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
-const NEW_PROFILE = "";
-
-/** Configurações que o arquivo terá com um perfil salvo, ou com sugestões quando não há perfil. */
-function draftFor(file: LoadedFile, profile: ImportProfile | null): Draft {
-  if (file.format === "ofx") {
-    const settings = profile ? ofxSettingsFromProfile(profile.settings)
-      : newOfxSettings(readOfx(decodeBytes(file.bytes).text).lines.map((line) => line.description));
-    return { format: "ofx", settings };
-  }
-  const saved = profile ? csvSettingsFromProfile(profile.settings) : null;
-  if (saved) return { format: "csv", settings: saved };
-  const { text, encoding } = decodeBytes(file.bytes);
-  return { format: "csv", settings: newCsvSettings(text, encoding) };
-}
 
 /** Período da importação: o declarado no arquivo, ampliado para cobrir todas as linhas. */
-function importPeriod(statement: ParsedStatement) {
+function importPeriod(statement: OfxStatement) {
   const dates = statement.lines.map((line) => line.date).sort();
   const from = [statement.periodFrom, dates[0]].filter(Boolean).sort()[0];
   const to = [statement.periodTo, dates[dates.length - 1]].filter(Boolean).sort().at(-1);
   return { from, to };
 }
 
+/**
+ * Importação de extrato OFX. A conta vem do próprio arquivo (BANKID:ACCTID) quando já foi ligada;
+ * o perfil de leitura do banco (separar MEMO, prefixos de tipo, linhas a ignorar) é aplicado sozinho
+ * e salvo ao importar. A importação CSV foi desativada na interface; a biblioteca continua em lib/statement-import.
+ */
 export function StatementImporter({ accounts, profiles, accountId: initialAccountId }: {
   accounts: ImportAccount[];
   profiles: ImportProfile[];
@@ -64,111 +47,78 @@ export function StatementImporter({ accounts, profiles, accountId: initialAccoun
   const [, startNavigation] = useTransition();
   const [accountId, setAccountId] = useState(initialAccountId);
   const [file, setFile] = useState<LoadedFile | null>(null);
-  const [profileId, setProfileId] = useState(NEW_PROFILE);
-  const [draft, setDraft] = useState<Draft | null>(null);
+  const [profile, setProfile] = useState<ImportProfile | null>(null);
+  const [settings, setSettings] = useState<OfxProfileSettings | null>(null);
   const [ignoreText, setIgnoreText] = useState("");
-  const [saveOpen, setSaveOpen] = useState(false);
 
-  const profile = profiles.find((item) => item.id === profileId) ?? null;
   const account = accounts.find((item) => item.id === accountId);
 
-  function loadProfile(next: ImportProfile | null, loaded: LoadedFile) {
-    const nextDraft = draftFor(loaded, next);
-    setProfileId(next?.id ?? NEW_PROFILE);
-    setDraft(nextDraft);
-    setIgnoreText((nextDraft.settings.ignoreIf ?? []).join("\n"));
+  function chooseAccount(id: string) {
+    setAccountId(id);
+    // recarrega a lista de importações recentes da conta, sem perder o arquivo carregado
+    startNavigation(() => router.replace(`/importacao?conta=${encodeURIComponent(id)}`, { scroll: false }));
   }
 
   async function onFile(event: ChangeEvent<HTMLInputElement>) {
     const chosen = event.target.files?.[0];
     if (!chosen) return;
     if (chosen.size > MAX_FILE_BYTES) { toast.error("Arquivo grande demais (máximo 10 MB)."); return; }
-    const bytes = new Uint8Array(await chosen.arrayBuffer());
-    const { text } = decodeBytes(bytes);
-    const format = detectFormat(text);
-    const loaded: LoadedFile = { name: chosen.name, bytes, format };
-    const match = format === "ofx"
-      ? findMatchingProfile(profiles, "ofx", () => readOfx(text).signature)
-      : findMatchingProfile(profiles, "csv", (candidate) => {
-        const settings = csvSettingsFromProfile(candidate.settings);
-        return settings ? headerSignature(readCsv(decodeBytes(bytes, settings.encoding).text, settings).header) : null;
-      });
-    setFile(loaded);
-    loadProfile(match ?? null, loaded);
-    if (match) toast.info(`Perfil “${match.name}” reconhecido. Confira e ajuste se precisar.`);
+    const { text } = decodeBytes(new Uint8Array(await chosen.arrayBuffer()));
+    if (detectFormat(text) !== "ofx") { toast.error("Envie o extrato em OFX. Nos bancos, procure por “Exportar extrato” → OFX (Money/Quicken)."); return; }
+    const statement = readOfx(text);
+    const match = findMatchingProfile(profiles, "ofx", () => statement.signature) ?? null;
+    const next = match ? ofxSettingsFromProfile(match.settings) : newOfxSettings(statement.lines.map((line) => line.description));
+    setFile({ name: chosen.name, statement });
+    setProfile(match);
+    setSettings(next);
+    setIgnoreText((next.ignoreIf ?? []).join("\n"));
+    const owner = accountForOfxKey(accounts, statement.accountKey);
+    if (owner && owner.id !== accountId) {
+      chooseAccount(owner.id);
+      toast.info(`Arquivo da conta “${owner.name}”.`);
+    }
   }
-
-  function chooseAccount(id: string) {
-    setAccountId(id);
-    // recarrega a lista de importações recentes da conta, sem perder o arquivo em montagem
-    startNavigation(() => router.replace(`/importacao?conta=${encodeURIComponent(id)}`, { scroll: false }));
-  }
-
-  // Leitura em camadas: decodificar e separar colunas só quando a leitura muda.
-  const csvSettings = draft?.format === "csv" ? draft.settings : null;
-  const encoding = csvSettings?.encoding;
-  const delimiter = csvSettings?.delimiter;
-  const headerRow = csvSettings?.headerRow;
-  const text = useMemo(() => (file ? decodeBytes(file.bytes, file.format === "csv" ? encoding : undefined).text : ""), [file, encoding]);
-  const table = useMemo(
-    () => (file?.format === "csv" && delimiter && headerRow ? readCsv(text, { delimiter, headerRow }) : null),
-    [file, text, delimiter, headerRow],
-  );
-  const ofx = useMemo(() => (file?.format === "ofx" ? readOfx(text) : null), [file, text]);
 
   const view = useMemo(() => {
-    if (!draft) return null;
-    const ignoreIf = parseTextList(ignoreText);
-    if (draft.format === "csv" && table) {
-      const settings: ProfileSettings = { ...draft.settings, columns: pruneColumns(draft.settings.columns, table.header), ignoreIf };
-      const missing = missingRoles(settings.columns);
-      const statement = missing.length > 0 ? null : dropZeroLines(applyProfile(table, settings));
-      const suggestions = suggestKindPrefixes(descriptionValues(table.header, table.rows, settings.columns));
-      return { format: "csv" as const, settings, missing, statement, suggestions, signature: headerSignature(table.header) };
-    }
-    if (draft.format === "ofx" && ofx) {
-      const settings: OfxProfileSettings = { ...draft.settings, ignoreIf };
-      const statement = dropZeroLines(applyOfxProfile(ofx, settings));
-      const suggestions = suggestKindPrefixes(ofx.lines.map((line) => line.description));
-      return { format: "ofx" as const, settings, missing: [] as string[], statement, suggestions, signature: ofx.signature };
-    }
-    return null;
-  }, [draft, ignoreText, table, ofx]);
+    if (!file || !settings) return null;
+    const applied: OfxProfileSettings = { ...settings, ignoreIf: parseTextList(ignoreText) };
+    return {
+      settings: applied,
+      statement: dropZeroLines(applyOfxProfile(file.statement, applied)),
+      suggestions: suggestKindPrefixes(file.statement.lines.map((line) => line.description)),
+    };
+  }, [file, settings, ignoreText]);
 
   const statement = view?.statement ?? null;
-  const changed = profile !== null && view !== null && (!sameSettings(profile.settings, view.settings) || profile.header_signature !== view.signature);
-  const canImport = !!account && !!view && view.missing.length === 0 && !!statement && statement.lines.length > 0 && !pending;
-  const formatProfiles = profiles.filter((item) => item.format === file?.format);
-  const profileOptions = formatProfiles.map((item) => ({ value: item.id, label: item.name }));
+  const match: AccountMatch = matchOfxAccount(accounts, accountId, file?.statement.accountKey);
+  const blocked = match.status === "other" || match.status === "mismatch";
+  const changed = profile === null || (view !== null && (!sameSettings(profile.settings, view.settings) || profile.header_signature !== file?.statement.signature));
+  const canImport = !!account && !!statement && statement.lines.length > 0 && !blocked && !pending;
 
-  function setKindPrefixes(kindPrefixes: string[]) {
-    if (draft) setDraft({ ...draft, settings: { ...draft.settings, kindPrefixes } } as Draft);
+  function profileName() {
+    const org = file?.statement.account.org || account?.bank || account?.name || "Banco";
+    const base = `${org} OFX`;
+    const taken = new Set(profiles.map((item) => item.name.toLowerCase()));
+    if (!taken.has(base.toLowerCase())) return base;
+    for (let n = 2; ; n += 1) if (!taken.has(`${base} ${n}`.toLowerCase())) return `${base} ${n}`;
   }
 
-  function requestImport() {
-    if (!canImport) return;
-    if (profile && !changed) runImport({ mode: "keep" });
-    else setSaveOpen(true);
-  }
-
-  function runImport(choice: SaveChoice) {
-    if (!file || !view || !statement || !account) return;
+  function runImport() {
+    if (!canImport || !file || !view || !statement || !account) return;
     startTransition(async () => {
       let usedProfileId = profile?.id ?? null;
-      if (choice.mode !== "keep") {
+      // O perfil do banco é salvo (ou atualizado) junto com a importação, para as próximas.
+      if (changed) {
         const saved = await saveImportProfile({
-          id: choice.mode === "update" ? choice.id : null,
-          name: choice.name,
-          format: view.format,
-          headerSignature: view.signature,
+          id: profile?.id ?? null,
+          name: profile?.name ?? profileName(),
+          format: "ofx",
+          headerSignature: file.statement.signature,
           settings: view.settings,
         });
-        if (saved.error || !saved.data) { toast.error(saved.error ?? "Não foi possível salvar o perfil."); return; }
+        if (saved.error || !saved.data) { toast.error(saved.error ?? "Não foi possível salvar o perfil de leitura."); return; }
         usedProfileId = saved.data.id;
-        setProfileId(saved.data.id);
-        router.refresh();
       }
-      setSaveOpen(false);
       const period = importPeriod(statement);
       const result = await importStatementLines({
         accountId: account.id,
@@ -179,6 +129,7 @@ export function StatementImporter({ accounts, profiles, accountId: initialAccoun
         periodTo: period.to ?? null,
         openingBalanceCents: statement.openingBalanceCents ?? null,
         closingBalanceCents: statement.closingBalanceCents ?? null,
+        ofxKey: file.statement.accountKey ?? null,
         lines: toImportLines(statement.lines),
       });
       if (result.error || !result.data) { toast.error(result.error ?? "Não foi possível importar o extrato."); return; }
@@ -187,118 +138,61 @@ export function StatementImporter({ accounts, profiles, accountId: initialAccoun
     });
   }
 
-  const suggestedName = () => {
-    const base = `${account?.bank || account?.name || "Banco"} ${file?.format.toUpperCase() ?? ""}`.trim();
-    const taken = new Set(profiles.map((item) => item.name.toLowerCase()));
-    if (!taken.has(base.toLowerCase())) return base;
-    for (let n = 2; ; n += 1) if (!taken.has(`${base} ${n}`.toLowerCase())) return `${base} ${n}`;
-  };
-
   return <>
-    <section className="card" aria-labelledby="import-file-title">
-      <header className="card-head"><div>
-        <h2 className="card-title" id="import-file-title">1. Conta e arquivo</h2>
-        <p className="m-0 text-xs text-muted-foreground">CSV ou OFX; o formato é reconhecido pelo conteúdo. Nada é gravado até você confirmar.</p>
-      </div></header>
+    <SectionCard aria-labelledby="import-file-title">
+      <SectionHeader title="1. Conta e arquivo OFX" titleId="import-file-title" description="Nada é gravado até você confirmar. Arquivos de uma conta já importada são reconhecidos sozinhos." />
       <div className="grid gap-3 p-5 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
         <div className="grid gap-1.5"><Label htmlFor="import-account">Conta</Label>
           <OptionSelect id="import-account" value={accountId} onValueChange={chooseAccount} options={accounts.map((item) => ({ value: item.id, label: item.name }))} /></div>
         <div className="grid gap-1.5"><Label htmlFor="import-file">Arquivo do extrato</Label>
           <label className="flex h-7 cursor-pointer items-center gap-2 rounded-md border border-dashed border-input bg-card px-2 text-xs hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring/30">
             <IconFileUpload className="size-4 shrink-0 text-muted-foreground" />
-            <span className="truncate">{file ? file.name : "Escolher arquivo CSV ou OFX…"}</span>
-            {file && <span className="ml-auto shrink-0 rounded-full bg-muted px-2 text-[11px] font-semibold uppercase">{file.format}</span>}
-            <input id="import-file" type="file" accept=".csv,.ofx,.txt,text/csv,application/x-ofx" className="sr-only" onChange={onFile} />
+            <span className="truncate">{file ? file.name : "Escolher arquivo OFX…"}</span>
+            <input id="import-file" type="file" accept=".ofx,application/x-ofx" className="sr-only" onChange={onFile} />
           </label>
         </div>
+        {file && <AccountStatus match={match} accountName={account?.name ?? ""} onSwitch={chooseAccount} />}
       </div>
-    </section>
+    </SectionCard>
 
-    {file && draft && <section className="card" aria-labelledby="import-profile-title">
-      <header className="card-head gap-4"><div>
-        <h2 className="card-title" id="import-profile-title">2. Perfil de leitura</h2>
-        <p className="m-0 text-xs text-muted-foreground">{profile
-          ? `Pré-preenchido pelo perfil “${profile.name}”.${changed ? " Há ajustes: o perfil será atualizado ao importar." : ""}`
-          : "Arquivo sem perfil salvo: confira as sugestões e defina o papel das colunas."}</p>
+    {file && view && statement && <SectionCard aria-labelledby="import-review-title">
+      <SectionHeader title="2. Conferência" titleId="import-review-title"
+        description={`As linhas entram abertas, para conciliar. Duplicatas de importações anteriores são puladas.${profile ? ` Leitura pelo perfil “${profile.name}”.` : ""}`}>
+        <Button onClick={runImport} disabled={!canImport}>{pending ? "Importando…" : `Importar ${statement.lines.length} ${statement.lines.length === 1 ? "linha" : "linhas"}`}</Button>
+      </SectionHeader>
+      <div className="grid gap-4 p-5">
+        <details className="rounded-md border bg-muted/30 px-3 py-2 text-xs">
+          <summary className="cursor-pointer font-semibold">Ajustes de leitura{profile && changed ? " (alterados: o perfil será atualizado ao importar)" : ""}</summary>
+          <div className="mt-3 grid gap-5">
+            <Label className="font-normal">
+              <Checkbox checked={!!view.settings.memoSplit} onCheckedChange={(checked) => setSettings({ ...view.settings, memoSplit: checked === true })} />
+              Separar o MEMO em “Tipo - Contraparte - …” (Nubank)
+            </Label>
+            <KindPrefixes selected={view.settings.kindPrefixes ?? []} suggestions={view.suggestions} onChange={(kindPrefixes) => setSettings({ ...view.settings, kindPrefixes })} />
+            <IgnoreList id="import-ignore" value={ignoreText} onChange={setIgnoreText} />
+          </div>
+        </details>
+        {statement.lines.length === 0 && <p role="alert" className="m-0 text-xs text-destructive">Nenhuma linha para importar.</p>}
+        <ImportReview statement={statement} />
       </div>
-      <div className="w-56 shrink-0"><OptionSelect aria-label="Perfil" value={profileId} emptyLabel="Novo perfil" options={profileOptions}
-        onValueChange={(id) => loadProfile(formatProfiles.find((item) => item.id === id) ?? null, file)} /></div>
-      </header>
-      <div className="grid gap-5 p-5">
-        {draft.format === "csv" && table && <CsvProfileBuilder settings={draft.settings} table={table} onChange={(settings) => setDraft({ format: "csv", settings })} />}
-        {draft.format === "ofx" && <Label className="font-normal">
-          <Checkbox checked={!!draft.settings.memoSplit} onCheckedChange={(checked) => setDraft({ format: "ofx", settings: { ...draft.settings, memoSplit: checked === true } })} />
-          Separar o MEMO em “Tipo - Contraparte - …” (Nubank)
-        </Label>}
-        {view && <KindPrefixes selected={draft.settings.kindPrefixes ?? []} suggestions={view.suggestions} onChange={setKindPrefixes} />}
-        <IgnoreList id="import-ignore" value={ignoreText} onChange={setIgnoreText} />
-      </div>
-    </section>}
-
-    {file && view && <section className="card" aria-labelledby="import-review-title">
-      <header className="card-head gap-4"><div>
-        <h2 className="card-title" id="import-review-title">3. Conferência</h2>
-        <p className="m-0 text-xs text-muted-foreground">As linhas entram abertas, para conciliar. Duplicatas de importações anteriores são puladas.</p>
-      </div>
-      <Button onClick={requestImport} disabled={!canImport}>{pending ? "Importando…" : `Importar ${statement?.lines.length ?? 0} ${statement?.lines.length === 1 ? "linha" : "linhas"}`}</Button>
-      </header>
-      <div className="p-5">
-        {view.missing.length > 0
-          ? <p role="alert" className="m-0 text-xs text-destructive">Defina o papel das colunas obrigatórias: {view.missing.join("; ")}.</p>
-          : statement && <>
-            {statement.lines.length === 0 && <p role="alert" className="m-0 mb-3 text-xs text-destructive">Nenhuma linha para importar.</p>}
-            <ImportReview statement={statement} />
-          </>}
-      </div>
-    </section>}
-
-    {view && <SaveProfileDialog open={saveOpen} onOpenChange={setSaveOpen} profile={profile} pending={pending} defaultName={suggestedName}
-      onConfirm={runImport} />}
+    </SectionCard>}
   </>;
 }
 
-function SaveProfileDialog({ open, onOpenChange, profile, pending, defaultName, onConfirm }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  profile: ImportProfile | null;
-  pending: boolean;
-  defaultName: () => string;
-  onConfirm: (choice: SaveChoice) => void;
-}) {
-  return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="sm:max-w-md">
-      {open && <SaveProfileForm key={profile?.id ?? "new"} profile={profile} pending={pending} defaultName={defaultName} onCancel={() => onOpenChange(false)} onConfirm={onConfirm} />}
-    </DialogContent>
-  </Dialog>;
-}
-
-function SaveProfileForm({ profile, pending, defaultName, onCancel, onConfirm }: {
-  profile: ImportProfile | null;
-  pending: boolean;
-  defaultName: () => string;
-  onCancel: () => void;
-  onConfirm: (choice: SaveChoice) => void;
-}) {
-  const [asNew, setAsNew] = useState(profile === null);
-  const [name, setName] = useState(() => defaultName());
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (profile && !asNew) onConfirm({ mode: "update", id: profile.id, name: profile.name });
-    else onConfirm({ mode: "create", name: name.trim() });
-  };
-  return <form onSubmit={submit} className="grid gap-3">
-    <DialogHeader>
-      <DialogTitle>{profile ? "Perfil ajustado" : "Salvar perfil"}</DialogTitle>
-      <DialogDescription>{profile
-        ? <>O perfil “{profile.name}” será atualizado com os ajustes e usado nas próximas importações do grupo.</>
-        : "Dê um nome ao perfil deste banco/formato. Ele pré-preenche as próximas importações do grupo."}</DialogDescription>
-    </DialogHeader>
-    {profile && <Label className="font-normal"><Checkbox checked={asNew} onCheckedChange={(checked) => setAsNew(checked === true)} />Salvar como novo perfil, sem alterar “{profile.name}”</Label>}
-    {asNew && <div className="grid gap-1.5"><Label htmlFor="profile-name">Nome do perfil</Label>
-      <Input id="profile-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={80} placeholder="Ex.: Mercado Pago CSV" required minLength={2} autoFocus /></div>}
-    <DialogFooter>
-      <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
-      <Button type="submit" disabled={pending || (asNew && name.trim().length < 2)}>{pending ? "Importando…" : asNew ? "Salvar perfil e importar" : "Atualizar perfil e importar"}</Button>
-    </DialogFooter>
-  </form>;
+function AccountStatus({ match, accountName, onSwitch }: { match: AccountMatch; accountName: string; onSwitch: (id: string) => void }) {
+  const row = "m-0 flex items-center gap-2 text-xs sm:col-span-2";
+  switch (match.status) {
+    case "linked":
+      return <p className={`${row} text-success`}><IconCircleCheck className="size-4 shrink-0" />Arquivo reconhecido: conta “{accountName}”.</p>;
+    case "new":
+      return <p className={`${row} text-muted-foreground`}><IconLink className="size-4 shrink-0" />Primeira importação deste arquivo (<span className="num">{match.key}</span>): a conta “{accountName}” passará a reconhecê-lo.</p>;
+    case "other":
+      return <p role="alert" className={`${row} text-destructive`}><IconAlertTriangle className="size-4 shrink-0" />
+        <span>Este arquivo é da conta “{match.accountName}”. <button type="button" className="font-semibold underline" onClick={() => onSwitch(match.accountId)}>Usar “{match.accountName}”</button></span></p>;
+    case "mismatch":
+      return <p role="alert" className={`${row} text-destructive`}><IconAlertTriangle className="size-4 shrink-0" />
+        <span>A conta “{accountName}” recebe outro arquivo OFX (<span className="num">{match.expected}</span>); este é <span className="num">{match.key}</span>. Escolha a conta certa.</span></p>;
+    default:
+      return <p className={`${row} text-muted-foreground`}><IconInfoCircle className="size-4 shrink-0" />O arquivo não informa o número da conta; confira a conta escolhida.</p>;
+  }
 }

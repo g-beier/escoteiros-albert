@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { dateBR, money } from "@/lib/format";
+import { dateBR, shortOfxId, money } from "@/lib/format";
 import {
   IGNORE_REASONS, OTHER_REASON, ignoreReasonText, lineText, selectionSummary,
   type Closing, type OpenEntry, type OpenLine, type Suggestions,
@@ -52,6 +52,7 @@ function LineCell({ line }: { line: OpenLine }) {
     <span className="min-w-0 flex-1">
       {line.kind && <span className="mr-1.5 text-xs text-muted-foreground">{line.kind}</span>}
       <span className="font-medium break-words" title={line.description}>{who}</span>
+      {line.externalId && <span className="ml-1.5 num text-[11px] text-muted-foreground" title={`ID OFX ${line.externalId}`}>#{shortOfxId(line.externalId)}</span>}
     </span>
     <Amount cents={line.amountCents} />
   </div>;

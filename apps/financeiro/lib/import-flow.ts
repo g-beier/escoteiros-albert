@@ -247,6 +247,36 @@ export function parseTextList(text: string) {
   });
 }
 
+// Conta do arquivo ---------------------------------------------------------------
+
+export type AccountMatch =
+  | { status: "none" }
+  /** O arquivo já está ligado à conta escolhida. */
+  | { status: "linked" }
+  /** Primeira importação deste arquivo: a conta escolhida passa a reconhecê-lo. */
+  | { status: "new"; key: string }
+  /** O arquivo pertence a outra conta do grupo: importar aqui é bloqueado. */
+  | { status: "other"; key: string; accountId: string; accountName: string }
+  /** A conta escolhida já está ligada a outro arquivo OFX (outro banco ou número de conta). */
+  | { status: "mismatch"; key: string; expected: string };
+
+type KeyedAccount = { id: string; name: string; ofx_key: string | null };
+
+/** Conta que o arquivo OFX deve usar, a partir de `BANKID:ACCTID`. */
+export function accountForOfxKey(accounts: KeyedAccount[], key: string | undefined) {
+  return key ? accounts.find((account) => account.ofx_key === key) : undefined;
+}
+
+export function matchOfxAccount(accounts: KeyedAccount[], chosenId: string, key: string | undefined): AccountMatch {
+  if (!key) return { status: "none" };
+  const owner = accountForOfxKey(accounts, key);
+  if (owner && owner.id !== chosenId) return { status: "other", key, accountId: owner.id, accountName: owner.name };
+  if (owner) return { status: "linked" };
+  const chosen = accounts.find((account) => account.id === chosenId);
+  if (chosen?.ofx_key) return { status: "mismatch", key, expected: chosen.ofx_key };
+  return { status: "new", key };
+}
+
 // Conferência e envio ---------------------------------------------------------------
 
 /** O banco recusa valor zero: essas linhas saem da importação e aparecem como ignoradas. */
@@ -270,6 +300,10 @@ export function toImportLines(lines: StatementLine[]): StatementLineInput[] {
     counterparty: clip(line.counterparty, 200),
     externalId: clip(line.externalId, 200),
     balanceCents: line.balanceCents,
+    trnType: clip(line.trnType, 20),
+    checkNumber: clip(line.checkNumber, 60),
+    reference: clip(line.reference, 60),
+    payee: clip(line.payee, 200),
   }));
 }
 

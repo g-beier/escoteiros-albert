@@ -6,7 +6,7 @@ import { ExportMenu } from "@/components/export/export-menu";
 import { SetupNeeded } from "@/components/setup-needed";
 import { buttonVariants } from "@/components/ui/button";
 import type { CategoryKind } from "@/lib/categories";
-import type { StatementRow } from "@/lib/entry-queries";
+import type { LedgerRow } from "@/lib/entry-queries";
 import { exportYears, MONTHS } from "@/lib/export/period";
 import { ALL_DATES, currentYear } from "@/lib/filters";
 import { dateBR, money } from "@/lib/format";
@@ -56,7 +56,7 @@ export default async function Dashboard() {
     label: MONTHS[i], ...m, balance: m.income - m.expense,
     accumulated: months.slice(0, i + 1).reduce((sum, x) => sum + x.income - x.expense, 0),
   }));
-  const recentRows = (recent ?? []) as StatementRow[];
+  const recentRows = (recent ?? []) as LedgerRow[];
 
   return <div className="shell">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/" wide />
@@ -65,7 +65,7 @@ export default async function Dashboard() {
         <h1 className="m-0 text-xl leading-tight font-bold tracking-tight">Resumo de {year}</h1>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Link href="/lancamentos" className={buttonVariants({ variant: "outline", size: "lg" })}>Ver lançamentos <IconArrowRight data-icon="inline-end" /></Link>
-          <ExportMenu view="extrato" years={exportYears(firstEntry?.entry_date, lastEntry?.entry_date)} />
+          <ExportMenu view="lancamentos" years={exportYears(firstEntry?.entry_date, lastEntry?.entry_date)} />
           {canEdit && <NewEntryButton returnQuery="" />}
         </div>
       </div>

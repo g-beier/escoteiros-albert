@@ -19,6 +19,10 @@ export const statementLineSchema = z.object({
   counterparty: optionalText(200),
   externalId: optionalText(200),
   balanceCents: cents.optional().nullable(),
+  trnType: optionalText(20),
+  checkNumber: optionalText(60),
+  reference: optionalText(60),
+  payee: optionalText(200),
 });
 
 export type StatementLineInput = z.infer<typeof statementLineSchema>;
@@ -35,6 +39,8 @@ export const importLinesSchema = z.object({
   periodTo: optionalDate,
   openingBalanceCents: cents.optional().nullable(),
   closingBalanceCents: cents.optional().nullable(),
+  /** BANKID:ACCTID do OFX: liga o arquivo à conta na primeira importação e barra arquivo de outra conta. */
+  ofxKey: z.string().trim().min(1).max(120).optional().nullable(),
   lines: z.array(z.unknown()).min(1, "Nenhuma linha para importar.").max(MAX_IMPORT_LINES, `Importe no máximo ${MAX_IMPORT_LINES.toLocaleString("pt-BR")} linhas por vez.`),
 }).superRefine((value, ctx) => {
   if (value.periodFrom && value.periodTo && value.periodFrom > value.periodTo) {
@@ -65,6 +71,10 @@ export function toRpcLines(lines: StatementLineInput[]) {
     ...(line.counterparty ? { counterparty: line.counterparty } : {}),
     ...(line.externalId ? { externalId: line.externalId } : {}),
     ...(line.balanceCents !== undefined && line.balanceCents !== null ? { balanceCents: line.balanceCents } : {}),
+    ...(line.trnType ? { trnType: line.trnType } : {}),
+    ...(line.checkNumber ? { checkNumber: line.checkNumber } : {}),
+    ...(line.reference ? { reference: line.reference } : {}),
+    ...(line.payee ? { payee: line.payee } : {}),
   }));
 }
 

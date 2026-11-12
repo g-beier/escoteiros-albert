@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { SPLIT_COLUMNS, STATEMENT_COLUMNS, type SplitRow, type StatementRow } from "@/lib/entry-queries";
+import { SPLIT_COLUMNS, LEDGER_COLUMNS, type SplitRow, type LedgerRow } from "@/lib/entry-queries";
 import type { Period } from "./period";
 
 const BATCH = 1000;
@@ -22,8 +22,8 @@ async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ dat
   }
 }
 
-export function fetchAllStatementRows(supabase: SupabaseClient, groupId: string, { from, to }: Period) {
-  return fetchAll<StatementRow>((start, end) => supabase.from("ledger_entry_rows").select(STATEMENT_COLUMNS)
+export function fetchAllLedgerRows(supabase: SupabaseClient, groupId: string, { from, to }: Period) {
+  return fetchAll<LedgerRow>((start, end) => supabase.from("ledger_entry_rows").select(LEDGER_COLUMNS)
     .eq("group_id", groupId).gte("entry_date", from).lte("entry_date", to)
     .order("entry_date").order("created_at").order("entry_id")
     .range(start, end));

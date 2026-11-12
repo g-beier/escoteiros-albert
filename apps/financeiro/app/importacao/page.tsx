@@ -3,6 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { RecentImports } from "@/components/import/recent-imports";
 import { StatementImporter, type ImportAccount } from "@/components/import/statement-importer";
 import { SetupNeeded } from "@/components/setup-needed";
+import { SectionCard } from "@/components/section-card";
 import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
 import { fetchImportProfiles, fetchRecentImports } from "@/lib/import-queries";
 import { pageSession } from "@/lib/session";
@@ -15,7 +16,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
   const canEdit = membership.canEdit;
 
   const [{ data: accountRows }, { profiles }] = await Promise.all([
-    supabase.from("accounts").select("id, name, bank").eq("group_id", groupId).eq("active", true).order("name"),
+    supabase.from("accounts").select("id, name, bank, ofx_key").eq("group_id", groupId).eq("active", true).order("name"),
     canEdit ? fetchImportProfiles(supabase, groupId) : Promise.resolve({ profiles: [] }),
   ]);
   // "A definir" é só um destino provisório de lançamentos antigos; não recebe extrato.
@@ -31,11 +32,11 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
       <div className="page-head"><div>
         <span className="eyebrow">Importar extrato</span>
         <h1>Extrato do banco</h1>
-        <p className="lede">Envie o CSV ou OFX exportado pelo banco. O arquivo é lido no navegador com o perfil do banco; confira as linhas antes de importar. Depois, as linhas são conciliadas com os lançamentos.</p>
+        <p className="lede">Envie o extrato OFX exportado pelo banco. O arquivo é lido no navegador; confira as linhas antes de importar. Depois, as linhas são conciliadas com os lançamentos, e o ID OFX de cada movimentação acompanha os lançamentos e rateios.</p>
       </div></div>
       <div className="grid gap-5">
-        {!canEdit && <section className="card"><p className="empty m-0">Somente tesouraria e administração podem importar extratos. Você pode consultar as importações já feitas.</p></section>}
-        {canEdit && accounts.length === 0 && <section className="card"><p className="empty m-0">Nenhuma conta ativa. Cadastre a conta do banco em <Link href="/cadastros" className="underline">Cadastros</Link> antes de importar.</p></section>}
+        {!canEdit && <SectionCard><p className="m-0 p-5 text-sm text-muted-foreground">Somente tesouraria e administração podem importar extratos. Você pode consultar as importações já feitas.</p></SectionCard>}
+        {canEdit && accounts.length === 0 && <SectionCard><p className="m-0 p-5 text-sm text-muted-foreground">Nenhuma conta ativa. Cadastre a conta do banco em <Link href="/cadastros" className="underline">Cadastros</Link> antes de importar.</p></SectionCard>}
         {canEdit && accounts.length > 0 && <StatementImporter accounts={accounts} profiles={profiles} accountId={accountId} />}
         {accountId && <RecentImports accountId={accountId} accountName={accountName} rows={recent.rows} error={recent.error} />}
       </div>

@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadEntryPage } from "@/app/actions";
-import { SplitTable, StatementTable } from "@/components/entry-tables";
+import { SplitTable, LedgerTable } from "@/components/entry-tables";
 import { Button } from "@/components/ui/button";
 import { useEntryOverrides } from "@/components/entries/entry-editor";
-import { PAGE_SIZE, type EntryPage, type SplitRow, type StatementRow } from "@/lib/entry-queries";
+import { PAGE_SIZE, type EntryPage, type SplitRow, type LedgerRow } from "@/lib/entry-queries";
 import type { SortOrder } from "@/lib/filters";
 
 type Status = "idle" | "loading" | "done" | "error";
@@ -53,7 +53,7 @@ export function InfiniteEntries({ initial, query, filtered, order, sortHref }: {
 
   const rows = useMemo(() => {
     const seen = new Set<string>();
-    const all = pages.flatMap((page) => page.rows as (StatementRow | SplitRow)[]);
+    const all = pages.flatMap((page) => page.rows as (LedgerRow | SplitRow)[]);
     return all.filter((row) => {
       const id = "split_id" in row ? row.split_id : row.entry_id;
       if (seen.has(id) || overrides[row.entry_id]?.deleted) return false;
@@ -73,7 +73,7 @@ export function InfiniteEntries({ initial, query, filtered, order, sortHref }: {
     <div ref={scrollerRef} className="min-h-0 flex-1 overflow-auto overscroll-contain" data-slot="entries-scroller">
       {view === "rubricas"
         ? <SplitTable rows={rows as SplitRow[]} filtered={filtered} order={order} sortHref={sortHref} />
-        : <StatementTable rows={rows as StatementRow[]} filtered={filtered} order={order} sortHref={sortHref} />}
+        : <LedgerTable rows={rows as LedgerRow[]} filtered={filtered} order={order} sortHref={sortHref} />}
       {rows.length > 0 && <div ref={sentinel} className="flex h-10 items-center justify-center text-xs text-muted-foreground" aria-live="polite">
         {status === "loading" && "Carregando mais…"}
         {status === "done" && "Fim da lista"}
