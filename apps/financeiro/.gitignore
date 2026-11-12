@@ -11,3 +11,4 @@ supabase/.temp
 test-results
 playwright-report
 e2e/.auth
+next-env.d.ts
