@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
-  dropZeroLines, isOfx, newOfxSettings, ofxSettingsFromProfile, parseTextList, profileForAccount, reconciliationHref, sameSettings,
+  dropZeroLines, fileOpeningBalance, isOfx, openingDifference, newOfxSettings, ofxSettingsFromProfile, parseTextList, profileForAccount, reconciliationHref, sameSettings,
   toImportLines,
 } from "@/lib/import-flow";
 import { importLinesSchema, parseStatementLines } from "@/lib/import-schema";
@@ -93,6 +93,28 @@ describe("arquivo sem perfil até o payload do servidor", () => {
     expect(statement.ignored).toHaveLength(3);
     expect(statement.openingBalanceCents).toBe(100000);
     expect(statement.balanceCheck).toEqual({ ok: true });
+  });
+});
+
+describe("saldo inicial do arquivo", () => {
+  const base: ParsedStatement = { lines: [], errors: [], ignored: [], totals: { creditsCents: 500, debitsCents: -200, netCents: 300 } };
+
+  it("prefere o SALDO ANTERIOR; senão, saldo final menos os movimentos", () => {
+    expect(fileOpeningBalance({ ...base, openingBalanceCents: 1000, closingBalanceCents: 1300 })).toEqual({ cents: 1000, source: "saldo-anterior" });
+    expect(fileOpeningBalance({ ...base, closingBalanceCents: 1300 })).toEqual({ cents: 1000, source: "saldo-final" });
+    expect(fileOpeningBalance(base)).toBeNull();
+  });
+
+  it("Nubank: LEDGERBAL menos os movimentos", () => {
+    const statement = readOfx(fixture("nubank.ofx").text);
+    expect(fileOpeningBalance(statement)).toEqual({ cents: statement.closingBalanceCents! - statement.totals.netCents, source: "saldo-final" });
+  });
+
+  it("calcula a diferença só com os dois saldos", () => {
+    expect(openingDifference(1000, 900)).toBe(100);
+    expect(openingDifference(1000, 1000)).toBe(0);
+    expect(openingDifference(1000, null)).toBeNull();
+    expect(openingDifference(undefined, 1000)).toBeNull();
   });
 });
 

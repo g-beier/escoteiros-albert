@@ -134,3 +134,33 @@ export function fromRpcPreview(data: unknown): ImportPreview | null {
   const parsed = previewSchema.safeParse(data);
   return parsed.success ? parsed.data : null;
 }
+
+// Saldo da conta no sistema ----------------------------------------------------------
+
+/** Saldo da conta no começo de `date`, calculado no sistema (`account_balance_before`). */
+export type AccountBalance = {
+  date: string;
+  openingBalanceCents: number;
+  openingDate: string | null;
+  /** A data é anterior à data do saldo inicial da conta: não há saldo calculado. */
+  beforeOpening: boolean;
+  movementsCents: number | null;
+  entryCount: number | null;
+  balanceCents: number | null;
+};
+
+const centsOrNull = z.coerce.number().int().nullable();
+
+/** Converte o jsonb de `account_balance_before`. */
+export function fromRpcAccountBalance(data: unknown): AccountBalance | null {
+  const parsed = z.object({
+    date: z.string(), opening_balance_cents: z.coerce.number().int(), opening_date: z.string().nullable(),
+    before_opening: z.boolean(), movements_cents: centsOrNull, entry_count: centsOrNull, balance_cents: centsOrNull,
+  }).safeParse(data);
+  if (!parsed.success) return null;
+  const d = parsed.data;
+  return {
+    date: d.date, openingBalanceCents: d.opening_balance_cents, openingDate: d.opening_date, beforeOpening: d.before_opening,
+    movementsCents: d.movements_cents, entryCount: d.entry_count, balanceCents: d.balance_cents,
+  };
+}

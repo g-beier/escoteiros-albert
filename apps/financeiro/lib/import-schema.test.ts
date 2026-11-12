@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromRpcImportResult, fromRpcPreview, importLinesSchema, importProfileSchema, importSummary, parseStatementLines, toRpcLines } from "./import-schema";
+import { fromRpcAccountBalance, fromRpcImportResult, fromRpcPreview, importLinesSchema, importProfileSchema, importSummary, parseStatementLines, toRpcLines } from "./import-schema";
 
 const id = "0b6c7a4e-5d1f-4c1e-9a8b-2f3d4e5f6a7b";
 
@@ -76,5 +76,14 @@ describe("resultado da importação", () => {
     expect(importSummary({ inserted: 12, skippedDuplicates: 3 })).toBe("12 linhas importadas, 3 já existiam.");
     expect(importSummary({ inserted: 1, skippedDuplicates: 0 })).toBe("1 linha importada.");
     expect(importSummary({ inserted: 0, skippedDuplicates: 1 })).toBe("Nenhuma linha nova, 1 já existia.");
+  });
+});
+
+describe("saldo da conta", () => {
+  it("converte o jsonb de account_balance_before", () => {
+    expect(fromRpcAccountBalance({ date: "2026-03-01", opening_balance_cents: 100000, opening_date: "2026-01-01", before_opening: false, movements_cents: 1800, entry_count: 2, balance_cents: 101800 }))
+      .toEqual({ date: "2026-03-01", openingBalanceCents: 100000, openingDate: "2026-01-01", beforeOpening: false, movementsCents: 1800, entryCount: 2, balanceCents: 101800 });
+    expect(fromRpcAccountBalance({ date: "2025-12-01", opening_balance_cents: 0, opening_date: "2026-01-01", before_opening: true, movements_cents: null, entry_count: null, balance_cents: null })?.balanceCents).toBeNull();
+    expect(fromRpcAccountBalance(null)).toBeNull();
   });
 });

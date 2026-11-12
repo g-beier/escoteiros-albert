@@ -9,6 +9,7 @@ import { ignoreStatementLines } from "@/app/conciliacao/actions";
 import type { ImportPreview } from "@/lib/import-schema";
 import { dateBR, money } from "@/lib/format";
 import { ImportReview } from "@/components/import/import-review";
+import { OpeningBalanceCheck } from "@/components/import/opening-balance-check";
 import { IgnoreList, KindPrefixes } from "@/components/import/profile-options";
 import { OptionSelect } from "@/components/option-controls";
 import { SectionCard, SectionHeader } from "@/components/section-card";
@@ -103,6 +104,7 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
   }, [file, settings, ignoreText]);
 
   const statement = view?.statement ?? null;
+  const periodFrom = statement ? importPeriod(statement).from : undefined;
 
   // Pré-conferência no banco: novas, já importadas, suspeitas (desmarcadas por padrão) e órfãs.
   const [preview, setPreview] = useState<{ key: string; data: ImportPreview | null; error?: string } | null>(null);
@@ -220,6 +222,7 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
         </details>
         {statement.lines.length === 0 && <p role="alert" className="m-0 text-xs text-destructive">Nenhuma linha para importar.</p>}
         {!account && <p className="m-0 text-xs text-muted-foreground">Escolha a conta para conferir o que já foi importado nela.</p>}
+        {account && periodFrom && <OpeningBalanceCheck accountId={account.id} date={periodFrom} statement={statement} />}
         {preview?.key === previewKey && preview.error && <p role="alert" className="m-0 text-xs text-destructive">Não foi possível conferir com o que já existe: {preview.error}</p>}
         {checked && <div className="grid gap-2 rounded-md border px-3 py-2 text-xs">
           <p className="m-0">

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { memberOrError } from "@/lib/session";
 import {
-  fromRpcImportResult, fromRpcPreview, type ImportPreview, importLinesSchema, MAX_IMPORT_LINES, importProfileSchema, importSummary, parseStatementLines, toRpcLines,
+  type AccountBalance, fromRpcAccountBalance, fromRpcImportResult, fromRpcPreview, type ImportPreview, importLinesSchema, MAX_IMPORT_LINES, importProfileSchema, importSummary, parseStatementLines, toRpcLines,
   type ImportResult,
 } from "@/lib/import-schema";
 
@@ -104,4 +104,18 @@ export async function deleteStatementImport(importId: unknown): Promise<ActionRe
   revalidatePath("/", "layout");
   const lines = `${result.lines} ${result.lines === 1 ? "linha removida" : "linhas removidas"}`;
   return { success: result.unlinked ? `Importação desfeita: ${lines}; ${result.unlinked} ${result.unlinked === 1 ? "conciliação desfeita" : "conciliações desfeitas"}.` : `Importação desfeita: ${lines}.` };
+}
+
+const balancePayload = z.object({ accountId: z.uuid({ message: "Escolha a conta." }), date: z.iso.date({ message: "Data inválida." }) });
+
+/** Saldo da conta no sistema no começo da primeira data do arquivo, para conferir com o saldo inicial do OFX. */
+export async function accountBalanceBefore(payload: unknown): Promise<ActionResult<AccountBalance>> {
+  const parsed = balancePayload.safeParse(payload);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  const ctx = await memberOrError();
+  if ("error" in ctx) return { error: ctx.error };
+  const { data, error } = await ctx.supabase.rpc("account_balance_before", { p_account_id: parsed.data.accountId, p_date: parsed.data.date });
+  if (error) return { error: error.message };
+  const balance = fromRpcAccountBalance(data);
+  return balance ? { data: balance } : { error: "Resposta inesperada do banco ao calcular o saldo." };
 }

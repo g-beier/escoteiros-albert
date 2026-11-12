@@ -109,6 +109,23 @@ export function toImportLines(lines: StatementLine[]): StatementLineInput[] {
   }));
 }
 
+// Saldo inicial do arquivo × saldo da conta no sistema ---------------------------------
+
+/**
+ * Saldo inicial do arquivo OFX: a pseudo-linha "SALDO ANTERIOR" ignorada, quando existe; senão,
+ * o saldo final (LEDGERBAL) menos os movimentos do arquivo. Null quando o arquivo não traz saldo.
+ */
+export function fileOpeningBalance(statement: ParsedStatement): { cents: number; source: "saldo-anterior" | "saldo-final" } | null {
+  if (statement.openingBalanceCents !== undefined) return { cents: statement.openingBalanceCents, source: "saldo-anterior" };
+  if (statement.closingBalanceCents !== undefined) return { cents: statement.closingBalanceCents - statement.totals.netCents, source: "saldo-final" };
+  return null;
+}
+
+/** Diferença arquivo − sistema, em centavos; null quando um dos lados não tem saldo. */
+export function openingDifference(fileCents: number | null | undefined, systemCents: number | null | undefined) {
+  return fileCents === null || fileCents === undefined || systemCents === null || systemCents === undefined ? null : fileCents - systemCents;
+}
+
 /** Tela de conciliação filtrada pela conta e pelo período importado. */
 export function reconciliationHref(accountId: string, from?: string, to?: string) {
   const params = new URLSearchParams({ conta: accountId });
