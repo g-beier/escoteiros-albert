@@ -113,7 +113,7 @@ export default async function Dashboard() {
         {/* No desktop as listas não definem a altura da linha (contain:size): acompanham o "Mês a mês" e rolam por dentro. */}
         <section aria-labelledby="recent-title" className="flex flex-col overflow-hidden rounded-lg border bg-card">
           <div className="flex items-center justify-between gap-3 border-b px-4 py-2.5">
-            <h2 id="recent-title" className="m-0 text-sm font-semibold">Últimos lançamentos {recentRows.length > 0 && <span className="font-normal text-muted-foreground">desde <span className="num">{dateBR(recentStart)}</span></span>}</h2>
+            <h2 id="recent-title" className="m-0 text-sm font-semibold">Últimos lançamentos</h2>
             <Link href="/lancamentos" className="text-xs font-semibold text-primary hover:underline">Ver todos</Link>
           </div>
           {recentRows.length === 0
