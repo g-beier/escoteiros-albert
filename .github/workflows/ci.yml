@@ -1,0 +1,72 @@
+# CI only: lint, types, tests and builds. No deploy (the site goes up by manual FTP).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, types, unit tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  db-e2e:
+    name: SQL tests (pgTAP) and e2e (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/financeiro
+    env:
+      SUPABASE_BIN: supabase
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.1.0
+      - run: npm ci
+        working-directory: .
+      - name: Start local Supabase
+        run: supabase start -x studio,postgres-meta,realtime,edge-runtime,logflare,vector,supavisor,imgproxy
+      - name: SQL tests
+        run: supabase test db
+      - name: Write .env.local
+        run: npm run infra:env
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: E2E tests
+        run: npm run test:e2e
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            apps/financeiro/playwright-report
+            apps/financeiro/test-results
+          retention-days: 7

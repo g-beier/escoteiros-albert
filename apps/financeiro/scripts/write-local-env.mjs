@@ -2,7 +2,9 @@ import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const output = execFileSync("npx", ["supabase", "status", "--output", "env"], {
+// SUPABASE_BIN: CLI already on PATH (CI); otherwise `npx supabase`.
+const [command, ...prefix] = process.env.SUPABASE_BIN ? [process.env.SUPABASE_BIN] : ["npx", "supabase"];
+const output = execFileSync(command, [...prefix, "status", "--output", "env"], {
   encoding: "utf8",
   stdio: ["ignore", "pipe", "inherit"],
 });

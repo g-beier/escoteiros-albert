@@ -53,4 +53,4 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 
 ## CI/CD
 
-No GitHub Actions workflows currently. Deploys are manual.
+`.github/workflows/ci.yml` runs on push to `main` and on PRs: job `checks` (lint, typecheck incl. `astro check`, vitest, build) and job `db-e2e` (local Supabase via CLI 3.1.0, `supabase test db`, Playwright). CI only, no CD: the site is deployed by manual FTP to a host we don't own; don't add deploy steps or rely on host config files like `_redirects`.
