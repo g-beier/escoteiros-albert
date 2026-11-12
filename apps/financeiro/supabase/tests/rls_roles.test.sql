@@ -86,7 +86,7 @@ select lives_ok(format($$select public.create_payment_method(%L, 'Forma Tesourar
 select lives_ok(format($$select public.ignore_statement_lines(array[%L]::uuid[], 'tarifa')$$, :'line_a2'), 'tesouraria ignora linha do extrato');
 select lives_ok(format($$insert into public.associates(group_id, name, branch) values (%L, 'Novo Tesouraria', 'adulto')$$, :'gid_a'),
   'tesouraria insere associado direto (política editors manage associates)');
-select is(tests.affected(format($$update public.associates set section = 'Alcateia' where id = %L$$, :'assoc_a')), 1,
+select is(tests.affected(format($$update public.associates set name = name where id = %L$$, :'assoc_a')), 1,
   'tesouraria altera associado direto');
 select lives_ok(format($$select public.set_fee_record(%L, 2026, 4, 'atencao', 'metade', '{}')$$, :'assoc_a'), 'tesouraria registra mensalidade');
 select throws_like(format($$select public.record_user_invite(%L, '00000000-0000-0000-0000-00000000f0a3', 'viewer')$$, :'gid_a'),

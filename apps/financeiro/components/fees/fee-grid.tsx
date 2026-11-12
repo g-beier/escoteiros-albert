@@ -160,7 +160,7 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
                   <span className="block truncate">{row.associate.name}</span>
                   <span className="block text-[11px] font-normal text-muted-foreground">
                     {isScoutBranch(row.associate.branch) ? branchLabels[row.associate.branch] : row.associate.branch}
-                    {row.associate.section && ` · ${row.associate.section}`}
+                    {row.associate.section && ` · ${row.associate.section}`}{row.associate.patrol && ` › ${row.associate.patrol}`}
                     {exempt && ` · isento: ${row.exemption!.reason}`}
                     {row.hidden === "fora" && " · fora do grupo no ano"}
                     {row.movements.length > 0 && <MovementSummary movements={row.movements} />}

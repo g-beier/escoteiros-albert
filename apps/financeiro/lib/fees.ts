@@ -220,7 +220,7 @@ export function monthSummary(states: CellState[][]): MonthSummary[] {
 
 // Grade do ano -------------------------------------------------------------------------
 
-export type FeeAssociate = { id: string; name: string; branch: string; section: string | null; active: boolean };
+export type FeeAssociate = { id: string; name: string; branch: string; section: string | null; patrol?: string | null; active: boolean };
 export type FeeExemption = { associateId: string; reason: string };
 
 export type FeeRow = {

@@ -1,14 +1,15 @@
 import { readCsv, sniffCsvLayout } from "@/lib/csv-reader";
 import { normalizeText } from "@/lib/statement-import";
-import { SCOUT_BRANCHES, branchLabels, type ScoutBranch } from "@/lib/associates";
+import { SCOUT_BRANCHES, branchLabels, type PatrolItem, type ScoutBranch, type SectionItem } from "@/lib/associates";
 
 /**
- * Importação de associados em massa por CSV com as colunas nome, ramo, seção e status
- * (cabeçalho obrigatório; separador, acentos e maiúsculas indiferentes). Tudo puro, para a
- * pré-visualização no navegador; o banco valida de novo em `import_associates`.
+ * Importação de associados em massa por CSV com as colunas nome, ramo, seção, patrulha e status
+ * (cabeçalho obrigatório; separador, acentos e maiúsculas indiferentes). Seção e patrulha precisam
+ * estar cadastradas (Ramo › Seção › Patrulha). Tudo puro, para a pré-visualização no navegador;
+ * o banco valida de novo em `import_associates`.
  */
 
-export const ASSOCIATE_CSV_TEMPLATE = "nome;ramo;seção;status\r\nAna Souza;Lobinho;Alcateia Seeonee;ativo\r\nBruno Lima;Escoteiro;;inativo\r\n";
+export const ASSOCIATE_CSV_TEMPLATE = "nome;ramo;seção;patrulha;status\r\nAna Souza;Lobinho;Alcateia Seeonee;;ativo\r\nBruno Lima;Escoteiro;Tropa Tupã;Patrulha Lobo;ativo\r\nCarla Dias;Escoteiro;;;inativo\r\n";
 
 export type AssociateCsvRow = {
   /** Linha no arquivo (1 = cabeçalho). */
@@ -16,6 +17,7 @@ export type AssociateCsvRow = {
   name: string;
   branch?: ScoutBranch;
   section: string | null;
+  patrol: string | null;
   active: boolean;
   errors: string[];
 };
@@ -26,6 +28,7 @@ const COLUMN_ALIASES = {
   name: ["nome", "name", "associado", "nome completo"],
   branch: ["ramo", "branch"],
   section: ["secao", "section", "sessao"],
+  patrol: ["patrulha", "patrol", "equipe", "matilha"],
   status: ["status", "situacao", "ativo"],
 } as const;
 
@@ -66,10 +69,10 @@ export function parseAssociatesCsv(text: string): AssociateCsv {
   const column = (aliases: readonly string[]) => header.findIndex((cell) => aliases.includes(cell));
   const index = {
     name: column(COLUMN_ALIASES.name), branch: column(COLUMN_ALIASES.branch),
-    section: column(COLUMN_ALIASES.section), status: column(COLUMN_ALIASES.status),
+    section: column(COLUMN_ALIASES.section), patrol: column(COLUMN_ALIASES.patrol), status: column(COLUMN_ALIASES.status),
   };
   const missing = [index.name < 0 && "nome", index.branch < 0 && "ramo"].filter(Boolean);
-  if (missing.length) return { rows: [], error: `Cabeçalho sem a coluna ${missing.join(" e ")}. Use as colunas: nome, ramo, seção, status.` };
+  if (missing.length) return { rows: [], error: `Cabeçalho sem a coluna ${missing.join(" e ")}. Use as colunas: nome, ramo, seção, patrulha, status.` };
 
   const seen = new Map<string, number>();
   const rows = table.rows.map((record, i): AssociateCsvRow => {
@@ -82,33 +85,43 @@ export function parseAssociatesCsv(text: string): AssociateCsv {
     if (!branch) errors.push(rawBranch ? `ramo "${rawBranch}" desconhecido` : "ramo vazio");
     const section = cell(index.section) || null;
     if (section && section.length > 60) errors.push("seção com até 60 caracteres");
+    const patrol = cell(index.patrol) || null;
+    if (patrol && !section) errors.push("patrulha sem seção");
     const status = parseStatus(cell(index.status));
     if (status === null) errors.push(`status "${cell(index.status)}" desconhecido (use ativo ou inativo)`);
     const key = normalizeText(name);
     const line = table.rowNumbers[i] ?? i + 2;
     if (key && seen.has(key)) errors.push(`nome repetido no arquivo (linha ${seen.get(key)})`);
     else if (key) seen.set(key, line);
-    return { line, name, ...(branch ? { branch } : {}), section, active: status ?? true, errors };
+    return { line, name, ...(branch ? { branch } : {}), section, patrol, active: status ?? true, errors };
   });
   return { rows };
 }
 
-export type ExistingAssociate = { id: string; name: string; branch: ScoutBranch; section: string | null; active: boolean };
+export type ExistingAssociate = { id: string; name: string; branch: ScoutBranch; section: string | null; patrol: string | null; active: boolean };
 
 export type PlannedAssociate = AssociateCsvRow & {
-  /** nova = cadastrar; atualiza = mesmo nome com ramo/seção/status diferente; igual = nada muda; erro. */
+  /** nova = cadastrar; atualiza = mesmo nome com ramo/seção/patrulha/status diferente; igual = nada muda; erro. */
   action: "nova" | "atualiza" | "igual" | "erro";
   existingId?: string;
 };
 
-/** Compara com os associados já cadastrados pelo nome (sem acentos nem maiúsculas). */
-export function planAssociatesImport(rows: AssociateCsvRow[], existing: ExistingAssociate[]): PlannedAssociate[] {
+/**
+ * Compara com os associados já cadastrados pelo nome (sem acentos nem maiúsculas). Seção e patrulha
+ * são procuradas no cadastro (seção no ramo da linha, patrulha na seção) e trocadas pelo nome cadastrado.
+ */
+export function planAssociatesImport(rows: AssociateCsvRow[], existing: ExistingAssociate[], catalog: { sections: SectionItem[]; patrols: PatrolItem[] }): PlannedAssociate[] {
   const byName = new Map(existing.map((associate) => [normalizeText(associate.name), associate]));
   return rows.map((row) => {
     if (row.errors.length || !row.branch) return { ...row, action: "erro" };
+    const section = row.section ? catalog.sections.find((s) => s.branch === row.branch && normalizeText(s.name) === normalizeText(row.section!)) : undefined;
+    if (row.section && !section) return { ...row, errors: [`seção "${row.section}" não cadastrada em ${branchLabels[row.branch]}`], action: "erro" };
+    const patrol = row.patrol && section ? catalog.patrols.find((p) => p.sectionId === section.id && normalizeText(p.name) === normalizeText(row.patrol!)) : undefined;
+    if (row.patrol && !patrol) return { ...row, errors: [`patrulha "${row.patrol}" não cadastrada em ${section?.name ?? "nenhuma seção"}`], action: "erro" };
+    const resolved = { ...row, section: section?.name ?? null, patrol: patrol?.name ?? null };
     const current = byName.get(normalizeText(row.name));
-    if (!current) return { ...row, action: "nova" };
-    const same = current.branch === row.branch && (current.section ?? null) === row.section && current.active === row.active;
-    return { ...row, action: same ? "igual" : "atualiza", existingId: current.id };
+    if (!current) return { ...resolved, action: "nova" };
+    const same = current.branch === row.branch && (current.section ?? null) === resolved.section && (current.patrol ?? null) === resolved.patrol && current.active === row.active;
+    return { ...resolved, action: same ? "igual" : "atualiza", existingId: current.id };
   });
 }

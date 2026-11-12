@@ -4,8 +4,9 @@ import { AppHeader } from "@/components/app-header";
 import { AssociatesImport } from "@/components/associates-import";
 import { PageBody, PageHeader, SectionTabs, SettingsTabs } from "@/components/nav/page-header";
 import { AssociateRow, NewAssociate, type AssociateItem } from "@/components/new-associate";
+import { SectionsManager } from "@/components/sections-manager";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { branchLabels, groupBySection, isScoutBranch, matchesSection, NO_SECTION, NO_SECTION_PARAM, sectionsOf } from "@/lib/associates";
+import { branchLabels, groupBySection, isScoutBranch, matchesSection, NO_SECTION, NO_SECTION_PARAM, sectionsOf, type PatrolItem, type SectionItem } from "@/lib/associates";
 import { cn } from "@/lib/utils";
 
 type Params = { visao?: string; secao?: string };
@@ -16,9 +17,19 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
   const membership = await pageMember();
   const { supabase, user } = membership;
   const canEdit = membership.canEdit;
-  const { data } = await supabase.from("associates").select("id, name, branch, section, active")
-    .eq("group_id", membership.groupId).order("active", { ascending: false }).order("name");
+  const [{ data }, { data: sectionRows }, { data: patrolRows }] = await Promise.all([
+    supabase.from("associate_rows").select("id, name, branch, section_id, section, patrol_id, patrol, active")
+      .eq("group_id", membership.groupId).order("active", { ascending: false }).order("name"),
+    supabase.from("sections").select("id, branch, name, active").eq("group_id", membership.groupId).order("name"),
+    supabase.from("patrols").select("id, section_id, name, active").eq("group_id", membership.groupId).order("name"),
+  ]);
   const associates = (data ?? []) as AssociateItem[];
+  const catalog = {
+    sections: (sectionRows ?? []) as SectionItem[],
+    patrols: (patrolRows ?? []).map((p) => ({ id: p.id as string, sectionId: p.section_id as string, name: p.name as string, active: p.active as boolean })) satisfies PatrolItem[],
+  };
+  const counts: Record<string, number> = {};
+  for (const a of associates) for (const key of [a.section_id, a.patrol_id]) if (key) counts[key] = (counts[key] ?? 0) + 1;
   const sections = sectionsOf(associates);
   const sectionFilter = params.secao && (params.secao === NO_SECTION_PARAM || sections.includes(params.secao)) ? params.secao : undefined;
   const shown = associates.filter((a) => matchesSection(a, sectionFilter));
@@ -36,8 +47,9 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
     <PageBody>
       <PageHeader title="Configurações" tabs={<SettingsTabs current="associados" canEdit={canEdit} />}
         description="Lista usada para vincular rateios a associados. Inativos deixam de aparecer nos novos lançamentos." />
-      {canEdit && <SectionCard><SectionHeader title="Novo associado" /><div className="p-4"><NewAssociate /></div></SectionCard>}
-      {canEdit && <AssociatesImport existing={associates} />}
+      {canEdit && <SectionsManager {...catalog} counts={counts} />}
+      {canEdit && <SectionCard><SectionHeader title="Novo associado" /><div className="p-4"><NewAssociate {...catalog} /></div></SectionCard>}
+      {canEdit && <AssociatesImport existing={associates} {...catalog} />}
       <SectionCard><SectionHeader title="Cadastrados"><SectionCount>{shown.filter((a) => a.active).length} ativos de {shown.length}</SectionCount>
           <SectionTabs label="Visualização" tabs={[
             { href: href({ visao: undefined }), label: "Lista", active: !bySection },
@@ -53,12 +65,12 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
         </div>}
         {!associates.length ? <div className="px-6 py-12 text-center text-muted-foreground">Nenhum associado cadastrado.</div>
         : bySection ? <SectionGroups associates={shown} />
-        : <div className="overflow-x-auto"><Table className="min-w-[720px]">
+        : <div className="overflow-x-auto"><Table className="min-w-[860px]">
           <TableCaption className="sr-only">Associados do grupo</TableCaption>
-          <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent"><TableHead className={headClass}>Nome</TableHead><TableHead className={cn(headClass, "w-44")}>Ramo</TableHead><TableHead className={headClass}>Seção</TableHead><TableHead className={cn(headClass, "w-24")}>Status</TableHead>{canEdit && <TableHead className={cn(headClass, "w-36")}><span className="sr-only">Ações</span></TableHead>}</TableRow></TableHeader>
+          <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent"><TableHead className={headClass}>Nome</TableHead><TableHead className={cn(headClass, "w-44")}>Ramo</TableHead><TableHead className={headClass}>Seção</TableHead><TableHead className={headClass}>Patrulha</TableHead><TableHead className={cn(headClass, "w-24")}>Status</TableHead>{canEdit && <TableHead className={cn(headClass, "w-36")}><span className="sr-only">Ações</span></TableHead>}</TableRow></TableHeader>
           <TableBody>{shown.map((associate) => canEdit
-            ? <AssociateRow key={associate.id} associate={associate} />
-            : <TableRow key={associate.id}><TableCell className="px-3 py-1.5">{associate.name}</TableCell><TableCell className="px-3 py-1.5">{isScoutBranch(associate.branch) ? branchLabels[associate.branch] : associate.branch}</TableCell><TableCell className="px-3 py-1.5">{associate.section ?? "—"}</TableCell><TableCell className="px-3 py-1.5">{associate.active ? "Ativo" : "Inativo"}</TableCell></TableRow>)}
+            ? <AssociateRow key={associate.id} associate={associate} catalog={catalog} />
+            : <TableRow key={associate.id}><TableCell className="px-3 py-1.5">{associate.name}</TableCell><TableCell className="px-3 py-1.5">{isScoutBranch(associate.branch) ? branchLabels[associate.branch] : associate.branch}</TableCell><TableCell className="px-3 py-1.5">{associate.section ?? "—"}</TableCell><TableCell className="px-3 py-1.5">{associate.patrol ?? "—"}</TableCell><TableCell className="px-3 py-1.5">{associate.active ? "Ativo" : "Inativo"}</TableCell></TableRow>)}
           </TableBody>
         </Table></div>}
       </SectionCard>
@@ -79,7 +91,7 @@ function SectionGroups({ associates }: { associates: AssociateItem[] }) {
         <ul className="m-0 grid list-none gap-x-6 gap-y-1 p-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {group.members.map((member) => <li key={member.id} className={cn("flex items-baseline gap-2 text-xs", !member.active && "text-muted-foreground")}>
             <span className={cn("truncate", member.active && "font-medium")}>{member.name}</span>
-            <span className="shrink-0 text-muted-foreground">{isScoutBranch(member.branch) ? branchLabels[member.branch] : member.branch}{!member.active && " · inativo"}</span>
+            <span className="shrink-0 text-muted-foreground">{member.patrol ?? (isScoutBranch(member.branch) ? branchLabels[member.branch] : member.branch)}{!member.active && " · inativo"}</span>
           </li>)}
         </ul>
       </section>;

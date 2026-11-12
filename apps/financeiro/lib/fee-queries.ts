@@ -49,7 +49,7 @@ export async function fetchFeeYear(supabase: SupabaseClient, groupId: string, ye
     fetchPaged<{ id: string; associate_id: string; movement_date: string; kind: AssociateMovement["kind"]; reason: string | null }>((from, to) =>
       supabase.from("associate_movements").select("id, associate_id, movement_date, kind, reason").eq("group_id", groupId)
         .order("movement_date").order("id").range(from, to), 50_000),
-    fetchPaged<FeeAssociate>((from, to) => supabase.from("associates").select("id, name, branch, section, active")
+    fetchPaged<FeeAssociate>((from, to) => supabase.from("associate_rows").select("id, name, branch, section, patrol, active")
       .eq("group_id", groupId).order("name").order("id").range(from, to), 20_000),
     fetchPaged<RecordRow>((from, to) => supabase.from("fee_records").select("associate_id, month, status, note, fee_record_splits(split_id)")
       .eq("group_id", groupId).eq("year", year).order("associate_id").order("month").range(from, to), 50_000),

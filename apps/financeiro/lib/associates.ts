@@ -42,3 +42,25 @@ export function matchesSection(associate: WithSection, filter: string | undefine
   if (filter === NO_SECTION_PARAM) return !associate.section?.trim();
   return associate.section?.trim() === filter;
 }
+
+// Seções e patrulhas cadastradas (028_sections.sql): Ramo › Seção › Patrulha ------------------
+
+export type SectionItem = { id: string; branch: ScoutBranch; name: string; active: boolean };
+export type PatrolItem = { id: string; sectionId: string; name: string; active: boolean };
+
+/** Seções que podem ser escolhidas para o ramo: as ativas, mais a atual (mesmo inativa). */
+export function sectionChoices(sections: SectionItem[], branch: string, currentId?: string | null): SectionItem[] {
+  return sections.filter((s) => s.branch === branch && (s.active || s.id === currentId)).sort((a, b) => byName(a.name, b.name));
+}
+
+/** Patrulhas que podem ser escolhidas na seção: as ativas, mais a atual (mesmo inativa). */
+export function patrolChoices(patrols: PatrolItem[], sectionId: string, currentId?: string | null): PatrolItem[] {
+  if (!sectionId) return [];
+  return patrols.filter((p) => p.sectionId === sectionId && (p.active || p.id === currentId)).sort((a, b) => byName(a.name, b.name));
+}
+
+/** Seção sugerida ao escolher o ramo: a única seção ativa do ramo, se houver só uma. */
+export function defaultSectionFor(sections: SectionItem[], branch: string): string {
+  const choices = sectionChoices(sections, branch);
+  return choices.length === 1 ? choices[0].id : "";
+}
