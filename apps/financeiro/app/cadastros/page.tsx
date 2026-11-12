@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { FeeSettingsForm, FeeYearForm } from "@/components/fees/fee-settings-form";
 import { fetchFeePrices, fetchFeeSettings } from "@/lib/fee-queries";
 import { currentYear } from "@/lib/filters";
-import { PageBody, PageHeader, SettingsTabs } from "@/components/nav/page-header";
+import { PageBody, PageHeader, settingsCrumbs, SettingsTabs } from "@/components/nav/page-header";
 import { AccountsManager, type AccountItem } from "@/components/accounts-manager";
 import { CatalogManager } from "@/components/catalog-manager";
 import { ProfilesManager, type ProfileItem } from "@/components/import/profiles-manager";
@@ -73,7 +73,7 @@ export default async function CatalogsPage({ searchParams }: { searchParams: Pro
   return <div className="shell">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/cadastros" />
     <PageBody>
-      <PageHeader title="Configurações" tabs={<SettingsTabs current={tab} canEdit={canEdit} />}
+      <PageHeader title="Configurações" crumbs={settingsCrumbs(tab, canEdit)} tabs={<SettingsTabs current={tab} canEdit={canEdit} />}
         description={tab === "perfis" ? TABS[tab] : `${TABS[tab]} Inativos saem dos novos lançamentos e continuam nos antigos.`} />
       {tab === "contas" && <AccountsManager accounts={accounts} canEdit={canEdit} />}
       {tab === "perfis" && <ProfilesManager profiles={profileItems} />}

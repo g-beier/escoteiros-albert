@@ -74,7 +74,7 @@ export default async function Dashboard() {
   return <div className="shell">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/" />
     <main className={PAGE_BODY}>
-      <PageHeader title={`Resumo de ${year}`} actions={<>
+      <PageHeader title={`Resumo de ${year}`} hideTitle actions={<>
         <Link href="/lancamentos" className={buttonVariants({ variant: "outline", size: "lg" })}>Ver lançamentos <IconArrowRight data-icon="inline-end" /></Link>
         {canEdit && <NewEntryButton returnQuery="" />}
       </>} />

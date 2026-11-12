@@ -102,7 +102,7 @@ export default async function EntryDetailPage({ params, searchParams }: { params
   return <div className="shell">
     <AppHeader role={role} email={user.email ?? ""} current={`/lancamentos/${id}`} />
     <PageBody>
-      <PageHeader title={entry.name} back={{ href: backHref, label: "Voltar aos lançamentos" }}
+      <PageHeader title={entry.name} crumbs={[{ label: "Lançamentos", href: backHref }, { label: entry.name }]}
         description={<>
           <span className="num">{dateBR(entry.date)}</span> · <span className={entry.totalCents < 0 ? "num font-semibold text-destructive" : "num font-semibold text-foreground"}>{money(entry.totalCents / 100)}</span>
           {" · "}{entry.splits.length} {entry.splits.length === 1 ? "rubrica" : "rubricas"}

@@ -41,7 +41,7 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
   return <div className="shell flex min-h-dvh flex-col overflow-clip md:h-dvh md:min-h-0 md:overflow-hidden">
     <AppHeader role={member.role} email={user.email ?? ""} current="/mensalidades" />
     <PageBody className="md:flex md:min-h-0 md:flex-1 md:flex-col">
-      <PageHeader title="Mensalidades"
+      <PageHeader title="Mensalidades" crumbs={[{ label: "Mensalidades" }]}
         tabs={<SectionTabs label="Ano" tabs={years.map((y) => ({ href: href({ ano: y === thisYear ? undefined : String(y) }), label: String(y), active: y === year }))} />}
         description={<>Março a dezembro. Vencimento {rule.toLowerCase()}; depois disso, sem registro, fica atrasado. Pagamentos lançados na rubrica de mensalidade com o associado aparecem como sugestão.{member.canEdit && " Regra e rubrica em Configurações › Mensalidades."}</>}>
         {sections.length > 1 && <div className="flex flex-wrap items-center gap-2">

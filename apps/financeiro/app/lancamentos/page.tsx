@@ -77,10 +77,10 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
   // No celular (cartões) a página inteira rola; overflow-clip mantém o cabeçalho e o rodapé fixos funcionando.
   return <div className="shell flex min-h-dvh flex-col overflow-clip before:hidden after:hidden md:h-dvh md:min-h-0 md:overflow-hidden">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/lancamentos" />
-    <main className="flex flex-1 flex-col gap-2.5 px-4 py-3 md:min-h-0">
+    <main className="flex flex-1 flex-col gap-2.5 px-4 pt-4 pb-3 md:min-h-0">
       <FilterOptionsProvider dimensions={dimensions}>
       <EntryListProvider canEdit={canEdit} returnQuery={returnQuery}>
-        <PageHeader title="Lançamentos"
+        <PageHeader title="Lançamentos" crumbs={[{ label: "Lançamentos" }]}
           tabs={<SectionTabs label="Visões" tabs={[
             { href: viewHref("lancamentos"), label: "Por lançamento", active: !byCategory },
             { href: viewHref("rubricas"), label: "Por rubrica", active: byCategory },

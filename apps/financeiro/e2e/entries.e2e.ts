@@ -63,7 +63,7 @@ test("criar, filtrar, editar e excluir lançamentos", async ({ page }) => {
     await expect(page.getByRole("heading", { name: `${income} editada` })).toBeVisible();
     // o histórico de alterações registra a edição
     await expect(page.getByRole("region", { name: "Histórico de alterações" })).toContainText(/edit|alter/i);
-    await page.getByRole("link", { name: "Voltar aos lançamentos" }).click();
+    await page.getByRole("navigation", { name: "Caminho" }).getByRole("link", { name: "Lançamentos" }).click();
     await expect(entryRow(page, `${income} editada`)).toBeVisible();
   });
 

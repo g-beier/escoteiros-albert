@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { RecentImports } from "@/components/import/recent-imports";
 import { StatementImporter, type ImportAccount } from "@/components/import/statement-importer";
 import { SetupNeeded } from "@/components/setup-needed";
-import { ExtratoTabs, PageBody, PageHeader } from "@/components/nav/page-header";
+import { extratoCrumbs, ExtratoTabs, PageBody, PageHeader } from "@/components/nav/page-header";
 import { SectionCard } from "@/components/section-card";
 import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
 import { fetchImportProfiles, fetchLastProfileByAccount, fetchRecentImports } from "@/lib/import-queries";
@@ -32,7 +32,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
   return <div className="shell">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/importacao" />
     <PageBody>
-      <PageHeader title="Extrato" tabs={<ExtratoTabs current="importar" accountId={accountId || undefined} />}
+      <PageHeader title="Extrato" crumbs={extratoCrumbs("importar")} tabs={<ExtratoTabs current="importar" accountId={accountId || undefined} />}
         description="Escolha o banco (a conta) e envie o extrato OFX, exportado pelo banco ou convertido. Confira as linhas antes de importar; depois, concilie com os lançamentos." />
       <div className="grid gap-5">
         {!canEdit && <SectionCard><p className="m-0 p-5 text-sm text-muted-foreground">Somente tesouraria e administração podem importar extratos. Você pode consultar as importações já feitas.</p></SectionCard>}

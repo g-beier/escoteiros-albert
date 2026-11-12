@@ -27,7 +27,7 @@ export default async function UsersPage() {
   return <div className="shell">
     <AppHeader role={ownMembership.role} email={user.email ?? ""} current="/usuarios" />
     <PageBody>
-      <PageHeader title="Usuários" description="Convide pessoas do domínio institucional e defina o nível de acesso de cada uma." />
+      <PageHeader title="Usuários" crumbs={[{ label: "Usuários" }]} description="Convide pessoas do domínio institucional e defina o nível de acesso de cada uma." />
       <SectionCard>
         <SectionHeader title="Convidar usuário"><Badge variant="outline">@escoteirosalbert.com.br</Badge></SectionHeader>
         <div className="p-4"><InviteUser /></div>

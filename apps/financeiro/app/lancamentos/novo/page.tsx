@@ -37,7 +37,8 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
   return <div className="shell">
     <AppHeader role={role} email={user.email ?? ""} current="/lancamentos/novo" />
     <PageBody>
-      <PageHeader title="Novo lançamento" back={{ href: backHref, label: line ? "Voltar à conciliação" : "Voltar aos lançamentos" }}
+      <PageHeader title="Novo lançamento"
+        crumbs={line ? [{ label: "Extrato", href: "/conciliacao" }, { label: "Conciliar", href: backHref }, { label: "Novo lançamento" }] : [{ label: "Lançamentos", href: backHref }, { label: "Novo lançamento" }]}
         description={line
           ? <>A partir do extrato: <strong>{line.description}</strong> em <span className="num">{dateBR(line.line_date)}</span>, <span className="num">{money(Number(line.amount_cents) / 100)}</span>. Valor e conta vêm da linha; distribua o valor entre as rubricas. Ao salvar, o lançamento já fica conciliado.</>
           : "Informe o histórico, a conta e a forma de pagamento e distribua o valor total entre as rubricas, cada uma com sua descrição."} />

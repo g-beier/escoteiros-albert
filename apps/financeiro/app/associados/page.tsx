@@ -2,7 +2,7 @@ import { pageMember } from "@/lib/session";
 import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
 import { AppHeader } from "@/components/app-header";
 import { AssociatesImport } from "@/components/associates-import";
-import { PageBody, PageHeader, SectionTabs, SettingsTabs } from "@/components/nav/page-header";
+import { PageBody, PageHeader, SectionTabs, settingsCrumbs, SettingsTabs } from "@/components/nav/page-header";
 import { AssociateRow, NewAssociate, type AssociateItem } from "@/components/new-associate";
 import { SectionsManager } from "@/components/sections-manager";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -45,7 +45,7 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
   return <div className="shell">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/associados" />
     <PageBody>
-      <PageHeader title="Configurações" tabs={<SettingsTabs current="associados" canEdit={canEdit} />}
+      <PageHeader title="Configurações" crumbs={settingsCrumbs("associados", canEdit)} tabs={<SettingsTabs current="associados" canEdit={canEdit} />}
         description="Lista usada para vincular rateios a associados. Inativos deixam de aparecer nos novos lançamentos." />
       {canEdit && <SectionsManager {...catalog} counts={counts} />}
       {canEdit && <SectionCard><SectionHeader title="Novo associado" /><div className="p-4"><NewAssociate {...catalog} /></div></SectionCard>}

@@ -4,7 +4,7 @@ import { ReconciliationBoard, type BoardData, type LinkSet } from "@/components/
 import { ReconciliationFilters } from "@/components/reconciliation/reconciliation-filters";
 import { byDateThenAmount, closingCheck, parsePeriod, suggestMatches, type OpenEntry, type OpenLine } from "@/lib/reconciliation";
 import { pageSession } from "@/lib/session";
-import { ExtratoTabs, PAGE_BODY, PageHeader } from "@/components/nav/page-header";
+import { extratoCrumbs, ExtratoTabs, PAGE_BODY, PageHeader } from "@/components/nav/page-header";
 import { cn } from "@/lib/utils";
 import { fetchPaged } from "@/lib/supabase/paged";
 import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
@@ -39,7 +39,7 @@ export default async function ReconciliationPage({ searchParams }: { searchParam
   const header = <AppHeader role={membership.role} email={user.email ?? ""} current="/conciliacao" />;
   if (!account) {
     return <div className="shell">{header}<main className={PAGE_BODY}>
-      <PageHeader title="Extrato" tabs={<ExtratoTabs current="conciliar" />}
+      <PageHeader title="Extrato" crumbs={extratoCrumbs("conciliar")} tabs={<ExtratoTabs current="conciliar" />}
         description={accountError ? `Não foi possível carregar as contas: ${accountError.message}` : "Cadastre uma conta em Configurações › Contas para começar."} />
     </main></div>;
   }
@@ -107,7 +107,7 @@ export default async function ReconciliationPage({ searchParams }: { searchParam
   return <div className="shell">
     {header}
     <main className={cn(PAGE_BODY, "pb-28")}>
-      <PageHeader title="Extrato" tabs={<ExtratoTabs current="conciliar" accountId={account.id} />}
+      <PageHeader title="Extrato" crumbs={extratoCrumbs("conciliar")} tabs={<ExtratoTabs current="conciliar" accountId={account.id} />}
         description={<>Pendentes: <strong className="num text-foreground">{openLines.length}</strong> {openLines.length === 1 ? "linha do extrato" : "linhas do extrato"} · <strong className="num text-foreground">{openEntries.length}</strong> {openEntries.length === 1 ? "lançamento" : "lançamentos"}</>}>
         <ReconciliationFilters key={`${account.id}|${period.from}|${period.to}`}
           accounts={accounts.map((a) => ({ value: a.id, label: a.active ? a.name : `${a.name} (inativa)` }))}
