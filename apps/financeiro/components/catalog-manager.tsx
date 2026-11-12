@@ -47,11 +47,11 @@ export function CatalogManager({ kind, title, singular, maxLength, items, canEdi
     </SectionHeader>
     {canEdit && <form action={action} className="grid gap-2 border-b p-3">
       <input type="hidden" name="kind" value={kind} />
-      <Label htmlFor={isCategories ? "categories-code" : `${kind}-new`}>Nova {singular}</Label>
-      <div className="flex flex-wrap gap-2">
-        {isCategories && <><Label htmlFor="categories-code" className="sr-only">Código</Label><Input id="categories-code" name="code" placeholder="Código, ex.: 2.5.6" className="num w-40" required /></>}
-        <Input id={`${kind}-new`} name="name" maxLength={maxLength} placeholder={isCategories ? "Nome" : undefined} className="min-w-48 flex-1" required />
-        {isCategories && <><Label htmlFor="categories-ledger" className="sr-only">Conta contábil</Label><LedgerCodeInput id="categories-ledger" className="w-40" /></>}
+      <p className="m-0 text-sm font-semibold">Nova {singular}</p>
+      <div className="flex flex-wrap items-end gap-2">
+        {isCategories && <div className="grid gap-1.5"><Label htmlFor="categories-code">Código</Label><Input id="categories-code" name="code" placeholder="Ex.: 2.5.6" className="num w-32" required /></div>}
+        <div className="grid min-w-48 flex-1 gap-1.5"><Label htmlFor={`${kind}-new`}>Nome</Label><Input id={`${kind}-new`} name="name" maxLength={maxLength} required /></div>
+        {isCategories && <div className="grid gap-1.5"><Label htmlFor="categories-ledger">Conta contábil (opcional)</Label><LedgerCodeInput id="categories-ledger" className="w-40" /></div>}
         <Button type="submit" disabled={pending}><IconPlus /> Adicionar</Button>
       </div>
       {isCategories && <p className="text-xs text-muted-foreground">O código define o tipo (1 = receita, 2 = despesa) e a rubrica pai: 2.5.6 fica dentro de 2.5 Pastelada. A conta contábil é opcional aqui, mas obrigatória para exportar à contabilidade.</p>}
@@ -59,7 +59,8 @@ export function CatalogManager({ kind, title, singular, maxLength, items, canEdi
     <Table>
       <TableCaption className="sr-only">{title} do grupo</TableCaption>
       <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
-        <TableHead className="h-8 px-3">{isCategories ? "Nome e conta contábil" : "Nome"}</TableHead>
+        <TableHead className="h-8 px-3">Nome</TableHead>
+        {isCategories && <TableHead className="h-8 px-3">Conta contábil</TableHead>}
         {accounts && <TableHead className="h-8 px-3">Conta padrão</TableHead>}
         <TableHead className="h-8 px-3 text-right">Uso</TableHead>
         <TableHead className="h-8 px-3">Status</TableHead>
@@ -79,19 +80,28 @@ function CatalogRow({ kind, item, maxLength, canEdit, accounts }: { kind: Catalo
   useActionToast(renameState);
   useActionToast(toggleState);
   const status = <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", item.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{item.active ? "Ativa" : "Inativa"}</span>;
+  const formId = `${kind}-${item.id}-form`;
+  const isCategory = item.code !== undefined;
+  const save = <Button type="submit" form={formId} variant="ghost" size="icon-sm" aria-label={`Salvar ${item.name}`} disabled={renaming}><IconCheck /></Button>;
   return <TableRow className={cn(!item.active && "text-muted-foreground")}>
     <TableCell className="px-3 py-1.5">
-      {canEdit ? <form action={rename} className="flex items-center gap-1.5" style={{ paddingLeft: `${(item.depth ?? 0) * 1.25}rem` }}>
+      {canEdit ? <form id={formId} action={rename} className="flex items-center gap-1.5" style={{ paddingLeft: `${(item.depth ?? 0) * 1.25}rem` }}>
         {item.code !== undefined && <span className={cn("num w-12 shrink-0 text-right text-xs font-semibold", item.kind === "receita" ? "text-success" : item.kind === "despesa" ? "text-destructive" : "text-muted-foreground")}>{item.code ?? "—"}</span>}
         <input type="hidden" name="kind" value={kind} /><input type="hidden" name="id" value={item.id} />
-        <Label htmlFor={`${kind}-${item.id}`} className="sr-only">Nome</Label>
+        {/* rótulo visível: cabeçalho da coluna; este nomeia o campo de cada linha para leitores de tela */}
+        <Label htmlFor={`${kind}-${item.id}`} className="sr-only">Nome de {item.name}</Label>
         <Input id={`${kind}-${item.id}`} name="name" defaultValue={item.name} maxLength={maxLength} required className={cn("max-w-md", item.isGroup && "font-semibold")} />
-        {item.code !== undefined && <><Label htmlFor={`${kind}-${item.id}-ledger`} className="sr-only">Conta contábil de {item.name}</Label>
-          <LedgerCodeInput id={`${kind}-${item.id}-ledger`} defaultValue={item.ledgerCode} className="w-36 shrink-0" /></>}
-        {needsLedgerCode(item) && <IconAlertTriangle className="size-4 shrink-0 text-amber-600" aria-label="Sem conta contábil" title="Rubrica usada e sem conta contábil: necessária para exportar à contabilidade" />}
-        <Button type="submit" variant="ghost" size="icon-sm" aria-label={`Salvar nome de ${item.name}`} disabled={renaming}><IconCheck /></Button>
-      </form> : <>{item.name}{item.ledgerCode && <span className="ml-2 num text-xs text-muted-foreground">{item.ledgerCode}</span>}</>}
+        {!isCategory && save}
+      </form> : item.name}
     </TableCell>
+    {isCategory && <TableCell className="px-3 py-1.5">
+      {canEdit ? <div className="flex items-center gap-1.5">
+        <Label htmlFor={`${kind}-${item.id}-ledger`} className="sr-only">Conta contábil de {item.name}</Label>
+        <LedgerCodeInput id={`${kind}-${item.id}-ledger`} form={formId} defaultValue={item.ledgerCode} className="w-36 shrink-0" />
+        {needsLedgerCode(item) && <IconAlertTriangle className="size-4 shrink-0 text-amber-600" aria-label="Sem conta contábil" title="Rubrica usada e sem conta contábil: necessária para exportar à contabilidade" />}
+        {save}
+      </div> : <span className="num">{item.ledgerCode ?? "—"}</span>}
+    </TableCell>}
     {accounts && <TableCell className="px-3 py-1.5"><DefaultAccount item={item} accounts={accounts} canEdit={canEdit} /></TableCell>}
     <TableCell className="px-3 py-1.5 text-right num" title="Rateios ou lançamentos que usam este cadastro">
       {item.usageHref && item.usage > 0

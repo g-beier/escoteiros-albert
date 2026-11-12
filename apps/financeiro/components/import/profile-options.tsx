@@ -36,8 +36,9 @@ export function KindPrefixes({ selected, suggestions, onChange }: {
         <span>{prefix}{counts.has(normalizeText(prefix)) && <span className="text-muted-foreground num"> ({counts.get(normalizeText(prefix))})</span>}</span>
       </Label>)}
     </div>
+    <Label htmlFor="kind-prefix-custom" className="mt-1">Outro prefixo</Label>
     <div className="flex max-w-sm items-center gap-2">
-      <Input value={custom} onChange={(event) => setCustom(event.target.value)} placeholder="Outro prefixo, ex.: Pix recebido" aria-label="Outro prefixo de tipo"
+      <Input id="kind-prefix-custom" value={custom} onChange={(event) => setCustom(event.target.value)} placeholder="Ex.: Pix recebido"
         onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); add(); } }} />
       <Button type="button" variant="outline" size="sm" onClick={add} disabled={!custom.trim()}><IconPlus /> Adicionar</Button>
     </div>
