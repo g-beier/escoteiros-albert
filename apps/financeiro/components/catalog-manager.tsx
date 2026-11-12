@@ -31,6 +31,8 @@ const initial: CatalogFormState = {};
 export function CatalogManager({ kind, title, singular, maxLength, items, canEdit, accounts }: { kind: CatalogKind; title: string; singular: string; maxLength: number; items: Item[]; canEdit: boolean; accounts?: Option[] }) {
   const [state, action, pending] = useActionState(createCatalogItem, initial);
   const [onlyMissing, setOnlyMissing] = useState(false);
+  // rubrica que já usa o código digitado (conferido ao sair do campo)
+  const [codeTaken, setCodeTaken] = useState<Item | null>(null);
   useActionToast(state);
   const isCategories = kind === "categories";
   // Rubricas folha com uso e sem conta contábil travam a exportação para a contabilidade.
@@ -49,11 +51,19 @@ export function CatalogManager({ kind, title, singular, maxLength, items, canEdi
       <input type="hidden" name="kind" value={kind} />
       <p className="m-0 text-sm font-semibold">Nova {singular}</p>
       <div className="flex flex-wrap items-end gap-2">
-        {isCategories && <div className="grid gap-1.5"><Label htmlFor="categories-code">Código</Label><Input id="categories-code" name="code" placeholder="Ex.: 2.5.6" className="num w-32" required /></div>}
+        {isCategories && <div className="grid gap-1.5"><Label htmlFor="categories-code">Código</Label>
+          <Input id="categories-code" name="code" placeholder="Ex.: 2.5.6" className="num w-32" required
+            aria-invalid={codeTaken ? true : undefined} aria-describedby={codeTaken ? "categories-code-error" : undefined}
+            onBlur={(event) => { const code = event.target.value.trim(); setCodeTaken(code ? items.find((item) => item.code === code) ?? null : null); }}
+            onChange={() => { if (codeTaken) setCodeTaken(null); }} /></div>}
         <div className="grid min-w-48 flex-1 gap-1.5"><Label htmlFor={`${kind}-new`}>Nome</Label><Input id={`${kind}-new`} name="name" maxLength={maxLength} required /></div>
         {isCategories && <div className="grid gap-1.5"><Label htmlFor="categories-ledger">Conta contábil (opcional)</Label><LedgerCodeInput id="categories-ledger" className="w-40" /></div>}
-        <Button type="submit" disabled={pending}><IconPlus /> Adicionar</Button>
+        <Button type="submit" disabled={pending || Boolean(codeTaken)}><IconPlus /> Adicionar</Button>
       </div>
+      {codeTaken && <p id="categories-code-error" role="alert" className="m-0 flex items-center gap-1.5 text-xs text-destructive">
+        <IconAlertTriangle className="size-3.5 shrink-0" aria-hidden />
+        O código {codeTaken.code} já é da rubrica “{codeTaken.name}”{codeTaken.active ? "" : " (inativa)"}. Escolha outro código.
+      </p>}
       {isCategories && <p className="text-xs text-muted-foreground">O código define o tipo (1 = receita, 2 = despesa) e a rubrica pai: 2.5.6 fica dentro de 2.5 Pastelada. A conta contábil é opcional aqui, mas obrigatória para exportar à contabilidade.</p>}
     </form>}
     <Table>
