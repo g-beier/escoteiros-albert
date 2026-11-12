@@ -43,6 +43,7 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 - Session/group lookup: `lib/session.ts` (`pageSession`, `pageMember`, `memberOrError`, `editorOrError`, `requireEditor`, `requireAdmin`); don't query `memberships` directly.
 - Import is OFX-only in the UI (CSV code kept unused). Exports: column definitions in `lib/export/columns.ts`, rendered as XLSX or CSV; accounting CSV at `/exportar/contabil` (see `docs/contabilidade.md`).
 - SQL tests: `supabase/tests/*.sql`, run inside a rolled-back transaction (see each file's header).
+- Screens: every page header uses `PageHeader` (`components/nav/page-header.tsx`: title, `SectionTabs` beside it, actions on the right, description, filter rows as children) inside `PageBody`/`PAGE_BODY`; never hand-roll an `<h1>` row.
 - Forms: every input, select and textarea has a visible label (`<Label htmlFor>`). Placeholders only show examples, never replace the label; `sr-only`/`aria-label` alone is not enough. Exception: search fields with the magnifier icon keep only `aria-label` and a placeholder. In editable table rows, the visible column header is the label (keep a specific `sr-only` label per row).
 - UI: shadcn/ui (`base-mira`, Base UI primitives — not Radix) on Tailwind v4. Legacy CSS lives in `@layer legacy` in `app/globals.css`. Generated components import `cn` from `@/lib/utils` (not the `cn` npm package).
 - `npx supabase migration up` applies new migrations without resetting local data.

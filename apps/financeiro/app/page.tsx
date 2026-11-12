@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { IconArrowRight, IconFolderExclamation } from "@tabler/icons-react";
 import { AppHeader } from "@/components/app-header";
-import { PAGE_BODY } from "@/components/nav/page-header";
+import { PAGE_BODY, PageHeader } from "@/components/nav/page-header";
 import { NewEntryButton } from "@/components/entries/entry-editor";
 import { SetupNeeded } from "@/components/setup-needed";
 import { buttonVariants } from "@/components/ui/button";
@@ -64,13 +64,10 @@ export default async function Dashboard() {
   return <div className="shell">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/" />
     <main className={PAGE_BODY}>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <h1 className="m-0 text-xl leading-tight font-bold tracking-tight">Resumo de {year}</h1>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <Link href="/lancamentos" className={buttonVariants({ variant: "outline", size: "lg" })}>Ver lançamentos <IconArrowRight data-icon="inline-end" /></Link>
-          {canEdit && <NewEntryButton returnQuery="" />}
-        </div>
-      </div>
+      <PageHeader title={`Resumo de ${year}`} actions={<>
+        <Link href="/lancamentos" className={buttonVariants({ variant: "outline", size: "lg" })}>Ver lançamentos <IconArrowRight data-icon="inline-end" /></Link>
+        {canEdit && <NewEntryButton returnQuery="" />}
+      </>} />
 
       <section aria-label="Totais do ano" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Receitas" value={money(income / 100)} tone="success" href={`/lancamentos?visao=rubricas&de=${year}-01-01&ate=${year}-12-31`} />

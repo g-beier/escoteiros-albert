@@ -2,7 +2,7 @@ import Link from "next/link";
 import { IconFolderExclamation } from "@tabler/icons-react";
 import { pageSession } from "@/lib/session";
 import { AppHeader } from "@/components/app-header";
-import { SectionTabs } from "@/components/nav/page-header";
+import { PageHeader, SectionTabs } from "@/components/nav/page-header";
 import { InfiniteEntries } from "@/components/entries/infinite-entries";
 import { fetchEntryPage } from "@/lib/entry-queries";
 import { EntryListProvider, NewEntryButton } from "@/components/entries/entry-editor";
@@ -69,18 +69,16 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
     <main className="workspace">
       <FilterOptionsProvider dimensions={dimensions}>
       <EntryListProvider canEdit={canEdit} returnQuery={returnQuery}>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <h1 className="m-0 text-xl leading-tight font-bold tracking-tight">Lançamentos</h1>
-          <SectionTabs label="Visões" tabs={[
+        <PageHeader title="Lançamentos"
+          tabs={<SectionTabs label="Visões" tabs={[
             { href: viewHref("lancamentos"), label: "Por lançamento", active: !byCategory },
             { href: viewHref("rubricas"), label: "Por rubrica", active: byCategory },
-          ]} />
-          <div className="ml-auto flex items-center gap-2">
+          ]} />}
+          actions={<>
             {(pendingDocs ?? 0) > 0 && filters.folder !== "pendente" && <Link href={`/lancamentos?pasta=pendente&de=${ALL_DATES}`} className="inline-flex items-center gap-1.5 rounded-full bg-[#f5eed1] px-3 py-1 text-xs font-semibold text-[#725d0d] hover:ring-1 hover:ring-current"><IconFolderExclamation className="size-4" aria-hidden /> {pendingDocs} {pendingDocs === 1 ? "documento pendente" : "documentos pendentes"}</Link>}
             <ExportMenu view={byCategory ? "rubricas" : "lancamentos"} from={filters.from} to={filters.to} years={years} accounts={toOptions(accounts)} />
             {canEdit && <NewEntryButton returnQuery={returnQuery} />}
-          </div>
-        </div>
+          </>} />
         <EntryFilters />
         <section aria-label={byCategory ? "Rateios por rubrica" : "Lançamentos"} className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-card">
           <InfiniteEntries key={returnQuery} initial={firstPage} query={returnQuery} filtered={filtered} order={order} sortHref={sortHref} />

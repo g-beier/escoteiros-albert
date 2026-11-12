@@ -2,7 +2,7 @@
 
 import { Fragment, useMemo, useOptimistic, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { IconCheck, IconDots, IconSearch } from "@tabler/icons-react";
+import { IconCheck, IconChevronRight, IconDots, IconHelpCircle, IconSearch } from "@tabler/icons-react";
 import { confirmFeeSuggestions, setFeeExemption, setFeeRecord } from "@/app/mensalidades/actions";
 import { FeeCell, FeeMark, STATE_LABELS, type CellChange } from "@/components/fees/fee-cell";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { branchLabels, isScoutBranch, NO_SECTION } from "@/lib/associates";
 import { feeAmounts, feeBalance, FEE_MONTH_LABELS, FEE_MONTHS, monthSummary, type CellState, type FeePrice, type FeeRow, type FeeSplit, type FeeSuggestion } from "@/lib/fees";
@@ -34,6 +35,10 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
   const [showExempt, setShowExempt] = useState(false);
   const [bySection, setBySection] = useState(false);
   const [onlyOverdue, setOnlyOverdue] = useState(initialOnlyOverdue);
+  // seções recolhidas (accordion) na visão agrupada
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const sectionKey = (section: string | null | undefined) => section ?? NO_SECTION;
+  const toggleSection = (key: string) => setCollapsed((set) => { const next = new Set(set); if (next.has(key)) next.delete(key); else next.add(key); return next; });
   const [exempting, setExempting] = useState<FeeRow | null>(null);
   // estado otimista por caixinha, até o servidor responder
   const [optimistic, addOptimistic] = useOptimistic<Record<string, CellState | null>, Optimistic>({},
@@ -81,28 +86,18 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
   }
 
   return <div className="grid gap-3">
-    <dl className="m-0 flex flex-wrap gap-3">
-      <div className="grid gap-0.5 rounded-lg border bg-card px-4 py-2.5">
-        <dt className="text-xs text-muted-foreground">Recebido em {year}{filtered && " (na seleção)"}</dt>
-        <dd className="m-0 num text-xl font-bold text-success">{money(amounts.total / 100)}</dd>
-      </div>
-      <div className="grid gap-0.5 rounded-lg border bg-card px-4 py-2.5">
-        <dt className="text-xs text-muted-foreground">Pagamentos</dt>
-        <dd className="m-0 num text-xl font-bold">{amounts.count}</dd>
-      </div>
-      {price && <div className="grid gap-0.5 rounded-lg border bg-card px-4 py-2.5">
-        <dt className="text-xs text-muted-foreground">Previsto ({money(price.monthlyCents / 100)}/mês)</dt>
-        <dd className="m-0 num text-xl font-bold">{money(expectedTotal / 100)}</dd>
-      </div>}
-      {price && <div className="grid gap-0.5 rounded-lg border bg-card px-4 py-2.5">
-        <dt className="text-xs text-muted-foreground">Em aberto</dt>
-        <dd className={cn("m-0 num text-xl font-bold", openTotal > 0 && "text-destructive")}>{money(openTotal / 100)}</dd>
-      </div>}
-      {!price && canEdit && <p className="m-0 self-center text-xs text-muted-foreground">Configure o valor de {year} em Configurações › Mensalidades para ver previsto e em aberto.</p>}
-      {amounts.outsideGrid > 0 && <div className="grid gap-0.5 rounded-lg border bg-card px-4 py-2.5">
-        <dt className="text-xs text-muted-foreground">Recebido em jan/fev</dt>
-        <dd className="m-0 num text-xl font-bold">{money(amounts.outsideGrid / 100)}</dd>
-      </div>}
+    <dl className="m-0 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-lg border bg-card px-4 py-2">
+      <Figure label={`Recebido em ${year}${filtered ? " (na seleção)" : ""}`} value={money(amounts.total / 100)} className="text-success" />
+      <Figure label="Pagamentos" value={String(amounts.count)} />
+      {price && <Figure label={`Previsto (${money(price.monthlyCents / 100)}/mês)`} value={money(expectedTotal / 100)} />}
+      {price && <Figure label="Em aberto" value={money(openTotal / 100)} className={openTotal > 0 ? "text-destructive" : undefined} />}
+      {amounts.outsideGrid > 0 && <Figure label="Recebido em jan/fev" value={money(amounts.outsideGrid / 100)} />}
+      {!price && <Tooltip>
+        <TooltipTrigger render={<button type="button" className="ml-auto grid size-6 place-items-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Por que não há previsto e em aberto?" />}>
+          <IconHelpCircle className="size-4" aria-hidden />
+        </TooltipTrigger>
+        <TooltipContent className="max-w-64">Configure o valor de {year} em Configurações › Mensalidades para ver o previsto e o em aberto.</TooltipContent>
+      </Tooltip>}
     </dl>
 
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -111,6 +106,8 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
         <Input type="search" aria-label="Buscar associado" placeholder="Buscar associado" className="h-7 pl-7" value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
       <Label className="font-normal"><Checkbox checked={bySection} onCheckedChange={(v) => setBySection(v === true)} /> Agrupar por seção</Label>
+      {bySection && groups.length > 1 && <Button variant="ghost" size="sm" onClick={() => setCollapsed(collapsed.size ? new Set() : new Set(groups.map((g) => sectionKey(g.section))))}>
+        {collapsed.size ? "Expandir todas" : "Recolher todas"}</Button>}
       <Label className="font-normal"><Checkbox checked={onlyOverdue} onCheckedChange={(v) => setOnlyOverdue(v === true)} /> Só com atrasos ({overdueCount})</Label>
       {exemptCount > 0 && <Label className="font-normal"><Checkbox checked={showExempt} onCheckedChange={(v) => setShowExempt(v === true)} /> Mostrar isentos ({exemptCount})</Label>}
       <ul className="m-0 flex list-none flex-wrap gap-3 p-0 text-xs text-muted-foreground" aria-label="Legenda">
@@ -135,9 +132,19 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
             </tr>
           </thead>
           <tbody>{groups.map((group) => <Fragment key={group.section ?? "__all"}>
-            {bySection && <tr className="bg-muted/50"><th scope="colgroup" colSpan={FEE_MONTHS.length + (canEdit ? 4 : 3) + extra} className="sticky left-0 px-3 py-1.5 text-left text-xs font-semibold">
-              {group.section ?? NO_SECTION} <span className="font-normal text-muted-foreground">({group.rows.length})</span></th></tr>}
-            {group.rows.map((row) => {
+            {bySection && (() => {
+              const key = sectionKey(group.section);
+              const open = !collapsed.has(key);
+              const late = group.rows.filter((r) => !r.exemption && r.overdue > 0).length;
+              return <tr className="bg-muted/50"><th scope="colgroup" colSpan={FEE_MONTHS.length + (canEdit ? 4 : 3) + extra} className="sticky left-0 p-0 text-left text-xs font-semibold">
+                <button type="button" aria-expanded={open} onClick={() => toggleSection(key)}
+                  className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left hover:bg-muted">
+                  <IconChevronRight className={cn("size-4 transition-transform", open && "rotate-90")} aria-hidden />
+                  {key} <span className="font-normal text-muted-foreground">({group.rows.length}{late > 0 && `, ${late} com atraso`})</span>
+                </button>
+              </th></tr>;
+            })()}
+            {(!bySection || !collapsed.has(sectionKey(group.section))) && group.rows.map((row) => {
               const exempt = Boolean(row.exemption);
               const paid = row.cells.filter((_, i) => stateOf(row, i) === "pago").length;
               return <tr key={row.associate.id} className={cn("border-t", exempt && "text-muted-foreground")}>
@@ -228,4 +235,12 @@ function ExemptionDialog({ row, year, pending, onClose, onConfirm }: { row: FeeR
       </form>
     </DialogContent>
   </Dialog>;
+}
+
+/** Número da faixa de totais: rótulo pequeno e valor em destaque, lado a lado com os outros. */
+function Figure({ label, value, className }: { label: string; value: string; className?: string }) {
+  return <div className="flex items-baseline gap-2">
+    <dt className="text-xs text-muted-foreground">{label}</dt>
+    <dd className={cn("m-0 num text-base font-bold", className)}>{value}</dd>
+  </div>;
 }

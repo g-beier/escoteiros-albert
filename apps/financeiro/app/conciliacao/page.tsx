@@ -39,8 +39,8 @@ export default async function ReconciliationPage({ searchParams }: { searchParam
   const header = <AppHeader role={membership.role} email={user.email ?? ""} current="/conciliacao" />;
   if (!account) {
     return <div className="shell">{header}<main className={PAGE_BODY}>
-      <h1 className="m-0 text-xl font-bold tracking-tight">Conciliação</h1>
-      <p className="text-muted-foreground">{accountError ? `Não foi possível carregar as contas: ${accountError.message}` : "Cadastre uma conta em Cadastros para começar."}</p>
+      <PageHeader title="Extrato" tabs={<ExtratoTabs current="conciliar" />}
+        description={accountError ? `Não foi possível carregar as contas: ${accountError.message}` : "Cadastre uma conta em Configurações › Contas para começar."} />
     </main></div>;
   }
 
