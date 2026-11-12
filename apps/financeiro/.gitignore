@@ -8,3 +8,6 @@ npm-debug.log*
 supabase/snippets
 supabase/.branches
 supabase/.temp
+test-results
+playwright-report
+e2e/.auth

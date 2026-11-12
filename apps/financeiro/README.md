@@ -141,7 +141,30 @@ O código por e-mail é autenticação passwordless de um fator, não MFA verdad
 
 ### Qualidade
 
-Execute `npm run typecheck`, `npm run lint`, `npm test` e `npm run build` antes de publicar. Os próximos gates são testes pgTAP das políticas RLS e Playwright para OTP, lançamentos e gestão de usuários.
+Execute `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:db`, `npm run test:e2e` e `npm run build` antes de publicar (todos a partir da raiz).
+
+### Testes
+
+| Comando (raiz) | O quê | Precisa |
+| --- | --- | --- |
+| `npm test` | Vitest: funções de `lib/` (dinheiro, OFX, filtros, exportações…) | nada |
+| `npm run test:db` | `supabase test db` (pgTAP via pg_prove) com tudo de `supabase/tests/` | Supabase local rodando |
+| `npm run test:e2e` | Playwright (Chromium desktop) contra um `next dev` próprio na porta 3210 | Supabase local, Docker e `.env.local` |
+
+**Banco (`supabase/tests/`).** Cada arquivo abre e desfaz a própria transação (`begin … rollback`), então rodar não altera o banco local; nunca é preciso `db reset`. O pg_prove pega todo `*.sql` da pasta:
+
+- `rls_isolation.test.sql` — isolamento entre grupos: o admin de outro grupo não lê nem escreve (SELECT/INSERT/UPDATE/DELETE direto, funções auditadas e bucket `comprovantes`) lançamentos, rateios, extrato, rubricas, contas, associados, mensalidades (`fee_*`), anexos e auditoria;
+- `rls_roles.test.sql` — papéis: consulta só lê; tesouraria escreve, mas não administra usuários nem lê `audit_events`; administração muda papéis, convida e remove (e quem sai perde o acesso);
+- `rls_direct_writes.test.sql` — tabelas que só aceitam funções auditadas não têm escrita direta nem para admin/tesouraria do próprio grupo (associados são a exceção proposital);
+- `audit.test.sql` — as funções principais gravam `audit_events` com grupo, ação e autor;
+- `_fixture.psql` — dados comuns desses quatro (incluído com `\ir`; a extensão `.psql` deixa o pg_prove de fora);
+- os demais `*.sql` (contabilidade, conciliação, importação, mensalidades…) são scripts psql que terminam com `ok 1 - TUDO OK`: imprimem TAP mínimo (`1..1`), então rodam no `supabase test db` e também sozinhos, como diz o cabeçalho de cada um (`cat arquivo | docker exec -i supabase_db_geas-financeiro psql …`).
+
+Para um arquivo só: `npm exec --package=supabase -- supabase test db supabase/tests/rls_roles.test.sql` (em `apps/financeiro`; `npx supabase` não funciona dentro do workspace).
+
+**Navegador (`e2e/`).** Antes da primeira vez: `npx playwright install chromium` (em `apps/financeiro`). O projeto `setup` cria, se faltar, o usuário `e2e.admin@escoteirosalbert.com.br` (Auth, pela chave secreta do `.env.local`) e o grupo “Grupo E2E (testes automatizados)” (`admin_bootstrap_group` via `docker exec … psql`), com as contas “Conta E2E” e “Conta E2E 2”, e entra por OTP lendo o código no Mailpit (porta 54324, `[local_smtp]` do `config.toml`). Os testes cobrem login (código errado e certo), lançamentos (criar, buscar, filtrar por conta e rubrica, editar, excluir pela lista e pelos detalhes), usuários (convidar, mudar papel, remover), mover em lote, comprovantes, importação do `nubank.ofx` das fixtures com “Criar lançamento” na conciliação, filtro Conciliado e desfazer importação.
+
+Tudo acontece no grupo E2E, com nomes únicos começando por `E2E`, e é desfeito pela interface; no começo e no fim, uma limpeza (como o admin E2E, pelas funções auditadas) desfaz importações, perfis e lançamentos `E2E …` que um teste interrompido tenha deixado, e os convidados (`e2e.convite.*`) são apagados do Auth. Os dados dos outros grupos não são tocados. O grupo E2E e seu admin ficam no banco entre execuções. Variáveis opcionais: `E2E_PORT`, `E2E_MAILPIT_URL`, `E2E_DB_CONTAINER`. Relatório em `playwright-report/` (`npx playwright show-report`).
 
 ## Próximos módulos sugeridos
 
