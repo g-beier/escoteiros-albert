@@ -73,7 +73,7 @@ export default async function EntryDetailPage({ params, searchParams }: { params
       </div>
       {!canEdit && <p className="mb-3 text-xs text-muted-foreground">Seu acesso é somente de consulta.</p>}
       {(statementLines?.length ?? 0) > 0 && <StatementLines lines={statementLines as LinkedLine[]} />}
-      <section className="card p-5"><EntryForm entry={entry} catalogs={catalogs} canEdit={canEdit} backHref={backHref} /></section>
+      <SectionCard className="p-5"><EntryForm entry={entry} catalogs={catalogs} canEdit={canEdit} backHref={backHref} /></SectionCard>
     </main>
   </div>;
 }

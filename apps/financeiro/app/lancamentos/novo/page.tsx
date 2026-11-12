@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { IconArrowLeft } from "@tabler/icons-react";
+import { SectionCard } from "@/components/section-card";
 import { AppHeader } from "@/components/app-header";
 import { EntryForm, type StatementLinePrefill } from "@/components/entries/entry-form";
 import { listHref } from "@/lib/entries";
@@ -43,8 +44,8 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
           : <p className="lede">Informe os dados do extrato e distribua o valor total entre as rubricas, cada uma com sua descrição.</p>}
       </div></div>
       {line && line.status !== "aberta"
-        ? <section className="card p-5"><p className="m-0">Esta linha do extrato já foi {line.status === "conciliada" ? "conciliada" : "ignorada"}. <Link href={backHref} className="font-semibold underline">Voltar à conciliação</Link></p></section>
-        : <section className="card p-5"><EntryForm entry={null} catalogs={catalogs} canEdit backHref={backHref} fromLine={fromLine} /></section>}
+        ? <SectionCard className="p-5"><p className="m-0">Esta linha do extrato já foi {line.status === "conciliada" ? "conciliada" : "ignorada"}. <Link href={backHref} className="font-semibold underline">Voltar à conciliação</Link></p></SectionCard>
+        : <SectionCard className="p-5"><EntryForm entry={null} catalogs={catalogs} canEdit backHref={backHref} fromLine={fromLine} /></SectionCard>}
     </main>
   </div>;
 }

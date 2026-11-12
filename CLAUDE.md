@@ -38,7 +38,11 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 - Supabase Auth passwordless, restricted to `@escoteirosalbert.com.br`; RLS per group.
 - Money stored as integer cents (`lib/money.ts`).
 - Migrations in `supabase/migrations/`.
-- Model: `ledger_entries` = bank statement line (date, `name` of payer/issuer, payment method, `document_filed` "pasta", total); `entry_splits` = per-category split with description and optional associate. Writes go through SQL functions (`create_/update_/delete_ledger_entry`, `set_entry_document_filed`) that validate totals and audit. List views read `ledger_entry_rows` / `entry_split_rows` (security_invoker views with `search_text`).
+- Model (glossary in `apps/financeiro/docs/modelo.md`): `ledger_entries` = entry (date, `name` shown as "Histórico", account, payment method, `document_filed`, total); `entry_splits` = per-category split with description and optional associate; `statement_lines` = imported OFX lines (`external_id` = FITID, "ID OFX"), linked to entries via `reconciliation_links`. `categories.ledger_code` / `accounts.ledger_code` = accounting chart code (domain `ledger_code`, mask `0.0.0.0.0000`, mirrored in `lib/ledger-code.ts`).
+- All writes go through audited SQL functions (no direct write policies on catalogs, accounts, entries or statement tables). List views read `ledger_entry_rows` / `entry_split_rows` (security_invoker, with `external_ids` and `search_text`).
+- Session/group lookup: `lib/session.ts` (`pageSession`, `pageMember`, `memberOrError`, `editorOrError`, `requireEditor`, `requireAdmin`); don't query `memberships` directly.
+- Import is OFX-only in the UI (CSV code kept unused). Exports: column definitions in `lib/export/columns.ts`, rendered as XLSX or CSV; accounting CSV at `/exportar/contabil` (see `docs/contabilidade.md`).
+- SQL tests: `supabase/tests/*.sql`, run inside a rolled-back transaction (see each file's header).
 - UI: shadcn/ui (`base-mira`, Base UI primitives — not Radix) on Tailwind v4. Legacy CSS lives in `@layer legacy` in `app/globals.css`. Generated components import `cn` from `@/lib/utils` (not the `cn` npm package).
 - `npx supabase migration up` applies new migrations without resetting local data.
 

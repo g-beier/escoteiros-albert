@@ -1,8 +1,8 @@
 # GEAS Financeiro
 
-MVP de gestão financeira para grupo escoteiro. Um lançamento representa uma linha do extrato, pertence a uma **conta** (corrente, poupança, caixa…) e contém um ou mais rateios por rubrica. A aplicação oferece as visões “Por extrato” e “Por rubrica”.
+MVP de gestão financeira para grupo escoteiro. Um lançamento representa uma movimentação da conta (histórico, forma de pagamento, total), pertence a uma **conta** (corrente, poupança, caixa…) e contém um ou mais rateios por rubrica. A aplicação oferece as visões “Por lançamento” e “Por rubrica”. Glossário em [`docs/modelo.md`](docs/modelo.md).
 
-Modelo principal: `accounts` (contas, com saldo inicial), `payment_methods` (com conta padrão), `ledger_entries` (linha do extrato, com `account_id`) e `entry_splits` (rateio). A importação de extrato grava `import_profiles` (perfil por banco/formato), `statement_imports` e `statement_lines` (linhas abertas, deduplicadas por impressão digital); a conciliação (`013_reconciliation.sql`) grava `reconciliation_links` (conjuntos 1:1, 1:N ou N:1 cujas somas batem) e `reconciliation_rejections` (sugestões recusadas); lançamentos podem ser marcados como fora do extrato. Plano completo em `docs/importacao-conciliacao.md`.
+Modelo principal: `accounts` (contas, com saldo inicial), `payment_methods` (com conta padrão), `ledger_entries` (linha do extrato, com `account_id`) e `entry_splits` (rateio). A importação de extrato grava `import_profiles` (perfil por banco/formato), `statement_imports` e `statement_lines` (linhas abertas, deduplicadas por impressão digital); a conciliação (`013_reconciliation.sql`) grava `reconciliation_links` (conjuntos 1:1, 1:N ou N:1 cujas somas batem) e `reconciliation_rejections` (sugestões recusadas); lançamentos podem ser marcados como fora do extrato. Plano completo em `docs/importacao-conciliacao.md`. A contabilidade (`014_accounting.sql`) acrescenta a **conta contábil** (`ledger_code`, máscara `0.0.0.0.0000`) em rubricas e contas, os campos do OFX nas linhas do extrato, a chave OFX da conta e o ID OFX (`external_ids`) nas visões de lançamentos; ver `docs/contabilidade.md`.
 
 ## Arquitetura
 
@@ -16,14 +16,14 @@ Modelo principal: `accounts` (contas, com saldo inicial), `payment_methods` (com
 ## Telas
 
 - `/` — resumo do ano: receitas, despesas, saldo, documentos pendentes, mês a mês e últimos lançamentos.
-- `/lancamentos` — lançamentos: visões **Por extrato** (uma linha por lançamento, com ✓ nos conciliados) e **Por rubrica** (um rateio por linha), coluna Conta, filtros na URL (`de`, `ate`, `conta`, `forma`, `pasta` = documentos, `associado`, `rubrica`, `q`; sem `de`, começa em 1º de janeiro do ano atual, `de=tudo` mostra todos) e conferência rápida dos documentos.
-- `/exportar/fluxo` e `/exportar/realizado` — planilhas XLSX (fluxo de caixa por período e Realizado anual).
+- `/lancamentos` — lançamentos: visões **Por lançamento** (uma linha por lançamento, com ✓ nos conciliados) e **Por rubrica** (um rateio por linha), colunas Conta e **ID OFX**, filtros na URL (`de`, `ate`, `conta`, `forma`, `pasta` = documentos, `associado`, `rubrica`, `q`, `ofx`; sem `de`, começa em 1º de janeiro do ano atual, `de=tudo` mostra todos) e conferência rápida dos documentos.
+- `/exportar/fluxo` (XLSX ou CSV), `/exportar/realizado` (XLSX) e `/exportar/contabil` (CSV em partida dobrada para o sistema contábil).
 - `/lancamentos/novo` — novo lançamento; com `?linha=<id>` ("Criar lançamento" na conciliação) vem preenchido pela linha do extrato e já sai conciliado.
 - `/conciliacao` — extrato × lançamentos de uma conta e período (`conta`, `de`, `ate`; padrão: primeira conta ativa, mês atual): sugestões por mesmo dia + mesmo valor, vínculo manual com conferência das somas, ignorar linha, fora do extrato, trocar conta, desfazer e fechamento com o saldo do extrato. Somente leitura para consulta.
-- `/lancamentos/[id]` — detalhes com o formulário completo; edição e exclusão para tesouraria/administração, somente leitura para consulta.
+- `/lancamentos/[id]` — detalhes com o formulário completo e as linhas do extrato vinculadas (com ID OFX); edição e exclusão para tesouraria/administração, somente leitura para consulta.
 - `/associados` — associados (nome, ramo, seção, ativo).
-- `/importacao` — importar extrato CSV/OFX numa conta (tesouraria e administração): o arquivo é lido no navegador com o perfil do banco (reconhecido pelo cabeçalho, editável), papéis das colunas sobre a pré-visualização, conferência (totais, saldos, erros, linhas ignoradas) e lista das importações recentes da conta (`conta` na URL). Depois de importar, segue para `/conciliacao?conta=…&de=…&ate=…`.
-- `/cadastros` — contas (banco, agência, número, saldo inicial), formas de pagamento com conta padrão e rubricas (tesouraria e administração).
+- `/importacao` — importar extrato **OFX** numa conta (tesouraria e administração): a conta é reconhecida pelo arquivo (`BANKID:ACCTID`), o perfil de leitura do banco é aplicado sozinho (ajustes recolhidos), conferência (totais, saldos, TRNTYPE, ID OFX, linhas ignoradas) e lista das importações recentes da conta (`conta` na URL). Depois de importar, segue para `/conciliacao?conta=…&de=…&ate=…`.
+- `/cadastros` — contas (banco, agência, número, saldo inicial, conta contábil), formas de pagamento com conta padrão e rubricas com conta contábil (tesouraria e administração).
 - `/usuarios` — convites e papéis (administração).
 
 ## Componentes
@@ -134,7 +134,7 @@ O código por e-mail é autenticação passwordless de um fator, não MFA verdad
 - Use bancos Supabase distintos para Preview e Production na Vercel.
 - Depois de criar o primeiro grupo, a migração `003_security_and_audit.sql` revoga o bootstrap público.
 - Remover um usuário bloqueia a conta e elimina sua associação ao grupo; lançamentos antigos preservam a autoria.
-- Mudanças de papel, remoções, convites, lançamentos, contas, perfis de importação e importações de extrato geram eventos de auditoria.
+- Mudanças de papel, remoções, convites, lançamentos, contas, rubricas, formas de pagamento, perfis de importação e importações de extrato geram eventos de auditoria.
 
 ### Qualidade
 
@@ -144,7 +144,6 @@ Execute `npm run typecheck`, `npm run lint`, `npm test` e `npm run build` antes 
 
 - Administração de usuários, papéis e convites
 - Cadastro e edição de rubricas
-- Importação/conciliação de extrato CSV/OFX
 - Associados e mensalidades
 - Anexos de comprovantes em bucket privado
 - Fechamento mensal e trilha de auditoria

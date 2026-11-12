@@ -2,6 +2,8 @@
 
 Status: fases 1 a 3 implementadas (2026-11-11): contas (`011`), importação no banco (`012`) e conciliação (`013`, `/conciliacao`). Vínculo N:M ainda é recusado.
 
+**Atualização (2026-11-11, `014`): a importação passou a ser só OFX.** A interface não aceita mais CSV; o código CSV (`lib/statement-import/csv.ts`, `apply.ts`, `components/import/csv-profile-builder.tsx`) fica no repositório, sem uso, caso volte a ser necessário. Ver a seção [Importação OFX](#importação-ofx-desde-014) e o glossário em [`modelo.md`](modelo.md). As seções sobre perfis CSV abaixo descrevem o desenho original.
+
 ## Objetivo
 
 Hoje cada lançamento é digitado à mão. Queremos:
@@ -131,6 +133,17 @@ Conteúdo do perfil (`settings`):
 - Parser OFX tolerante por regex (`<TAG>valor` até `<` ou fim da linha), cobrindo SGML com e sem tags de fechamento, sem depender do encoding declarado.
 - Dedup: `external_id + data + valor` quando há ID; senão impressão digital `conta + data + valor + descrição + nº de ocorrência no dia`.
 
+## Importação OFX (desde `014`)
+
+- O arquivo é lido no navegador (`readOfx`): DTPOSTED, TRNAMT, MEMO, NAME, FITID, TRNTYPE, CHECKNUM, REFNUM, LEDGERBAL e `BANKACCTFROM`.
+- **Conta reconhecida pelo arquivo**: `BANKID:ACCTID` (sem zeros à esquerda no banco) é gravado em `accounts.ofx_key` na primeira importação. Nas próximas, a conta é escolhida sozinha; arquivo de outra conta é bloqueado, na tela e na Server Action.
+- O perfil de leitura do banco (separar MEMO do Nubank, prefixos de tipo, linhas a ignorar) é reconhecido pela assinatura `ofx:<ORG ou BANKID>`, aplicado sem perguntar e salvo/atualizado ao importar. Os ajustes ficam recolhidos em "Ajustes de leitura".
+- Cada linha guarda `external_id` (FITID), `trn_type`, `check_number`, `reference` e `payee`. O TRNTYPE ajuda a sugerir a forma de pagamento ao criar o lançamento (PAYMENT → Boleto, FEE → Tarifa, XFER → Transferência, CASH → Dinheiro), depois das regras pelo histórico.
+
+### ID OFX como agregador
+
+O FITID não é único (o Itaú reaproveita `data + sequência`), nem combinado com a conta. Mesmo assim, é o que liga a movimentação do banco ao que foi discriminado: as visões `ledger_entry_rows` e `entry_split_rows` expõem `external_ids` (FITIDs das linhas vinculadas), e a lista de lançamentos mostra a coluna **ID OFX** nas duas visões. Clicar no ID filtra por `?ofx=<FITID>` e traz o lançamento, todos os seus rateios e, numa linha 1:N, os outros lançamentos pagos por ela. A busca também encontra o ID; os detalhes do lançamento mostram as linhas do extrato vinculadas; as exportações levam a coluna ID OFX.
+
 ## Tela de conciliação (`/conciliacao`)
 
 Objetivo: cruzar o que **já foi lançado à mão** com o que **veio do banco**, para que o mesmo movimento não exista duas vezes. Ao confirmar uma importação, o usuário cai direto nesta tela, filtrada pela conta e pelo período do arquivo. Também é acessível pelo menu, por conta e mês.
@@ -197,12 +210,14 @@ Objetivo: cruzar o que **já foi lançado à mão** com o que **veio do banco**,
 - CSV e OFX na mesma fase; o OFX usa o mesmo mecanismo de perfil, sem a grade de colunas.
 - Perfis são do grupo inteiro, funcionam como template editável e são atualizados quando ajustados numa importação (2026-11-11).
 - Após importar, o usuário vai direto para a conciliação em duas colunas (extrato × lançamentos); mesmo dia + mesmo valor já aparece como sugestão desde a primeira versão (2026-11-11).
+- Importação só por OFX; CSV desativado na interface (2026-11-11, `014`).
+- O ID OFX (FITID) aparece nos lançamentos e rateios como agregador, derivado da conciliação (2026-11-11).
+- "Nome do lançamento" passa a se chamar **Histórico** na interface (a coluna continua `name`) (2026-11-11).
 
 ## Perguntas em aberto
 
 - Lista dos bancos/contas do grupo. Cora e Mercado Pago confirmados; há outros.
-- Cora e Mercado Pago exportam OFX? Se sim, comparar com o CSV (o OFX do Cora traria ID e saldo final, que o CSV não tem).
+- Cora e Mercado Pago exportam OFX? Com a importação só por OFX, isso passa a ser necessário para importar essas contas.
 - O dinheiro em espécie (caixa) entra como conta conciliável, ou só como conta sem extrato?
 - Transferência entre contas próprias: tratar já na fase 1 ou deixar para a fase 5?
-- Ao criar um lançamento a partir de uma linha do extrato, o "Nome do lançamento" deve ser a contraparte ou o histórico do banco? Isso conversa com a revisão do nome do campo (ver BACKLOG).
 - Quem pode importar, montar perfis e conciliar: só tesouraria/administração, como na edição de lançamentos?

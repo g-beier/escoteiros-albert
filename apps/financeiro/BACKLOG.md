@@ -63,7 +63,25 @@
 - Linha "SALDO ANTERIOR" ignorada vira saldo inicial quando o arquivo não traz outro (Itaú); no OFX, confere saldo inicial + movimentos com o `LEDGERBAL`.
 - **Conciliação** (`013_reconciliation.sql`, `/conciliacao`): funções `link_reconciliation` (1:1, 1:N, N:1; somas com sinal), `unlink_reconciliation`, `reject_reconciliation_suggestion`, `ignore_statement_line`/`reopen_statement_line`, `create_entry_from_statement_line`, `set_ledger_entry_outside_statement`, `set_ledger_entry_account`; excluir um lançamento conciliado ou mudar seu valor/conta desfaz o vínculo e reabre as linhas. Tela em duas colunas com sugestões (mesmo dia + valor; ambíguas ordenadas por nome parecido), vínculo manual, ignorar com motivo, fora do extrato, trocar conta, vinculados/ignoradas/fora do extrato com desfazer e fechamento. ✓ de conciliado na visão Por extrato. Teste SQL em `supabase/tests/reconciliation.sql` (roda em transação desfeita).
 
+## Concluído (2026-11-11, décima rodada — contabilidade e coesão)
+
+- **Conta contábil** (`014_accounting.sql`): domínio `ledger_code` (`0.0.0.0.0000`) em rubricas e contas; campo com máscara em `/cadastros`, alerta e filtro "Só sem conta contábil".
+- Rubricas e formas de pagamento gravadas só por funções SQL auditadas (políticas de escrita direta removidas), como as contas.
+- **Importação só OFX**: TRNTYPE, CHECKNUM, REFNUM e NAME gravados; conta reconhecida por `BANKID:ACCTID` (`accounts.ofx_key`), arquivo de outra conta bloqueado; perfil do banco aplicado e salvo sem diálogo. CSV desativado na interface (código mantido).
+- **ID OFX** (FITID) como agregador: `external_ids` nas visões, coluna nas duas visões de `/lancamentos`, filtro `?ofx=`, busca, bloco "Extrato" nos detalhes, ID na conciliação e nas exportações.
+- Forma de pagamento sugerida também pelo TRNTYPE.
+- **Exportação contábil** (`/exportar/contabil`): CSV em partida dobrada, uma linha por rateio, Windows-1252 ou UTF-8; recusa quando falta conta contábil. Fluxo de caixa também em CSV. Colunas das exportações em `lib/export/columns.ts`, comuns aos formatos.
+- Vocabulário: visão **Por lançamento**, campo **Histórico** (antes "Nome do lançamento"); glossário em `docs/modelo.md`; `docs/contabilidade.md`.
+- `lib/session.ts` substitui as 15 cópias da consulta de grupo/papel; `SectionCard` substitui as classes `card`/`card-head` nos cadastros, importação, associados e lançamentos.
+- Teste SQL `supabase/tests/accounting.sql`.
+
 ## A verificar
+
+- Validar com o contador: código estruturado × reduzido, lançamento múltiplo, histórico padrão e contas de contrapartida (ver `docs/contabilidade.md`).
+- Abrir o CSV contábil no sistema do contador (leiaute de importação) e o CSV do fluxo no Excel/LibreOffice.
+- `/importacao` no navegador com `nubank.ofx` e `itau.ofx`: reconhecimento da conta na segunda importação e bloqueio de arquivo de outra conta.
+- Cora e Mercado Pago: obter o OFX (a importação CSV saiu da interface).
+
 
 - Aplicar `013` no banco local e testar `/conciliacao` no navegador (desktop e celular), inclusive "Criar lançamento" e o retorno de `/importacao`.
 
@@ -77,14 +95,15 @@
 
 ## Próximos
 
-- Migrar `/usuarios` e `/login` para os componentes shadcn (ainda usam classes legadas em `globals.css`).
+- Migrar `/usuarios` e `/login` para os componentes shadcn (ainda usam classes legadas em `globals.css`, inclusive `card`/`card-head`).
 - Remover do `@layer legacy` as classes que deixarem de ser usadas (`.button`, `.input`, `.modal*`, `.split-row` etc.).
 - Responsivo das tabelas: hoje rolam na horizontal no celular; avaliar cartões por lançamento em telas estreitas.
 - Virtualizar a tabela se a rolagem infinita ficar pesada com milhares de linhas carregadas.
 - Histórico de alterações (auditoria) na página de detalhes.
 - Testes pgTAP das políticas RLS e funções; Playwright para OTP, lançamentos e gestão de usuários.
-- Rever o nome "Nome do lançamento": o campo deve ficar igual ao texto do extrato do banco (candidatos: "Histórico", "Texto do extrato"). Decidir junto com a importação de extratos.
 - Importação: mostrar na conferência as duplicatas já importadas antes de gravar (hoje só o resultado informa), conferir o saldo inicial do arquivo com o saldo da conta e lista de perfis editável fora da importação.
+- Remover o código CSV de importação (`csv.ts`, `apply.ts`, `csv-profile-builder.tsx`) se o CSV não voltar.
+- Exportação contábil: código reduzido e histórico padrão, se o contador pedir; lançamento múltiplo agrupado pelo ID OFX.
 - Mover em lote os lançamentos de "A definir" para a conta certa.
 - Conciliação, fase 4: tolerância de datas, semelhança de nomes nas sugestões, combinações 1:N sugeridas; vínculo N:M (hoje recusado).
 - Filtro "Conciliado" em `/lancamentos` (hoje só o indicador ✓ na visão Por extrato).
