@@ -13,12 +13,13 @@ import { FEE_MONTH_NAMES, type CellState, type FeeRecord, type FeeSplit, type Fe
 import { cn } from "@/lib/utils";
 
 export const STATE_LABELS: Record<CellState, string> = {
-  pago: "pago", atencao: "atenção", atrasado: "atrasado", sugestao: "pagamento a confirmar", vazio: "sem registro",
+  pago: "pago", atencao: "atenção", nao_pago: "não pago", atrasado: "atrasado", sugestao: "pagamento a confirmar", vazio: "sem registro",
 };
 
 const STATE_STYLES: Record<CellState, string> = {
   pago: "border-success bg-success text-white",
-  atencao: "border-amber-500 bg-amber-100 text-amber-800",
+  atencao: "border-amber-600 bg-amber-300 text-amber-950",
+  nao_pago: "border-destructive bg-destructive text-white",
   atrasado: "border-destructive/50 bg-destructive/10 text-destructive",
   sugestao: "border-dashed border-success text-success",
   vazio: "border-border text-transparent",
@@ -29,7 +30,7 @@ export function FeeMark({ state, partial = false, className }: { state: CellStat
   // sugestão parcial (valor menor que a mensalidade): tracejado amarelo com "!"
   if (state === "sugestao" && partial) return <span aria-hidden className={cn("grid size-6 place-items-center rounded-md border border-dashed border-amber-500 text-amber-700", className)}><IconAlertTriangle className="size-3.5" /></span>;
   return <span aria-hidden className={cn("grid size-6 place-items-center rounded-md border", STATE_STYLES[state], className)}>
-    {state === "pago" || state === "sugestao" ? <IconCheck className="size-4" /> : state === "atencao" ? <IconAlertTriangle className="size-3.5" /> : state === "atrasado" ? <IconX className="size-3.5" /> : null}
+    {state === "pago" || state === "sugestao" ? <IconCheck className="size-4" /> : state === "atencao" ? <IconAlertTriangle className="size-3.5" /> : state === "atrasado" || state === "nao_pago" ? <IconX className="size-3.5" /> : null}
   </span>;
 }
 
@@ -52,7 +53,7 @@ export function FeeCell({ name, month, state, record, suggestion, splits, canEdi
   if (!canEdit) return <span className="inline-grid" title={label} role="img" aria-label={label}>{mark}</span>;
 
   const reset = () => { setNote(record?.note ?? suggestion?.note ?? ""); setLinked(new Set(record?.splitIds ?? (suggestion ? [suggestion.splitId] : []))); };
-  const apply = (status: FeeStatus | null) => { onChange({ status, note: status === "atencao" ? note : undefined, splitIds: status ? [...linked] : [] }); setOpen(false); };
+  const apply = (status: FeeStatus | null) => { onChange({ status, note: status ? note : undefined, splitIds: status ? [...linked] : [] }); setOpen(false); };
   const toggle = (id: string) => setLinked((set) => { const next = new Set(set); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   const noteId = `fee-note-${month}-${name.replace(/\W+/g, "-")}`;
 
@@ -68,11 +69,12 @@ export function FeeCell({ name, month, state, record, suggestion, splits, canEdi
       <div className="flex flex-wrap gap-2">
         <Button size="sm" onClick={() => apply("pago")}><IconCheck /> Pago</Button>
         <Button size="sm" variant="outline" onClick={() => apply("atencao")}><IconAlertTriangle /> Atenção</Button>
+        <Button size="sm" variant="outline" className="text-destructive" onClick={() => apply("nao_pago")}><IconX /> Não pago</Button>
         {record && <Button size="sm" variant="ghost" onClick={() => apply(null)}>Limpar</Button>}
       </div>
       <div className="grid gap-1.5">
-        <Label htmlFor={noteId}>Nota (para Atenção)</Label>
-        <Input id={noteId} value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} placeholder="Ex.: pagou metade, prometeu até dia 20" />
+        <Label htmlFor={noteId}>Observação</Label>
+        <Input id={noteId} value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} placeholder="Ex.: prometeu até dia 20; não pagou: viagem" />
       </div>
       <fieldset className="grid gap-1.5">
         <legend className="mb-1 text-xs font-semibold">Rateios de mensalidade vinculados</legend>
@@ -85,7 +87,7 @@ export function FeeCell({ name, month, state, record, suggestion, splits, canEdi
             <Link href={`/lancamentos/${split.entryId}`} className="text-xs text-primary hover:underline">{split.description || "ver lançamento"}</Link>
           </span>
         </Label>)}
-        <p className="m-0 text-xs text-muted-foreground">Os vínculos são gravados ao marcar Pago ou Atenção.</p>
+        <p className="m-0 text-xs text-muted-foreground">Observação e vínculos são gravados ao escolher Pago, Atenção ou Não pago.</p>
       </fieldset>
     </PopoverContent>
   </Popover>;

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchPaged } from "@/lib/supabase/paged";
 import {
-  buildFeeRows, DEFAULT_FEE_SETTINGS, suggestFeeMonths, todayInSaoPaulo,
+  buildFeeRows, DEFAULT_FEE_SETTINGS, priceForAssociate, suggestFeeMonths, todayInSaoPaulo,
   type DueRule, type FeeAssociate, type FeeExemption, type FeePrice, type FeeRecord, type FeeRow, type FeeSettings, type FeeSplit, type FeeSuggestion,
 } from "@/lib/fees";
 
@@ -30,6 +30,8 @@ export type FeeYear = {
   settings: FeeSettings;
   /** Nulo quando o valor do ano ainda não foi configurado. */
   price: FeePrice | null;
+  /** Valores individuais do ano, por associado (irmãos, combinação…). */
+  individualPrices: Record<string, { monthlyCents: number; reason: string }>;
   rows: FeeRow[];
   suggestions: FeeSuggestion[];
   /** Rateios de mensalidade do ano (e os ligados a caixinhas do ano), por associado. */
@@ -39,9 +41,11 @@ export type FeeYear = {
 
 /** Tudo o que a grade de um ano precisa: configurações, associados, registros, isenções e rateios de mensalidade. */
 export async function fetchFeeYear(supabase: SupabaseClient, groupId: string, year: number, today = todayInSaoPaulo()): Promise<FeeYear> {
-  const [settings, prices, associates, records, exemptions, splits] = await Promise.all([
+  const [settings, prices, individual, associates, records, exemptions, splits] = await Promise.all([
     fetchFeeSettings(supabase, groupId),
     fetchFeePrices(supabase, groupId),
+    fetchPaged<{ associate_id: string; monthly_cents: number; reason: string }>((from, to) => supabase.from("fee_associate_prices")
+      .select("associate_id, monthly_cents, reason").eq("group_id", groupId).eq("year", year).order("associate_id").range(from, to), 20_000),
     fetchPaged<FeeAssociate>((from, to) => supabase.from("associates").select("id, name, branch, section, active")
       .eq("group_id", groupId).order("name").order("id").range(from, to), 20_000),
     fetchPaged<RecordRow>((from, to) => supabase.from("fee_records").select("associate_id, month, status, note, fee_record_splits(split_id)")
@@ -53,7 +57,7 @@ export async function fetchFeeYear(supabase: SupabaseClient, groupId: string, ye
       .eq("group_id", groupId).gte("entry_date", `${year - 1}-01-01`).lte("entry_date", `${year + 1}-12-31`)
       .order("entry_date").order("split_id").range(from, to), 50_000),
   ]);
-  const error = [associates, records, exemptions, splits].map((r) => r.error?.message).find(Boolean);
+  const error = [individual, associates, records, exemptions, splits].map((r) => r.error?.message).find(Boolean);
   const feeRecords: FeeRecord[] = records.data.map((r) => ({
     associateId: r.associate_id, month: r.month, status: r.status, note: r.note, splitIds: r.fee_record_splits.map((s) => s.split_id),
   }));
@@ -64,12 +68,14 @@ export async function fetchFeeYear(supabase: SupabaseClient, groupId: string, ye
   // no ano: lançados no ano ou já ligados a uma caixinha do ano
   const relevant = feeSplits.filter((s) => s.entryDate.startsWith(`${year}-`) || s.linkedPeriods.some((p) => Math.floor(p / 100) === year));
   const price = prices[year] ?? null;
-  const suggestions = suggestFeeMonths(year, relevant, feeRecords, price);
+  const individualPrices: FeeYear["individualPrices"] = {};
+  for (const row of individual.data) individualPrices[row.associate_id] = { monthlyCents: Number(row.monthly_cents), reason: row.reason };
+  const suggestions = suggestFeeMonths(year, relevant, feeRecords, (associateId) => priceForAssociate(price, individualPrices[associateId]?.monthlyCents));
   const fees: FeeExemption[] = exemptions.data.map((e) => ({ associateId: e.associate_id, reason: e.reason }));
   const splitsByAssociate: Record<string, FeeSplit[]> = {};
   for (const split of relevant) (splitsByAssociate[split.associateId] ??= []).push(split);
   return {
-    year, settings, price, suggestions, splitsByAssociate, error,
+    year, settings, price, individualPrices, suggestions, splitsByAssociate, error,
     rows: buildFeeRows({ year, today, settings, associates: associates.data, records: feeRecords, exemptions: fees, suggestions }),
   };
 }

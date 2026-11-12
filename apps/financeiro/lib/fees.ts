@@ -68,11 +68,12 @@ export function todayInSaoPaulo(now = new Date()) {
   return now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
 
-export type FeeStatus = "pago" | "atencao";
+/** Registrados à mão. "nao_pago" é a dívida confirmada (com observação); "atrasado" é só calculado. */
+export type FeeStatus = "pago" | "atencao" | "nao_pago";
 export type FeeRecord = { associateId: string; month: number; status: FeeStatus; note: string | null; splitIds: string[] };
 
 /** pago/atencao registrados; atrasado = passou do vencimento sem registro; sugestao = rateio a confirmar; vazio = o resto. */
-export type CellState = "pago" | "atencao" | "atrasado" | "sugestao" | "vazio";
+export type CellState = "pago" | "atencao" | "nao_pago" | "atrasado" | "sugestao" | "vazio";
 
 export function cellState(record: FeeRecord | undefined, due: string, today: string, suggested: boolean): CellState {
   if (record) return record.status;
@@ -116,7 +117,15 @@ const brl = (cents: number) => (cents / 100).toLocaleString("pt-BR", { style: "c
  * - pagamento integral (cheio, ou com desconto até a data-limite): todos os meses livres;
  * - senão, um mês por mensalidade inteira paga; o que sobrar vira Atenção ("pagou R$ 30,00 de R$ 60,00").
  */
-export function suggestFeeMonths(year: number, splits: FeeSplit[], records: FeeRecord[], price?: FeePrice | null): FeeSuggestion[] {
+/** Valor que vale para o associado: o individual (se houver) com o desconto do ano, senão o do ano. */
+export function priceForAssociate(base: FeePrice | null, individualCents: number | undefined): FeePrice | null {
+  if (individualCents === undefined) return base;
+  return { monthlyCents: individualCents, discountPct: base?.discountPct ?? 0, deadline: base?.deadline ?? null };
+}
+
+export function suggestFeeMonths(year: number, splits: FeeSplit[], records: FeeRecord[],
+  price?: FeePrice | null | ((associateId: string) => FeePrice | null)): FeeSuggestion[] {
+  const priceOf = typeof price === "function" ? price : () => price ?? null;
   const taken = new Set(records.map((r) => `${r.associateId}:${r.month}`));
   const result: FeeSuggestion[] = [];
   const pending = splits
@@ -132,12 +141,14 @@ export function suggestFeeMonths(year: number, splits: FeeSplit[], records: FeeR
       taken.add(`${split.associateId}:${month}`);
       result.push({ associateId: split.associateId, month, splitId: split.splitId, status: "pago", ...extra });
     };
-    if (!price) { push(ordered[0]); continue; }
-    if (isIntegralPayment(split, price)) { ordered.forEach((month) => push(month, { integral: true })); continue; }
-    const whole = Math.floor(split.amountCents / price.monthlyCents);
-    const rest = split.amountCents % price.monthlyCents;
+    const own = priceOf(split.associateId);
+    // sem valor (ou valor zero, ex.: bolsa integral) não há como conferir: um mês por rateio
+    if (!own || own.monthlyCents <= 0) { push(ordered[0]); continue; }
+    if (isIntegralPayment(split, own)) { ordered.forEach((month) => push(month, { integral: true })); continue; }
+    const whole = Math.floor(split.amountCents / own.monthlyCents);
+    const rest = split.amountCents % own.monthlyCents;
     ordered.slice(0, whole).forEach((month) => push(month));
-    if (rest > 0 && ordered[whole] !== undefined) push(ordered[whole], { status: "atencao", note: `pagou ${brl(rest)} de ${brl(price.monthlyCents)}` });
+    if (rest > 0 && ordered[whole] !== undefined) push(ordered[whole], { status: "atencao", note: `pagou ${brl(rest)} de ${brl(own.monthlyCents)}` });
   }
   return result;
 }
@@ -158,6 +169,7 @@ export function feeBalance(row: Pick<FeeRow, "exemption">, splits: FeeSplit[], y
   return { expected, received, open: Math.max(0, expected - received), integral };
 }
 
+/** `atrasado` soma os atrasados calculados e os "não pago" registrados. */
 export type MonthSummary = { pago: number; atencao: number; atrasado: number };
 
 /** Totais por mês (pessoas não isentas). */
@@ -167,6 +179,7 @@ export function monthSummary(states: CellState[][]): MonthSummary[] {
     for (const row of states) {
       const state = row[column];
       if (state === "pago" || state === "atencao" || state === "atrasado") summary[state] += 1;
+      else if (state === "nao_pago") summary.atrasado += 1;
     }
     return summary;
   });
@@ -218,7 +231,8 @@ export function buildFeeRows(input: {
       return {
         associate, exemption, cells,
         paid: cells.filter((c) => c.state === "pago").length,
-        overdue: cells.filter((c) => c.state === "atrasado").length,
+        // atrasado (calculado) e não pago (registrado) contam como dívida
+        overdue: cells.filter((c) => c.state === "atrasado" || c.state === "nao_pago").length,
       };
     });
 }

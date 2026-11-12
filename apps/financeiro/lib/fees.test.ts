@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brazilHolidays, buildFeeRows, cellState, feeAmounts, feeBalance, dueDate, easter, monthSummary, overdueRanking, suggestFeeMonths, todayInSaoPaulo, type FeeSplit } from "./fees";
+import { brazilHolidays, buildFeeRows, cellState, feeAmounts, feeBalance, priceForAssociate, dueDate, easter, monthSummary, overdueRanking, suggestFeeMonths, todayInSaoPaulo, type FeeSplit } from "./fees";
 
 describe("feriados", () => {
   it("calcula a Páscoa e os feriados móveis", () => {
@@ -126,5 +126,25 @@ describe("valor do ano", () => {
     expect(feeBalance({ exemption: null }, [split("s1", "2026-03-20", 54000)], 2026, price)).toEqual({ expected: 54000, received: 54000, open: 0, integral: true });
     expect(feeBalance({ exemption: null }, [split("s1", "2026-04-20", 12000)], 2026, price)).toEqual({ expected: 60000, received: 12000, open: 48000, integral: false });
     expect(feeBalance({ exemption: { associateId: "a", reason: "x" } }, [], 2026, price).expected).toBe(0);
+  });
+});
+
+describe("valor individual e não pago", () => {
+  it("valor individual substitui o do ano e mantém o desconto", () => {
+    expect(priceForAssociate({ monthlyCents: 6000, discountPct: 10, deadline: "2026-03-31" }, 4000)).toEqual({ monthlyCents: 4000, discountPct: 10, deadline: "2026-03-31" });
+    expect(priceForAssociate(null, 0)).toEqual({ monthlyCents: 0, discountPct: 0, deadline: null });
+    const split = { splitId: "s", associateId: "irmao", entryId: "e", entryDate: "2026-04-05", amountCents: 8000, description: "", linkedPeriods: [] };
+    const result = suggestFeeMonths(2026, [split], [], (id) => priceForAssociate({ monthlyCents: 6000, discountPct: 0, deadline: null }, id === "irmao" ? 4000 : undefined));
+    expect(result.map((r) => [r.month, r.status])).toEqual([[4, "pago"], [5, "pago"]]);
+  });
+  it("não pago registrado conta como dívida", () => {
+    const rows = buildFeeRows({
+      year: 2026, today: "2026-03-01", settings: { dueRule: "dia_fixo", dueDay: 10, categoryId: null },
+      associates: [{ id: "a", name: "Ana", branch: "lobinho", section: null, active: true }],
+      records: [{ associateId: "a", month: 3, status: "nao_pago", note: "viagem", splitIds: [] }], exemptions: [], suggestions: [],
+    });
+    expect(rows[0].cells[0].state).toBe("nao_pago");
+    expect(rows[0].overdue).toBe(1);
+    expect(monthSummary([rows[0].cells.map((c) => c.state)])[0].atrasado).toBe(1);
   });
 });

@@ -20,8 +20,8 @@ function done(success?: string): FeeResult {
 export async function setFeeRecord(payload: unknown): Promise<FeeResult> {
   const parsed = z.object({
     associateId: z.uuid(), year, month,
-    status: z.enum(["pago", "atencao"]).nullable(),
-    note: z.string().trim().max(200, "Nota: no máximo 200 caracteres.").optional(),
+    status: z.enum(["pago", "atencao", "nao_pago"]).nullable(),
+    note: z.string().trim().max(200, "Observação: no máximo 200 caracteres.").optional(),
     splitIds: z.array(z.uuid()).max(50).default([]),
   }).safeParse(payload);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
@@ -107,4 +107,22 @@ export async function saveFeeYearSettings(_previous: FeeSettingsState, formData:
   revalidatePath("/cadastros");
   done();
   return { success: `Valores de ${parsed.data.year} salvos.` };
+}
+
+/** Valor individual da mensalidade do associado no ano (vazio remove e volta ao valor do ano). */
+export async function setFeeAssociatePrice(associateId: unknown, yearValue: unknown, monthly: unknown, reason: unknown): Promise<FeeResult> {
+  const parsed = z.object({ associateId: z.uuid(), year, monthly: z.string().trim(), reason: z.string().trim().max(120, "Motivo: no máximo 120 caracteres.") })
+    .safeParse({ associateId, year: yearValue, monthly, reason });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  const remove = parsed.data.monthly === "";
+  const cents = remove ? null : parseMoneyToCents(parsed.data.monthly);
+  if (!remove && (cents === null || cents < 0)) return { error: "Informe o valor mensal (ex.: 40,00)." };
+  if (!remove && parsed.data.reason.length < 2) return { error: "Informe o motivo (ex.: irmãos)." };
+  const ctx = await editorOrError("Sem permissão para registrar mensalidades.");
+  if ("error" in ctx) return { error: ctx.error };
+  const { error } = await ctx.supabase.rpc("set_fee_associate_price", {
+    p_associate_id: parsed.data.associateId, p_year: parsed.data.year, p_monthly_cents: cents, p_reason: remove ? null : parsed.data.reason,
+  });
+  if (error) return { error: error.message };
+  return done(remove ? "Valor individual removido." : "Valor individual salvo.");
 }

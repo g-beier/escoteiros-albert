@@ -77,6 +77,17 @@ do $$ begin
   if (select monthly_cents::text || '/' || annual_discount_pct from public.fee_year_settings) <> '6000/10.00' then raise exception 'FALHOU: valor do ano'; end if;
 end $$;
 
+\echo '--- valor individual'
+select public.set_fee_associate_price(:'bia', 2026, 4000, 'Irmãos');
+do $$ begin
+  if (select monthly_cents::text || ':' || reason from public.fee_associate_prices) <> '4000:Irmãos' then raise exception 'FALHOU: valor individual'; end if;
+  perform public.set_fee_associate_price((select id from public.associates where name = 'Bia'), 2026, 3000, '');
+  raise exception 'FALHOU: valor sem motivo aceito';
+exception when raise_exception then if sqlerrm not like 'Informe o motivo%' then raise; end if;
+end $$;
+select public.set_fee_associate_price(:'bia', 2026, null, null);
+do $$ begin if exists (select 1 from public.fee_associate_prices) then raise exception 'FALHOU: remover valor individual'; end if; end $$;
+
 \echo '--- excluir o lançamento desfaz o vínculo, o registro fica'
 select public.delete_ledger_entry(:'e1');
 do $$ begin

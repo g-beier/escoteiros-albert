@@ -2,8 +2,8 @@
 
 import { Fragment, useMemo, useOptimistic, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { IconCheck, IconChevronRight, IconDots, IconHelpCircle, IconSearch } from "@tabler/icons-react";
-import { confirmFeeSuggestions, setFeeExemption, setFeeRecord } from "@/app/mensalidades/actions";
+import { IconAlertTriangle, IconCheck, IconChevronRight, IconDots, IconHelpCircle, IconSearch, IconX } from "@tabler/icons-react";
+import { confirmFeeSuggestions, setFeeAssociatePrice, setFeeExemption, setFeeRecord } from "@/app/mensalidades/actions";
 import { FeeCell, FeeMark, STATE_LABELS, type CellChange } from "@/components/fees/fee-cell";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,20 +13,22 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { branchLabels, isScoutBranch, NO_SECTION } from "@/lib/associates";
-import { feeAmounts, feeBalance, FEE_MONTH_LABELS, FEE_MONTHS, monthSummary, type CellState, type FeePrice, type FeeRow, type FeeSplit, type FeeSuggestion } from "@/lib/fees";
+import { feeAmounts, feeBalance, priceForAssociate, FEE_MONTH_LABELS, FEE_MONTHS, monthSummary, type CellState, type FeePrice, type FeeRow, type FeeSplit, type FeeSuggestion } from "@/lib/fees";
 import { normalizeText } from "@/lib/statement-import";
 import { money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Optimistic = { associateId: string; month: number; state: CellState | null };
 
-const LEGEND: CellState[] = ["pago", "atencao", "atrasado", "sugestao", "vazio"];
+const LEGEND: CellState[] = ["pago", "atencao", "nao_pago", "atrasado", "sugestao", "vazio"];
 
 /** Grade de mensalidades do ano: associados × março a dezembro. */
-export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, price, onlyOverdue: initialOnlyOverdue = false }: {
+export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, price, individualPrices, onlyOverdue: initialOnlyOverdue = false }: {
   year: number; rows: FeeRow[]; suggestions: FeeSuggestion[]; splitsByAssociate: Record<string, FeeSplit[]>; canEdit: boolean;
   /** Valor do ano (nulo = não configurado: sem previsto/em aberto). */
   price: FeePrice | null;
+  /** Valores individuais do ano por associado. */
+  individualPrices: Record<string, { monthlyCents: number; reason: string }>;
   /** Começa mostrando só quem tem mensalidade atrasada (?atrasados=1). */
   onlyOverdue?: boolean;
 }) {
@@ -40,6 +42,7 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
   const sectionKey = (section: string | null | undefined) => section ?? NO_SECTION;
   const toggleSection = (key: string) => setCollapsed((set) => { const next = new Set(set); if (next.has(key)) next.delete(key); else next.add(key); return next; });
   const [exempting, setExempting] = useState<FeeRow | null>(null);
+  const [pricing, setPricing] = useState<FeeRow | null>(null);
   // estado otimista por caixinha, até o servidor responder
   const [optimistic, addOptimistic] = useOptimistic<Record<string, CellState | null>, Optimistic>({},
     (current, change) => ({ ...current, [`${change.associateId}:${change.month}`]: change.state }));
@@ -58,11 +61,13 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
     [year, visible, splitsByAssociate]);
   const filtered = visible.length !== rows.length;
   // previsto × recebido por associado (com valor do ano configurado)
-  const balances = useMemo(() => new Map(visible.map((row) => [row.associate.id, feeBalance(row, splitsByAssociate[row.associate.id] ?? [], year, price)])),
-    [visible, splitsByAssociate, year, price]);
+  const balances = useMemo(() => new Map(visible.map((row) => [row.associate.id, feeBalance(row, splitsByAssociate[row.associate.id] ?? [], year,
+    priceForAssociate(price, individualPrices[row.associate.id]?.monthlyCents))])),
+    [visible, splitsByAssociate, year, price, individualPrices]);
   const expectedTotal = [...balances.values()].reduce((sum, b) => sum + b.expected, 0);
   const openTotal = [...balances.values()].reduce((sum, b) => sum + b.open, 0);
-  const extra = price ? 1 : 0;
+  const hasPrices = Boolean(price) || Object.keys(individualPrices).length > 0;
+  const extra = hasPrices ? 1 : 0;
   const groups = useMemo(() => {
     if (!bySection) return [{ section: undefined as string | null | undefined, rows: visible }];
     const sections = [...new Set(visible.map((r) => r.associate.section?.trim() || null))]
@@ -86,14 +91,14 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
   }
 
   return <div className="grid gap-3">
-    <dl className="m-0 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-lg border bg-card px-4 py-2">
+    <dl className="m-0 flex flex-wrap items-stretch rounded-lg border bg-card py-2 [&>div+div]:border-l">
       <Figure label={`Recebido em ${year}${filtered ? " (na seleção)" : ""}`} value={money(amounts.total / 100)} className="text-success" />
       <Figure label="Pagamentos" value={String(amounts.count)} />
       {price && <Figure label={`Previsto (${money(price.monthlyCents / 100)}/mês)`} value={money(expectedTotal / 100)} />}
       {price && <Figure label="Em aberto" value={money(openTotal / 100)} className={openTotal > 0 ? "text-destructive" : undefined} />}
       {amounts.outsideGrid > 0 && <Figure label="Recebido em jan/fev" value={money(amounts.outsideGrid / 100)} />}
       {!price && <Tooltip>
-        <TooltipTrigger render={<button type="button" className="ml-auto grid size-6 place-items-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Por que não há previsto e em aberto?" />}>
+        <TooltipTrigger render={<button type="button" className="mx-4 ml-auto grid size-6 place-items-center self-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Por que não há previsto e em aberto?" />}>
           <IconHelpCircle className="size-4" aria-hidden />
         </TooltipTrigger>
         <TooltipContent className="max-w-64">Configure o valor de {year} em Configurações › Mensalidades para ver o previsto e o em aberto.</TooltipContent>
@@ -127,7 +132,7 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
               {FEE_MONTHS.map((m) => <th key={m} scope="col" className="w-10 px-1 py-2 text-center font-semibold">{FEE_MONTH_LABELS[m]}</th>)}
               <th scope="col" className="px-3 py-2 text-right font-semibold">Pagos</th>
               <th scope="col" className="px-3 py-2 text-right font-semibold" title="Rateios de mensalidade lançados no ano">Recebido</th>
-              {price && <th scope="col" className="px-3 py-2 text-right font-semibold" title="Previsto do ano menos o recebido">Em aberto</th>}
+              {hasPrices && <th scope="col" className="px-3 py-2 text-right font-semibold" title="Previsto do ano menos o recebido">Em aberto</th>}
               {canEdit && <th scope="col" className="w-10"><span className="sr-only">Ações</span></th>}
             </tr>
           </thead>
@@ -154,6 +159,7 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
                     {isScoutBranch(row.associate.branch) ? branchLabels[row.associate.branch] : row.associate.branch}
                     {row.associate.section && ` · ${row.associate.section}`}
                     {exempt && ` · isento: ${row.exemption!.reason}`}
+                    {individualPrices[row.associate.id] && <span className="text-foreground"> · {money(individualPrices[row.associate.id].monthlyCents / 100)}/mês ({individualPrices[row.associate.id].reason})</span>}
                     {!row.associate.active && " · inativo"}
                   </span>
                 </th>
@@ -163,13 +169,14 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
                 </td>)}
                 <td className="px-3 py-1 text-right num">{exempt ? "—" : `${paid}/${FEE_MONTHS.length}`}</td>
                 <td className="px-3 py-1 text-right num whitespace-nowrap">{amounts.byAssociate[row.associate.id] ? money(amounts.byAssociate[row.associate.id] / 100) : <span className="text-muted-foreground">—</span>}</td>
-                {price && <td className={cn("px-3 py-1 text-right num whitespace-nowrap", (balances.get(row.associate.id)?.open ?? 0) > 0 && "text-destructive")}>
+                {hasPrices && <td className={cn("px-3 py-1 text-right num whitespace-nowrap", (balances.get(row.associate.id)?.open ?? 0) > 0 && "text-destructive")}>
                   {exempt ? "—" : balances.get(row.associate.id)?.integral ? <span className="text-success" title="Pagamento integral com desconto">integral</span> : money((balances.get(row.associate.id)?.open ?? 0) / 100)}
                 </td>}
                 {canEdit && <td className="px-1 py-1">
                   <DropdownMenu>
                     <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações de ${row.associate.name}`} />}><IconDots /></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setPricing(row)}>{individualPrices[row.associate.id] ? "Alterar valor individual…" : `Valor individual em ${year}…`}</DropdownMenuItem>
                       {exempt
                         ? <DropdownMenuItem onClick={() => startTransition(async () => { const r = await setFeeExemption(row.associate.id, year, ""); if (r.error) toast.error(r.error); else toast.success(r.success); })}>Remover isenção de {year}</DropdownMenuItem>
                         : <DropdownMenuItem onClick={() => setExempting(row)}>Isentar em {year}…</DropdownMenuItem>}
@@ -182,12 +189,14 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
           <tfoot className="border-t bg-muted/50">
             <tr>
               <th scope="row" className="sticky left-0 bg-muted/50 px-3 py-1.5 text-left font-semibold">Por mês</th>
-              {summary.map((s, i) => <td key={FEE_MONTHS[i]} className="px-1 py-1.5 text-center text-[11px] leading-tight num">
-                <span className="block text-success" title="pagos">{s.pago}</span>
-                {s.atrasado > 0 && <span className="block text-destructive" title="atrasados">{s.atrasado}</span>}
-                {s.atencao > 0 && <span className="block text-amber-700" title="em atenção">{s.atencao}</span>}
+              {summary.map((s, i) => <td key={FEE_MONTHS[i]} className="px-1 py-1.5 text-center num">
+                <span className="grid justify-items-center gap-0.5">
+                  <Count value={s.pago} tone="bg-success/15 text-success" icon={<IconCheck className="size-3" aria-hidden />} label="pagos" />
+                  {s.atrasado > 0 && <Count value={s.atrasado} tone="bg-destructive text-white" icon={<IconX className="size-3" aria-hidden />} label="atrasados ou não pagos" />}
+                  {s.atencao > 0 && <Count value={s.atencao} tone="bg-amber-300 text-amber-950" icon={<IconAlertTriangle className="size-3" aria-hidden />} label="em atenção" />}
+                </span>
               </td>)}
-              <td colSpan={(canEdit ? 3 : 2) + extra} className="px-3 py-1.5 text-right text-[11px] text-muted-foreground">verde pagos · vermelho atrasados · amarelo atenção</td>
+              <td colSpan={(canEdit ? 3 : 2) + extra} className="px-3 py-1.5 text-right text-[11px] text-muted-foreground">✓ pagos · ✗ atrasados/não pagos · ! atenção</td>
             </tr>
             <tr className="border-t">
               <th scope="row" className="sticky left-0 bg-muted/50 px-3 py-1.5 text-left font-semibold" title="Pela data do lançamento">Recebido no mês</th>
@@ -195,13 +204,21 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
                 {cents ? money(cents / 100) : <span className="text-muted-foreground">—</span>}</td>)}
               <td className="px-3 py-1.5 text-right text-muted-foreground">Total</td>
               <td className="px-3 py-1.5 text-right font-semibold whitespace-nowrap num">{money(amounts.total / 100)}</td>
-              {price && <td className={cn("px-3 py-1.5 text-right font-semibold whitespace-nowrap num", openTotal > 0 && "text-destructive")}>{money(openTotal / 100)}</td>}
+              {hasPrices && <td className={cn("px-3 py-1.5 text-right font-semibold whitespace-nowrap num", openTotal > 0 && "text-destructive")}>{money(openTotal / 100)}</td>}
               {canEdit && <td />}
             </tr>
           </tfoot>
         </table>
       </div>}
 
+    <PriceDialog row={pricing} year={year} pending={pending} current={pricing ? individualPrices[pricing.associate.id] : undefined}
+      yearPrice={price} onClose={() => setPricing(null)}
+      onConfirm={(row, monthly, reason) => startTransition(async () => {
+        const result = await setFeeAssociatePrice(row.associate.id, year, monthly, reason);
+        if (result.error) { toast.error(result.error); return; }
+        toast.success(result.success);
+        setPricing(null);
+      })} />
     <ExemptionDialog row={exempting} year={year} pending={pending} onClose={() => setExempting(null)}
       onConfirm={(row, reason) => startTransition(async () => {
         const result = await setFeeExemption(row.associate.id, year, reason);
@@ -213,6 +230,47 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
 }
 
 const REASONS = ["Voluntário(a)", "Bolsa", "Escotista", "Outro"];
+const PRICE_REASONS = ["Irmãos", "Combinação", "Bolsa parcial"];
+
+/** Valor individual do associado no ano: substitui o valor do ano; o desconto do integral também vale sobre ele. */
+function PriceDialog({ row, year, current, yearPrice, pending, onClose, onConfirm }: {
+  row: FeeRow | null; year: number; current?: { monthlyCents: number; reason: string }; yearPrice: FeePrice | null; pending: boolean;
+  onClose: () => void; onConfirm: (row: FeeRow, monthly: string, reason: string) => void;
+}) {
+  return <Dialog open={row !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <DialogContent>
+      {row && <PriceForm key={row.associate.id} row={row} year={year} current={current} yearPrice={yearPrice} pending={pending} onClose={onClose} onConfirm={onConfirm} />}
+    </DialogContent>
+  </Dialog>;
+}
+
+function PriceForm({ row, year, current, yearPrice, pending, onClose, onConfirm }: {
+  row: FeeRow; year: number; current?: { monthlyCents: number; reason: string }; yearPrice: FeePrice | null; pending: boolean;
+  onClose: () => void; onConfirm: (row: FeeRow, monthly: string, reason: string) => void;
+}) {
+  const [monthly, setMonthly] = useState(current ? (current.monthlyCents / 100).toFixed(2).replace(".", ",") : "");
+  const [reason, setReason] = useState(current?.reason ?? "");
+  return <form className="grid gap-4" onSubmit={(event) => { event.preventDefault(); onConfirm(row, monthly, reason); }}>
+    <DialogHeader>
+      <DialogTitle>Valor individual de {row.associate.name} em {year}</DialogTitle>
+      <DialogDescription>
+        Substitui {yearPrice ? <>o valor do ano (<span className="num">{money(yearPrice.monthlyCents / 100)}</span>/mês)</> : "o valor do ano"} no previsto, no em aberto e nas sugestões. O desconto do pagamento integral também vale sobre ele.
+      </DialogDescription>
+    </DialogHeader>
+    <div className="flex flex-wrap gap-3">
+      <div className="grid gap-1.5"><Label htmlFor="price-monthly">Mensalidade (R$)</Label>
+        <Input id="price-monthly" inputMode="decimal" placeholder="Ex.: 40,00" value={monthly} onChange={(e) => setMonthly(e.target.value)} className="w-32 text-right num" required /></div>
+      <div className="grid min-w-56 flex-1 gap-1.5"><Label htmlFor="price-reason">Motivo</Label>
+        <Input id="price-reason" value={reason} maxLength={120} onChange={(e) => setReason(e.target.value)} list="price-reasons" required minLength={2} />
+        <datalist id="price-reasons">{PRICE_REASONS.map((r) => <option key={r} value={r} />)}</datalist></div>
+    </div>
+    <DialogFooter>
+      {current && <Button type="button" variant="ghost" className="mr-auto" disabled={pending} onClick={() => onConfirm(row, "", "")}>Remover valor individual</Button>}
+      <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+      <Button type="submit" disabled={pending}>Salvar</Button>
+    </DialogFooter>
+  </form>;
+}
 
 function ExemptionDialog({ row, year, pending, onClose, onConfirm }: { row: FeeRow | null; year: number; pending: boolean; onClose: () => void; onConfirm: (row: FeeRow, reason: string) => void }) {
   const [reason, setReason] = useState("");
@@ -239,8 +297,15 @@ function ExemptionDialog({ row, year, pending, onClose, onConfirm }: { row: FeeR
 
 /** Número da faixa de totais: rótulo pequeno e valor em destaque, lado a lado com os outros. */
 function Figure({ label, value, className }: { label: string; value: string; className?: string }) {
-  return <div className="flex items-baseline gap-2">
+  return <div className="grid min-w-36 gap-0.5 px-5 py-1">
     <dt className="text-xs text-muted-foreground">{label}</dt>
-    <dd className={cn("m-0 num text-base font-bold", className)}>{value}</dd>
+    <dd className={cn("m-0 num text-lg leading-tight font-bold", className)}>{value}</dd>
   </div>;
+}
+
+/** Contador do rodapé: ícone + número, para não depender só da cor. */
+function Count({ value, tone, icon, label }: { value: number; tone: string; icon: React.ReactNode; label: string }) {
+  return <span className={cn("inline-flex items-center gap-0.5 rounded px-1 text-xs font-semibold", tone)} title={`${value} ${label}`}>
+    {icon}{value}<span className="sr-only"> {label}</span>
+  </span>;
 }
