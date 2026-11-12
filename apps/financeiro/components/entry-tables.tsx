@@ -6,7 +6,7 @@ import { dateBR, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { IconArrowDown, IconArrowUp, IconCircleCheck, IconPaperclip } from "@tabler/icons-react";
+import { IconArrowDown, IconArrowUp, IconPaperclip } from "@tabler/icons-react";
 import type { SplitRow, LedgerRow } from "@/lib/entry-queries";
 import type { SortOrder } from "@/lib/filters";
 import { MultiFilter } from "@/components/entries/multi-filter";
@@ -16,7 +16,12 @@ import { OfxIds } from "@/components/entries/ofx-ids";
 export type { SplitRow, LedgerRow };
 
 const cell = "px-2.5 py-1 align-middle whitespace-nowrap";
-const wrapCell = "px-2.5 py-1 align-middle whitespace-normal min-w-48";
+/** Texto longo numa linha só, cortado com reticências; o texto inteiro fica no `title`. */
+const clip = (max: string) => cn("block truncate", max);
+
+function Clip({ text, max }: { text: string | null | undefined; max: string }) {
+  return text ? <span className={clip(max)} title={text}>{text}</span> : <span className="text-muted-foreground">—</span>;
+}
 const headCell = "h-8 px-2.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase";
 const amountCell = (cents: number) => cn(cell, "text-right font-semibold num whitespace-nowrap", cents < 0 && "text-destructive");
 
@@ -49,7 +54,7 @@ function Head({ columns, order, sortHref, select, virtual }: { columns: { label:
 function CategoryTag({ code, name, kind }: { code: string | null; name: string; kind: "receita" | "despesa" | null }) {
   return <span className={cn("inline-flex max-w-full items-center md:max-w-72 gap-1 truncate rounded px-1.5 py-0.5 font-medium",
     kind === "receita" ? "bg-success-soft text-success" : kind === "despesa" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground")} title={code ? `${code} ${name}` : name}>
-    {code && <span className="num opacity-80">{code}</span>}{name}
+    {code && <span className="num shrink-0 opacity-80">{code}</span>}<span className="min-w-0 truncate">{name}</span>
   </span>;
 }
 
@@ -62,7 +67,6 @@ function AttachmentClip({ count }: { count?: number }) {
   </span>;
 }
 
-const ReconciledMark = () => <IconCircleCheck className="mr-1 inline size-3.5 align-[-2px] text-success" aria-label="Conciliado com o extrato" title="Conciliado com o extrato" />;
 
 const Empty = ({ children }: { children: React.ReactNode }) => <div className="px-6 py-12 text-center text-muted-foreground">{children}</div>;
 
@@ -143,12 +147,12 @@ export function LedgerTable({ rows, filtered, order, sortHref, scroller }: { row
         return <EntryRow key={row.entry_id} entryId={row.entry_id} ref={measure} data-index={index} aria-rowindex={virtual ? index + 2 : undefined} className={cn(stripe(index))}>
           {canEdit && <TableCell className="px-2.5 py-1 align-middle" onClick={(event) => event.stopPropagation()}><SelectRow row={row} /></TableCell>}
           <TableCell className={cn(cell, "whitespace-nowrap num")}>{dateBR(row.entry_date)}</TableCell>
-          <TableCell className={wrapCell}><EntryLink entryId={row.entry_id}>{row.name}</EntryLink></TableCell>
-          <TableCell className={cell}>{row.account_name}</TableCell>
-          <TableCell className={cell}>{row.payment_method_name}</TableCell>
+          <TableCell className={cell} title={row.name}><EntryLink entryId={row.entry_id} className={clip("max-w-96")}>{row.name}</EntryLink></TableCell>
+          <TableCell className={cell}><Clip text={row.account_name} max="max-w-44" /></TableCell>
+          <TableCell className={cell}><Clip text={row.payment_method_name} max="max-w-40" /></TableCell>
           <TableCell className={cell}><span className="inline-flex items-center gap-1.5"><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} /><AttachmentClip count={row.attachment_count} /></span></TableCell>
           <TableCell className={cell}><OfxIds ids={row.external_ids ?? []} /></TableCell>
-          <TableCell className={amountCell(row.total_cents)}>{row.reconciled && <ReconciledMark />}{money(row.total_cents / 100)}</TableCell>
+          <TableCell className={amountCell(row.total_cents)}>{money(row.total_cents / 100)}</TableCell>
           <TableCell className="px-1 py-0.5 align-middle"><EntryRowActions entryId={row.entry_id} filed={row.document_filed} /></TableCell>
         </EntryRow>;
       })}
@@ -161,7 +165,7 @@ export function SplitTable({ rows, filtered, order, sortHref, scroller }: { rows
   const { virtual, indexes, top, bottom, measure } = useVirtualRows(rows.map((row) => row.split_id), scroller);
   if (!rows.length) return <Empty>{filtered ? "Nenhum rateio corresponde aos filtros." : "Os rateios aparecerão depois do primeiro lançamento."}</Empty>;
   const columns = 11;
-  return <Table className="min-w-[1320px]" containerClassName="overflow-visible" aria-rowcount={virtual ? rows.length + 1 : undefined}>
+  return <Table className="min-w-[1220px]" containerClassName="overflow-visible" aria-rowcount={virtual ? rows.length + 1 : undefined}>
     <TableCaption className="sr-only">Um rateio por linha, repetindo os dados do lançamento de origem. Selecione uma linha para ver o lançamento.</TableCaption>
     <Head columns={[{ label: "Data", className: "w-24" }, { label: "Histórico" }, { label: "Conta" }, { label: "Forma pgto" }, { label: "Documentos" }, { label: "ID OFX" }, { label: "Valor", className: "text-right" }, { label: "Nome do Associado" }, { label: "Descrição" }, { label: "Rubrica" }]} order={order} sortHref={sortHref} virtual={virtual} />
     <TableBody>
@@ -170,16 +174,16 @@ export function SplitTable({ rows, filtered, order, sortHref, scroller }: { rows
         const row = rows[index];
         const continued = index > 0 && rows[index - 1].entry_id === row.entry_id;
         return <EntryRow key={row.split_id} entryId={row.entry_id} data-entry-id={row.entry_id} ref={measure} data-index={index} aria-rowindex={virtual ? index + 2 : undefined}
-          className={cn(stripe(index), continued && "[&_td]:border-t [&_td]:border-dashed")}>
+          className={cn(stripe(index))}>
           <TableCell className={cn(cell, "whitespace-nowrap num")}>{dateBR(row.entry_date)}</TableCell>
-          <TableCell className={wrapCell}><EntryLink entryId={row.entry_id} className="font-medium">{row.entry_name}</EntryLink></TableCell>
-          <TableCell className={cell}>{row.account_name}</TableCell>
-          <TableCell className={cell}>{row.payment_method_name}</TableCell>
+          <TableCell className={cell} title={row.entry_name}><EntryLink entryId={row.entry_id} className={cn("font-medium", clip("max-w-52"))}>{row.entry_name}</EntryLink></TableCell>
+          <TableCell className={cell}><Clip text={row.account_name} max="max-w-40" /></TableCell>
+          <TableCell className={cell}><Clip text={row.payment_method_name} max="max-w-36" /></TableCell>
           <TableCell className={cell}><span className="inline-flex items-center gap-1.5"><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} />{!continued && <AttachmentClip count={row.attachment_count} />}</span></TableCell>
           <TableCell className={cell}>{!continued && <OfxIds ids={row.external_ids ?? []} />}</TableCell>
-          <TableCell className={amountCell(row.amount_cents)}>{row.reconciled && !continued && <ReconciledMark />}{money(row.amount_cents / 100)}</TableCell>
-          <TableCell className={cell}>{row.associate_name ?? <span className="text-muted-foreground">—</span>}</TableCell>
-          <TableCell className={wrapCell}>{row.description}</TableCell>
+          <TableCell className={amountCell(row.amount_cents)}>{money(row.amount_cents / 100)}</TableCell>
+          <TableCell className={cell}><Clip text={row.associate_name} max="max-w-48" /></TableCell>
+          <TableCell className={cell}><Clip text={row.description} max="max-w-56" /></TableCell>
           <TableCell className={cell}><CategoryTag code={row.category_code} name={row.category_name} kind={row.category_kind} /></TableCell>
           <TableCell className="px-1 py-0.5 align-middle">{!continued && <EntryRowActions entryId={row.entry_id} filed={row.document_filed} />}</TableCell>
         </EntryRow>;
@@ -218,7 +222,7 @@ export function LedgerCards({ rows, filtered, order, sortHref }: { rows: LedgerR
       <div className="grid min-w-0 flex-1 gap-1">
         <div className="flex items-baseline justify-between gap-3">
           <EntryLink entryId={row.entry_id} className="min-w-0 text-sm break-words">{row.name}</EntryLink>
-          <span className={cardAmount(row.total_cents)}>{row.reconciled && <ReconciledMark />}{money(row.total_cents / 100)}</span>
+          <span className={cardAmount(row.total_cents)}>{money(row.total_cents / 100)}</span>
         </div>
         <Meta parts={[<span key="date" className="num">{dateBR(row.entry_date)}</span>, row.account_name, row.payment_method_name]} />
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
@@ -242,7 +246,7 @@ export function SplitCards({ rows, filtered, order, sortHref }: { rows: SplitRow
         <div className="grid min-w-0 flex-1 gap-1">
           <div className="flex items-baseline justify-between gap-3">
             <EntryLink entryId={row.entry_id} className="min-w-0 text-sm break-words">{row.entry_name}</EntryLink>
-            <span className={cardAmount(row.amount_cents)}>{row.reconciled && !continued && <ReconciledMark />}{money(row.amount_cents / 100)}</span>
+            <span className={cardAmount(row.amount_cents)}>{money(row.amount_cents / 100)}</span>
           </div>
           <Meta parts={[<span key="date" className="num">{dateBR(row.entry_date)}</span>, row.account_name, row.payment_method_name]} />
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
