@@ -1,13 +1,17 @@
 import { notFound } from "next/navigation";
 import { pageSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { InviteUser } from "@/components/invite-user";
-import { changeRole, removeUser } from "./actions";
+import { InviteUser, UserRoleForm } from "@/components/invite-user";
+import { removeUser } from "./actions";
 import { AppHeader } from "@/components/app-header";
-import { PAGE_BODY, PageHeader } from "@/components/nav/page-header";
+import { PageBody, PageHeader } from "@/components/nav/page-header";
+import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
 import { ConfirmRemove } from "@/components/confirm-remove";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
-const roleLabels = { admin: "Administrador", treasurer: "Tesoureiro", viewer: "Consulta" } as const;
+const headClass = "h-8 px-3 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase";
 
 export default async function UsersPage() {
   const { user, member: ownMembership } = await pageSession();
@@ -22,17 +26,35 @@ export default async function UsersPage() {
 
   return <div className="shell">
     <AppHeader role={ownMembership.role} email={user.email ?? ""} current="/usuarios" />
-    <main className={PAGE_BODY}>
-      <div><PageHeader title="Usuários" description="Convide pessoas do domínio institucional e defina o nível de acesso de cada uma." /></div>
-      <section className="card invite-card"><header className="card-head"><h2 className="card-title">Convidar usuário</h2><span className="badge">@escoteirosalbert.com.br</span></header><div style={{ padding: 22 }}><InviteUser /></div></section>
-      <section className="card"><header className="card-head"><h2 className="card-title">Pessoas com acesso</h2><span className="muted" style={{ fontSize: 12 }}>{memberships?.length ?? 0} usuários</span></header>
-        <div className="table-wrap"><table><caption className="sr-only">Usuários com acesso ao grupo</caption><thead><tr><th scope="col">Usuário</th><th scope="col">Status</th><th scope="col">Papel</th><th scope="col"><span className="sr-only">Ações</span></th></tr></thead><tbody>{(memberships ?? []).map((membership) => {
-          const authUser = authUsers.get(membership.user_id);
-          const confirmed = Boolean(authUser?.email_confirmed_at);
-          const email = authUser?.email ?? "Usuário indisponível";
-          return <tr key={membership.user_id}><td><strong>{email}</strong>{membership.user_id === user.id && <span className="muted"> (você)</span>}</td><td><span className={`badge ${confirmed ? "" : "pending-badge"}`}>{confirmed ? "Ativo" : "Convite pendente"}</span></td><td><form action={changeRole} className="inline-form"><input type="hidden" name="userId" value={membership.user_id} /><label className="sr-only" htmlFor={`role-${membership.user_id}`}>Papel de {email}</label><select id={`role-${membership.user_id}`} className="input compact" name="role" defaultValue={membership.role}>{Object.entries(roleLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select><button className="button secondary" aria-label={`Salvar papel de ${email}`}>Salvar</button></form></td><td>{membership.user_id !== user.id && <form action={removeUser}><input type="hidden" name="userId" value={membership.user_id} /><ConfirmRemove email={email} /></form>}</td></tr>;
-        })}</tbody></table></div>
-      </section>
-    </main>
+    <PageBody>
+      <PageHeader title="Usuários" description="Convide pessoas do domínio institucional e defina o nível de acesso de cada uma." />
+      <SectionCard>
+        <SectionHeader title="Convidar usuário"><Badge variant="outline">@escoteirosalbert.com.br</Badge></SectionHeader>
+        <div className="p-4"><InviteUser /></div>
+      </SectionCard>
+      <SectionCard>
+        <SectionHeader title="Pessoas com acesso"><SectionCount>{memberships?.length ?? 0} usuários</SectionCount></SectionHeader>
+        <div className="overflow-x-auto"><Table className="min-w-[720px]">
+          <TableCaption className="sr-only">Usuários com acesso ao grupo</TableCaption>
+          <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
+            <TableHead className={headClass}>Usuário</TableHead>
+            <TableHead className={cn(headClass, "w-40")}>Status</TableHead>
+            <TableHead className={cn(headClass, "w-64")}>Papel</TableHead>
+            <TableHead className={cn(headClass, "w-28")}><span className="sr-only">Ações</span></TableHead>
+          </TableRow></TableHeader>
+          <TableBody>{(memberships ?? []).map((membership) => {
+            const authUser = authUsers.get(membership.user_id);
+            const confirmed = Boolean(authUser?.email_confirmed_at);
+            const email = authUser?.email ?? "Usuário indisponível";
+            return <TableRow key={membership.user_id}>
+              <TableCell className="px-3 py-1.5"><span className="font-semibold">{email}</span>{membership.user_id === user.id && <span className="text-muted-foreground"> (você)</span>}</TableCell>
+              <TableCell className="px-3 py-1.5"><Badge className={confirmed ? "bg-success-soft text-success" : "bg-[#f5eed1] text-[#725d0d]"}>{confirmed ? "Ativo" : "Convite pendente"}</Badge></TableCell>
+              <TableCell className="px-3 py-1.5"><UserRoleForm userId={membership.user_id} email={email} role={membership.role} /></TableCell>
+              <TableCell className="px-3 py-1.5">{membership.user_id !== user.id && <form action={removeUser}><input type="hidden" name="userId" value={membership.user_id} /><ConfirmRemove email={email} /></form>}</TableCell>
+            </TableRow>;
+          })}</TableBody>
+        </Table></div>
+      </SectionCard>
+    </PageBody>
   </div>;
 }
