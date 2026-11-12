@@ -77,7 +77,7 @@ export default async function Dashboard() {
           href={(pendingDocs ?? 0) > 0 ? `/lancamentos?pasta=pendente&de=${ALL_DATES}` : undefined} icon={(pendingDocs ?? 0) > 0} />
       </section>
 
-      <div className="grid items-start gap-5 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid items-start gap-5 lg:grid-cols-2 xl:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)]">
         <section aria-labelledby="monthly-title" className="overflow-hidden rounded-lg border bg-card">
           <h2 id="monthly-title" className="m-0 border-b px-4 py-2.5 text-sm font-semibold">Mês a mês</h2>
           <div className="overflow-x-auto">
