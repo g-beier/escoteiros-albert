@@ -175,3 +175,34 @@ export function overdueRanking(rows: FeeRow[]) {
     .sort((a, b) => b.overdue - a.overdue || byName(a.associate, b.associate))
     .map((row) => ({ associate: row.associate, overdue: row.overdue }));
 }
+
+export type FeeAmounts = {
+  /** Total recebido por associado no ano (centavos). */
+  byAssociate: Record<string, number>;
+  /** Recebido em cada mês de FEE_MONTHS, pela data do lançamento. */
+  byMonth: number[];
+  /** Recebido em janeiro e fevereiro (fora da grade). */
+  outsideGrid: number;
+  total: number;
+  count: number;
+};
+
+/**
+ * Valores de mensalidade recebidos no ano: rateios da rubrica de mensalidade lançados no ano, pela data do
+ * lançamento (um pagamento de vários meses conta uma vez, no mês em que entrou).
+ */
+export function feeAmounts(year: number, splitsByAssociate: Record<string, FeeSplit[]>): FeeAmounts {
+  const result: FeeAmounts = { byAssociate: {}, byMonth: FEE_MONTHS.map(() => 0), outsideGrid: 0, total: 0, count: 0 };
+  for (const [associateId, splits] of Object.entries(splitsByAssociate)) {
+    for (const split of splits) {
+      if (!split.entryDate.startsWith(`${year}-`)) continue;
+      const month = Number(split.entryDate.slice(5, 7));
+      const column = FEE_MONTHS.indexOf(month as FeeMonth);
+      if (column >= 0) result.byMonth[column] += split.amountCents; else result.outsideGrid += split.amountCents;
+      result.byAssociate[associateId] = (result.byAssociate[associateId] ?? 0) + split.amountCents;
+      result.total += split.amountCents;
+      result.count += 1;
+    }
+  }
+  return result;
+}

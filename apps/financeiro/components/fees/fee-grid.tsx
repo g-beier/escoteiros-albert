@@ -12,8 +12,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { branchLabels, isScoutBranch, NO_SECTION } from "@/lib/associates";
-import { FEE_MONTH_LABELS, FEE_MONTHS, monthSummary, type CellState, type FeeRow, type FeeSplit, type FeeSuggestion } from "@/lib/fees";
+import { feeAmounts, FEE_MONTH_LABELS, FEE_MONTHS, monthSummary, type CellState, type FeeRow, type FeeSplit, type FeeSuggestion } from "@/lib/fees";
 import { normalizeText } from "@/lib/statement-import";
+import { money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Optimistic = { associateId: string; month: number; state: CellState | null };
@@ -40,6 +41,10 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }:
   const stateOf = (row: FeeRow, index: number) => optimistic[`${row.associate.id}:${FEE_MONTHS[index]}`] ?? row.cells[index].state;
   const summary = monthSummary(visible.filter((r) => !r.exemption).map((row) => row.cells.map((_, i) => stateOf(row, i))));
   const exemptCount = rows.filter((r) => r.exemption).length;
+  // valores recebidos (rateios de mensalidade lançados no ano) de quem está na tela
+  const amounts = useMemo(() => feeAmounts(year, Object.fromEntries(visible.map((row) => [row.associate.id, splitsByAssociate[row.associate.id] ?? []]))),
+    [year, visible, splitsByAssociate]);
+  const filtered = visible.length !== rows.length;
   const groups = useMemo(() => {
     if (!bySection) return [{ section: undefined as string | null | undefined, rows: visible }];
     const sections = [...new Set(visible.map((r) => r.associate.section?.trim() || null))]
@@ -63,6 +68,21 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }:
   }
 
   return <div className="grid gap-3">
+    <dl className="m-0 flex flex-wrap gap-3">
+      <div className="grid gap-0.5 rounded-lg border bg-card px-4 py-2.5">
+        <dt className="text-xs text-muted-foreground">Recebido em {year}{filtered && " (na seleção)"}</dt>
+        <dd className="m-0 num text-xl font-bold text-success">{money(amounts.total / 100)}</dd>
+      </div>
+      <div className="grid gap-0.5 rounded-lg border bg-card px-4 py-2.5">
+        <dt className="text-xs text-muted-foreground">Pagamentos</dt>
+        <dd className="m-0 num text-xl font-bold">{amounts.count}</dd>
+      </div>
+      {amounts.outsideGrid > 0 && <div className="grid gap-0.5 rounded-lg border bg-card px-4 py-2.5">
+        <dt className="text-xs text-muted-foreground">Recebido em jan/fev</dt>
+        <dd className="m-0 num text-xl font-bold">{money(amounts.outsideGrid / 100)}</dd>
+      </div>}
+    </dl>
+
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
       <div className="relative w-64">
         <IconSearch className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
@@ -86,11 +106,12 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }:
               <th scope="col" className="sticky left-0 z-10 bg-muted px-3 py-2 text-left font-semibold">Associado</th>
               {FEE_MONTHS.map((m) => <th key={m} scope="col" className="w-10 px-1 py-2 text-center font-semibold">{FEE_MONTH_LABELS[m]}</th>)}
               <th scope="col" className="px-3 py-2 text-right font-semibold">Pagos</th>
+              <th scope="col" className="px-3 py-2 text-right font-semibold" title="Rateios de mensalidade lançados no ano">Recebido</th>
               {canEdit && <th scope="col" className="w-10"><span className="sr-only">Ações</span></th>}
             </tr>
           </thead>
           <tbody>{groups.map((group) => <Fragment key={group.section ?? "__all"}>
-            {bySection && <tr className="bg-muted/50"><th scope="colgroup" colSpan={FEE_MONTHS.length + (canEdit ? 3 : 2)} className="sticky left-0 px-3 py-1.5 text-left text-xs font-semibold">
+            {bySection && <tr className="bg-muted/50"><th scope="colgroup" colSpan={FEE_MONTHS.length + (canEdit ? 4 : 3)} className="sticky left-0 px-3 py-1.5 text-left text-xs font-semibold">
               {group.section ?? NO_SECTION} <span className="font-normal text-muted-foreground">({group.rows.length})</span></th></tr>}
             {group.rows.map((row) => {
               const exempt = Boolean(row.exemption);
@@ -110,6 +131,7 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }:
                     splits={splitsByAssociate[row.associate.id] ?? []} canEdit={canEdit} exempt={exempt} onChange={(value) => change(row, cell.month, value)} />
                 </td>)}
                 <td className="px-3 py-1 text-right num">{exempt ? "—" : `${paid}/${FEE_MONTHS.length}`}</td>
+                <td className="px-3 py-1 text-right num whitespace-nowrap">{amounts.byAssociate[row.associate.id] ? money(amounts.byAssociate[row.associate.id] / 100) : <span className="text-muted-foreground">—</span>}</td>
                 {canEdit && <td className="px-1 py-1">
                   <DropdownMenu>
                     <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações de ${row.associate.name}`} />}><IconDots /></DropdownMenuTrigger>
@@ -131,7 +153,15 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit }:
                 {s.atrasado > 0 && <span className="block text-destructive" title="atrasados">{s.atrasado}</span>}
                 {s.atencao > 0 && <span className="block text-amber-700" title="em atenção">{s.atencao}</span>}
               </td>)}
-              <td colSpan={canEdit ? 2 : 1} className="px-3 py-1.5 text-right text-[11px] text-muted-foreground">verde pagos · vermelho atrasados · amarelo atenção</td>
+              <td colSpan={canEdit ? 3 : 2} className="px-3 py-1.5 text-right text-[11px] text-muted-foreground">verde pagos · vermelho atrasados · amarelo atenção</td>
+            </tr>
+            <tr className="border-t">
+              <th scope="row" className="sticky left-0 bg-muted/50 px-3 py-1.5 text-left font-semibold" title="Pela data do lançamento">Recebido no mês</th>
+              {amounts.byMonth.map((cents, i) => <td key={FEE_MONTHS[i]} className="px-1 py-1.5 text-center text-[11px] whitespace-nowrap num">
+                {cents ? money(cents / 100) : <span className="text-muted-foreground">—</span>}</td>)}
+              <td className="px-3 py-1.5 text-right text-muted-foreground">Total</td>
+              <td className="px-3 py-1.5 text-right font-semibold whitespace-nowrap num">{money(amounts.total / 100)}</td>
+              {canEdit && <td />}
             </tr>
           </tfoot>
         </table>

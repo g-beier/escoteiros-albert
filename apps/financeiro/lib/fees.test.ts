@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brazilHolidays, buildFeeRows, cellState, dueDate, easter, monthSummary, overdueRanking, suggestFeeMonths, todayInSaoPaulo, type FeeSplit } from "./fees";
+import { brazilHolidays, buildFeeRows, cellState, feeAmounts, dueDate, easter, monthSummary, overdueRanking, suggestFeeMonths, todayInSaoPaulo, type FeeSplit } from "./fees";
 
 describe("feriados", () => {
   it("calcula a Páscoa e os feriados móveis", () => {
@@ -86,5 +86,20 @@ describe("buildFeeRows e overdueRanking", () => {
   });
   it("ranking de atrasos em ordem decrescente, sem isentos", () => {
     expect(overdueRanking(rows).map((r) => [r.associate.name, r.overdue])).toEqual([["ana", 2], ["Bruno", 2], ["Carla", 2]]);
+  });
+});
+
+describe("feeAmounts", () => {
+  it("soma por associado e por mês do lançamento; jan/fev fora da grade; outro ano não conta", () => {
+    const split = (associateId: string, entryDate: string, amountCents: number): FeeSplit =>
+      ({ splitId: `${associateId}${entryDate}`, associateId, entryId: "e", entryDate, amountCents, description: "", linkedPeriods: [] });
+    const result = feeAmounts(2026, {
+      a: [split("a", "2026-03-08", 9000), split("a", "2026-04-02", 3000)],
+      b: [split("b", "2026-02-10", 3000), split("b", "2025-12-20", 3000)],
+    });
+    expect(result.byAssociate).toEqual({ a: 12000, b: 3000 });
+    expect(result.byMonth.slice(0, 2)).toEqual([9000, 3000]);
+    expect(result.outsideGrid).toBe(3000);
+    expect([result.total, result.count]).toEqual([15000, 3]);
   });
 });
