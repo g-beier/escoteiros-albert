@@ -160,7 +160,7 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
   const allColumnLinesSelected = columnLines.length > 0 && columnLines.every((l) => selectedLines.has(l.id));
 
   return <div className="grid gap-4">
-    {data.truncated && <p className="m-0 rounded-lg bg-secondary px-3 py-2 text-xs">Período com muitas linhas: só as primeiras 2.000 de cada lado foram carregadas. Reduza o período.</p>}
+    {data.truncated && <p className="m-0 rounded-lg bg-secondary px-3 py-2 text-xs">Período com muitas linhas: só as primeiras 5.000 de cada lado foram carregadas. Reduza o período.</p>}
 
     {suggestionCount > 0 && <section aria-label="Sugestões" className="overflow-hidden rounded-lg border border-primary/30 bg-card">
       <div className="flex flex-wrap items-center gap-2 border-b bg-primary/5 px-3 py-2">
@@ -285,7 +285,22 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
         setSelectedLines((s) => { const next = new Set(s); for (const l of lines) next.delete(l.id); return next; });
       })} />
     <BulkCreateDialog lines={creating} paymentMethods={data.paymentMethods} pending={pending} onClose={() => setCreating(null)}
-      onConfirm={(items) => run(() => createEntriesFromLines(items), () => { setCreating(null); clearSelection(); })} />
+      onConfirm={(items) => startTransition(async () => {
+        // em lotes de BULK_BATCH: cada lote é tudo-ou-nada; as linhas sem forma continuam selecionadas
+        let created = 0;
+        for (let start = 0; start < items.length; start += BULK_BATCH) {
+          const result = await createEntriesFromLines(items.slice(start, start + BULK_BATCH));
+          if (result.error) {
+            toast.error(created ? `${created} criados; o lote seguinte falhou: ${result.error}` : result.error, { duration: 15_000 });
+            break;
+          }
+          created += Math.min(BULK_BATCH, items.length - start);
+        }
+        const done = new Set(items.slice(0, created).map((item) => item.lineId));
+        if (created) toast.success(`${created} ${created === 1 ? "lançamento criado e conciliado" : "lançamentos criados e conciliados"}. Recategorize em Lançamentos › Por rubrica.`);
+        setCreating(null);
+        setSelectedLines((set) => new Set([...set].filter((id) => !done.has(id))));
+      })} />
     <MoveDialog entry={moving} accounts={data.otherAccounts} pending={pending} onClose={() => setMoving(null)}
       onConfirm={(entry, accountId) => run(() => setEntryAccount(entry.id, accountId), () => setMoving(null))} />
   </div>;
@@ -369,6 +384,9 @@ function BulkCreateDialog({ lines, paymentMethods, pending, onClose, onConfirm }
   </Dialog>;
 }
 
+const BULK_BATCH = 500;
+const BULK_VISIBLE = 300;
+
 function BulkCreateForm({ lines, paymentMethods, pending, onClose, onConfirm }: {
   lines: OpenLine[]; paymentMethods: BoardData["paymentMethods"]; pending: boolean; onClose: () => void; onConfirm: (items: BulkItem[]) => void;
 }) {
@@ -376,13 +394,18 @@ function BulkCreateForm({ lines, paymentMethods, pending, onClose, onConfirm }: 
     lineId: line.id, name: suggestedEntryName(line), paymentMethodId: guessPaymentMethod(line, paymentMethods) ?? "",
   })));
   const [allMethod, setAllMethod] = useState("");
+  const [showAll, setShowAll] = useState(false);
   const options = paymentMethods.filter((m) => m.active).map((m) => ({ value: m.id, label: m.name }));
   const update = (index: number, patch: Partial<BulkItem>) => setItems((current) => current.map((item, i) => i === index ? { ...item, ...patch } : item));
-  const missing = items.filter((item) => !item.paymentMethodId || item.name.trim().length < 2).length;
+  const isReady = (item: BulkItem) => !!item.paymentMethodId && item.name.trim().length >= 2;
+  const ready = items.filter(isReady);
+  const missing = items.length - ready.length;
   const income = lines.filter((l) => l.amountCents > 0).length;
-  return <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); if (!missing) onConfirm(items); }}>
+  // por padrão, só as que faltam completar; as prontas ficam a um clique
+  const rows = lines.map((line, index) => ({ line, index })).filter(({ index }) => showAll || !isReady(items[index]));
+  return <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); if (ready.length) onConfirm(ready); }}>
     <DialogHeader>
-      <DialogTitle>Criar {lines.length} {lines.length === 1 ? "lançamento" : "lançamentos"} a partir do extrato</DialogTitle>
+      <DialogTitle>Criar lançamentos a partir de {lines.length.toLocaleString("pt-BR")} {lines.length === 1 ? "linha" : "linhas"} do extrato</DialogTitle>
       <DialogDescription>
         Cada linha vira um lançamento com uma rubrica, já conciliado. A rubrica é automática:
         {income > 0 && <> {income} {income === 1 ? "entrada vai" : "entradas vão"} para <strong>1 Receitas</strong></>}
@@ -391,18 +414,24 @@ function BulkCreateForm({ lines, paymentMethods, pending, onClose, onConfirm }: 
         Depois, recategorize em Lançamentos › Por rubrica (filtrando pelas rubricas raiz).
       </DialogDescription>
     </DialogHeader>
+    <p className="m-0 text-xs">
+      <strong className="num text-success">{ready.length.toLocaleString("pt-BR")}</strong> {ready.length === 1 ? "pronta" : "prontas"} (forma de pagamento sugerida)
+      {missing > 0 && <> · <strong className="num text-destructive">{missing.toLocaleString("pt-BR")}</strong> sem forma de pagamento: completam aqui ou ficam selecionadas para depois</>}
+    </p>
     <div className="flex flex-wrap items-end gap-2">
-      <div className="grid gap-1.5"><Label htmlFor="bulk-method">Forma de pagamento para todas</Label>
+      <div className="grid gap-1.5"><Label htmlFor="bulk-method">Forma de pagamento</Label>
         <OptionSelect id="bulk-method" className="w-56" value={allMethod} onValueChange={setAllMethod} options={options} placeholder="Escolha…" /></div>
-      <Button type="button" variant="outline" disabled={!allMethod} onClick={() => setItems((current) => current.map((item) => ({ ...item, paymentMethodId: allMethod })))}>Aplicar a todas</Button>
+      <Button type="button" variant="outline" disabled={!allMethod || !missing} onClick={() => setItems((current) => current.map((item) => item.paymentMethodId ? item : { ...item, paymentMethodId: allMethod }))}>Aplicar às que faltam</Button>
+      <Button type="button" variant="ghost" disabled={!allMethod} onClick={() => setItems((current) => current.map((item) => ({ ...item, paymentMethodId: allMethod })))}>Aplicar a todas</Button>
+      <Label className="ml-auto font-normal"><Checkbox checked={showAll} onCheckedChange={(value) => setShowAll(value === true)} /> Mostrar também as prontas</Label>
     </div>
-    <div className="max-h-[50vh] overflow-y-auto rounded-md border">
+    {rows.length > 0 ? <div className="max-h-[50vh] overflow-y-auto rounded-md border">
       <table className="w-full min-w-0 text-xs">
         <thead className="sticky top-0 z-10 bg-muted text-left"><tr>
           <th className="px-2 py-1.5 font-semibold">Data</th><th className="px-2 py-1.5 font-semibold">Histórico</th>
           <th className="px-2 py-1.5 font-semibold">Forma</th><th className="px-2 py-1.5 text-right font-semibold">Valor</th>
         </tr></thead>
-        <tbody>{lines.map((line, index) => <tr key={line.id} className="border-t">
+        <tbody>{rows.slice(0, BULK_VISIBLE).map(({ line, index }) => <tr key={line.id} className="border-t">
           <td className="px-2 py-1 num whitespace-nowrap">{dateBR(line.date)}</td>
           <td className="px-2 py-1"><Input aria-label={`Histórico da linha de ${dateBR(line.date)}`} value={items[index].name} maxLength={200} title={line.description}
             onChange={(event) => update(index, { name: event.target.value })} aria-invalid={items[index].name.trim().length < 2 || undefined} /></td>
@@ -411,11 +440,13 @@ function BulkCreateForm({ lines, paymentMethods, pending, onClose, onConfirm }: 
           <td className="px-2 py-1 text-right"><Amount cents={line.amountCents} /></td>
         </tr>)}</tbody>
       </table>
-    </div>
+      {rows.length > BULK_VISIBLE && <p className="m-0 border-t px-2 py-1.5 text-xs text-muted-foreground">Mostrando {BULK_VISIBLE} de {rows.length.toLocaleString("pt-BR")}. Use “Aplicar às que faltam” para o restante.</p>}
+    </div> : <p className="m-0 rounded-md border px-3 py-4 text-xs text-muted-foreground">Todas as linhas têm forma de pagamento sugerida. Marque “Mostrar também as prontas” para revisar.</p>}
     <DialogFooter>
-      {missing > 0 && <span className="mr-auto self-center text-xs text-destructive">{missing} {missing === 1 ? "linha sem" : "linhas sem"} forma de pagamento ou histórico</span>}
       <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-      <Button type="submit" disabled={pending || missing > 0}>{pending ? "Criando…" : `Criar ${lines.length} ${lines.length === 1 ? "lançamento" : "lançamentos"}`}</Button>
+      <Button type="submit" disabled={pending || !ready.length}>{pending ? "Criando…"
+        : missing ? `Criar ${ready.length.toLocaleString("pt-BR")} prontas (${missing.toLocaleString("pt-BR")} ficam para depois)`
+        : `Criar ${ready.length.toLocaleString("pt-BR")} ${ready.length === 1 ? "lançamento" : "lançamentos"}`}</Button>
     </DialogFooter>
   </form>;
 }

@@ -4,6 +4,7 @@ import { ReconciliationBoard, type BoardData, type LinkSet } from "@/components/
 import { ReconciliationFilters } from "@/components/reconciliation/reconciliation-filters";
 import { byDateThenAmount, closingCheck, parsePeriod, suggestMatches, type OpenEntry, type OpenLine } from "@/lib/reconciliation";
 import { pageSession } from "@/lib/session";
+import { fetchPaged } from "@/lib/supabase/paged";
 import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
 
 export const metadata = { title: "Conciliação · GEAS Financeiro" };
@@ -17,7 +18,7 @@ type EntryRow = { entry_id: string; entry_date: string; name: string; payment_me
 type LinkRow = { link_set_id: string; statement_line_id: string; line_date: string; line_description: string; line_kind: string | null; line_counterparty: string | null; line_amount_cents: number; ledger_entry_id: string; entry_date: string; entry_name: string; entry_total_cents: number; created_at: string };
 type ImportRow = { period_from: string; period_to: string; opening_balance_cents: number | null; closing_balance_cents: number | null };
 
-const LIMIT = 2000;
+const LIMIT = 5000;
 
 export default async function ReconciliationPage({ searchParams }: { searchParams: Promise<RawParams> }) {
   const params = await searchParams;
@@ -45,25 +46,25 @@ export default async function ReconciliationPage({ searchParams }: { searchParam
   const placeholder = accounts.find((a) => a.name === PLACEHOLDER_ACCOUNT_NAME && a.id !== account.id);
   const entryAccounts = placeholder ? [account.id, placeholder.id] : [account.id];
   const [lines, entries, links, rejections, imports, methods] = await Promise.all([
-    supabase.from("statement_lines").select("id, line_date, description, kind, counterparty, amount_cents, status, ignored_reason, external_id, trn_type")
+    fetchPaged<LineRow>((from, to) => supabase.from("statement_lines").select("id, line_date, description, kind, counterparty, amount_cents, status, ignored_reason, external_id, trn_type")
       .eq("account_id", account.id).gte("line_date", period.from).lte("line_date", period.to)
-      .order("line_date").order("amount_cents").limit(LIMIT),
-    supabase.from("ledger_entry_rows").select("entry_id, entry_date, name, payment_method_name, total_cents, reconciled, outside_statement, account_id")
+      .order("line_date").order("amount_cents").order("id").range(from, to), LIMIT),
+    fetchPaged<EntryRow>((from, to) => supabase.from("ledger_entry_rows").select("entry_id, entry_date, name, payment_method_name, total_cents, reconciled, outside_statement, account_id")
       .eq("group_id", groupId).in("account_id", entryAccounts).eq("reconciled", false).gte("entry_date", period.from).lte("entry_date", period.to)
-      .order("entry_date").order("total_cents").limit(LIMIT),
-    supabase.from("reconciliation_link_rows").select("link_set_id, statement_line_id, line_date, line_description, line_kind, line_counterparty, line_amount_cents, ledger_entry_id, entry_date, entry_name, entry_total_cents, created_at")
+      .order("entry_date").order("total_cents").order("entry_id").range(from, to), LIMIT),
+    fetchPaged<LinkRow>((from, to) => supabase.from("reconciliation_link_rows").select("link_set_id, statement_line_id, line_date, line_description, line_kind, line_counterparty, line_amount_cents, ledger_entry_id, entry_date, entry_name, entry_total_cents, created_at")
       .eq("account_id", account.id).gte("line_date", period.from).lte("line_date", period.to)
-      .order("line_date").limit(LIMIT),
-    supabase.from("reconciliation_rejections").select("statement_line_id, ledger_entry_id, statement_lines!inner(account_id)")
-      .eq("statement_lines.account_id", account.id).limit(LIMIT * 5),
+      .order("line_date").order("link_id").range(from, to), LIMIT),
+    fetchPaged<{ statement_line_id: string; ledger_entry_id: string }>((from, to) => supabase.from("reconciliation_rejections").select("statement_line_id, ledger_entry_id, statement_lines!inner(account_id)")
+      .eq("statement_lines.account_id", account.id).order("statement_line_id").order("ledger_entry_id").range(from, to), LIMIT * 5),
     supabase.from("statement_imports").select("period_from, period_to, opening_balance_cents, closing_balance_cents")
       .eq("account_id", account.id).lte("period_from", period.to).gte("period_to", period.from),
     supabase.from("payment_methods").select("id, name, active").eq("group_id", groupId).order("name"),
   ]);
   const loadError = [lines, entries, links, rejections, imports].map((r) => r.error?.message).find(Boolean);
 
-  const lineRows = (lines.data ?? []) as LineRow[];
-  const entryRows = (entries.data ?? []) as EntryRow[];
+  const lineRows = lines.data;
+  const entryRows = entries.data;
   const toLine = (l: LineRow): OpenLine => ({ id: l.id, date: l.line_date, amountCents: Number(l.amount_cents), description: l.description, kind: l.kind, counterparty: l.counterparty, externalId: l.external_id, trnType: l.trn_type });
   const toEntry = (e: EntryRow): OpenEntry => ({ id: e.entry_id, date: e.entry_date, totalCents: Number(e.total_cents), name: e.name, paymentMethodName: e.payment_method_name, unassigned: e.account_id !== account.id });
   const openLines = lineRows.filter((l) => l.status === "aberta").map(toLine).sort(byDateThenAmount((l) => l.date, (l) => l.amountCents));
