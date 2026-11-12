@@ -104,6 +104,13 @@
 - **E — testes:** pgTAP (`npm run test:db`): isolamento entre grupos, papéis, ausência de escrita direta e auditoria (`*.test.sql`, dados em `_fixture.psql`); scripts SQL antigos com TAP mínimo, também rodáveis via psql. Playwright (`npm run test:e2e`, Chromium desktop, porta 3210, OTP pelo Mailpit, grupo "Grupo E2E"): login, lançamentos, usuários, mover em lote, comprovantes, importação OFX → conciliação → filtro Conciliado → desfazer. Como rodar no `README.md`.
 - Corrigido: ids dos campos de rateio estáveis no formulário (erro de hidratação).
 
+## Concluído (2026-11-12, ajustes de uso)
+
+- **Mensalidades:** tooltip por mês no rodapé "Por mês" (todos os estados e o recebido no mês); grade ocupa a tela no desktop com rolagem só nas linhas e rodapé fixo; escolher o status mantém o popover aberto e a observação grava sozinha (debounce de 400 ms), rateios gravam ao marcar.
+- **Início:** "Mês a mês" na largura do conteúdo; "Últimos lançamentos" com os últimos 7 dias mais o último dia com lançamentos antes deles, na altura do "Mês a mês" e com rolagem (atrasadas também).
+- **Rubricas:** código já usado avisado ao sair do campo, com o nome da rubrica.
+- **Seções e patrulhas** (`028_sections.sql`): Ramo › Seção › Patrulha cadastrados em Configurações › Associados; seção vira lista do ramo (pré-selecionada quando há uma só), patrulha opcional; seções antigas em texto descartadas; importação CSV casa seção/patrulha pelo nome. Teste `sections.test.sql`.
+
 ## A verificar
 
 Com o contador:
@@ -118,6 +125,7 @@ No navegador (desktop e celular):
 - `/cadastros` (contas, conta contábil), formulário com rateio misto (receita + despesa), seletor de rubrica e painel de filtros.
 - Dashboard e rolagem da tabela de lançamentos.
 - `/mensalidades`: valores individuais, não pago, entradas/saídas/retornos.
+- `/associados`: recadastrar as seções e patrulhas reais e atribuir aos associados (as seções em texto foram descartadas).
 - Celular: cartões de `/lancamentos` (seleção, rodapé fixo); desktop com mais de 300 lançamentos carregados (virtualização, teclado).
 - Comprovantes: HEIC real e arquivo perto de 10 MB (fluxo básico coberto pelo e2e).
 - `/lancamentos`: "Limpar filtros" seguido de busca antes da navegação terminar pode trazer de volta o filtro antigo.

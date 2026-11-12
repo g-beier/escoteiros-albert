@@ -12,6 +12,10 @@ Grade anual (`/mensalidades?ano=AAAA`) de **março a dezembro** por associado, i
 | **Sugestão** | calculada: rateio de mensalidade do associado ainda sem caixinha | ✓ tracejado |
 | Vazio | mês futuro ou ainda no prazo | — |
 
+No rodapé, **Por mês** resume cada mês (pagos, atrasados/não pagos, atenção); passar o mouse ou focar a célula abre o detalhe com todos os estados e o recebido no mês. No desktop a grade ocupa a tela e só as linhas rolam, com cabeçalho e rodapé fixos.
+
+No popover da caixinha, escolher Pago, Atenção ou Não pago grava e mantém o popover aberto; a partir daí a observação é gravada sozinha 400 ms depois da última tecla (ou ao fechar) e marcar/desmarcar um rateio grava na hora.
+
 O filtro **Só com atrasos** (`?atrasados=1`, também no link do Início) mostra apenas quem deve. Isentos no ano (com motivo) saem da grade, aparecem com "Mostrar isentos" e nunca ficam atrasados.
 
 ## Vencimento (Configurações › Mensalidades)
