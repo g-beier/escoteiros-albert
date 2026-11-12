@@ -7,6 +7,9 @@ import { currentYear } from "@/lib/filters";
 import { PageBody, PageHeader, SettingsTabs } from "@/components/nav/page-header";
 import { AccountsManager, type AccountItem } from "@/components/accounts-manager";
 import { CatalogManager } from "@/components/catalog-manager";
+import { ProfilesManager, type ProfileItem } from "@/components/import/profiles-manager";
+import { profileAccountUses, profileSettingsSummary, type ProfileImport } from "@/lib/import-flow";
+import { fetchImportProfiles } from "@/lib/import-queries";
 import { CATALOG_KINDS } from "@/lib/catalogs";
 import { depthOf, descendantsMap, sortCategories, type CategoryItem } from "@/lib/categories";
 
@@ -18,13 +21,14 @@ const TABS = {
   contas: "Onde o dinheiro está (conta corrente, poupança, caixa), com saldo inicial e conta contábil de contrapartida.",
   rubricas: "Classificação dos rateios, em árvore pelo código, com a conta contábil usada na exportação para a contabilidade. Para recategorizar, clique no número de uso.",
   formas: "Como o dinheiro se moveu; a conta padrão é sugerida nos novos lançamentos.",
+  perfis: "Como o extrato OFX de cada banco é lido: um perfil por banco, aplicado sozinho na próxima importação da conta.",
   mensalidades: "Regra de vencimento das mensalidades e rubrica usada para sugerir pagamentos.",
 } as const;
 type Tab = keyof typeof TABS;
 
 export default async function CatalogsPage({ searchParams }: { searchParams: Promise<{ aba?: string }> }) {
   const { aba } = await searchParams;
-  const tab: Tab = aba === "rubricas" || aba === "formas" || aba === "mensalidades" ? aba : "contas";
+  const tab: Tab = aba === "rubricas" || aba === "formas" || aba === "perfis" || aba === "mensalidades" ? aba : "contas";
   const membership = await pageMember();
   const { supabase, user } = membership;
   const canEdit = membership.canEdit;
@@ -43,6 +47,19 @@ export default async function CatalogsPage({ searchParams }: { searchParams: Pro
     id: row.id, name: row.name, active: row.active, usage: row.usage?.[0]?.count ?? 0, defaultAccountId: row.default_account_id,
   }));
 
+  let profileItems: ProfileItem[] = [];
+  if (tab === "perfis") {
+    const [{ profiles }, { data: importRows }] = await Promise.all([
+      fetchImportProfiles(supabase, membership.groupId),
+      supabase.from("statement_imports").select("profile_id, account_id, imported_at").eq("group_id", membership.groupId).not("profile_id", "is", null),
+    ]);
+    const uses = profileAccountUses((importRows ?? []) as ProfileImport[], accounts);
+    profileItems = profiles.map((p) => ({
+      id: p.id, name: p.name, format: p.format, updatedAt: p.updated_at, accounts: uses[p.id] ?? [],
+      summary: p.format === "ofx" ? profileSettingsSummary(p.settings) : "—",
+    }));
+  }
+
   const tree = sortCategories((categories ?? []) as (CategoryItem & { ledger_code: string | null; usage: { count: number }[] })[]);
   const descendants = descendantsMap(tree);
   const parents = new Set(tree.map((c) => c.parent_id).filter(Boolean));
@@ -57,8 +74,9 @@ export default async function CatalogsPage({ searchParams }: { searchParams: Pro
     <AppHeader role={membership.role} email={user.email ?? ""} current="/cadastros" />
     <PageBody>
       <PageHeader title="Configurações" tabs={<SettingsTabs current={tab} canEdit={canEdit} />}
-        description={`${TABS[tab]} Inativos saem dos novos lançamentos e continuam nos antigos.`} />
+        description={tab === "perfis" ? TABS[tab] : `${TABS[tab]} Inativos saem dos novos lançamentos e continuam nos antigos.`} />
       {tab === "contas" && <AccountsManager accounts={accounts} canEdit={canEdit} />}
+      {tab === "perfis" && <ProfilesManager profiles={profileItems} />}
       {tab === "formas" && <CatalogManager kind="payment_methods" {...CATALOG_KINDS.payment_methods} items={paymentMethodItems} canEdit={canEdit} accounts={accountOptions} />}
       {tab === "mensalidades" && <>
         <FeeYearForm prices={feePrices} currentYear={currentYear()} />

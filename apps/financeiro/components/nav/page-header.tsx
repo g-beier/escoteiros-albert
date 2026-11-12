@@ -47,7 +47,7 @@ export function ExtratoTabs({ current, accountId }: { current: "conciliar" | "im
   ]} />;
 }
 
-export type SettingsTab = "contas" | "rubricas" | "formas" | "associados" | "mensalidades";
+export type SettingsTab = "contas" | "rubricas" | "formas" | "perfis" | "associados" | "mensalidades";
 
 /** Configurações: cadastros do grupo. Consulta vê só Associados. */
 export function SettingsTabs({ current, canEdit }: { current: SettingsTab; canEdit: boolean }) {
@@ -56,6 +56,7 @@ export function SettingsTabs({ current, canEdit }: { current: SettingsTab; canEd
       { href: "/cadastros?aba=contas", label: "Contas", active: current === "contas" },
       { href: "/cadastros?aba=rubricas", label: "Rubricas", active: current === "rubricas" },
       { href: "/cadastros?aba=formas", label: "Formas de pagamento", active: current === "formas" },
+      { href: "/cadastros?aba=perfis", label: "Perfis de leitura", active: current === "perfis" },
     ] : []),
     { href: "/associados", label: "Associados", active: current === "associados" },
     ...(canEdit ? [{ href: "/cadastros?aba=mensalidades", label: "Mensalidades", active: current === "mensalidades" }] : []),

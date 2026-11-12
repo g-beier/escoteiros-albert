@@ -79,6 +79,47 @@ export function profileForAccount<T extends ProfileLike>(profiles: T[], lastProf
     ?? ofx.find((profile) => profile.header_signature !== null && profile.header_signature === signature);
 }
 
+// Lista de perfis (Configurações) ------------------------------------------------------
+
+export type ProfileImport = { profile_id: string | null; account_id: string; imported_at: string };
+export type ProfileAccountUse = { accountId: string; accountName: string; imports: number; current: boolean };
+
+/**
+ * Contas em que cada perfil foi usado, com o número de importações e se é o perfil atual da conta
+ * (o da última importação, que a próxima importação aplica sozinho). Contas em ordem de nome.
+ */
+export function profileAccountUses(imports: ProfileImport[], accounts: { id: string; name: string }[]): Record<string, ProfileAccountUse[]> {
+  const names = new Map(accounts.map((account) => [account.id, account.name]));
+  const latest = new Map<string, ProfileImport>();
+  const counts = new Map<string, Map<string, number>>();
+  for (const item of imports) {
+    if (!item.profile_id) continue;
+    const last = latest.get(item.account_id);
+    if (!last || item.imported_at > last.imported_at) latest.set(item.account_id, item);
+    const byAccount = counts.get(item.profile_id) ?? new Map<string, number>();
+    byAccount.set(item.account_id, (byAccount.get(item.account_id) ?? 0) + 1);
+    counts.set(item.profile_id, byAccount);
+  }
+  const result: Record<string, ProfileAccountUse[]> = {};
+  for (const [profileId, byAccount] of counts) {
+    result[profileId] = [...byAccount].map(([accountId, total]) => ({
+      accountId, accountName: names.get(accountId) ?? "Conta removida", imports: total, current: latest.get(accountId)?.profile_id === profileId,
+    })).sort((a, b) => a.accountName.localeCompare(b.accountName, "pt-BR"));
+  }
+  return result;
+}
+
+/** Resumo dos ajustes de leitura de um perfil OFX, para a lista. */
+export function profileSettingsSummary(settings: unknown): string {
+  const parsed = ofxSettingsFromProfile(settings);
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  return [
+    parsed.memoSplit ? "separa o MEMO" : "",
+    parsed.kindPrefixes?.length ? plural(parsed.kindPrefixes.length, "prefixo de tipo", "prefixos de tipo") : "",
+    parsed.ignoreIf?.length ? plural(parsed.ignoreIf.length, "texto a ignorar", "textos a ignorar") : "",
+  ].filter(Boolean).join(" · ") || "Sem ajustes";
+}
+
 // Conferência e envio ---------------------------------------------------------------
 
 /** O banco recusa valor zero: essas linhas saem da importação e aparecem como ignoradas. */

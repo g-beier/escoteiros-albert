@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
-  dropZeroLines, fileOpeningBalance, isOfx, openingDifference, newOfxSettings, ofxSettingsFromProfile, parseTextList, profileForAccount, reconciliationHref, sameSettings,
+  dropZeroLines, fileOpeningBalance, isOfx, openingDifference, profileAccountUses, profileSettingsSummary, newOfxSettings, ofxSettingsFromProfile, parseTextList, profileForAccount, reconciliationHref, sameSettings,
   toImportLines,
 } from "@/lib/import-flow";
 import { importLinesSchema, parseStatementLines } from "@/lib/import-schema";
@@ -115,6 +115,28 @@ describe("saldo inicial do arquivo", () => {
     expect(openingDifference(1000, 1000)).toBe(0);
     expect(openingDifference(1000, null)).toBeNull();
     expect(openingDifference(undefined, 1000)).toBeNull();
+  });
+});
+
+describe("lista de perfis", () => {
+  it("conta importações por conta e marca o perfil atual de cada conta", () => {
+    const uses = profileAccountUses([
+      { profile_id: "a", account_id: "nu", imported_at: "2026-10-01T10:00:00Z" },
+      { profile_id: "a", account_id: "nu", imported_at: "2026-10-05T10:00:00Z" },
+      { profile_id: "b", account_id: "nu", imported_at: "2026-11-01T10:00:00Z" },
+      { profile_id: "a", account_id: "cora", imported_at: "2026-11-02T10:00:00Z" },
+      { profile_id: null, account_id: "cora", imported_at: "2026-11-03T10:00:00Z" },
+    ], [{ id: "nu", name: "Nubank" }, { id: "cora", name: "Cora" }]);
+    expect(uses.a).toEqual([
+      { accountId: "cora", accountName: "Cora", imports: 1, current: true },
+      { accountId: "nu", accountName: "Nubank", imports: 2, current: false },
+    ]);
+    expect(uses.b).toEqual([{ accountId: "nu", accountName: "Nubank", imports: 1, current: true }]);
+  });
+
+  it("resume os ajustes de leitura", () => {
+    expect(profileSettingsSummary({ memoSplit: true, kindPrefixes: ["Pix"], ignoreIf: ["A", "B"] })).toBe("separa o MEMO · 1 prefixo de tipo · 2 textos a ignorar");
+    expect(profileSettingsSummary({ delimiter: ";" })).toBe("Sem ajustes");
   });
 });
 

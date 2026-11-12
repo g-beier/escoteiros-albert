@@ -135,6 +135,39 @@ export async function setAccountActive(_previous: CatalogFormState, formData: Fo
   }
 }
 
+// Perfis de leitura do extrato -------------------------------------------------------
+// Escritos por rename_import_profile/delete_import_profile (026, validadas e auditadas).
+
+export async function renameImportProfile(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
+  try {
+    const id = z.uuid().safeParse(formData.get("id"));
+    if (!id.success) return { error: "Perfil inválido." };
+    const name = z.string().trim().min(2, "Informe um nome de perfil com ao menos 2 caracteres.").max(80, "Use até 80 caracteres.").safeParse(formData.get("name") ?? "");
+    if (!name.success) return { error: name.error.issues[0]?.message };
+    const { supabase } = await requireEditor("Sem permissão para alterar perfis de leitura.");
+    const { error } = await supabase.rpc("rename_import_profile", { p_profile_id: id.data, p_name: name.data });
+    if (error) return { error: error.message };
+    revalidate();
+    return { success: `Perfil “${name.data}” salvo.` };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Não foi possível renomear o perfil." };
+  }
+}
+
+export async function deleteImportProfile(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
+  try {
+    const id = z.uuid().safeParse(formData.get("id"));
+    if (!id.success) return { error: "Perfil inválido." };
+    const { supabase } = await requireEditor("Sem permissão para alterar perfis de leitura.");
+    const { error } = await supabase.rpc("delete_import_profile", { p_profile_id: id.data });
+    if (error) return { error: error.message };
+    revalidate();
+    return { success: "Perfil excluído. As importações feitas com ele continuam.", tone: "neutral" };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Não foi possível excluir o perfil." };
+  }
+}
+
 /** Conta padrão da forma de pagamento; `accountId` vazio remove o padrão. */
 export async function setPaymentMethodDefaultAccount(paymentMethodId: unknown, accountId: unknown): Promise<CatalogFormState> {
   try {
