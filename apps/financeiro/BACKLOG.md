@@ -106,7 +106,7 @@
 
 ## Concluído (2026-11-12, ajustes de uso)
 
-- **Mensalidades:** tooltip por mês no rodapé "Por mês" (todos os estados e o recebido no mês); grade ocupa a tela no desktop com rolagem só nas linhas e rodapé fixo; escolher o status mantém o popover aberto e a observação grava sozinha (debounce de 400 ms), rateios gravam ao marcar.
+- **Mensalidades:** rodapé "Alertas" (atrasados + não pagos + atenção por mês), com tooltip do mês só com os estados que ocorrem e o recebido no mês (a linha "Recebido no mês" saiu); grade ocupa a tela no desktop com rolagem só nas linhas e rodapé fixo; escolher o status mantém o popover aberto e a observação grava sozinha (debounce de 400 ms), rateios gravam ao marcar.
 - **Início:** "Mês a mês" na largura do conteúdo; "Últimos lançamentos" com os últimos 7 dias mais o último dia com lançamentos antes deles, na altura do "Mês a mês" e com rolagem (atrasadas também).
 - **Rubricas:** código já usado avisado ao sair do campo, com o nome da rubrica.
 - **Seções e patrulhas** (`028_sections.sql`): Ramo › Seção › Patrulha cadastrados em Configurações › Associados; seção vira lista do ramo (pré-selecionada quando há uma só), patrulha opcional; seções antigas em texto descartadas; importação CSV casa seção/patrulha pelo nome. Teste `sections.test.sql`.

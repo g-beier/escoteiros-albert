@@ -12,7 +12,7 @@ Grade anual (`/mensalidades?ano=AAAA`) de **março a dezembro** por associado, i
 | **Sugestão** | calculada: rateio de mensalidade do associado ainda sem caixinha | ✓ tracejado |
 | Vazio | mês futuro ou ainda no prazo | — |
 
-No rodapé, **Por mês** resume cada mês (pagos, atrasados/não pagos, atenção); passar o mouse ou focar a célula abre o detalhe com todos os estados e o recebido no mês. No desktop a grade ocupa a tela e só as linhas rolam, com cabeçalho e rodapé fixos.
+No rodapé, **Alertas** mostra por mês quantos estão atrasados, não pagos ou em atenção; passar o mouse ou focar a célula abre o detalhe do mês (só os estados que ocorrem) e o recebido no mês, que não tem mais linha própria. No desktop a grade ocupa a tela e só as linhas rolam, com cabeçalho e rodapé fixos.
 
 No popover da caixinha, escolher Pago, Atenção ou Não pago grava e mantém o popover aberto; a partir daí a observação é gravada sozinha 400 ms depois da última tecla (ou ao fechar) e marcar/desmarcar um rateio grava na hora.
 
@@ -37,7 +37,7 @@ O filtro **Só com atrasos** (`?atrasados=1`, também no link do Início) mostra
 
 ## Valores recebidos
 
-A tela mostra quanto entrou de mensalidade, sem abrir os lançamentos: **Recebido em AAAA** (total e número de pagamentos), a coluna **Recebido** por associado e a linha **Recebido no mês** no rodapé. Vêm dos rateios da rubrica de mensalidade lançados no ano, pela data do lançamento (um pagamento de vários meses conta uma vez, no mês em que entrou; janeiro e fevereiro aparecem à parte). Respeitam os filtros de seção, busca e isentos (`feeAmounts` em `lib/fees.ts`).
+A tela mostra quanto entrou de mensalidade, sem abrir os lançamentos: **Recebido em AAAA** (total e número de pagamentos), a coluna **Recebido** por associado e o recebido de cada mês no tooltip da linha **Alertas**. Vêm dos rateios da rubrica de mensalidade lançados no ano, pela data do lançamento (um pagamento de vários meses conta uma vez, no mês em que entrou; janeiro e fevereiro aparecem à parte). Respeitam os filtros de seção, busca e isentos (`feeAmounts` em `lib/fees.ts`).
 
 ## Banco (`018_fees.sql`)
 

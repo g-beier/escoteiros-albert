@@ -2,7 +2,7 @@
 
 import { Fragment, useMemo, useOptimistic, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { IconAlertTriangle, IconCheck, IconChevronRight, IconDots, IconHelpCircle, IconSearch, IconX } from "@tabler/icons-react";
+import { IconCheck, IconChevronRight, IconDots, IconHelpCircle, IconSearch } from "@tabler/icons-react";
 import { addAssociateMovement, confirmFeeSuggestions, deleteAssociateMovement, setFeeAssociatePrice, setFeeExemption, setFeeRecord } from "@/app/mensalidades/actions";
 import { OptionSelect } from "@/components/option-controls";
 import { FeeCell, FeeMark, STATE_LABELS, type CellChange } from "@/components/fees/fee-cell";
@@ -194,16 +194,10 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
           </Fragment>)}</tbody>
           <tfoot className="sticky bottom-0 z-10 border-t bg-muted shadow-[0_-1px_0_var(--border)]">
             <tr>
-              <th scope="row" className="sticky left-0 z-10 bg-muted px-3 py-1.5 text-left font-semibold">Por mês</th>
+              <th scope="row" className="sticky left-0 z-10 bg-muted px-3 py-1.5 text-left font-semibold">Alertas</th>
               {summary.map((s, i) => <td key={FEE_MONTHS[i]} className="p-0 text-center num">
-                <MonthTotals month={FEE_MONTHS[i]} summary={s} receivedCents={amounts.byMonth[i]} />
+                <MonthAlerts month={FEE_MONTHS[i]} summary={s} receivedCents={amounts.byMonth[i]} />
               </td>)}
-              <td colSpan={(canEdit ? 3 : 2) + extra} className="px-3 py-1.5 text-right text-[11px] text-muted-foreground">✓ pagos · ✗ atrasados/não pagos · ! atenção</td>
-            </tr>
-            <tr className="border-t">
-              <th scope="row" className="sticky left-0 z-10 bg-muted px-3 py-1.5 text-left font-semibold">Recebido no mês</th>
-              {amounts.byMonth.map((cents, i) => <td key={FEE_MONTHS[i]} className="px-1 py-1.5 text-center text-[11px] whitespace-nowrap num">
-                {cents ? money(cents / 100) : <span className="text-muted-foreground">—</span>}</td>)}
               <td className="px-3 py-1.5 text-right text-muted-foreground">Total</td>
               <td className="px-3 py-1.5 text-right font-semibold whitespace-nowrap num">{money(amounts.total / 100)}</td>
               {hasPrices && <td className={cn("px-3 py-1.5 text-right font-semibold whitespace-nowrap num", openTotal > 0 && "text-destructive")}>{money(openTotal / 100)}</td>}
@@ -362,44 +356,37 @@ function Figure({ label, value, className }: { label: string; value: string; cla
   </div>;
 }
 
-/** Contador do rodapé: ícone + número, para não depender só da cor. */
-function Count({ value, tone, icon }: { value: number; tone: string; icon: React.ReactNode }) {
-  return <span aria-hidden className={cn("inline-flex items-center gap-0.5 rounded px-1 text-xs font-semibold", tone)}>{icon}{value}</span>;
-}
-
-/** Ordem e rótulos (no plural) do detalhe de cada mês. */
+/** Rótulos (no plural) do detalhe de cada mês, na ordem do tooltip. */
 const MONTH_DETAIL: { state: CellState; label: string }[] = [
   { state: "pago", label: "pagos" },
   { state: "atrasado", label: "atrasados" },
   { state: "nao_pago", label: "não pagos" },
   { state: "atencao", label: "em atenção" },
-  { state: "sugestao", label: "pagamentos a confirmar" },
-  { state: "vazio", label: "sem registro (ainda no prazo)" },
+  { state: "sugestao", label: "a confirmar" },
+  { state: "vazio", label: "sem registro" },
   { state: "fora", label: "fora do grupo" },
 ];
 
-/** Totais de um mês no rodapé: a célula inteira abre um tooltip com cada estado e o recebido no mês. */
-function MonthTotals({ month, summary, receivedCents }: { month: number; summary: MonthSummary; receivedCents: number }) {
-  const people = MONTH_DETAIL.reduce((sum, { state }) => sum + summary[state], 0);
-  const label = `${FEE_MONTH_NAMES[month]}: ${MONTH_DETAIL.filter(({ state }) => summary[state] > 0).map(({ state, label }) => `${summary[state]} ${label}`).join(", ") || "ninguém na grade"}`;
+/** Linha "Alertas" do rodapé: atrasados, não pagos e atenção somados; o tooltip detalha o mês (só o que não é zero) e o recebido. */
+function MonthAlerts({ month, summary, receivedCents }: { month: number; summary: MonthSummary; receivedCents: number }) {
+  const alerts = summary.late + summary.atencao;
+  const details = MONTH_DETAIL.filter(({ state }) => summary[state] > 0);
+  const received = receivedCents ? money(receivedCents / 100) : "nada";
+  const label = `${FEE_MONTH_NAMES[month]}: ${alerts} ${alerts === 1 ? "alerta" : "alertas"}; ${details.map(({ state, label }) => `${summary[state]} ${label}`).join(", ")}; recebido ${received}`;
   return <Tooltip>
     <TooltipTrigger render={<button type="button" aria-label={label}
-      className="grid min-h-full w-full cursor-help justify-items-center gap-0.5 px-1 py-1.5 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none" />}>
-      <Count value={summary.pago} tone="bg-success/15 text-success" icon={<IconCheck className="size-3" />} />
-      {summary.late > 0 && <Count value={summary.late} tone="bg-destructive text-white" icon={<IconX className="size-3" />} />}
-      {summary.atencao > 0 && <Count value={summary.atencao} tone="bg-amber-300 text-amber-950" icon={<IconAlertTriangle className="size-3" />} />}
+      className="grid min-h-full w-full cursor-help place-items-center px-1 py-1.5 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none" />}>
+      {alerts > 0
+        ? <span aria-hidden className="inline-flex min-w-6 justify-center rounded bg-destructive px-1 text-xs font-semibold text-white">{alerts}</span>
+        : <span aria-hidden className="text-muted-foreground">—</span>}
     </TooltipTrigger>
-    <TooltipContent className="grid w-56 max-w-none items-stretch gap-1.5 p-3">
+    <TooltipContent className="grid w-auto max-w-none min-w-40 items-stretch gap-1 p-2.5">
       <p className="m-0 font-semibold capitalize">{FEE_MONTH_NAMES[month]}</p>
-      <dl className="m-0 grid gap-1">
-        {MONTH_DETAIL.map(({ state, label }) => <div key={state} className={cn("flex items-center gap-2", summary[state] === 0 && "opacity-50")}>
-          <span className="grid rounded bg-background p-0.5"><FeeMark state={state} className="size-4 [&_svg]:size-3" /></span>
-          <dt className="flex-1">{label}</dt>
-          <dd className="m-0 num font-semibold">{summary[state]}</dd>
-        </div>)}
-      </dl>
-      <p className="m-0 border-t border-background/20 pt-1.5 opacity-80">{people} {people === 1 ? "associado" : "associados"} na grade</p>
-      <p className="m-0 flex justify-between"><span>Recebido no mês</span><span className="num font-semibold">{receivedCents ? money(receivedCents / 100) : "—"}</span></p>
+      {details.map(({ state, label }) => <p key={state} className="m-0 flex items-center gap-2">
+        <span className="grid rounded bg-background p-0.5"><FeeMark state={state} className="size-3.5 [&_svg]:size-2.5" /></span>
+        <span className="flex-1">{label}</span><span className="num font-semibold">{summary[state]}</span>
+      </p>)}
+      <p className="m-0 flex justify-between gap-3 border-t border-background/20 pt-1"><span>Recebido</span><span className="num font-semibold">{receivedCents ? money(receivedCents / 100) : "—"}</span></p>
     </TooltipContent>
   </Tooltip>;
 }
