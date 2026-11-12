@@ -73,7 +73,37 @@ export type FeeStatus = "pago" | "atencao" | "nao_pago";
 export type FeeRecord = { associateId: string; month: number; status: FeeStatus; note: string | null; splitIds: string[] };
 
 /** pago/atencao registrados; atrasado = passou do vencimento sem registro; sugestao = rateio a confirmar; vazio = o resto. */
-export type CellState = "pago" | "atencao" | "nao_pago" | "atrasado" | "sugestao" | "vazio";
+/** "fora": mês em que o associado não está no grupo (saiu, ainda não entrou): sem cobrança nem atraso. */
+export type CellState = "pago" | "atencao" | "nao_pago" | "atrasado" | "sugestao" | "vazio" | "fora";
+
+export type MovementKind = "entrada" | "saida";
+export type AssociateMovement = { id: string; associateId: string; date: string; kind: MovementKind; reason: string | null };
+
+/**
+ * Meses (de FEE_MONTHS) em que o associado está no grupo, pelas entradas, saídas e retornos.
+ * Sem movimentações: todos. Antes da primeira movimentação, está fora se ela é uma entrada e dentro se é uma saída.
+ * O mês conta se ele está no grupo no dia 1º ou se entra durante o mês.
+ */
+export function monthsInGroup(year: number, movements: Pick<AssociateMovement, "date" | "kind">[]): Set<number> {
+  if (!movements.length) return new Set(FEE_MONTHS);
+  const sorted = [...movements].sort((a, b) => a.date.localeCompare(b.date) || (a.kind === "saida" ? -1 : 1));
+  const inBefore = (date: string) => {
+    let inside = sorted[0].kind === "saida";
+    for (const movement of sorted) {
+      if (movement.date >= date) break;
+      inside = movement.kind === "entrada";
+    }
+    return inside;
+  };
+  const result = new Set<number>();
+  for (const month of FEE_MONTHS) {
+    const start = iso(year, month, 1);
+    const next = month === 12 ? iso(year + 1, 1, 1) : iso(year, month + 1, 1);
+    const entersDuring = sorted.some((m) => m.kind === "entrada" && m.date >= start && m.date < next);
+    if (inBefore(start) || entersDuring) result.add(month);
+  }
+  return result;
+}
 
 export function cellState(record: FeeRecord | undefined, due: string, today: string, suggested: boolean): CellState {
   if (record) return record.status;
@@ -159,13 +189,15 @@ export type FeeBalance = { expected: number; received: number; open: number; int
  * Previsto × recebido por associado: 10 mensalidades (ou o valor integral com desconto, se pago assim);
  * isento não tem previsto. `open` nunca é negativo.
  */
-export function feeBalance(row: Pick<FeeRow, "exemption">, splits: FeeSplit[], year: number, price: FeePrice | null): FeeBalance {
+export function feeBalance(row: Pick<FeeRow, "exemption"> & { monthsInGroup?: number }, splits: FeeSplit[], year: number, price: FeePrice | null): FeeBalance {
   const inYear = splits.filter((s) => s.entryDate.startsWith(`${year}-`));
   const received = inYear.reduce((sum, s) => sum + s.amountCents, 0);
   if (!price || row.exemption) return { expected: 0, received, open: 0, integral: false };
+  const months = row.monthsInGroup ?? FEE_MONTHS.length;
   const { full, discounted } = annualAmounts(price);
-  const integral = inYear.some((s) => isIntegralPayment(s, price) && s.amountCents === discounted && discounted !== full);
-  const expected = integral ? discounted : full;
+  // o desconto do integral só vale para quem está no grupo o ano todo
+  const integral = months === FEE_MONTHS.length && inYear.some((s) => isIntegralPayment(s, price) && s.amountCents === discounted && discounted !== full);
+  const expected = integral ? discounted : months === FEE_MONTHS.length ? full : price.monthlyCents * months;
   return { expected, received, open: Math.max(0, expected - received), integral };
 }
 
@@ -193,6 +225,12 @@ export type FeeExemption = { associateId: string; reason: string };
 export type FeeRow = {
   associate: FeeAssociate;
   exemption: FeeExemption | null;
+  /** Entradas e saídas do associado (todas, em ordem de data). */
+  movements: AssociateMovement[];
+  /** Meses do ano em que está no grupo (0 = oculto no ano). */
+  monthsInGroup: number;
+  /** Por que a linha fica oculta por padrão: isento no ano ou fora do grupo o ano todo. */
+  hidden: "isento" | "fora" | null;
   /** Um por mês de FEE_MONTHS. */
   cells: { month: number; state: CellState; record?: FeeRecord; suggestion?: FeeSuggestion }[];
   paid: number;
@@ -207,7 +245,7 @@ const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompar
  */
 export function buildFeeRows(input: {
   year: number; today: string; settings: FeeSettings; associates: FeeAssociate[]; records: FeeRecord[];
-  exemptions: FeeExemption[]; suggestions: FeeSuggestion[];
+  exemptions: FeeExemption[]; suggestions: FeeSuggestion[]; movements?: AssociateMovement[];
 }): FeeRow[] {
   const { year, today, settings } = input;
   const dues = FEE_MONTHS.map((month) => dueDate(year, month, settings));
@@ -216,20 +254,29 @@ export function buildFeeRows(input: {
   const suggestions = new Map(input.suggestions.map((s) => [recordKey(s.associateId, s.month), s]));
   const exemptions = new Map(input.exemptions.map((e) => [e.associateId, e]));
   const withRecord = new Set(input.records.map((r) => r.associateId));
+  const movementsOf = new Map<string, AssociateMovement[]>();
+  for (const movement of [...(input.movements ?? [])].sort((a, b) => a.date.localeCompare(b.date))) {
+    movementsOf.set(movement.associateId, [...(movementsOf.get(movement.associateId) ?? []), movement]);
+  }
   return input.associates
-    .filter((a) => a.active || withRecord.has(a.id) || exemptions.has(a.id))
+    .filter((a) => a.active || withRecord.has(a.id) || exemptions.has(a.id) || movementsOf.has(a.id))
     .sort(byName)
     .map((associate) => {
       const exemption = exemptions.get(associate.id) ?? null;
+      const movements = movementsOf.get(associate.id) ?? [];
+      const inGroup = monthsInGroup(year, movements);
       const cells = FEE_MONTHS.map((month, i) => {
         const record = records.get(recordKey(associate.id, month));
         const suggestion = suggestions.get(recordKey(associate.id, month));
-        const state = cellState(record, dues[i], today, Boolean(suggestion));
+        // fora do grupo: sem cobrança (um registro manual continua valendo)
+        const state: CellState = !record && !inGroup.has(month) ? "fora" : cellState(record, dues[i], today, Boolean(suggestion));
         // isento não fica atrasado
         return { month, state: exemption && state === "atrasado" ? "vazio" as const : state, record, suggestion };
       });
       return {
-        associate, exemption, cells,
+        associate, exemption, cells, movements,
+        monthsInGroup: inGroup.size,
+        hidden: exemption ? "isento" as const : inGroup.size === 0 ? "fora" as const : null,
         paid: cells.filter((c) => c.state === "pago").length,
         // atrasado (calculado) e não pago (registrado) contam como dívida
         overdue: cells.filter((c) => c.state === "atrasado" || c.state === "nao_pago").length,
@@ -239,7 +286,7 @@ export function buildFeeRows(input: {
 
 /** Quem tem mensalidades atrasadas, do maior número para o menor (empate: nome). */
 export function overdueRanking(rows: FeeRow[]) {
-  return rows.filter((row) => !row.exemption && row.overdue > 0)
+  return rows.filter((row) => !row.hidden && row.overdue > 0)
     .sort((a, b) => b.overdue - a.overdue || byName(a.associate, b.associate))
     .map((row) => ({ associate: row.associate, overdue: row.overdue }));
 }

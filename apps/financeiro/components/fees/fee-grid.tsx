@@ -3,7 +3,8 @@
 import { Fragment, useMemo, useOptimistic, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { IconAlertTriangle, IconCheck, IconChevronRight, IconDots, IconHelpCircle, IconSearch, IconX } from "@tabler/icons-react";
-import { confirmFeeSuggestions, setFeeAssociatePrice, setFeeExemption, setFeeRecord } from "@/app/mensalidades/actions";
+import { addAssociateMovement, confirmFeeSuggestions, deleteAssociateMovement, setFeeAssociatePrice, setFeeExemption, setFeeRecord } from "@/app/mensalidades/actions";
+import { OptionSelect } from "@/components/option-controls";
 import { FeeCell, FeeMark, STATE_LABELS, type CellChange } from "@/components/fees/fee-cell";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,14 +14,14 @@ import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { branchLabels, isScoutBranch, NO_SECTION } from "@/lib/associates";
-import { feeAmounts, feeBalance, priceForAssociate, FEE_MONTH_LABELS, FEE_MONTHS, monthSummary, type CellState, type FeePrice, type FeeRow, type FeeSplit, type FeeSuggestion } from "@/lib/fees";
+import { feeAmounts, feeBalance, priceForAssociate, todayInSaoPaulo, FEE_MONTH_LABELS, FEE_MONTHS, monthSummary, type AssociateMovement, type CellState, type MovementKind, type FeePrice, type FeeRow, type FeeSplit, type FeeSuggestion } from "@/lib/fees";
 import { normalizeText } from "@/lib/statement-import";
-import { money } from "@/lib/format";
+import { dateBR, money } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Optimistic = { associateId: string; month: number; state: CellState | null };
 
-const LEGEND: CellState[] = ["pago", "atencao", "nao_pago", "atrasado", "sugestao", "vazio"];
+const LEGEND: CellState[] = ["pago", "atencao", "nao_pago", "atrasado", "sugestao", "vazio", "fora"];
 
 /** Grade de mensalidades do ano: associados × março a dezembro. */
 export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, price, individualPrices, onlyOverdue: initialOnlyOverdue = false }: {
@@ -34,7 +35,8 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
 }) {
   const [pending, startTransition] = useTransition();
   const [query, setQuery] = useState("");
-  const [showExempt, setShowExempt] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
+  const [moving, setMoving] = useState<FeeRow | null>(null);
   const [bySection, setBySection] = useState(false);
   const [onlyOverdue, setOnlyOverdue] = useState(initialOnlyOverdue);
   // seções recolhidas (accordion) na visão agrupada
@@ -49,13 +51,13 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
 
   const visible = useMemo(() => {
     const q = normalizeText(query);
-    return rows.filter((row) => (showExempt || !row.exemption) && (!onlyOverdue || (!row.exemption && row.overdue > 0))
+    return rows.filter((row) => (showHidden || !row.hidden) && (!onlyOverdue || (!row.hidden && row.overdue > 0))
       && (!q || normalizeText(row.associate.name).includes(q)));
-  }, [rows, query, showExempt, onlyOverdue]);
+  }, [rows, query, showHidden, onlyOverdue]);
   const overdueCount = rows.filter((r) => !r.exemption && r.overdue > 0).length;
   const stateOf = (row: FeeRow, index: number) => optimistic[`${row.associate.id}:${FEE_MONTHS[index]}`] ?? row.cells[index].state;
-  const summary = monthSummary(visible.filter((r) => !r.exemption).map((row) => row.cells.map((_, i) => stateOf(row, i))));
-  const exemptCount = rows.filter((r) => r.exemption).length;
+  const summary = monthSummary(visible.filter((r) => !r.hidden).map((row) => row.cells.map((_, i) => stateOf(row, i))));
+  const hiddenCount = rows.filter((r) => r.hidden).length;
   // valores recebidos (rateios de mensalidade lançados no ano) de quem está na tela
   const amounts = useMemo(() => feeAmounts(year, Object.fromEntries(visible.map((row) => [row.associate.id, splitsByAssociate[row.associate.id] ?? []]))),
     [year, visible, splitsByAssociate]);
@@ -114,7 +116,7 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
       {bySection && groups.length > 1 && <Button variant="ghost" size="sm" onClick={() => setCollapsed(collapsed.size ? new Set() : new Set(groups.map((g) => sectionKey(g.section))))}>
         {collapsed.size ? "Expandir todas" : "Recolher todas"}</Button>}
       <Label className="font-normal"><Checkbox checked={onlyOverdue} onCheckedChange={(v) => setOnlyOverdue(v === true)} /> Só com atrasos ({overdueCount})</Label>
-      {exemptCount > 0 && <Label className="font-normal"><Checkbox checked={showExempt} onCheckedChange={(v) => setShowExempt(v === true)} /> Mostrar isentos ({exemptCount})</Label>}
+      {hiddenCount > 0 && <Label className="font-normal" title="Isentos no ano e quem está fora do grupo o ano todo (saídas, evasões)"><Checkbox checked={showHidden} onCheckedChange={(v) => setShowHidden(v === true)} /> Mostrar ocultos ({hiddenCount})</Label>}
       <ul className="m-0 flex list-none flex-wrap gap-3 p-0 text-xs text-muted-foreground" aria-label="Legenda">
         {LEGEND.map((state) => <li key={state} className="inline-flex items-center gap-1"><FeeMark state={state} className="size-4 [&_svg]:size-3" />{STATE_LABELS[state]}</li>)}
       </ul>
@@ -159,6 +161,8 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
                     {isScoutBranch(row.associate.branch) ? branchLabels[row.associate.branch] : row.associate.branch}
                     {row.associate.section && ` · ${row.associate.section}`}
                     {exempt && ` · isento: ${row.exemption!.reason}`}
+                    {row.hidden === "fora" && " · fora do grupo no ano"}
+                    {row.movements.length > 0 && <MovementSummary movements={row.movements} />}
                     {individualPrices[row.associate.id] && <span className="text-foreground"> · {money(individualPrices[row.associate.id].monthlyCents / 100)}/mês ({individualPrices[row.associate.id].reason})</span>}
                     {!row.associate.active && " · inativo"}
                   </span>
@@ -167,7 +171,7 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
                   <FeeCell name={row.associate.name} month={cell.month} state={stateOf(row, i)} record={cell.record} suggestion={cell.suggestion}
                     splits={splitsByAssociate[row.associate.id] ?? []} canEdit={canEdit} exempt={exempt} onChange={(value) => change(row, cell.month, value)} />
                 </td>)}
-                <td className="px-3 py-1 text-right num">{exempt ? "—" : `${paid}/${FEE_MONTHS.length}`}</td>
+                <td className="px-3 py-1 text-right num">{exempt || !row.monthsInGroup ? "—" : `${paid}/${row.monthsInGroup}`}</td>
                 <td className="px-3 py-1 text-right num whitespace-nowrap">{amounts.byAssociate[row.associate.id] ? money(amounts.byAssociate[row.associate.id] / 100) : <span className="text-muted-foreground">—</span>}</td>
                 {hasPrices && <td className={cn("px-3 py-1 text-right num whitespace-nowrap", (balances.get(row.associate.id)?.open ?? 0) > 0 && "text-destructive")}>
                   {exempt ? "—" : balances.get(row.associate.id)?.integral ? <span className="text-success" title="Pagamento integral com desconto">integral</span> : money((balances.get(row.associate.id)?.open ?? 0) / 100)}
@@ -177,6 +181,7 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
                     <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações de ${row.associate.name}`} />}><IconDots /></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => setPricing(row)}>{individualPrices[row.associate.id] ? "Alterar valor individual…" : `Valor individual em ${year}…`}</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setMoving(row)}>Entradas e saídas…</DropdownMenuItem>
                       {exempt
                         ? <DropdownMenuItem onClick={() => startTransition(async () => { const r = await setFeeExemption(row.associate.id, year, ""); if (r.error) toast.error(r.error); else toast.success(r.success); })}>Remover isenção de {year}</DropdownMenuItem>
                         : <DropdownMenuItem onClick={() => setExempting(row)}>Isentar em {year}…</DropdownMenuItem>}
@@ -211,6 +216,7 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
         </table>
       </div>}
 
+    <MovementsDialog row={moving} onClose={() => setMoving(null)} />
     <PriceDialog row={pricing} year={year} pending={pending} current={pricing ? individualPrices[pricing.associate.id] : undefined}
       yearPrice={price} onClose={() => setPricing(null)}
       onConfirm={(row, monthly, reason) => startTransition(async () => {
@@ -230,6 +236,62 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
 }
 
 const REASONS = ["Voluntário(a)", "Bolsa", "Escotista", "Outro"];
+const MOVEMENT_REASONS = ["Evasão", "Transferência", "Mudança de cidade", "Retorno", "Novo associado"];
+
+/** Última movimentação, resumida na linha ("saiu 15/06/2026 · Evasão"). */
+function MovementSummary({ movements }: { movements: AssociateMovement[] }) {
+  const last = movements[movements.length - 1];
+  return <> · {last.kind === "saida" ? "saiu" : "entrou"} <span className="num">{dateBR(last.date)}</span>{last.reason && ` (${last.reason})`}</>;
+}
+
+/** Entradas, saídas e retornos do associado: definem os meses cobrados. */
+function MovementsDialog({ row, onClose }: { row: FeeRow | null; onClose: () => void }) {
+  const [pending, startTransition] = useTransition();
+  const [kind, setKind] = useState<MovementKind>("saida");
+  const [date, setDate] = useState(todayInSaoPaulo());
+  const [reason, setReason] = useState("");
+  const run = (action: () => Promise<{ error?: string; success?: string }>, after?: () => void) => startTransition(async () => {
+    const result = await action();
+    if (result.error) { toast.error(result.error); return; }
+    toast.success(result.success);
+    after?.();
+  });
+  return <Dialog open={row !== null} onOpenChange={(open) => { if (!open) { onClose(); setReason(""); } }}>
+    <DialogContent>
+      {row && <div className="grid gap-4">
+        <DialogHeader>
+          <DialogTitle>Entradas e saídas de {row.associate.name}</DialogTitle>
+          <DialogDescription>Fora do grupo (depois de uma saída e antes de um retorno), o mês não é cobrado nem fica atrasado. Sem registros, vale como no grupo o tempo todo.</DialogDescription>
+        </DialogHeader>
+        {row.movements.length > 0
+          ? <ul className="m-0 grid list-none gap-1 p-0">{row.movements.map((m) => <li key={m.id} className="flex items-center gap-2 rounded-md border px-2 py-1 text-xs">
+              <span className={cn("rounded px-1.5 py-0.5 font-semibold", m.kind === "saida" ? "bg-destructive/10 text-destructive" : "bg-success/15 text-success")}>{m.kind === "saida" ? "Saída" : "Entrada"}</span>
+              <span className="num">{dateBR(m.date)}</span>
+              {m.reason && <span className="text-muted-foreground">{m.reason}</span>}
+              <Button type="button" variant="ghost" size="sm" className="ml-auto" disabled={pending} onClick={() => run(() => deleteAssociateMovement(m.id), onClose)}>Remover</Button>
+            </li>)}</ul>
+          : <p className="m-0 text-xs text-muted-foreground">Nenhuma movimentação registrada.</p>}
+        <form className="grid gap-3 rounded-md bg-muted/50 p-3" onSubmit={(event) => { event.preventDefault(); run(() => addAssociateMovement(row.associate.id, date, kind, reason), () => { setReason(""); onClose(); }); }}>
+          <p className="m-0 text-xs font-semibold">Registrar</p>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="grid gap-1.5"><Label htmlFor="movement-kind">Tipo</Label>
+              <OptionSelect id="movement-kind" value={kind} onValueChange={(value) => setKind(value as MovementKind)}
+                options={[{ value: "saida", label: "Saída" }, { value: "entrada", label: "Entrada / retorno" }]} /></div>
+            <div className="grid gap-1.5"><Label htmlFor="movement-date">Data</Label>
+              <Input id="movement-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required className="num" /></div>
+            <div className="grid min-w-48 flex-1 gap-1.5"><Label htmlFor="movement-reason">Motivo (opcional)</Label>
+              <Input id="movement-reason" value={reason} maxLength={120} onChange={(e) => setReason(e.target.value)} list="movement-reasons" />
+              <datalist id="movement-reasons">{MOVEMENT_REASONS.map((r) => <option key={r} value={r} />)}</datalist></div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>Fechar</Button>
+            <Button type="submit" disabled={pending || !date}>Registrar</Button>
+          </DialogFooter>
+        </form>
+      </div>}
+    </DialogContent>
+  </Dialog>;
+}
 const PRICE_REASONS = ["Irmãos", "Combinação", "Bolsa parcial"];
 
 /** Valor individual do associado no ano: substitui o valor do ano; o desconto do integral também vale sobre ele. */

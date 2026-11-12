@@ -126,3 +126,32 @@ export async function setFeeAssociatePrice(associateId: unknown, yearValue: unkn
   if (error) return { error: error.message };
   return done(remove ? "Valor individual removido." : "Valor individual salvo.");
 }
+
+/** Entrada (ou retorno) e saída do associado: definem os meses cobrados na grade. */
+export async function addAssociateMovement(associateId: unknown, date: unknown, kind: unknown, reason: unknown): Promise<FeeResult> {
+  const parsed = z.object({
+    associateId: z.uuid(), date: z.iso.date({ message: "Informe a data." }),
+    kind: z.enum(["entrada", "saida"], { message: "Escolha entrada ou saída." }),
+    reason: z.string().trim().max(120, "Motivo: no máximo 120 caracteres."),
+  }).safeParse({ associateId, date, kind, reason });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  const ctx = await editorOrError("Sem permissão para registrar movimentações.");
+  if ("error" in ctx) return { error: ctx.error };
+  const { error } = await ctx.supabase.rpc("add_associate_movement", {
+    p_associate_id: parsed.data.associateId, p_date: parsed.data.date, p_kind: parsed.data.kind, p_reason: parsed.data.reason || null,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/associados");
+  return done(parsed.data.kind === "saida" ? "Saída registrada." : "Entrada registrada.");
+}
+
+export async function deleteAssociateMovement(movementId: unknown): Promise<FeeResult> {
+  const id = z.uuid().safeParse(movementId);
+  if (!id.success) return { error: "Movimentação inválida." };
+  const ctx = await editorOrError("Sem permissão para registrar movimentações.");
+  if ("error" in ctx) return { error: ctx.error };
+  const { error } = await ctx.supabase.rpc("delete_associate_movement", { p_movement_id: id.data });
+  if (error) return { error: error.message };
+  revalidatePath("/associados");
+  return done("Movimentação removida.");
+}

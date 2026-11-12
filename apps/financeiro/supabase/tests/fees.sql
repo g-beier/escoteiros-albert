@@ -88,6 +88,14 @@ end $$;
 select public.set_fee_associate_price(:'bia', 2026, null, null);
 do $$ begin if exists (select 1 from public.fee_associate_prices) then raise exception 'FALHOU: remover valor individual'; end if; end $$;
 
+\echo '--- movimentações: saída e retorno'
+select public.add_associate_movement(:'bia', '2026-06-15', 'saida', 'Evasão') as mov \gset
+select public.add_associate_movement(:'bia', '2026-09-01', 'entrada', 'Retorno');
+select public.delete_associate_movement(:'mov');
+do $$ begin
+  if (select string_agg(kind::text || ':' || coalesce(reason, ''), ',') from public.associate_movements) <> 'entrada:Retorno' then raise exception 'FALHOU: movimentações'; end if;
+end $$;
+
 \echo '--- excluir o lançamento desfaz o vínculo, o registro fica'
 select public.delete_ledger_entry(:'e1');
 do $$ begin

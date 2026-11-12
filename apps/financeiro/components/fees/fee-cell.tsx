@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { IconAlertTriangle, IconCheck, IconX } from "@tabler/icons-react";
+import { IconAlertTriangle, IconCheck, IconMinus, IconX } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { FEE_MONTH_NAMES, type CellState, type FeeRecord, type FeeSplit, type Fe
 import { cn } from "@/lib/utils";
 
 export const STATE_LABELS: Record<CellState, string> = {
-  pago: "pago", atencao: "atenção", nao_pago: "não pago", atrasado: "atrasado", sugestao: "pagamento a confirmar", vazio: "sem registro",
+  pago: "pago", atencao: "atenção", nao_pago: "não pago", atrasado: "atrasado", sugestao: "pagamento a confirmar", vazio: "sem registro", fora: "fora do grupo",
 };
 
 const STATE_STYLES: Record<CellState, string> = {
@@ -23,6 +23,7 @@ const STATE_STYLES: Record<CellState, string> = {
   atrasado: "border-destructive/50 bg-destructive/10 text-destructive",
   sugestao: "border-dashed border-success text-success",
   vazio: "border-border text-transparent",
+  fora: "border-dashed border-border bg-muted/60 text-muted-foreground",
 };
 
 /** Ícone da caixinha; também usado na legenda. */
@@ -30,7 +31,7 @@ export function FeeMark({ state, partial = false, className }: { state: CellStat
   // sugestão parcial (valor menor que a mensalidade): tracejado amarelo com "!"
   if (state === "sugestao" && partial) return <span aria-hidden className={cn("grid size-6 place-items-center rounded-md border border-dashed border-amber-500 text-amber-700", className)}><IconAlertTriangle className="size-3.5" /></span>;
   return <span aria-hidden className={cn("grid size-6 place-items-center rounded-md border", STATE_STYLES[state], className)}>
-    {state === "pago" || state === "sugestao" ? <IconCheck className="size-4" /> : state === "atencao" ? <IconAlertTriangle className="size-3.5" /> : state === "atrasado" || state === "nao_pago" ? <IconX className="size-3.5" /> : null}
+    {state === "pago" || state === "sugestao" ? <IconCheck className="size-4" /> : state === "atencao" ? <IconAlertTriangle className="size-3.5" /> : state === "atrasado" || state === "nao_pago" ? <IconX className="size-3.5" /> : state === "fora" ? <IconMinus className="size-3" /> : null}
   </span>;
 }
 

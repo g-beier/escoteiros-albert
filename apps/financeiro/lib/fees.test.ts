@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { brazilHolidays, buildFeeRows, cellState, feeAmounts, feeBalance, priceForAssociate, dueDate, easter, monthSummary, overdueRanking, suggestFeeMonths, todayInSaoPaulo, type FeeSplit } from "./fees";
+import { brazilHolidays, buildFeeRows, cellState, feeAmounts, feeBalance, monthsInGroup, priceForAssociate, dueDate, easter, monthSummary, overdueRanking, suggestFeeMonths, todayInSaoPaulo, type FeeSplit } from "./fees";
 
 describe("feriados", () => {
   it("calcula a Páscoa e os feriados móveis", () => {
@@ -146,5 +146,27 @@ describe("valor individual e não pago", () => {
     expect(rows[0].cells[0].state).toBe("nao_pago");
     expect(rows[0].overdue).toBe(1);
     expect(monthSummary([rows[0].cells.map((c) => c.state)])[0].atrasado).toBe(1);
+  });
+});
+
+describe("entradas e saídas", () => {
+  const mv = (date: string, kind: "entrada" | "saida") => ({ date, kind });
+  it("sem movimentação, todos os meses; saída e retorno recortam o ano", () => {
+    expect([...monthsInGroup(2026, [])]).toHaveLength(10);
+    expect([...monthsInGroup(2026, [mv("2026-06-15", "saida")])]).toEqual([3, 4, 5, 6]);
+    expect([...monthsInGroup(2026, [mv("2026-06-15", "saida"), mv("2026-09-10", "entrada")])]).toEqual([3, 4, 5, 6, 9, 10, 11, 12]);
+    expect([...monthsInGroup(2026, [mv("2026-08-01", "entrada")])]).toEqual([8, 9, 10, 11, 12]);
+    expect([...monthsInGroup(2026, [mv("2025-11-30", "saida")])]).toEqual([]);
+  });
+  it("fora do grupo: sem atraso, previsto proporcional e linha oculta se o ano todo", () => {
+    const base = { year: 2026, today: "2026-12-20", settings: { dueRule: "dia_fixo" as const, dueDay: 10, categoryId: null }, records: [], exemptions: [], suggestions: [] };
+    const rows = buildFeeRows({ ...base,
+      associates: [{ id: "a", name: "Ana", branch: "lobinho", section: null, active: true }, { id: "b", name: "Bia", branch: "lobinho", section: null, active: false }],
+      movements: [{ id: "m1", associateId: "a", date: "2026-06-15", kind: "saida", reason: "Evasão" }, { id: "m2", associateId: "b", date: "2025-12-01", kind: "saida", reason: null }],
+    });
+    expect(rows[0].cells.map((c) => c.state)).toEqual(["atrasado", "atrasado", "atrasado", "atrasado", "fora", "fora", "fora", "fora", "fora", "fora"]);
+    expect([rows[0].overdue, rows[0].monthsInGroup, rows[0].hidden]).toEqual([4, 4, null]);
+    expect([rows[1].hidden, rows[1].overdue]).toEqual(["fora", 0]);
+    expect(feeBalance(rows[0], [], 2026, { monthlyCents: 6000, discountPct: 10, deadline: "2026-03-31" }).expected).toBe(24000);
   });
 });
