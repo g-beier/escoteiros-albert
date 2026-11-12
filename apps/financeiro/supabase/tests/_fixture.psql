@@ -1,0 +1,99 @@
+-- Dados comuns aos testes pgTAP de RLS/papéis (*.test.sql), incluídos com `\ir _fixture.psql`
+-- logo depois do `begin;`. A extensão .psql impede que o pg_prove rode este arquivo sozinho.
+--
+-- Dois grupos:
+--   A: admin (…f0a1), tesouraria (…f0a2), consulta (…f0a3) — com um exemplar de cada tabela.
+--   B: admin (…f0b1) — o "intruso"; também tem um lançamento próprio.
+-- Variáveis psql: gid_a, gid_b, acc_a, acc_b, pix_a, pix_b, cat_a, cat_b, assoc_a, entry_a, entry_b,
+-- split_a, line_a, line_a2, import_a, profile_a, attach_a, path_a, fee_rec_a.
+-- Também ficam em current_setting('test.<nome>') para uso dentro de blocos/strings.
+--
+-- Esquema auxiliar `tests` (desfeito no rollback):
+--   tests.login(uuid)            — vira o usuário (role authenticated + JWT claims)
+--   tests.logout()               — volta a postgres
+--   tests.updated(sql)/deleted   — executa um UPDATE/DELETE e devolve quantas linhas mudou
+
+create schema tests;
+grant usage on schema tests to authenticated;
+
+create function tests.login(p_user uuid) returns void language plpgsql as $$
+begin
+  perform set_config('request.jwt.claims', json_build_object('sub', p_user, 'role', 'authenticated')::text, true);
+  perform set_config('role', 'authenticated', true);
+end $$;
+
+create function tests.logout() returns void language plpgsql as $$
+begin
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('role', 'postgres', true);
+end $$;
+
+-- Conta as linhas afetadas por um UPDATE/DELETE (RLS filtra em silêncio: 0 = bloqueado).
+create function tests.affected(p_sql text) returns integer language plpgsql as $$
+declare n integer;
+begin
+  execute p_sql;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+grant execute on all functions in schema tests to authenticated;
+
+insert into auth.users(id, email) values
+  ('00000000-0000-0000-0000-00000000f0a1', 'rls.admin.a@escoteirosalbert.com.br'),
+  ('00000000-0000-0000-0000-00000000f0a2', 'rls.tes.a@escoteirosalbert.com.br'),
+  ('00000000-0000-0000-0000-00000000f0a3', 'rls.consulta.a@escoteirosalbert.com.br'),
+  ('00000000-0000-0000-0000-00000000f0b1', 'rls.admin.b@escoteirosalbert.com.br');
+select public.admin_bootstrap_group('rls.admin.a@escoteirosalbert.com.br', 'Grupo RLS A') as gid_a \gset
+select public.admin_bootstrap_group('rls.admin.b@escoteirosalbert.com.br', 'Grupo RLS B') as gid_b \gset
+insert into public.memberships(group_id, user_id, role) values
+  (:'gid_a', '00000000-0000-0000-0000-00000000f0a2', 'treasurer'),
+  (:'gid_a', '00000000-0000-0000-0000-00000000f0a3', 'viewer');
+select id as pix_a from public.payment_methods where group_id = :'gid_a' and name = 'PIX' \gset
+select id as pix_b from public.payment_methods where group_id = :'gid_b' and name = 'PIX' \gset
+select id as cat_a from public.categories where group_id = :'gid_a' and code = '1.1' \gset
+select id as cat_b from public.categories where group_id = :'gid_b' and code = '1.1' \gset
+insert into public.associates(group_id, name, branch) values (:'gid_a', 'Associado RLS A', 'lobinho') returning id as assoc_a \gset
+
+-- Grupo A, como tesouraria: tudo pelas funções auditadas.
+select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
+select public.create_account(:'gid_a', 'Conta RLS A', 'corrente', null, null, null, 0, null, null) as acc_a \gset
+select public.create_ledger_entry(:'gid_a', '2026-03-10', 'Lançamento RLS A', :'pix_a', null, false, 3000,
+  jsonb_build_array(jsonb_build_object('category_id', :'cat_a', 'amount_cents', 3000, 'description', 'mensalidade', 'associate_id', :'assoc_a')),
+  :'acc_a') as entry_a \gset
+select id as split_a from public.entry_splits where entry_id = :'entry_a' \gset
+select public.save_import_profile(:'gid_a', null, 'Perfil RLS A', 'ofx', 'ofx:rls', '{}'::jsonb) as profile_a \gset
+select (public.import_statement_lines(:'acc_a', :'profile_a', '{}'::jsonb, 'rls.ofx', '2026-03-01', '2026-03-31', null, null,
+  '[{"date":"2026-03-10","amountCents":3000,"description":"Pix RLS","externalId":"RLS1"},
+    {"date":"2026-03-11","amountCents":-500,"description":"Tarifa RLS","externalId":"RLS2"}]'::jsonb)) ->> 'inserted' as inserted \gset
+select id as line_a, import_id as import_a from public.statement_lines where account_id = :'acc_a' and external_id = 'RLS1' \gset
+select id as line_a2 from public.statement_lines where account_id = :'acc_a' and external_id = 'RLS2' \gset
+select public.link_reconciliation(array[:'line_a']::uuid[], array[:'entry_a']::uuid[]) as link_set_a \gset
+select :'gid_a' || '/' || :'entry_a' || '/' || gen_random_uuid() || '.pdf' as path_a \gset
+insert into storage.objects(bucket_id, name, owner_id, metadata)
+  values ('comprovantes', :'path_a', '00000000-0000-0000-0000-00000000f0a2', '{"mimetype":"application/pdf","size":100}');
+select public.add_entry_attachment(:'entry_a', :'path_a', 'nota.pdf') as attach_a \gset
+select public.set_fee_settings(:'gid_a', 'dia_fixo', 10, :'cat_a') \gset
+select public.set_fee_year_settings(:'gid_a', 2026, 3000, null, null) \gset
+select public.set_fee_record(:'assoc_a', 2026, 3, 'pago', null, array[:'split_a']::uuid[]) \gset
+select id as fee_rec_a from public.fee_records where associate_id = :'assoc_a' \gset
+select public.set_fee_exemption(:'assoc_a', 2027, 'Bolsa') \gset
+select public.set_fee_associate_price(:'assoc_a', 2026, 2500, 'Irmãos') \gset
+select public.add_associate_movement(:'assoc_a', '2026-02-01', 'entrada', 'Ingresso') \gset
+
+-- Grupo B, como seu admin.
+select tests.login('00000000-0000-0000-0000-00000000f0b1') \gset
+select public.create_account(:'gid_b', 'Conta RLS B', 'corrente', null, null, null, 0, null, null) as acc_b \gset
+select public.create_ledger_entry(:'gid_b', '2026-03-12', 'Lançamento RLS B', :'pix_b', null, false, 1000,
+  jsonb_build_array(jsonb_build_object('category_id', :'cat_b', 'amount_cents', 1000, 'description', 'doação')), :'acc_b') as entry_b \gset
+select tests.logout() \gset
+
+select set_config('test.gid_a', :'gid_a', true), set_config('test.gid_b', :'gid_b', true),
+  set_config('test.acc_a', :'acc_a', true), set_config('test.acc_b', :'acc_b', true),
+  set_config('test.pix_a', :'pix_a', true), set_config('test.pix_b', :'pix_b', true),
+  set_config('test.cat_a', :'cat_a', true), set_config('test.cat_b', :'cat_b', true),
+  set_config('test.assoc_a', :'assoc_a', true), set_config('test.entry_a', :'entry_a', true),
+  set_config('test.entry_b', :'entry_b', true), set_config('test.split_a', :'split_a', true),
+  set_config('test.line_a', :'line_a', true), set_config('test.line_a2', :'line_a2', true),
+  set_config('test.import_a', :'import_a', true), set_config('test.profile_a', :'profile_a', true),
+  set_config('test.attach_a', :'attach_a', true), set_config('test.path_a', :'path_a', true),
+  set_config('test.fee_rec_a', :'fee_rec_a', true) \gset

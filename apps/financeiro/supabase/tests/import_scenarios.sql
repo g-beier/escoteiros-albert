@@ -1,8 +1,12 @@
 -- Cenários de importação (015) sem alterar o banco local: rode, a partir de apps/financeiro,
---   (echo 'begin;'; cat supabase/tests/import_scenarios.sql; echo 'rollback;') \
+--   cat supabase/tests/import_scenarios.sql \
 --     | docker exec -i supabase_db_geas-financeiro psql -U postgres -v ON_ERROR_STOP=1 -q
+-- (ou junto com os demais por `npm run test:db`). O arquivo abre e desfaz a própria transação e imprime TAP
+-- (`1..1` ... `ok 1 - TUDO OK`), por isso também roda no `supabase test db` (pg_prove).
 -- Termina com "TUDO OK"; qualquer falha interrompe o psql e a transação é desfeita.
 \set ON_ERROR_STOP 1
+\echo 1..1
+begin;
 insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000c1', 'tes.cenarios@escoteirosalbert.com.br');
 select public.admin_bootstrap_group('tes.cenarios@escoteirosalbert.com.br', 'Grupo Teste Cenários') as gid \gset
 update public.memberships set role = 'treasurer' where user_id = '00000000-0000-0000-0000-0000000000c1';
@@ -116,4 +120,5 @@ do $$ begin
 end $$;
 
 reset role;
-\echo 'TUDO OK'
+\echo ok 1 - TUDO OK
+rollback;

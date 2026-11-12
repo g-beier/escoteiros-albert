@@ -1,9 +1,13 @@
 -- Anexos de comprovantes (027) sem alterar o banco local: rode, a partir de apps/financeiro,
---   (echo 'begin;'; cat supabase/tests/entry_attachments.sql; echo 'rollback;') \
+--   cat supabase/tests/entry_attachments.sql \
 --     | docker exec -i supabase_db_geas-financeiro psql -U postgres -v ON_ERROR_STOP=1 -q
+-- (ou junto com os demais por `npm run test:db`). O arquivo abre e desfaz a própria transação e imprime TAP
+-- (`1..1` ... `ok 1 - TUDO OK`), por isso também roda no `supabase test db` (pg_prove).
 -- O envio real passa pela API do Storage; aqui o objeto é inserido direto em storage.objects
 -- (como o usuário, para exercitar as políticas) com os metadados que a API gravaria.
 \set ON_ERROR_STOP 1
+\echo 1..1
+begin;
 insert into auth.users(id, email) values
   ('00000000-0000-0000-0000-0000000000a1', 'tes.anexo@escoteirosalbert.com.br'),
   ('00000000-0000-0000-0000-0000000000a2', 'consulta.anexo@escoteirosalbert.com.br'),
@@ -116,4 +120,5 @@ do $$ begin
     <> 'ledger_entry.attachment_added nota fiscal.pdf,ledger_entry.attachment_added nota fiscal.pdf,ledger_entry.attachment_removed nota fiscal.pdf'
     then raise exception 'FALHOU: auditoria dos anexos'; end if;
 end $$;
-\echo 'TUDO OK'
+\echo ok 1 - TUDO OK
+rollback;

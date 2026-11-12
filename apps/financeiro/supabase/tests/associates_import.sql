@@ -1,7 +1,11 @@
 -- Importação de associados (016) sem alterar o banco local: rode, a partir de apps/financeiro,
---   (echo 'begin;'; cat supabase/tests/associates_import.sql; echo 'rollback;') \
+--   cat supabase/tests/associates_import.sql \
 --     | docker exec -i supabase_db_geas-financeiro psql -U postgres -v ON_ERROR_STOP=1 -q
+-- (ou junto com os demais por `npm run test:db`). O arquivo abre e desfaz a própria transação e imprime TAP
+-- (`1..1` ... `ok 1 - TUDO OK`), por isso também roda no `supabase test db` (pg_prove).
 \set ON_ERROR_STOP 1
+\echo 1..1
+begin;
 insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000d1', 'tes.associados@escoteirosalbert.com.br');
 select public.admin_bootstrap_group('tes.associados@escoteirosalbert.com.br', 'Grupo Teste Associados') as gid \gset
 update public.memberships set role = 'treasurer' where user_id = '00000000-0000-0000-0000-0000000000d1';
@@ -24,4 +28,5 @@ do $$ begin
   if exists (select 1 from public.associates where name = 'Ok Nome') then raise exception 'FALHOU: não é tudo ou nada'; end if;
 end $$;
 reset role;
-\echo 'TUDO OK'
+\echo ok 1 - TUDO OK
+rollback;

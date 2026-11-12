@@ -1,9 +1,12 @@
 -- Teste manual das funções de conciliação (013) sem alterar o banco local: rode, a partir de apps/financeiro,
---   (echo 'begin;'; cat supabase/migrations/013_reconciliation.sql supabase/tests/reconciliation.sql; echo 'rollback;') \
+--   cat supabase/tests/reconciliation.sql \
 --     | docker exec -i supabase_db_geas-financeiro psql -U postgres -v ON_ERROR_STOP=1 -q
--- incluindo antes de 013 as migrations ainda não aplicadas (011, 012). Termina com "TUDO OK";
--- qualquer falha interrompe o psql e a transação é desfeita.
+-- (ou junto com os demais por `npm run test:db`). O arquivo abre e desfaz a própria transação e imprime TAP
+-- (`1..1` ... `ok 1 - TUDO OK`), por isso também roda no `supabase test db` (pg_prove).
+-- Termina com "TUDO OK"; qualquer falha interrompe o psql e a transação é desfeita.
 \set ON_ERROR_STOP 1
+\echo 1..1
+begin;
 insert into auth.users(id, email) values
   ('00000000-0000-0000-0000-0000000000a1', 'tes.teste@escoteirosalbert.com.br'),
   ('00000000-0000-0000-0000-0000000000a2', 'consulta.teste@escoteirosalbert.com.br');
@@ -185,4 +188,5 @@ select count(*) as linhas_de_fora from statement_lines;
 reset role;
 \echo '--- auditoria'
 select action, count(*) from audit_events where group_id = :'gid' and (action like 'reconciliation.%' or action like 'statement_line.%' or action in ('ledger_entry.outside_statement', 'ledger_entry.account_changed')) group by 1 order by 1;
-\echo 'TUDO OK'
+\echo ok 1 - TUDO OK
+rollback;

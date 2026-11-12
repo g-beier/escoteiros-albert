@@ -1,8 +1,12 @@
 -- Saldo da conta numa data (025) sem alterar o banco local: rode, a partir de apps/financeiro,
---   (echo 'begin;'; cat supabase/tests/account_balance.sql; echo 'rollback;') \
+--   cat supabase/tests/account_balance.sql \
 --     | docker exec -i supabase_db_geas-financeiro psql -U postgres -v ON_ERROR_STOP=1 -q
+-- (ou junto com os demais por `npm run test:db`). O arquivo abre e desfaz a própria transação e imprime TAP
+-- (`1..1` ... `ok 1 - TUDO OK`), por isso também roda no `supabase test db` (pg_prove).
 -- Termina com "TUDO OK"; qualquer falha interrompe o psql e a transação é desfeita.
 \set ON_ERROR_STOP 1
+\echo 1..1
+begin;
 insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000d1', 'tes.saldo@escoteirosalbert.com.br');
 insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000d2', 'tes.intruso@escoteirosalbert.com.br');
 select public.admin_bootstrap_group('tes.saldo@escoteirosalbert.com.br', 'Grupo Teste Saldo') as gid \gset
@@ -74,4 +78,5 @@ exception when others then
   if sqlerrm not like '%Conta não encontrada%' then raise; end if;
 end $$;
 
-\echo 'TUDO OK'
+\echo ok 1 - TUDO OK
+rollback;

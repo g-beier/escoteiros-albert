@@ -17,7 +17,8 @@
     "infra:start": "npm run infra:start --workspace=@geas/financeiro",
     "infra:stop": "npm run infra:stop --workspace=@geas/financeiro",
     "infra:status": "npm run infra:status --workspace=@geas/financeiro",
-    "infra:reset": "npm run infra:reset --workspace=@geas/financeiro"
+    "infra:reset": "npm run infra:reset --workspace=@geas/financeiro",
+    "test:db": "npm run test:db --workspace=@geas/financeiro"
   },
   "engines": {
     "node": ">=22"

@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:db": "npm exec --package=supabase -- supabase test db"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

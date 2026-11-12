@@ -1,8 +1,12 @@
 -- Lançamentos: histórico de alterações (023) e troca de conta em lote (024) sem alterar o banco local: rode, a partir de apps/financeiro,
---   (echo 'begin;'; cat supabase/tests/entries.sql; echo 'rollback;') \
+--   cat supabase/tests/entries.sql \
 --     | docker exec -i supabase_db_geas-financeiro psql -U postgres -v ON_ERROR_STOP=1 -q
+-- (ou junto com os demais por `npm run test:db`). O arquivo abre e desfaz a própria transação e imprime TAP
+-- (`1..1` ... `ok 1 - TUDO OK`), por isso também roda no `supabase test db` (pg_prove).
 -- com 023 e 024 já aplicadas. Termina com "TUDO OK"; qualquer falha interrompe o psql e a transação é desfeita.
 \set ON_ERROR_STOP 1
+\echo 1..1
+begin;
 insert into auth.users(id, email) values
   ('00000000-0000-0000-0000-0000000000c1', 'tes.lanc@escoteirosalbert.com.br'),
   ('00000000-0000-0000-0000-0000000000c2', 'consulta.lanc@escoteirosalbert.com.br'),
@@ -109,4 +113,5 @@ do $$ begin
 end $$;
 reset role;
 
-\echo 'TUDO OK'
+\echo ok 1 - TUDO OK
+rollback;

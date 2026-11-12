@@ -1,7 +1,11 @@
 -- Mensalidades (018) sem alterar o banco local: rode, a partir de apps/financeiro,
---   (echo 'begin;'; cat supabase/tests/fees.sql; echo 'rollback;') \
+--   cat supabase/tests/fees.sql \
 --     | docker exec -i supabase_db_geas-financeiro psql -U postgres -v ON_ERROR_STOP=1 -q
+-- (ou junto com os demais por `npm run test:db`). O arquivo abre e desfaz a própria transação e imprime TAP
+-- (`1..1` ... `ok 1 - TUDO OK`), por isso também roda no `supabase test db` (pg_prove).
 \set ON_ERROR_STOP 1
+\echo 1..1
+begin;
 insert into auth.users(id, email) values
   ('00000000-0000-0000-0000-0000000000e1', 'tes.mensal@escoteirosalbert.com.br'),
   ('00000000-0000-0000-0000-0000000000e2', 'consulta.mensal@escoteirosalbert.com.br');
@@ -112,4 +116,5 @@ do $$ begin
 exception when raise_exception then if sqlerrm not like '%sem permissão%' then raise; end if;
 end $$;
 reset role;
-\echo 'TUDO OK'
+\echo ok 1 - TUDO OK
+rollback;

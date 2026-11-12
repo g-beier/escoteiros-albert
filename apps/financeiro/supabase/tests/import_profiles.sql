@@ -1,8 +1,12 @@
 -- Perfis de leitura (026) sem alterar o banco local: rode, a partir de apps/financeiro,
---   (echo 'begin;'; cat supabase/tests/import_profiles.sql; echo 'rollback;') \
+--   cat supabase/tests/import_profiles.sql \
 --     | docker exec -i supabase_db_geas-financeiro psql -U postgres -v ON_ERROR_STOP=1 -q
+-- (ou junto com os demais por `npm run test:db`). O arquivo abre e desfaz a própria transação e imprime TAP
+-- (`1..1` ... `ok 1 - TUDO OK`), por isso também roda no `supabase test db` (pg_prove).
 -- Termina com "TUDO OK"; qualquer falha interrompe o psql e a transação é desfeita.
 \set ON_ERROR_STOP 1
+\echo 1..1
+begin;
 insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000e1', 'tes.perfis@escoteirosalbert.com.br');
 insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000e2', 'tes.consulta.perfis@escoteirosalbert.com.br');
 insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000e3', 'tes.outro.perfis@escoteirosalbert.com.br');
@@ -61,4 +65,5 @@ do $$ begin
       and action in ('import_profile.renamed', 'import_profile.deleted')) <> 2 then raise exception 'FALHOU: auditoria'; end if;
 end $$;
 
-\echo 'TUDO OK'
+\echo ok 1 - TUDO OK
+rollback;
