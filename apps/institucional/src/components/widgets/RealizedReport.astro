@@ -1,0 +1,174 @@
+---
+import { formatCents, formatDateBR, sumMonths, type FinancialReport } from '~/utils/financial-reports';
+
+export interface Props {
+  report: FinancialReport;
+}
+
+const { report } = Astro.props;
+const { year, rows, periodEnd } = report;
+
+const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const MONTHS_LONG = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+];
+
+const rootMonths = (kind: 'receita' | 'despesa') =>
+  rows.find((r) => r.depth === 0 && r.kind === kind)?.months ?? Array<number>(12).fill(0);
+const income = rootMonths('receita');
+const expense = rootMonths('despesa');
+const balance = income.map((v, m) => v - expense[m]);
+const totals = { income: sumMonths(income), expense: sumMonths(expense), balance: sumMonths(balance) };
+
+const partial = periodEnd < `${year}-12-31`;
+const hasDetail = rows.some((r) => r.depth >= 2);
+const tableId = `realizado-${year}`;
+const label = (r: FinancialReport['rows'][number]) => (r.code ? `${r.code}. ${r.name}` : r.name);
+const cellClass = (cents: number, strong: boolean) =>
+  [
+    'px-2 py-1 text-right whitespace-nowrap tabular-nums',
+    cents < 0 && 'text-orange-600',
+    !cents && 'text-gray-300',
+    strong && 'font-semibold',
+  ]
+    .filter(Boolean)
+    .join(' ');
+const value = (cents: number) => (cents ? formatCents(cents) : '—');
+---
+
+<div class="flex flex-col gap-6">
+  <dl class="grid gap-3 sm:grid-cols-3">
+    <div class="rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+      <dt class="text-sm font-medium text-green-700">Receitas</dt>
+      <dd class="font-heading text-2xl font-bold text-green-700 tabular-nums">{formatCents(totals.income)}</dd>
+    </div>
+    <div class="rounded-lg border border-orange-200 bg-orange-50 px-4 py-3">
+      <dt class="text-sm font-medium text-orange-600">Despesas</dt>
+      <dd class="font-heading text-2xl font-bold text-orange-600 tabular-nums">{formatCents(totals.expense)}</dd>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white px-4 py-3">
+      <dt class="text-sm font-medium text-gray-600">Saldo (receitas − despesas)</dt>
+      <dd
+        class:list={[
+          'font-heading text-2xl font-bold tabular-nums',
+          totals.balance < 0 ? 'text-orange-600' : 'text-gray-800',
+        ]}
+      >
+        {formatCents(totals.balance)}
+      </dd>
+    </div>
+  </dl>
+
+  <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+    <p class="m-0">
+      {
+        partial
+          ? `Exercício em andamento: valores até ${formatDateBR(periodEnd)}.`
+          : `Exercício encerrado em 31/12/${year}.`
+      }{' '}
+      Despesas aparecem positivas; estornos, negativos.
+    </p>
+    {
+      hasDetail && (
+        <button
+          type="button"
+          class="border-primary text-primary hover:bg-primary/10 ml-auto rounded-full border px-4 py-1.5 text-sm font-semibold"
+          aria-controls={tableId}
+          aria-expanded="false"
+          data-realized-toggle
+        >
+          Ver todas as rubricas
+        </button>
+      )
+    }
+  </div>
+
+  <div class="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+    <table id={tableId} class="realized w-full min-w-[1100px] border-collapse text-xs">
+      <caption class="sr-only">Realizado de {year}: receitas e despesas por rubrica, mês a mês</caption>
+      <thead class="bg-gray-100">
+        <tr>
+          <th scope="col" class="sticky left-0 min-w-56 bg-gray-100 px-3 py-2 text-left font-semibold">Rubrica</th>
+          {
+            MONTHS.map((m, i) => (
+              <th scope="col" class="px-2 py-2 text-right font-semibold">
+                <abbr title={MONTHS_LONG[i]} class="no-underline">
+                  {m}
+                </abbr>
+              </th>
+            ))
+          }
+          <th scope="col" class="px-3 py-2 text-right font-semibold">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          rows.map((row) => {
+            const root = row.depth === 0;
+            const strong = root || row.depth === 1;
+            const bg = root ? (row.kind === 'receita' ? 'bg-green-50' : 'bg-orange-50') : 'bg-white';
+            return (
+              <tr class:list={['border-t border-gray-200', bg]} data-depth={row.depth}>
+                <th
+                  scope="row"
+                  class:list={[
+                    'sticky left-0 px-3 py-1 text-left whitespace-nowrap',
+                    bg,
+                    strong ? 'font-semibold' : 'font-normal',
+                    !row.code && !root && 'text-gray-500 italic',
+                    root && (row.kind === 'receita' ? 'text-green-700' : 'text-orange-600'),
+                  ]}
+                  style={`padding-left: ${0.75 + row.depth * 0.9}rem`}
+                >
+                  {label(row)}
+                </th>
+                {row.months.map((cents) => (
+                  <td class={cellClass(cents, strong)}>{value(cents)}</td>
+                ))}
+                <td class={cellClass(sumMonths(row.months), true)}>{value(sumMonths(row.months))}</td>
+              </tr>
+            );
+          })
+        }
+      </tbody>
+      <tfoot class="border-t-2 border-gray-300 bg-gray-100">
+        <tr>
+          <th scope="row" class="sticky left-0 bg-gray-100 px-3 py-1.5 text-left font-semibold">
+            Saldo (receitas − despesas)
+          </th>
+          {balance.map((cents) => <td class={cellClass(cents, true)}>{value(cents)}</td>)}
+          <td class={cellClass(totals.balance, true)}>{value(totals.balance)}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<style>
+  .realized:not([data-expanded]) tr[data-depth]:not([data-depth='0']):not([data-depth='1']) {
+    display: none;
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-realized-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const table = document.getElementById(button.getAttribute('aria-controls') ?? '');
+      if (!table) return;
+      const expanded = table.toggleAttribute('data-expanded');
+      button.setAttribute('aria-expanded', String(expanded));
+      button.textContent = expanded ? 'Só os grupos' : 'Ver todas as rubricas';
+    });
+  });
+</script>

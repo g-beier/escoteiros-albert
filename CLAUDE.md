@@ -34,6 +34,7 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 - `src/navigation.js` — header/footer menus.
 - `vendor/` — custom `astrowind` integration. Path aliases: `~` → `src`, `@components`, `@layouts`.
 - Google Analytics via Partytown.
+- Transparência: Realizado from `src/data/prestacao-contas/*.json` (exported by financeiro, "Exportar para o site" → `/exportar/transparencia`), validated in `src/utils/financial-reports.ts`, rendered by `widgets/RealizedReport.astro`; without a file the page falls back to the Google Sheets iframe. Format shared with `apps/financeiro/lib/export/transparency.ts`.
 
 ## financeiro
 

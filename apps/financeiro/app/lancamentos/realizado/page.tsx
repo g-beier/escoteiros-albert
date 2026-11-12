@@ -1,4 +1,4 @@
-import { IconDownload } from "@tabler/icons-react";
+import { IconDownload, IconWorldUpload } from "@tabler/icons-react";
 import { AppHeader } from "@/components/app-header";
 import { EntryViewTabs, PageBody, PageHeader } from "@/components/nav/page-header";
 import { YearSelect } from "@/components/nav/year-select";
@@ -47,6 +47,8 @@ export default async function RealizedPage({ searchParams }: { searchParams: Pro
         actions={<>
           <YearSelect year={year} links={years.map((y) => ({ year: y, href: y === thisYear ? "/lancamentos/realizado" : `/lancamentos/realizado?ano=${y}` }))} />
           <Button variant="outline" size="lg" nativeButton={false} render={<a href={`/exportar/realizado?ano=${year}`} download />}><IconDownload /> Baixar planilha</Button>
+          <Button variant="outline" size="lg" nativeButton={false} title="JSON para a página Transparência do site (apps/institucional/src/data/prestacao-contas/)"
+            render={<a href={`/exportar/transparencia?ano=${year}`} download />}><IconWorldUpload /> Exportar para o site</Button>
         </>}
         description="Receitas e despesas por rubrica, mês a mês, pela data do lançamento. Rubricas pai somam as filhas; inativas aparecem só se tiveram movimento no ano." />
       {error && <p role="alert" className="m-0 rounded-lg bg-destructive/10 px-3 py-2 text-destructive">Não foi possível carregar o Realizado: {error}</p>}

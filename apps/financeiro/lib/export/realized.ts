@@ -5,6 +5,9 @@ export type RealizedSum = { category_id: string; month: number; amount_cents: nu
 export type RealizedRow = {
   id: string;
   label: string;
+  /** Código e nome do cadastro (raiz sintética: "1"/"2" e "Receitas"/"Despesas"). */
+  code: string | null;
+  name: string;
   /** 0 = raiz (1. Receitas / 2. Despesas). */
   depth: number;
   kind: CategoryKind;
@@ -66,7 +69,7 @@ export function buildRealizedModel(categories: CategoryItem[], sums: RealizedSum
     const index = rows.length;
     const sign = kind === "despesa" ? -1 : 1;
     const label = c ? (c.code ? `${c.code}. ${c.name}` : `${c.name} (sem código)`) : `${kind === "receita" ? 1 : 2}. ${ROOT_NAMES[kind]}`;
-    const row: RealizedRow = { id: c?.id ?? `root-${kind}`, label, depth, kind, own: (c ? raw.get(c.id) ?? zeros() : zeros()).map((v) => sign * v || 0), children: [], total: zeros() };
+    const row: RealizedRow = { id: c?.id ?? `root-${kind}`, label, code: c ? c.code : kind === "receita" ? "1" : "2", name: c?.name ?? ROOT_NAMES[kind], depth, kind, own: (c ? raw.get(c.id) ?? zeros() : zeros()).map((v) => sign * v || 0), children: [], total: zeros() };
     rows.push(row);
     for (const child of c ? children.get(c.id) ?? [] : []) row.children.push(add(child, kind, depth + 1));
     for (const child of extra) { const i = add(child, kind, depth + 1); rows[i].adopted = true; row.children.push(i); }

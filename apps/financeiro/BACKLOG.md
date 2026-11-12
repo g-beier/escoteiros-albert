@@ -111,6 +111,10 @@
 - **Rubricas:** código já usado avisado ao sair do campo, com o nome da rubrica.
 - **Seções e patrulhas** (`028_sections.sql`): Ramo › Seção › Patrulha cadastrados em Configurações › Associados; seção vira lista do ramo (pré-selecionada quando há uma só), patrulha opcional; seções antigas em texto descartadas; importação CSV casa seção/patrulha pelo nome. Teste `sections.test.sql`.
 
+## Concluído (2026-11-12, prestação de contas no site)
+
+- **Exportar para o site** no Realizado (`/exportar/transparencia?ano=AAAA`): JSON só com rubricas e valores mês a mês (`lib/export/transparency.ts`); valor lançado direto num grupo sai como "Sem rubrica detalhada". O institucional lê `src/data/prestacao-contas/*.json` no build e mostra o Realizado na página Transparência (sem arquivo, segue a planilha do Google).
+
 ## A verificar
 
 Com o contador:
