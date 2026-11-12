@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import type { SplitRow, LedgerRow } from "@/lib/entry-queries";
+import { LEDGER_EXPORT_COLUMNS, SPLIT_EXPORT_COLUMNS, type Column } from "./columns";
 import { describePeriod, MONTHS_SHORT, type Period } from "./period";
 import type { RealizedModel, RealizedRow } from "./realized";
 
@@ -26,7 +27,13 @@ async function toBuffer(workbook: ExcelJS.Workbook) {
 
 // ---------------------------------------------------------------- fluxo de caixa
 
-type Column<T> = { header: string; width: number; value: (row: T) => ExcelJS.CellValue; money?: boolean; date?: boolean };
+function cellValue<T>(column: Column<T>, row: T): ExcelJS.CellValue {
+  const value = column.value(row);
+  if (value === null) return null;
+  if (column.type === "money") return reais(Number(value));
+  if (column.type === "date") return toDate(String(value));
+  return value;
+}
 
 const HEADER_ROW = 4;
 
@@ -36,8 +43,8 @@ function flowSheet<T>(workbook: ExcelJS.Workbook, name: string, title: string, p
   columns.forEach((column, i) => {
     const col = sheet.getColumn(i + 1);
     col.width = column.width;
-    if (column.money) col.numFmt = MONEY;
-    if (column.date) col.numFmt = "dd/mm/yyyy";
+    if (column.type === "money") col.numFmt = MONEY;
+    if (column.type === "date") col.numFmt = "dd/mm/yyyy";
   });
 
   sheet.getCell("A1").value = `${title} — ${describePeriod(period)}`;
@@ -55,7 +62,7 @@ function flowSheet<T>(workbook: ExcelJS.Workbook, name: string, title: string, p
   header.height = 20;
 
   rows.forEach((row) => {
-    const added = sheet.addRow(columns.map((c) => c.value(row)));
+    const added = sheet.addRow(columns.map((c) => cellValue(c, row)));
     added.font = { name: FONT, size: 10 };
   });
   const firstData = HEADER_ROW + 1;
@@ -64,7 +71,7 @@ function flowSheet<T>(workbook: ExcelJS.Workbook, name: string, title: string, p
   else sheet.addRow(["Nenhum lançamento no período."]).font = { name: FONT, size: 10, italic: true, color: argb("#5D5962") };
 
   // totais: entradas, saídas e saldo, como fórmulas sobre a coluna de valor
-  const moneyIndex = columns.findIndex((c) => c.money);
+  const moneyIndex = columns.findIndex((c) => c.type === "money");
   const letter = sheet.getColumn(moneyIndex + 1).letter;
   const range = `${letter}${firstData}:${letter}${lastData}`;
   const values = rows.map(amount);
@@ -86,38 +93,15 @@ function flowSheet<T>(workbook: ExcelJS.Workbook, name: string, title: string, p
   return sheet;
 }
 
-const folder = (filed: boolean) => filed ? "Arquivado" : "Pendente";
-
 export async function ledgerWorkbook(rows: LedgerRow[], period: Period) {
   const workbook = newWorkbook();
-  flowSheet(workbook, "Fluxo por extrato", "Fluxo de caixa por extrato", period, [
-    { header: "Data", width: 12, date: true, value: (r) => toDate(r.entry_date) },
-    { header: "Nome", width: 40, value: (r) => r.name },
-    { header: "Conta", width: 22, value: (r) => r.account_name },
-    { header: "Forma pgto", width: 18, value: (r) => r.payment_method_name },
-    { header: "Documento", width: 16, value: (r) => r.document ?? "" },
-    { header: "Documentos", width: 12, value: (r) => folder(r.document_filed) },
-    { header: "Valor", width: 16, money: true, value: (r) => reais(r.total_cents) },
-  ], rows, (r) => r.total_cents);
+  flowSheet(workbook, "Fluxo por lançamento", "Fluxo de caixa por lançamento", period, LEDGER_EXPORT_COLUMNS, rows, (r) => r.total_cents);
   return toBuffer(workbook);
 }
 
 export async function splitWorkbook(rows: SplitRow[], period: Period) {
   const workbook = newWorkbook();
-  flowSheet(workbook, "Fluxo por rubrica", "Fluxo de caixa por rubrica", period, [
-    { header: "Data", width: 12, date: true, value: (r) => toDate(r.entry_date) },
-    { header: "Nome do lançamento", width: 34, value: (r) => r.entry_name },
-    { header: "Conta", width: 22, value: (r) => r.account_name },
-    { header: "Forma pgto", width: 18, value: (r) => r.payment_method_name },
-    { header: "Documento", width: 16, value: (r) => r.document ?? "" },
-    { header: "Documentos", width: 12, value: (r) => folder(r.document_filed) },
-    { header: "Código", width: 9, value: (r) => r.category_code ?? "" },
-    { header: "Rubrica", width: 30, value: (r) => r.category_name },
-    { header: "Tipo", width: 10, value: (r) => r.category_kind === "receita" ? "Receita" : r.category_kind === "despesa" ? "Despesa" : "" },
-    { header: "Descrição", width: 34, value: (r) => r.description },
-    { header: "Associado", width: 26, value: (r) => r.associate_name ?? "" },
-    { header: "Valor", width: 16, money: true, value: (r) => reais(r.amount_cents) },
-  ], rows, (r) => r.amount_cents);
+  flowSheet(workbook, "Fluxo por rubrica", "Fluxo de caixa por rubrica", period, SPLIT_EXPORT_COLUMNS, rows, (r) => r.amount_cents);
   return toBuffer(workbook);
 }
 

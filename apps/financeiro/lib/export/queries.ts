@@ -29,9 +29,12 @@ export function fetchAllLedgerRows(supabase: SupabaseClient, groupId: string, { 
     .range(start, end));
 }
 
-export function fetchAllSplitRows(supabase: SupabaseClient, groupId: string, { from, to }: Period) {
-  return fetchAll<SplitRow>((start, end) => supabase.from("entry_split_rows").select(SPLIT_COLUMNS)
-    .eq("group_id", groupId).gte("entry_date", from).lte("entry_date", to)
-    .order("entry_date").order("entry_id").order("split_id")
-    .range(start, end));
+/** Rateios do período; `accountId` restringe a uma conta (exportação contábil por conta). */
+export function fetchAllSplitRows(supabase: SupabaseClient, groupId: string, { from, to }: Period, accountId?: string) {
+  return fetchAll<SplitRow>((start, end) => {
+    let query = supabase.from("entry_split_rows").select(SPLIT_COLUMNS)
+      .eq("group_id", groupId).gte("entry_date", from).lte("entry_date", to);
+    if (accountId) query = query.eq("account_id", accountId);
+    return query.order("entry_date").order("entry_id").order("split_id").range(start, end);
+  });
 }

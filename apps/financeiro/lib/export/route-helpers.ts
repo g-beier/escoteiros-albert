@@ -22,3 +22,15 @@ export function xlsxResponse(buffer: Buffer, filename: string) {
     },
   });
 }
+
+export const CSV_MIME = "text/csv";
+
+export function csvResponse(bytes: Uint8Array, filename: string, charset: string) {
+  return new NextResponse(new Uint8Array(bytes), {
+    headers: {
+      "Content-Type": `${CSV_MIME}; charset=${charset}`,
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "no-store",
+    },
+  });
+}
