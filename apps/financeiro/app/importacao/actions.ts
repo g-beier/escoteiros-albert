@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { canManageEntries } from "@/lib/auth";
+import { memberOrError } from "@/lib/session";
 import {
   fromRpcImportResult, importLinesSchema, importProfileSchema, importSummary, parseStatementLines, toRpcLines,
   type ImportResult,
@@ -19,18 +18,9 @@ export type ImportProfile = {
 
 type ActionResult<T = undefined> = { error?: string; success?: string; data?: T };
 
-async function membership() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Sessão expirada." } as const;
-  const { data } = await supabase.from("memberships").select("group_id, role").eq("user_id", user.id).single();
-  if (!data) return { error: "Sua conta ainda não pertence a um grupo." } as const;
-  return { supabase, groupId: data.group_id as string, canEdit: canManageEntries(data.role) } as const;
-}
-
 /** Perfis de importação do grupo (um por banco/formato), mais recentes primeiro. */
 export async function listImportProfiles(): Promise<ActionResult<ImportProfile[]>> {
-  const ctx = await membership();
+  const ctx = await memberOrError();
   if ("error" in ctx) return { error: ctx.error };
   const { data, error } = await ctx.supabase.from("import_profiles")
     .select("id, name, format, header_signature, settings, updated_at")
@@ -43,7 +33,7 @@ export async function listImportProfiles(): Promise<ActionResult<ImportProfile[]
 export async function saveImportProfile(payload: unknown): Promise<ActionResult<{ id: string }>> {
   const parsed = importProfileSchema.safeParse(payload);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const ctx = await membership();
+  const ctx = await memberOrError();
   if ("error" in ctx) return { error: ctx.error };
   if (!ctx.canEdit) return { error: "Sem permissão para alterar perfis de importação." };
   const { data, error } = await ctx.supabase.rpc("save_import_profile", {
@@ -64,7 +54,7 @@ export async function importStatementLines(payload: unknown): Promise<ActionResu
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const lines = parseStatementLines(parsed.data.lines);
   if ("error" in lines) return { error: lines.error };
-  const ctx = await membership();
+  const ctx = await memberOrError();
   if ("error" in ctx) return { error: ctx.error };
   if (!ctx.canEdit) return { error: "Sem permissão para importar extratos." };
   const { data, error } = await ctx.supabase.rpc("import_statement_lines", {

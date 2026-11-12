@@ -4,6 +4,8 @@ import { useActionState, useEffect, useState } from "react";
 import { IconPencil, IconPlus } from "@tabler/icons-react";
 import { createAccount, setAccountActive, updateAccount, type CatalogFormState } from "@/app/cadastros/actions";
 import { OptionSelect } from "@/components/option-controls";
+import { LedgerCodeInput } from "@/components/ledger-code-input";
+import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -21,19 +23,17 @@ const kindOptions = Object.entries(ACCOUNT_KINDS).map(([value, label]) => ({ val
 
 export function AccountsManager({ accounts, canEdit }: { accounts: AccountItem[]; canEdit: boolean }) {
   const [editing, setEditing] = useState<AccountItem | "new" | null>(null);
-  return <section className="card" aria-labelledby="accounts-title">
-    <header className="card-head">
-      <div><h2 className="card-title" id="accounts-title">Contas</h2><p className="m-0 text-xs text-muted-foreground">Onde o dinheiro está: conta corrente, poupança, caixa. Cada lançamento pertence a uma conta.</p></div>
-      <div className="flex items-center gap-3">
-        <span className="muted" style={{ fontSize: 12 }}>{accounts.filter((a) => a.active).length} ativas de {accounts.length}</span>
-        {canEdit && <Button onClick={() => setEditing("new")}><IconPlus /> Nova conta</Button>}
-      </div>
-    </header>
+  return <SectionCard aria-labelledby="accounts-title">
+    <SectionHeader title="Contas" titleId="accounts-title" description="Onde o dinheiro está: conta corrente, poupança, caixa. Cada lançamento pertence a uma conta.">
+      <SectionCount>{accounts.filter((a) => a.active).length} ativas de {accounts.length}</SectionCount>
+      {canEdit && <Button onClick={() => setEditing("new")}><IconPlus /> Nova conta</Button>}
+    </SectionHeader>
     <Table>
       <TableCaption className="sr-only">Contas do grupo</TableCaption>
       <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
         <TableHead className="h-8 px-3">Nome</TableHead>
         <TableHead className="h-8 px-3">Tipo</TableHead>
+        <TableHead className="h-8 px-3">Conta contábil</TableHead>
         <TableHead className="h-8 px-3 text-right">Saldo inicial</TableHead>
         <TableHead className="h-8 px-3 text-right">Uso</TableHead>
         <TableHead className="h-8 px-3">Status</TableHead>
@@ -45,7 +45,7 @@ export function AccountsManager({ accounts, canEdit }: { accounts: AccountItem[]
         {editing !== null && <AccountForm key={editing === "new" ? "new" : editing.id} account={editing === "new" ? null : editing} onDone={() => setEditing(null)} />}
       </DialogContent>
     </Dialog>}
-  </section>;
+  </SectionCard>;
 }
 
 function AccountRow({ account, canEdit, onEdit }: { account: AccountItem; canEdit: boolean; onEdit: () => void }) {
@@ -58,6 +58,9 @@ function AccountRow({ account, canEdit, onEdit }: { account: AccountItem; canEdi
       {details && <div className="text-xs text-muted-foreground">{details}</div>}
     </TableCell>
     <TableCell className="px-3 py-1.5">{ACCOUNT_KINDS[account.kind]}</TableCell>
+    <TableCell className="px-3 py-1.5 num">{account.ledger_code ?? <span className="text-muted-foreground">—</span>}
+      {account.ofx_key && <div className="text-xs text-muted-foreground" title="Arquivos OFX desta conta são reconhecidos automaticamente">OFX {account.ofx_key}</div>}
+    </TableCell>
     <TableCell className="px-3 py-1.5 text-right num">
       {money(account.opening_balance_cents / 100)}
       {account.opening_date && <div className="text-xs text-muted-foreground">em {dateBR(account.opening_date)}</div>}
@@ -103,6 +106,11 @@ function AccountForm({ account, onDone }: { account: AccountItem | null; onDone:
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="grid gap-1.5"><Label htmlFor={field("opening-balance")}>Saldo inicial (R$)</Label><Input id={field("opening-balance")} name="openingBalance" inputMode="decimal" placeholder="0,00" defaultValue={account ? centsToInput(account.opening_balance_cents) : ""} className="text-right num" /></div>
       <div className="grid gap-1.5"><Label htmlFor={field("opening-date")}>Data de início</Label><Input id={field("opening-date")} name="openingDate" type="date" defaultValue={account?.opening_date ?? ""} /></div>
+    </div>
+    <div className="grid gap-1.5">
+      <Label htmlFor={field("ledger-code")}>Conta contábil (opcional)</Label>
+      <LedgerCodeInput id={field("ledger-code")} defaultValue={account?.ledger_code} className="w-44" />
+      <p className="m-0 text-xs text-muted-foreground">Contrapartida na exportação para a contabilidade (ex.: a conta “Bancos” do plano de contas).</p>
     </div>
     <DialogFooter>
       <Button type="button" variant="outline" onClick={onDone}>Cancelar</Button>

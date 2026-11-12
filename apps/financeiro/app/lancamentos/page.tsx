@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { IconFolderExclamation } from "@tabler/icons-react";
-import { createClient } from "@/lib/supabase/server";
+import { pageSession } from "@/lib/session";
 import { AppHeader } from "@/components/app-header";
 import { InfiniteEntries } from "@/components/entries/infinite-entries";
 import { fetchEntryPage } from "@/lib/entry-queries";
@@ -10,7 +9,6 @@ import { EntryFilters } from "@/components/entries/entry-filters";
 import { ExportMenu } from "@/components/export/export-menu";
 import { SetupNeeded } from "@/components/setup-needed";
 import { exportYears } from "@/lib/export/period";
-import { canManageEntries } from "@/lib/auth";
 import { listQuery } from "@/lib/entries";
 import { ALL_DATES, hasAnyFilter, NO_ASSOCIATE, parseFilters, parseOrder, type RawSearchParams } from "@/lib/filters";
 import { depthOf, descendantsMap, sortCategories, type CategoryItem } from "@/lib/categories";
@@ -27,13 +25,10 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
   const order = parseOrder(params);
   const filtered = hasAnyFilter(filters);
   const returnQuery = listQuery(params);
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: membership } = await supabase.from("memberships").select("group_id, role").eq("user_id", user.id).single();
+  const { supabase, user, member: membership } = await pageSession();
   if (!membership) return <SetupNeeded email={user.email ?? ""} />;
-  const groupId = membership.group_id;
-  const canEdit = canManageEntries(membership.role);
+  const groupId = membership.groupId;
+  const canEdit = membership.canEdit;
 
   const [{ data: categories }, { data: paymentMethods }, { data: associates }, { data: accounts }, firstPage, { count: pendingDocs }, { data: firstEntry }, { data: lastEntry }] = await Promise.all([
     supabase.from("categories").select("id, name, active, code, kind, parent_id").eq("group_id", groupId),

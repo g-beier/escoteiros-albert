@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { memberOrError } from "@/lib/session";
 import { XLSX_MIME } from "./xlsx";
 
 /** Cliente e grupo do usuário logado; qualquer papel pode exportar (é leitura, sob RLS). */
 export async function exportContext() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: errorResponse("Sessão expirada. Entre novamente.", 401) };
-  const { data: membership } = await supabase.from("memberships").select("group_id").eq("user_id", user.id).single();
-  if (!membership) return { error: errorResponse("Usuário sem grupo.", 403) };
-  return { supabase, groupId: membership.group_id as string };
+  const member = await memberOrError();
+  if ("error" in member) return { error: errorResponse(member.error, 403) };
+  return { supabase: member.supabase, groupId: member.groupId };
 }
 
 export function errorResponse(message: string, status = 400) {

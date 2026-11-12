@@ -1,21 +1,16 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { pageMember } from "@/lib/session";
 import { AppHeader } from "@/components/app-header";
 import { AssociateRow, NewAssociate, type AssociateItem } from "@/components/new-associate";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { canManageEntries } from "@/lib/auth";
 import { branchLabels, isScoutBranch } from "@/lib/associates";
 import { cn } from "@/lib/utils";
 
 export default async function AssociatesPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: membership } = await supabase.from("memberships").select("group_id, role").eq("user_id", user.id).single();
-  if (!membership) redirect("/");
-  const canEdit = canManageEntries(membership.role);
+  const membership = await pageMember();
+  const { supabase, user } = membership;
+  const canEdit = membership.canEdit;
   const { data } = await supabase.from("associates").select("id, name, branch, section, active")
-    .eq("group_id", membership.group_id).order("active", { ascending: false }).order("name");
+    .eq("group_id", membership.groupId).order("active", { ascending: false }).order("name");
   const associates = (data ?? []) as AssociateItem[];
   const headClass = "h-8 px-3 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase";
 

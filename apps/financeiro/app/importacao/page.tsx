@@ -1,23 +1,18 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app-header";
 import { RecentImports } from "@/components/import/recent-imports";
 import { StatementImporter, type ImportAccount } from "@/components/import/statement-importer";
 import { SetupNeeded } from "@/components/setup-needed";
 import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
-import { canManageEntries } from "@/lib/auth";
 import { fetchImportProfiles, fetchRecentImports } from "@/lib/import-queries";
-import { createClient } from "@/lib/supabase/server";
+import { pageSession } from "@/lib/session";
 
 export default async function ImportPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: membership } = await supabase.from("memberships").select("group_id, role").eq("user_id", user.id).single();
+  const { supabase, user, member: membership } = await pageSession();
   if (!membership) return <SetupNeeded email={user.email ?? ""} />;
-  const groupId = membership.group_id as string;
-  const canEdit = canManageEntries(membership.role);
+  const groupId = membership.groupId;
+  const canEdit = membership.canEdit;
 
   const [{ data: accountRows }, { profiles }] = await Promise.all([
     supabase.from("accounts").select("id, name, bank").eq("group_id", groupId).eq("active", true).order("name"),

@@ -1,18 +1,16 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { IconArrowRight, IconFolderExclamation } from "@tabler/icons-react";
 import { AppHeader } from "@/components/app-header";
 import { NewEntryButton } from "@/components/entries/entry-editor";
 import { ExportMenu } from "@/components/export/export-menu";
 import { SetupNeeded } from "@/components/setup-needed";
 import { buttonVariants } from "@/components/ui/button";
-import { canManageEntries } from "@/lib/auth";
 import type { CategoryKind } from "@/lib/categories";
 import type { StatementRow } from "@/lib/entry-queries";
 import { exportYears, MONTHS } from "@/lib/export/period";
 import { ALL_DATES, currentYear } from "@/lib/filters";
 import { dateBR, money } from "@/lib/format";
-import { createClient } from "@/lib/supabase/server";
+import { pageSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 type Sum = { category_id: string; month: number; amount_cents: number };
@@ -31,13 +29,10 @@ function monthlyTotals(sums: Sum[], kinds: Map<string, CategoryKind | null>): Mo
 }
 
 export default async function Dashboard() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: membership } = await supabase.from("memberships").select("group_id, role").eq("user_id", user.id).single();
+  const { supabase, user, member: membership } = await pageSession();
   if (!membership) return <SetupNeeded email={user.email ?? ""} />;
-  const groupId = membership.group_id as string;
-  const canEdit = canManageEntries(membership.role);
+  const groupId = membership.groupId;
+  const canEdit = membership.canEdit;
   const year = currentYear();
 
   const [{ data: categories }, { data: sums }, { count: pendingDocs }, { data: recent }, { data: firstEntry }, { data: lastEntry }] = await Promise.all([

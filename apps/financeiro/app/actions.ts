@@ -4,25 +4,17 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { memberOrError } from "@/lib/session";
 import { entrySchema, toRpcSplits } from "@/lib/entry-schema";
 import { fetchEntryPage, type EntryPage } from "@/lib/entry-queries";
 import { parseFilters, parseOrder } from "@/lib/filters";
 
 type Result = { error?: string; success?: boolean; id?: string };
 
-async function currentMembership() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { supabase, error: "Sessão expirada." } as const;
-  const { data: membership } = await supabase.from("memberships").select("group_id").eq("user_id", user.id).single();
-  if (!membership) return { supabase, error: "Sua conta ainda não pertence a um grupo." } as const;
-  return { supabase, groupId: membership.group_id as string } as const;
-}
-
 export async function createEntry(payload: unknown): Promise<Result> {
   const parsed = entrySchema.safeParse(payload);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const ctx = await currentMembership();
+  const ctx = await memberOrError();
   if ("error" in ctx) return { error: ctx.error };
   const { data, error } = await ctx.supabase.rpc("create_ledger_entry", {
     p_group_id: ctx.groupId,
@@ -90,7 +82,7 @@ export async function loadEntryPage(query: unknown, offset: unknown): Promise<En
   const view = params.visao === "rubricas" ? "rubricas" : "extrato";
   const start = z.number().int().min(0).max(1_000_000).safeParse(offset);
   if (!start.success) return { view, rows: [], total: null, error: "Página inválida." };
-  const ctx = await currentMembership();
+  const ctx = await memberOrError();
   if ("error" in ctx) return { view, rows: [], total: null, error: ctx.error };
   return fetchEntryPage(ctx.supabase, ctx.groupId, view, parseFilters(params), parseOrder(params), start.data, false);
 }

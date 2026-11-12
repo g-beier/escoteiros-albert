@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
-import { canManageEntries } from "@/lib/auth";
+import { requireEditor } from "@/lib/session";
 import { SCOUT_BRANCHES } from "@/lib/associates";
 
 const associateSchema = z.object({
@@ -13,15 +12,6 @@ const associateSchema = z.object({
 });
 
 export type AssociateFormState = { error?: string; success?: string; tone?: "success" | "neutral" };
-
-async function requireEditor() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Sessão expirada.");
-  const { data: membership } = await supabase.from("memberships").select("group_id, role").eq("user_id", user.id).single();
-  if (!membership || !canManageEntries(membership.role)) throw new Error("Sem permissão para gerir associados.");
-  return { supabase, groupId: membership.group_id as string };
-}
 
 function readAssociate(formData: FormData) {
   return associateSchema.safeParse({
@@ -37,7 +27,7 @@ export async function createAssociate(_previous: AssociateFormState, formData: F
   try {
     const parsed = readAssociate(formData);
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-    const { supabase, groupId } = await requireEditor();
+    const { supabase, groupId } = await requireEditor("Sem permissão para gerir associados.");
     const { error } = await supabase.from("associates").insert({ group_id: groupId, ...parsed.data });
     if (error) return { error: error.message };
     revalidatePath("/associados");
@@ -51,7 +41,7 @@ export async function createAssociate(_previous: AssociateFormState, formData: F
 export async function updateAssociate(_previous: AssociateFormState, formData: FormData): Promise<AssociateFormState> {
   try {
     const id = z.uuid().parse(formData.get("id"));
-    const { supabase, groupId } = await requireEditor();
+    const { supabase, groupId } = await requireEditor("Sem permissão para gerir associados.");
     let patch: Record<string, unknown>;
     let result: AssociateFormState;
     if (formData.has("active")) {

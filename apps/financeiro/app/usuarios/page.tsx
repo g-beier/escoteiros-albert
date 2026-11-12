@@ -1,5 +1,5 @@
-import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import { pageSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { InviteUser } from "@/components/invite-user";
 import { changeRole, removeUser } from "./actions";
@@ -9,15 +9,12 @@ import { ConfirmRemove } from "@/components/confirm-remove";
 const roleLabels = { admin: "Administrador", treasurer: "Tesoureiro", viewer: "Consulta" } as const;
 
 export default async function UsersPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: ownMembership } = await supabase.from("memberships").select("group_id, role").eq("user_id", user.id).single();
+  const { user, member: ownMembership } = await pageSession();
   if (!ownMembership || ownMembership.role !== "admin") notFound();
 
   const admin = createAdminClient();
   const [{ data: memberships }, { data: authData }] = await Promise.all([
-    admin.from("memberships").select("user_id, role, created_at").eq("group_id", ownMembership.group_id).order("created_at"),
+    admin.from("memberships").select("user_id, role, created_at").eq("group_id", ownMembership.groupId).order("created_at"),
     admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
   ]);
   const authUsers = new Map((authData?.users ?? []).map((item) => [item.id, item]));

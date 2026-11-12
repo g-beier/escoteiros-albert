@@ -9,23 +9,24 @@ function form(values: Record<string, string>) {
 
 describe("readAccountForm", () => {
   it("lê os campos e converte o saldo inicial para centavos", () => {
-    const result = readAccountForm(form({ name: " Conta Sicredi ", kind: "corrente", bank: "Sicredi", branch: "0101", number: " ", openingBalance: "-1234,5", openingDate: "2026-01-01" }));
+    const result = readAccountForm(form({ name: " Conta Sicredi ", kind: "corrente", bank: "Sicredi", branch: "0101", number: " ", openingBalance: "-1234,5", openingDate: "2026-01-01", ledgerCode: "1.1.1.2.0001" }));
     expect(result.success).toBe(true);
     expect(toAccountRpc(result.data!)).toEqual({
       p_name: "Conta Sicredi", p_kind: "corrente", p_bank: "Sicredi", p_branch: "0101", p_number: null,
-      p_opening_balance_cents: -123450, p_opening_date: "2026-01-01",
+      p_opening_balance_cents: -123450, p_opening_date: "2026-01-01", p_ledger_code: "1.1.1.2.0001",
     });
   });
 
   it("aceita saldo e data vazios", () => {
     const result = readAccountForm(form({ name: "Caixa", kind: "caixa" }));
-    expect(result.data).toMatchObject({ openingBalance: 0, openingDate: null, bank: null });
+    expect(result.data).toMatchObject({ openingBalance: 0, openingDate: null, bank: null, ledgerCode: null });
   });
 
   it("rejeita tipo, nome e saldo inválidos", () => {
     expect(readAccountForm(form({ name: "Caixa", kind: "cofre" })).error?.issues[0]?.message).toBe("Escolha o tipo da conta.");
     expect(readAccountForm(form({ name: "C", kind: "caixa" })).error?.issues[0]?.message).toMatch(/ao menos 2/);
     expect(readAccountForm(form({ name: "Caixa", kind: "caixa", openingBalance: "abc" })).error?.issues[0]?.message).toMatch(/Saldo inicial/);
+    expect(readAccountForm(form({ name: "Caixa", kind: "caixa", ledgerCode: "1.1" })).error?.issues[0]?.message).toMatch(/Conta contábil/);
   });
 });
 

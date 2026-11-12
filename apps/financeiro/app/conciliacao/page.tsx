@@ -1,11 +1,9 @@
-import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app-header";
 import { SetupNeeded } from "@/components/setup-needed";
 import { ReconciliationBoard, type BoardData, type LinkSet } from "@/components/reconciliation/reconciliation-board";
 import { ReconciliationFilters } from "@/components/reconciliation/reconciliation-filters";
-import { canManageEntries } from "@/lib/auth";
 import { byDateThenAmount, closingCheck, parsePeriod, suggestMatches, type OpenEntry, type OpenLine } from "@/lib/reconciliation";
-import { createClient } from "@/lib/supabase/server";
+import { pageSession } from "@/lib/session";
 
 export const metadata = { title: "Conciliação · GEAS Financeiro" };
 
@@ -22,13 +20,10 @@ const LIMIT = 2000;
 
 export default async function ReconciliationPage({ searchParams }: { searchParams: Promise<RawParams> }) {
   const params = await searchParams;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: membership } = await supabase.from("memberships").select("group_id, role").eq("user_id", user.id).single();
+  const { supabase, user, member: membership } = await pageSession();
   if (!membership) return <SetupNeeded email={user.email ?? ""} />;
-  const groupId = membership.group_id as string;
-  const canEdit = canManageEntries(membership.role);
+  const groupId = membership.groupId;
+  const canEdit = membership.canEdit;
   const period = parsePeriod(first(params.de), first(params.ate));
 
   const { data: accountData, error: accountError } = await supabase.from("accounts")

@@ -2,22 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
-import { canManageEntries } from "@/lib/auth";
+import { editorOrError } from "@/lib/session";
 import { entrySchema, toRpcSplits } from "@/lib/entry-schema";
 
 export type ReconciliationResult = { error?: string; success?: string; id?: string };
 
 const ids = z.array(z.uuid()).min(1).max(200);
-
-async function editor() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "Sessão expirada." } as const;
-  const { data } = await supabase.from("memberships").select("role").eq("user_id", user.id).single();
-  if (!data || !canManageEntries(data.role)) return { error: "Sem permissão para conciliar." } as const;
-  return { supabase } as const;
-}
 
 function done(success: string, id?: string): ReconciliationResult {
   revalidatePath("/", "layout");
@@ -29,7 +19,7 @@ export async function linkReconciliation(lineIds: unknown, entryIds: unknown): P
   const lines = ids.safeParse(lineIds);
   const entries = ids.safeParse(entryIds);
   if (!lines.success || !entries.success) return { error: "Selecione ao menos uma linha do extrato e um lançamento." };
-  const ctx = await editor();
+  const ctx = await editorOrError("Sem permissão para conciliar.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("link_reconciliation", { p_statement_line_ids: lines.data, p_ledger_entry_ids: entries.data });
   if (error) return { error: error.message };
@@ -40,7 +30,7 @@ export async function linkReconciliation(lineIds: unknown, entryIds: unknown): P
 export async function acceptSuggestions(pairs: unknown): Promise<ReconciliationResult> {
   const parsed = z.array(z.object({ lineId: z.uuid(), entryId: z.uuid() })).min(1).max(500).safeParse(pairs);
   if (!parsed.success) return { error: "Nenhuma sugestão para aceitar." };
-  const ctx = await editor();
+  const ctx = await editorOrError("Sem permissão para conciliar.");
   if ("error" in ctx) return { error: ctx.error };
   let accepted = 0;
   let firstError: string | undefined;
@@ -56,7 +46,7 @@ export async function acceptSuggestions(pairs: unknown): Promise<ReconciliationR
 export async function unlinkReconciliation(lineId: unknown): Promise<ReconciliationResult> {
   const id = z.uuid().safeParse(lineId);
   if (!id.success) return { error: "Linha inválida." };
-  const ctx = await editor();
+  const ctx = await editorOrError("Sem permissão para conciliar.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("unlink_reconciliation", { p_statement_line_id: id.data });
   if (error) return { error: error.message };
@@ -67,7 +57,7 @@ export async function rejectSuggestion(lineId: unknown, entryId: unknown): Promi
   const line = z.uuid().safeParse(lineId);
   const entry = z.uuid().safeParse(entryId);
   if (!line.success || !entry.success) return { error: "Sugestão inválida." };
-  const ctx = await editor();
+  const ctx = await editorOrError("Sem permissão para conciliar.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("reject_reconciliation_suggestion", { p_statement_line_id: line.data, p_ledger_entry_id: entry.data });
   if (error) return { error: error.message };
@@ -79,7 +69,7 @@ export async function ignoreStatementLine(lineId: unknown, reason: unknown): Pro
   const text = z.string().trim().min(2, "Informe o motivo.").max(200, "Motivo: no máximo 200 caracteres.").safeParse(reason);
   if (!id.success) return { error: "Linha inválida." };
   if (!text.success) return { error: text.error.issues[0]?.message };
-  const ctx = await editor();
+  const ctx = await editorOrError("Sem permissão para conciliar.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("ignore_statement_line", { p_id: id.data, p_reason: text.data });
   if (error) return { error: error.message };
@@ -89,7 +79,7 @@ export async function ignoreStatementLine(lineId: unknown, reason: unknown): Pro
 export async function reopenStatementLine(lineId: unknown): Promise<ReconciliationResult> {
   const id = z.uuid().safeParse(lineId);
   if (!id.success) return { error: "Linha inválida." };
-  const ctx = await editor();
+  const ctx = await editorOrError("Sem permissão para conciliar.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("reopen_statement_line", { p_id: id.data });
   if (error) return { error: error.message };
@@ -100,7 +90,7 @@ export async function setOutsideStatement(entryId: unknown, outside: unknown): P
   const id = z.uuid().safeParse(entryId);
   const value = z.boolean().safeParse(outside);
   if (!id.success || !value.success) return { error: "Dados inválidos." };
-  const ctx = await editor();
+  const ctx = await editorOrError("Sem permissão para conciliar.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("set_ledger_entry_outside_statement", { p_entry_id: id.data, p_outside: value.data });
   if (error) return { error: error.message };
@@ -112,7 +102,7 @@ export async function setEntryAccount(entryId: unknown, accountId: unknown): Pro
   const account = z.uuid().safeParse(accountId);
   if (!id.success) return { error: "Lançamento inválido." };
   if (!account.success) return { error: "Escolha a conta." };
-  const ctx = await editor();
+  const ctx = await editorOrError("Sem permissão para conciliar.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("set_ledger_entry_account", { p_entry_id: id.data, p_account_id: account.data });
   if (error) return { error: error.message };
@@ -125,7 +115,7 @@ export async function createEntryFromStatementLine(lineId: unknown, payload: unk
   const parsed = entrySchema.safeParse(payload);
   if (!id.success) return { error: "Linha inválida." };
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const ctx = await editor();
+  const ctx = await editorOrError("Sem permissão para conciliar.");
   if ("error" in ctx) return { error: ctx.error };
   const { data, error } = await ctx.supabase.rpc("create_entry_from_statement_line", {
     p_statement_line_id: id.data,

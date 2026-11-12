@@ -2,17 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ALLOWED_EMAIL_DOMAIN, isAllowedEmail, MEMBER_ROLES, type MemberRole } from "@/lib/auth";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Sessão expirada.");
-  const { data: membership } = await supabase.from("memberships").select("group_id, role").eq("user_id", user.id).single();
-  if (!membership || membership.role !== "admin") throw new Error("Apenas administradores podem gerir usuários.");
-  return { groupId: membership.group_id, currentUserId: user.id };
-}
 
 export async function inviteUser(_previous: { error?: string; success?: string }, formData: FormData) {
   try {
@@ -46,7 +38,7 @@ export async function inviteUser(_previous: { error?: string; success?: string }
 }
 
 export async function changeRole(formData: FormData) {
-  const { groupId, currentUserId } = await requireAdmin();
+  const { groupId, user: { id: currentUserId } } = await requireAdmin();
   const userId = String(formData.get("userId") ?? "");
   const role = String(formData.get("role") ?? "viewer") as MemberRole;
   if (!MEMBER_ROLES.includes(role)) throw new Error("Papel inválido.");
@@ -58,7 +50,7 @@ export async function changeRole(formData: FormData) {
 }
 
 export async function removeUser(formData: FormData) {
-  const { groupId, currentUserId } = await requireAdmin();
+  const { groupId, user: { id: currentUserId } } = await requireAdmin();
   const userId = String(formData.get("userId") ?? "");
   if (userId === currentUserId) throw new Error("Você não pode remover seu próprio acesso.");
   const admin = createAdminClient();

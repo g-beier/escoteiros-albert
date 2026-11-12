@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { parseMoneyToCents } from "@/lib/money";
+import { isLedgerCode, LEDGER_CODE_MASK } from "@/lib/ledger-code";
 
 export const ACCOUNT_KINDS = {
   corrente: "Conta corrente",
@@ -21,6 +22,10 @@ export type Account = {
   opening_balance_cents: number;
   opening_date: string | null;
   active: boolean;
+  /** Conta contábil de contrapartida (ex.: "Bancos – Cora" no plano de contas). */
+  ledger_code: string | null;
+  /** BANKID:ACCTID do OFX ligado a esta conta. */
+  ofx_key: string | null;
 };
 
 /** Conta "A definir" criada pela migração 011 para lançamentos sem conta conhecida. */
@@ -46,6 +51,8 @@ export const accountFormSchema = z.object({
     return cents;
   }),
   openingDate: z.union([z.iso.date({ message: "Data de início inválida." }), z.literal("")]).transform((value) => value || null),
+  ledgerCode: z.string().trim().refine((value) => value === "" || isLedgerCode(value), `Conta contábil no formato ${LEDGER_CODE_MASK}.`)
+    .transform((value) => value || null),
 });
 
 export type AccountInput = z.output<typeof accountFormSchema>;
@@ -57,7 +64,7 @@ export function readAccountForm(formData: FormData) {
   };
   return accountFormSchema.safeParse({
     name: text("name"), kind: text("kind"), bank: text("bank"), branch: text("branch"), number: text("number"),
-    openingBalance: text("openingBalance"), openingDate: text("openingDate"),
+    openingBalance: text("openingBalance"), openingDate: text("openingDate"), ledgerCode: text("ledgerCode"),
   });
 }
 
@@ -70,6 +77,7 @@ export function toAccountRpc(input: AccountInput) {
     p_number: input.number,
     p_opening_balance_cents: input.openingBalance,
     p_opening_date: input.openingDate,
+    p_ledger_code: input.ledgerCode,
   };
 }
 
