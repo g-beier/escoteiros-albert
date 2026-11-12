@@ -136,8 +136,8 @@ Conteúdo do perfil (`settings`):
 ## Importação OFX (desde `014`)
 
 - O arquivo é lido no navegador (`readOfx`): DTPOSTED, TRNAMT, MEMO, NAME, FITID, TRNTYPE, CHECKNUM, REFNUM, LEDGERBAL e `BANKACCTFROM`.
-- **Conta reconhecida pelo arquivo**: `BANKID:ACCTID` (sem zeros à esquerda no banco) é gravado em `accounts.ofx_key` na primeira importação. Nas próximas, a conta é escolhida sozinha; arquivo de outra conta é bloqueado, na tela e na Server Action.
-- O perfil de leitura do banco (separar MEMO do Nubank, prefixos de tipo, linhas a ignorar) é reconhecido pela assinatura `ofx:<ORG ou BANKID>`, aplicado sem perguntar e salvo/atualizado ao importar. Os ajustes ficam recolhidos em "Ajustes de leitura".
+- **A conta (o banco) é escolhida em cada importação.** Alguns bancos não exportam OFX e os arquivos são convertidos antes; por isso `BANKID`/`ACCTID` do arquivo não são usados para identificar a conta.
+- O perfil de leitura (separar MEMO do Nubank, prefixos de tipo, linhas a ignorar) é o da **última importação da conta escolhida**; sem histórico, o que reconhece o arquivo pela assinatura `ofx:<ORG ou BANKID>`; senão, sugestões. É aplicado sem perguntar e salvo/atualizado ao importar (nome padrão "<conta> OFX"). Os ajustes ficam recolhidos em "Ajustes de leitura". Trocar a conta com o arquivo carregado recarrega a leitura daquela conta.
 - Cada linha guarda `external_id` (FITID), `trn_type`, `check_number`, `reference` e `payee`. O TRNTYPE ajuda a sugerir a forma de pagamento ao criar o lançamento (PAYMENT → Boleto, FEE → Tarifa, XFER → Transferência, CASH → Dinheiro), depois das regras pelo histórico.
 
 ### ID OFX como agregador
@@ -217,7 +217,7 @@ Objetivo: cruzar o que **já foi lançado à mão** com o que **veio do banco**,
 ## Perguntas em aberto
 
 - Lista dos bancos/contas do grupo. Cora e Mercado Pago confirmados; há outros.
-- Cora e Mercado Pago exportam OFX? Com a importação só por OFX, isso passa a ser necessário para importar essas contas.
+- Bancos sem OFX (Cora, Mercado Pago…) entram com o OFX convertido antes da importação.
 - O dinheiro em espécie (caixa) entra como conta conciliável, ou só como conta sem extrato?
 - Transferência entre contas próprias: tratar já na fase 1 ou deixar para a fase 5?
 - Quem pode importar, montar perfis e conciliar: só tesouraria/administração, como na edição de lançamentos?

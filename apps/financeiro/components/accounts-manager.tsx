@@ -59,7 +59,6 @@ function AccountRow({ account, canEdit, onEdit }: { account: AccountItem; canEdi
     </TableCell>
     <TableCell className="px-3 py-1.5">{ACCOUNT_KINDS[account.kind]}</TableCell>
     <TableCell className="px-3 py-1.5 num">{account.ledger_code ?? <span className="text-muted-foreground">—</span>}
-      {account.ofx_key && <div className="text-xs text-muted-foreground" title="Arquivos OFX desta conta são reconhecidos automaticamente">OFX {account.ofx_key}</div>}
     </TableCell>
     <TableCell className="px-3 py-1.5 text-right num">
       {money(account.opening_balance_cents / 100)}

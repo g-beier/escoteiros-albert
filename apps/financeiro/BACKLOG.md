@@ -67,7 +67,7 @@
 
 - **Conta contábil** (`014_accounting.sql`): domínio `ledger_code` (`0.0.0.0.0000`) em rubricas e contas; campo com máscara em `/cadastros`, alerta e filtro "Só sem conta contábil".
 - Rubricas e formas de pagamento gravadas só por funções SQL auditadas (políticas de escrita direta removidas), como as contas.
-- **Importação só OFX**: TRNTYPE, CHECKNUM, REFNUM e NAME gravados; conta reconhecida por `BANKID:ACCTID` (`accounts.ofx_key`), arquivo de outra conta bloqueado; perfil do banco aplicado e salvo sem diálogo. CSV desativado na interface (código mantido).
+- **Importação só OFX**: TRNTYPE, CHECKNUM, REFNUM e NAME gravados; a conta (banco) é escolhida em cada importação, pois alguns OFX são convertidos; perfil de leitura lembrado por conta, aplicado e salvo sem diálogo. CSV desativado na interface (código mantido).
 - **ID OFX** (FITID) como agregador: `external_ids` nas visões, coluna nas duas visões de `/lancamentos`, filtro `?ofx=`, busca, bloco "Extrato" nos detalhes, ID na conciliação e nas exportações.
 - Forma de pagamento sugerida também pelo TRNTYPE.
 - **Exportação contábil** (`/exportar/contabil`): CSV em partida dobrada, uma linha por rateio, Windows-1252 ou UTF-8; recusa quando falta conta contábil. Fluxo de caixa também em CSV. Colunas das exportações em `lib/export/columns.ts`, comuns aos formatos.
@@ -79,8 +79,7 @@
 
 - Validar com o contador: código estruturado × reduzido, lançamento múltiplo, histórico padrão e contas de contrapartida (ver `docs/contabilidade.md`).
 - Abrir o CSV contábil no sistema do contador (leiaute de importação) e o CSV do fluxo no Excel/LibreOffice.
-- `/importacao` no navegador com `nubank.ofx` e `itau.ofx`: reconhecimento da conta na segunda importação e bloqueio de arquivo de outra conta.
-- Cora e Mercado Pago: obter o OFX (a importação CSV saiu da interface).
+- `/importacao` no navegador com `nubank.ofx` e `itau.ofx` e com um OFX convertido: escolha da conta, perfil lembrado na segunda importação da conta.
 
 
 - Aplicar `013` no banco local e testar `/conciliacao` no navegador (desktop e celular), inclusive "Criar lançamento" e o retorno de `/importacao`.

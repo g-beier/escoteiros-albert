@@ -14,7 +14,7 @@ select id as pix from public.payment_methods where group_id = :'gid' and name = 
 set role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b1","role":"authenticated"}', true);
 
-\echo '--- contas com conta contábil e chave OFX'
+\echo '--- contas com conta contábil'
 select public.create_account(:'gid', 'Nubank', 'corrente', 'Nubank', null, null, 0, null, '1.1.1.2.0001') as acc \gset
 select public.create_account(:'gid', 'Itaú', 'corrente', null, null, null, 0, null, null) as acc2 \gset
 do $$ begin
@@ -22,13 +22,6 @@ do $$ begin
     'Errada', 'corrente', null, null, null, 0, null, '1.1');
   raise exception 'máscara deveria recusar 1.1';
 exception when check_violation then null;
-end $$;
-select public.set_account_ofx_key(:'acc', '260:1');
-do $$ begin
-  perform public.set_account_ofx_key((select id from public.accounts where name = 'Itaú'), '260:1');
-  raise exception 'a mesma chave OFX não pode ir para duas contas';
-exception when raise_exception then
-  if sqlerrm not like '%outra conta%' then raise; end if;
 end $$;
 
 \echo '--- rubricas e formas de pagamento só por funções'
@@ -86,7 +79,7 @@ end $$;
 reset role;
 do $$ begin
   if (select count(*) from public.audit_events where action in ('category.created', 'category.updated', 'payment_method.created',
-    'payment_method.updated', 'payment_method.deactivated', 'account.ofx_key_set')) < 8 then
+    'payment_method.updated', 'payment_method.deactivated')) < 7 then
     raise exception 'auditoria incompleta';
   end if;
 end $$;

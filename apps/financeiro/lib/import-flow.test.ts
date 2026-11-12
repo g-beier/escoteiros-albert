@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   csvSettingsFromProfile, detectFormat, distinctValues, dropZeroLines, findMatchingProfile, guessColumns, missingRoles,
   newCsvSettings, newOfxSettings, ofxSettingsFromProfile, parseTextList, pruneColumns, reconciliationHref, roleOf,
-  sameSettings, setColumnRole, toImportLines, matchOfxAccount,
+  sameSettings, setColumnRole, toImportLines, profileForAccount,
 } from "@/lib/import-flow";
 import { importLinesSchema, parseStatementLines } from "@/lib/import-schema";
 import { applyOfxProfile, applyProfile, decodeBytes, headerSignature, readCsv, readOfx, type ParsedStatement, type ProfileColumns } from "@/lib/statement-import";
@@ -202,17 +202,15 @@ describe("arquivo sem perfil até o payload do servidor", () => {
   });
 });
 
-describe("matchOfxAccount", () => {
-  const accounts = [
-    { id: "nu", name: "Nubank", ofx_key: "260:1" },
-    { id: "itau", name: "Itaú", ofx_key: null },
-    { id: "cora", name: "Cora", ofx_key: "403:9" },
+describe("profileForAccount", () => {
+  const profiles = [
+    { id: "nu", format: "ofx" as const, header_signature: "ofx:conversor" },
+    { id: "cora", format: "ofx" as const, header_signature: "ofx:conversor" },
+    { id: "csv", format: "csv" as const, header_signature: "a|b" },
   ];
-  it("reconhece, liga na primeira vez e barra arquivo de outra conta", () => {
-    expect(matchOfxAccount(accounts, "nu", undefined)).toEqual({ status: "none" });
-    expect(matchOfxAccount(accounts, "nu", "260:1")).toEqual({ status: "linked" });
-    expect(matchOfxAccount(accounts, "itau", "341:5")).toEqual({ status: "new", key: "341:5" });
-    expect(matchOfxAccount(accounts, "itau", "260:1")).toEqual({ status: "other", key: "260:1", accountId: "nu", accountName: "Nubank" });
-    expect(matchOfxAccount(accounts, "cora", "341:5")).toEqual({ status: "mismatch", key: "341:5", expected: "403:9" });
+  it("prefere o perfil da última importação da conta, depois a assinatura", () => {
+    expect(profileForAccount(profiles, "cora", "ofx:conversor")?.id).toBe("cora");
+    expect(profileForAccount(profiles, null, "ofx:conversor")?.id).toBe("nu");
+    expect(profileForAccount(profiles, "csv", "ofx:outro")).toBeUndefined();
   });
 });

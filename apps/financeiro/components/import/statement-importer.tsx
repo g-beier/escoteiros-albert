@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { IconAlertTriangle, IconCircleCheck, IconFileUpload, IconInfoCircle, IconLink } from "@tabler/icons-react";
+import { IconFileUpload } from "@tabler/icons-react";
 import { importStatementLines, saveImportProfile, type ImportProfile } from "@/app/importacao/actions";
 import { ImportReview } from "@/components/import/import-review";
 import { IgnoreList, KindPrefixes } from "@/components/import/profile-options";
@@ -13,12 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
-  accountForOfxKey, detectFormat, dropZeroLines, findMatchingProfile, matchOfxAccount, newOfxSettings, ofxSettingsFromProfile,
-  parseTextList, reconciliationHref, sameSettings, toImportLines, type AccountMatch,
+  detectFormat, dropZeroLines, newOfxSettings, ofxSettingsFromProfile, parseTextList, profileForAccount, reconciliationHref,
+  sameSettings, toImportLines,
 } from "@/lib/import-flow";
 import { applyOfxProfile, decodeBytes, readOfx, suggestKindPrefixes, type OfxProfileSettings, type OfxStatement } from "@/lib/statement-import";
 
-export type ImportAccount = { id: string; name: string; bank: string | null; ofx_key: string | null };
+export type ImportAccount = { id: string; name: string; bank: string | null };
 
 type LoadedFile = { name: string; statement: OfxStatement };
 
@@ -33,13 +33,16 @@ function importPeriod(statement: OfxStatement) {
 }
 
 /**
- * Importação de extrato OFX. A conta vem do próprio arquivo (BANKID:ACCTID) quando já foi ligada;
- * o perfil de leitura do banco (separar MEMO, prefixos de tipo, linhas a ignorar) é aplicado sozinho
- * e salvo ao importar. A importação CSV foi desativada na interface; a biblioteca continua em lib/statement-import.
+ * Importação de extrato OFX. A conta (o banco) é escolhida pela pessoa em cada importação: alguns OFX
+ * são convertidos de outros formatos e não trazem banco/conta confiáveis. O perfil de leitura (separar MEMO,
+ * prefixos de tipo, linhas a ignorar) é o da última importação da conta, aplicado sozinho e salvo ao importar.
+ * A importação CSV foi desativada na interface; a biblioteca continua em lib/statement-import.
  */
-export function StatementImporter({ accounts, profiles, accountId: initialAccountId }: {
+export function StatementImporter({ accounts, profiles, lastProfiles, accountId: initialAccountId }: {
   accounts: ImportAccount[];
   profiles: ImportProfile[];
+  /** Perfil da última importação de cada conta. */
+  lastProfiles: Record<string, string>;
   accountId: string;
 }) {
   const router = useRouter();
@@ -53,8 +56,18 @@ export function StatementImporter({ accounts, profiles, accountId: initialAccoun
 
   const account = accounts.find((item) => item.id === accountId);
 
+  /** Perfil e ajustes de leitura para a conta e o arquivo. */
+  function loadReading(forAccount: string, statement: OfxStatement) {
+    const match = profileForAccount(profiles, lastProfiles[forAccount], statement.signature) ?? null;
+    const next = match ? ofxSettingsFromProfile(match.settings) : newOfxSettings(statement.lines.map((line) => line.description));
+    setProfile(match);
+    setSettings(next);
+    setIgnoreText((next.ignoreIf ?? []).join("\n"));
+  }
+
   function chooseAccount(id: string) {
     setAccountId(id);
+    if (file) loadReading(id, file.statement);
     // recarrega a lista de importações recentes da conta, sem perder o arquivo carregado
     startNavigation(() => router.replace(`/importacao?conta=${encodeURIComponent(id)}`, { scroll: false }));
   }
@@ -66,17 +79,8 @@ export function StatementImporter({ accounts, profiles, accountId: initialAccoun
     const { text } = decodeBytes(new Uint8Array(await chosen.arrayBuffer()));
     if (detectFormat(text) !== "ofx") { toast.error("Envie o extrato em OFX. Nos bancos, procure por “Exportar extrato” → OFX (Money/Quicken)."); return; }
     const statement = readOfx(text);
-    const match = findMatchingProfile(profiles, "ofx", () => statement.signature) ?? null;
-    const next = match ? ofxSettingsFromProfile(match.settings) : newOfxSettings(statement.lines.map((line) => line.description));
     setFile({ name: chosen.name, statement });
-    setProfile(match);
-    setSettings(next);
-    setIgnoreText((next.ignoreIf ?? []).join("\n"));
-    const owner = accountForOfxKey(accounts, statement.accountKey);
-    if (owner && owner.id !== accountId) {
-      chooseAccount(owner.id);
-      toast.info(`Arquivo da conta “${owner.name}”.`);
-    }
+    loadReading(accountId, statement);
   }
 
   const view = useMemo(() => {
@@ -90,14 +94,11 @@ export function StatementImporter({ accounts, profiles, accountId: initialAccoun
   }, [file, settings, ignoreText]);
 
   const statement = view?.statement ?? null;
-  const match: AccountMatch = matchOfxAccount(accounts, accountId, file?.statement.accountKey);
-  const blocked = match.status === "other" || match.status === "mismatch";
   const changed = profile === null || (view !== null && (!sameSettings(profile.settings, view.settings) || profile.header_signature !== file?.statement.signature));
-  const canImport = !!account && !!statement && statement.lines.length > 0 && !blocked && !pending;
+  const canImport = !!account && !!statement && statement.lines.length > 0 && !pending;
 
   function profileName() {
-    const org = file?.statement.account.org || account?.bank || account?.name || "Banco";
-    const base = `${org} OFX`;
+    const base = `${account?.name ?? "Banco"} OFX`;
     const taken = new Set(profiles.map((item) => item.name.toLowerCase()));
     if (!taken.has(base.toLowerCase())) return base;
     for (let n = 2; ; n += 1) if (!taken.has(`${base} ${n}`.toLowerCase())) return `${base} ${n}`;
@@ -129,7 +130,6 @@ export function StatementImporter({ accounts, profiles, accountId: initialAccoun
         periodTo: period.to ?? null,
         openingBalanceCents: statement.openingBalanceCents ?? null,
         closingBalanceCents: statement.closingBalanceCents ?? null,
-        ofxKey: file.statement.accountKey ?? null,
         lines: toImportLines(statement.lines),
       });
       if (result.error || !result.data) { toast.error(result.error ?? "Não foi possível importar o extrato."); return; }
@@ -140,10 +140,11 @@ export function StatementImporter({ accounts, profiles, accountId: initialAccoun
 
   return <>
     <SectionCard aria-labelledby="import-file-title">
-      <SectionHeader title="1. Conta e arquivo OFX" titleId="import-file-title" description="Nada é gravado até você confirmar. Arquivos de uma conta já importada são reconhecidos sozinhos." />
+      <SectionHeader title="1. Banco e arquivo OFX" titleId="import-file-title" description="Escolha a conta do banco deste extrato. Nada é gravado até você confirmar." />
       <div className="grid gap-3 p-5 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
         <div className="grid gap-1.5"><Label htmlFor="import-account">Conta</Label>
-          <OptionSelect id="import-account" value={accountId} onValueChange={chooseAccount} options={accounts.map((item) => ({ value: item.id, label: item.name }))} /></div>
+          <OptionSelect id="import-account" value={accountId} onValueChange={chooseAccount} placeholder="Escolha o banco…" invalid={!!file && !account}
+            options={accounts.map((item) => ({ value: item.id, label: item.bank && item.bank !== item.name ? `${item.name} (${item.bank})` : item.name }))} /></div>
         <div className="grid gap-1.5"><Label htmlFor="import-file">Arquivo do extrato</Label>
           <label className="flex h-7 cursor-pointer items-center gap-2 rounded-md border border-dashed border-input bg-card px-2 text-xs hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring/30">
             <IconFileUpload className="size-4 shrink-0 text-muted-foreground" />
@@ -151,7 +152,7 @@ export function StatementImporter({ accounts, profiles, accountId: initialAccoun
             <input id="import-file" type="file" accept=".ofx,application/x-ofx" className="sr-only" onChange={onFile} />
           </label>
         </div>
-        {file && <AccountStatus match={match} accountName={account?.name ?? ""} onSwitch={chooseAccount} />}
+        {file && !account && <p role="alert" className="m-0 text-xs text-destructive sm:col-span-2">Escolha a conta do banco deste extrato para importar.</p>}
       </div>
     </SectionCard>
 
@@ -179,20 +180,3 @@ export function StatementImporter({ accounts, profiles, accountId: initialAccoun
   </>;
 }
 
-function AccountStatus({ match, accountName, onSwitch }: { match: AccountMatch; accountName: string; onSwitch: (id: string) => void }) {
-  const row = "m-0 flex items-center gap-2 text-xs sm:col-span-2";
-  switch (match.status) {
-    case "linked":
-      return <p className={`${row} text-success`}><IconCircleCheck className="size-4 shrink-0" />Arquivo reconhecido: conta “{accountName}”.</p>;
-    case "new":
-      return <p className={`${row} text-muted-foreground`}><IconLink className="size-4 shrink-0" />Primeira importação deste arquivo (<span className="num">{match.key}</span>): a conta “{accountName}” passará a reconhecê-lo.</p>;
-    case "other":
-      return <p role="alert" className={`${row} text-destructive`}><IconAlertTriangle className="size-4 shrink-0" />
-        <span>Este arquivo é da conta “{match.accountName}”. <button type="button" className="font-semibold underline" onClick={() => onSwitch(match.accountId)}>Usar “{match.accountName}”</button></span></p>;
-    case "mismatch":
-      return <p role="alert" className={`${row} text-destructive`}><IconAlertTriangle className="size-4 shrink-0" />
-        <span>A conta “{accountName}” recebe outro arquivo OFX (<span className="num">{match.expected}</span>); este é <span className="num">{match.key}</span>. Escolha a conta certa.</span></p>;
-    default:
-      return <p className={`${row} text-muted-foreground`}><IconInfoCircle className="size-4 shrink-0" />O arquivo não informa o número da conta; confira a conta escolhida.</p>;
-  }
-}

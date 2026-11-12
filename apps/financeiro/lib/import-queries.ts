@@ -27,6 +27,15 @@ export async function fetchRecentImports(supabase: SupabaseClient, groupId: stri
   return { rows, error: error?.message };
 }
 
+/** Perfil usado na última importação de cada conta: a leitura fica lembrada por banco/conta. */
+export async function fetchLastProfileByAccount(supabase: SupabaseClient, groupId: string) {
+  const { data } = await supabase.from("statement_imports").select("account_id, profile_id")
+    .eq("group_id", groupId).not("profile_id", "is", null).order("imported_at", { ascending: false }).limit(500);
+  const last: Record<string, string> = {};
+  for (const row of (data ?? []) as { account_id: string; profile_id: string }[]) last[row.account_id] ??= row.profile_id;
+  return last;
+}
+
 /** Perfis de importação do grupo, mais recentes primeiro (mesma consulta de `listImportProfiles`). */
 export async function fetchImportProfiles(supabase: SupabaseClient, groupId: string) {
   const { data, error } = await supabase.from("import_profiles")

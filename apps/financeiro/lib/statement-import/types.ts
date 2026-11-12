@@ -105,8 +105,6 @@ export type OfxAccount = { bankId?: string; branchId?: string; acctId?: string; 
 
 export type OfxStatement = ParsedStatement & {
   account: OfxAccount;
-  /** `BANKID:ACCTID` (ou `ORG:ACCTID`): liga o arquivo a uma conta do grupo. Ausente sem ACCTID. */
-  accountKey?: string;
   /** `ofx:<org or bankId>`, for profile matching. */
   signature: string;
 };

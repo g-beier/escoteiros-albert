@@ -26,7 +26,6 @@ describe("readOfx — Nubank (com tags de fechamento)", () => {
       trnType: "DEBIT",
       sourceRow: 50,
     });
-    expect(parsed.accountKey).toBe("260:00000000-0");
     expect(parsed.totals).toEqual({ creditsCents: 150312, debitsCents: -165165, netCents: -14853 });
   });
 
@@ -75,7 +74,6 @@ describe("readOfx — Itaú (SGML sem tags de fechamento)", () => {
       checkNumber: "20261002001",
       sourceRow: 48,
     });
-    expect(parsed.accountKey).toBe("341:0000000000");
   });
 
   it("descarta as pseudo-linhas de saldo com ignoreIf e recalcula os totais", () => {
@@ -129,13 +127,11 @@ describe("readOfx — casos tolerados", () => {
     expect(parsed.errors).toEqual([{ sourceRow: 1, message: 'DTPOSTED inválido "2026"; TRNAMT inválido "x".' }]);
     expect(parsed.periodFrom).toBe("2026-01-05");
     expect(parsed.signature).toBe("ofx:999");
-    expect(parsed.accountKey).toBe("999:1");
   });
 
-  it("lê REFNUM e deixa a conta sem chave quando não há ACCTID", () => {
+  it("lê REFNUM", () => {
     const parsed = readOfx("<OFX><BANKACCTFROM><BANKID>1</BANKACCTFROM><STMTTRN><TRNTYPE>payment<DTPOSTED>20260105<TRNAMT>-1<REFNUM>R-9<MEMO>Conta</STMTTRN></OFX>");
     expect(parsed.lines[0]).toMatchObject({ trnType: "PAYMENT", reference: "R-9" });
-    expect(parsed.accountKey).toBeUndefined();
   });
 
   it("rejeita texto sem <OFX>", () => {

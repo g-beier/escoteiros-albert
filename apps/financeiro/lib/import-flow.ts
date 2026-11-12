@@ -247,34 +247,16 @@ export function parseTextList(text: string) {
   });
 }
 
-// Conta do arquivo ---------------------------------------------------------------
+// Perfil de leitura da conta ------------------------------------------------------
 
-export type AccountMatch =
-  | { status: "none" }
-  /** O arquivo já está ligado à conta escolhida. */
-  | { status: "linked" }
-  /** Primeira importação deste arquivo: a conta escolhida passa a reconhecê-lo. */
-  | { status: "new"; key: string }
-  /** O arquivo pertence a outra conta do grupo: importar aqui é bloqueado. */
-  | { status: "other"; key: string; accountId: string; accountName: string }
-  /** A conta escolhida já está ligada a outro arquivo OFX (outro banco ou número de conta). */
-  | { status: "mismatch"; key: string; expected: string };
-
-type KeyedAccount = { id: string; name: string; ofx_key: string | null };
-
-/** Conta que o arquivo OFX deve usar, a partir de `BANKID:ACCTID`. */
-export function accountForOfxKey(accounts: KeyedAccount[], key: string | undefined) {
-  return key ? accounts.find((account) => account.ofx_key === key) : undefined;
-}
-
-export function matchOfxAccount(accounts: KeyedAccount[], chosenId: string, key: string | undefined): AccountMatch {
-  if (!key) return { status: "none" };
-  const owner = accountForOfxKey(accounts, key);
-  if (owner && owner.id !== chosenId) return { status: "other", key, accountId: owner.id, accountName: owner.name };
-  if (owner) return { status: "linked" };
-  const chosen = accounts.find((account) => account.id === chosenId);
-  if (chosen?.ofx_key) return { status: "mismatch", key, expected: chosen.ofx_key };
-  return { status: "new", key };
+/**
+ * Perfil para ler o OFX da conta escolhida: o da última importação da conta; senão, o que
+ * reconhece o arquivo pela assinatura; senão, nenhum (sugestões). Os OFX convertidos de bancos
+ * diferentes podem ter a mesma assinatura, por isso a conta vem primeiro.
+ */
+export function profileForAccount<T extends ProfileLike>(profiles: T[], lastProfileId: string | null | undefined, signature: string): T | undefined {
+  const last = lastProfileId ? profiles.find((profile) => profile.id === lastProfileId && profile.format === "ofx") : undefined;
+  return last ?? findMatchingProfile(profiles, "ofx", () => signature);
 }
 
 // Conferência e envio ---------------------------------------------------------------

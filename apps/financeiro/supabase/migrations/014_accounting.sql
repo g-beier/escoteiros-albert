@@ -1,5 +1,6 @@
--- Contabilidade: conta contábil nas rubricas e nas contas, campos do OFX nas linhas do extrato,
--- reconhecimento da conta pelo arquivo e o ID OFX (FITID) nas visões de lançamentos.
+-- Contabilidade: conta contábil nas rubricas e nas contas, campos do OFX nas linhas do extrato
+-- e o ID OFX (FITID) nas visões de lançamentos. A conta do extrato é escolhida na importação:
+-- os OFX de alguns bancos são convertidos antes e não trazem BANKID/ACCTID confiáveis.
 -- Rubricas e formas de pagamento passam a ser gravadas só por funções auditadas, como as contas.
 
 -- Conta contábil: código do plano de contas do sistema contábil de destino (ex.: 3.1.2.1.0005).
@@ -11,9 +12,6 @@ create domain public.ledger_code as text
 alter table public.categories add column ledger_code public.ledger_code;
 -- Contrapartida da partida dobrada (ex.: "Bancos – Cora" no plano de contas). Opcional.
 alter table public.accounts add column ledger_code public.ledger_code;
--- BANKID:ACCTID do OFX: reconhece a conta na próxima importação.
-alter table public.accounts add column ofx_key text check (char_length(ofx_key) between 1 and 120);
-create unique index accounts_ofx_key_idx on public.accounts(group_id, ofx_key) where ofx_key is not null;
 
 -- Campos do OFX guardados como vieram do banco.
 alter table public.statement_lines
@@ -27,7 +25,7 @@ create or replace function public.account_snapshot(p_account_id uuid)
 returns jsonb language sql stable security definer set search_path = '' as $$
   select jsonb_build_object('name', a.name, 'kind', a.kind, 'bank', a.bank, 'branch', a.branch, 'number', a.number,
     'opening_balance_cents', a.opening_balance_cents, 'opening_date', a.opening_date, 'active', a.active,
-    'ledger_code', a.ledger_code, 'ofx_key', a.ofx_key)
+    'ledger_code', a.ledger_code)
   from public.accounts a where a.id = p_account_id;
 $$;
 revoke all on function public.account_snapshot(uuid) from public, anon, authenticated;
@@ -83,23 +81,6 @@ begin
   insert into public.audit_events(group_id, actor_id, action, entity_type, entity_id, details)
   values (account_group, auth.uid(), 'account.updated', 'account', p_account_id::text,
     jsonb_build_object('before', before_state, 'after', public.account_snapshot(p_account_id)));
-end;
-$$;
-
--- Liga a conta ao BANKID:ACCTID de um arquivo OFX (nulo desliga).
-create function public.set_account_ofx_key(p_account_id uuid, p_ofx_key text)
-returns void language plpgsql security definer set search_path = '' as $$
-declare account_group uuid; previous text; key text := nullif(trim(p_ofx_key), '');
-begin
-  select group_id, ofx_key into account_group, previous from public.accounts where id = p_account_id for update;
-  if account_group is null or not public.can_edit_group(account_group) then raise exception 'Conta não encontrada ou sem permissão'; end if;
-  if key is not null and exists (select 1 from public.accounts where group_id = account_group and ofx_key = key and id <> p_account_id) then
-    raise exception 'Esse arquivo OFX já está ligado a outra conta';
-  end if;
-  if key is not distinct from previous then return; end if;
-  update public.accounts set ofx_key = key, updated_at = now() where id = p_account_id;
-  insert into public.audit_events(group_id, actor_id, action, entity_type, entity_id, details)
-  values (account_group, auth.uid(), 'account.ofx_key_set', 'account', p_account_id::text, jsonb_build_object('from', previous, 'to', key));
 end;
 $$;
 
@@ -212,7 +193,6 @@ drop policy "editors manage payment methods" on public.payment_methods;
 
 revoke all on function public.create_account(uuid, text, public.account_kind, text, text, text, bigint, date, text) from public;
 revoke all on function public.update_account(uuid, text, public.account_kind, text, text, text, bigint, date, text) from public;
-revoke all on function public.set_account_ofx_key(uuid, text) from public;
 revoke all on function public.create_category(uuid, text, text, text) from public;
 revoke all on function public.update_category(uuid, text, text) from public;
 revoke all on function public.set_category_active(uuid, boolean) from public;
@@ -221,7 +201,6 @@ revoke all on function public.update_payment_method(uuid, text) from public;
 revoke all on function public.set_payment_method_active(uuid, boolean) from public;
 grant execute on function public.create_account(uuid, text, public.account_kind, text, text, text, bigint, date, text) to authenticated;
 grant execute on function public.update_account(uuid, text, public.account_kind, text, text, text, bigint, date, text) to authenticated;
-grant execute on function public.set_account_ofx_key(uuid, text) to authenticated;
 grant execute on function public.create_category(uuid, text, text, text) to authenticated;
 grant execute on function public.update_category(uuid, text, text) to authenticated;
 grant execute on function public.set_category_active(uuid, boolean) to authenticated;

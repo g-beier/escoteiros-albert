@@ -24,8 +24,6 @@ export type Account = {
   active: boolean;
   /** Conta contábil de contrapartida (ex.: "Bancos – Cora" no plano de contas). */
   ledger_code: string | null;
-  /** BANKID:ACCTID do OFX ligado a esta conta. */
-  ofx_key: string | null;
 };
 
 /** Conta "A definir" criada pela migração 011 para lançamentos sem conta conhecida. */
