@@ -4,8 +4,8 @@ import type { Column } from "./columns";
 export type CsvEncoding = "windows-1252" | "utf-8";
 
 export const CSV_ENCODINGS: { value: CsvEncoding; label: string }[] = [
-  { value: "windows-1252", label: "Windows-1252 (ANSI) — sistemas contábeis" },
-  { value: "utf-8", label: "UTF-8 — planilhas" },
+  { value: "windows-1252", label: "Windows-1252 (contábil)" },
+  { value: "utf-8", label: "UTF-8" },
 ];
 
 export function isCsvEncoding(value: unknown): value is CsvEncoding {

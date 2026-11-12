@@ -24,8 +24,8 @@ type SelectProps = {
 export function OptionSelect({ id, value, onValueChange, options, placeholder = "Selecione…", emptyLabel, className, invalid, disabled, ...aria }: SelectProps) {
   const items = emptyLabel ? [{ value: "", label: emptyLabel }, ...options] : options;
   return <Select disabled={disabled} items={items} value={value || (emptyLabel ? "" : null)} onValueChange={(next) => onValueChange((next as string | null) ?? "")}>
-    <SelectTrigger id={id} className={cn("w-full", className)} aria-invalid={invalid || undefined} aria-label={aria["aria-label"]}>
-      <SelectValue placeholder={emptyLabel ?? placeholder} />
+    <SelectTrigger id={id} className={cn("w-full min-w-0", className)} aria-invalid={invalid || undefined} aria-label={aria["aria-label"]}>
+      <SelectValue className="block min-w-0 truncate" placeholder={emptyLabel ?? placeholder} />
     </SelectTrigger>
     <SelectContent alignItemWithTrigger={false} align="start" className="w-auto min-w-(--anchor-width)">
       {items.map((item) => <SelectItem key={item.value || "__empty"} value={item.value}>{item.label}</SelectItem>)}
