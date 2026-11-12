@@ -34,9 +34,9 @@ A composição da Assembleia de Grupo e o exercício dos direitos de voz e voto 
 
 As propostas e os documentos relativos à ordem do dia acompanham este edital, nos links abaixo:
 
-- [Proposta de alteração no Estatuto do GEAS](/documents/assembleia2026/estatuto-comparativo.pdf)
-- [Proposta de alteração no Regulamento de Grupo](/documents/assembleia2026/regulamento-grupo-comparativo.pdf)
-- [Proposta de Regulamento Eleitoral](/documents/assembleia2026/regulamento-eleitoral-proposta.pdf)
-- [Proposta de Regulamento Patrimonial](/documents/assembleia2026/regulamento-patrimonial-proposta.pdf)
+- [Proposta de alteração no Estatuto do GEAS](/documents/assembleia2026/Estatuto%20atual%20e%20proposto%20-%20Comparativo.pdf)
+- [Proposta de alteração no Regulamento de Grupo](/documents/assembleia2026/Regulamento%20de%20grupo%20atual%20e%20proposto%20-%20Comparativo.pdf)
+- [Proposta de Regulamento Eleitoral](/documents/assembleia2026/Regulamento%20eleitoral%20-%20Proposta.pdf)
+- [Proposta de Regulamento Patrimonial](/documents/assembleia2026/Regulamento%20patrimonial%20-%20Proposta.pdf)
 
 Sempre Alerta Para Servir o Melhor Possível!
