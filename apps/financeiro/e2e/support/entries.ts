@@ -38,8 +38,15 @@ export const entryRow = (page: Page, name: string) => entriesTable(page).getByRo
 
 /** Busca pelo campo de busca dos filtros e espera a URL refletir o termo. */
 export async function search(page: Page, term: string) {
-  await page.getByRole("searchbox", { name: "Buscar por histórico, descrição ou ID OFX" }).fill(term);
-  await expect(page).toHaveURL(new RegExp(`[?&]q=${encodeURIComponent(term).replace(/%20/g, "(\\+|%20)")}`));
+  const url = new RegExp(`[?&]q=${encodeURIComponent(term).replace(/%20/g, "(\\+|%20)")}`);
+  // Digitado antes da hidratação, o texto fica no campo mas o React não vê a mudança (e repetir o mesmo
+  // texto também não dispara onChange): a cada tentativa, limpa e digita de novo.
+  const box = page.getByRole("searchbox", { name: "Buscar por histórico, descrição ou ID OFX" });
+  await expect(async () => {
+    await box.fill("");
+    await box.fill(term);
+    await expect(page).toHaveURL(url, { timeout: 2_000 });
+  }).toPass({ timeout: 15_000 });
 }
 
 /** Barra de filtros da lista. */

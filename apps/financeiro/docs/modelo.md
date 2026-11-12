@@ -27,7 +27,7 @@ Termos usados na interface, no código e na documentação. Quando um termo apar
 - **Realizado** (`/lancamentos/realizado?ano=`): rubricas × meses do ano, como a planilha do Realizado.
 - `ofx=<FITID>` filtra pelo ID OFX: o lançamento, seus rateios e os demais lançamentos pagos pela mesma movimentação.
 - Tesouraria e administração podem marcar lançamentos na visão Movimentações e movê-los em lote para outra conta (ex.: tirar de "A definir"); conciliados que mudam de conta perdem o vínculo, como em Trocar conta.
-- `conciliado=sim` / `conciliado=nao` filtra pelo vínculo com o extrato (coluna `reconciled` das duas visões); sem o parâmetro, ou com as duas opções, mostra todos. O ✓ ao lado do valor marca o lançamento conciliado nas duas visões.
+- `conciliado=sim` / `conciliado=nao` filtra pelo vínculo com o extrato (coluna `reconciled` das duas visões); sem o parâmetro, ou com as duas opções, mostra todos. Nas listas, o conciliado se reconhece pela coluna ID OFX preenchida (FITID das linhas vinculadas).
 
 ## Comprovantes anexados
 

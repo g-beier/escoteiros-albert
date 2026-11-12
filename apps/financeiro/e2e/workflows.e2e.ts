@@ -107,7 +107,8 @@ test("importar OFX, criar lançamento pela conciliação, filtrar Conciliado e d
     await page.goto(`/lancamentos/movimentacoes?de=tudo&conciliado=sim`);
     await search(page, name);
     await expect(entryRow(page, name)).toBeVisible();
-    await expect(entryRow(page, name).getByLabel("Conciliado com o extrato")).toBeVisible();
+    // conciliado = a coluna ID OFX mostra o FITID da linha vinculada
+    await expect(entryRow(page, name).getByRole("button", { name: /^Copiar ID OFX / })).toBeVisible();
     await page.goto(`/lancamentos/movimentacoes?de=tudo&conciliado=nao`);
     await search(page, name);
     await expect(entryRow(page, name)).toHaveCount(0);
@@ -124,6 +125,7 @@ test("importar OFX, criar lançamento pela conciliação, filtrar Conciliado e d
     await page.goto(`/lancamentos/movimentacoes?de=tudo&conciliado=nao`);
     await search(page, name);
     await expect(entryRow(page, name)).toBeVisible();
+    await expect(entryRow(page, name).getByRole("button", { name: /^Copiar ID OFX / })).toHaveCount(0);
   });
 
   await deleteFromDetail(page, name);
