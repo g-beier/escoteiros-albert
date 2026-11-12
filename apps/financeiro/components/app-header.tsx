@@ -20,7 +20,7 @@ export const isSettingsPath = (path: string) => path.startsWith("/cadastros") ||
 /** Mesma largura em todas as telas (largura total, margens de 16px), como o corpo das páginas. */
 export function AppHeader({ role, email, current }: { role: string; email: string; current: string }) {
   const settingsActive = isSettingsPath(current);
-  return <header className="topbar topbar-wide">
+  return <header className="sticky top-0 z-5 flex min-h-(--topbar-h) items-center justify-between border-b border-[#e8e3dc] bg-[color-mix(in_srgb,var(--surface)_96%,transparent)] px-4 py-2 text-foreground backdrop-blur-[12px] max-[760px]:flex-wrap max-[760px]:gap-x-3 max-[760px]:gap-y-1.5 max-[760px]:py-2.5">
     <Brand />
     <nav className="flex items-center gap-1 sm:gap-2" aria-label="Navegação principal">
       {SECTIONS.map((section) => {

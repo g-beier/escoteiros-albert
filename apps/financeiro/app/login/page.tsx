@@ -25,7 +25,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <small className="text-muted-foreground">Acesso protegido para a diretoria do grupo</small>
       </section>
       <section className="grid place-items-center bg-foreground p-[30px] max-[760px]:flex max-[760px]:flex-col max-[760px]:items-center max-[760px]:justify-center max-[760px]:gap-7 max-[760px]:px-[22px] max-[760px]:pt-7 max-[760px]:pb-9">
-        <div className="hidden w-[min(430px,100%)] max-[760px]:block [&_.brand-logo]:w-[190px]"><Brand href="/login" light /></div>
+        <div className="hidden w-[min(430px,100%)] max-[760px]:block [&_img]:w-[190px]"><Brand href="/login" light /></div>
         <div className="w-[min(430px,100%)] rounded-[20px] border-[1.5px] border-[#5b565f] bg-[#302d33] p-[34px] text-white shadow-[7px_8px_0_var(--purple)]">
           <span className={cn(eyebrow, "text-(--green)")}>Área restrita</span>
           <h2 className="mt-0 mb-2 text-[32px] tracking-[-.035em]">Boas-vindas</h2>

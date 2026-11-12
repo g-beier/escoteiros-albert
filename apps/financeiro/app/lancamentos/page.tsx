@@ -64,9 +64,10 @@ export default async function EntriesPage({ searchParams }: { searchParams: Prom
   const sortHref = `/lancamentos?${sortQuery}`;
   const viewHref = (visao: string) => { const next = new URLSearchParams(returnQuery); next.set("visao", visao); return `/lancamentos?${next}`; };
 
-  return <div className="shell shell-workspace">
+  // A página não rola; só as linhas da tabela rolam, sob cabeçalhos fixos.
+  return <div className="shell flex h-dvh min-h-0 flex-col overflow-hidden before:hidden after:hidden">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/lancamentos" />
-    <main className="workspace">
+    <main className="flex min-h-0 flex-1 flex-col gap-2.5 px-4 py-3">
       <FilterOptionsProvider dimensions={dimensions}>
       <EntryListProvider canEdit={canEdit} returnQuery={returnQuery}>
         <PageHeader title="Lançamentos"
