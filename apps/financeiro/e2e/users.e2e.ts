@@ -15,22 +15,25 @@ test("convidar, mudar papel e remover um usuário", async ({ page }) => {
     await page.goto("/usuarios");
     await expect(page.getByRole("heading", { name: "Usuários" })).toBeVisible();
     await page.getByLabel("E-mail institucional").fill(invited);
-    await chooseOption(page, "Papel", "Tesoureiro");
+    await chooseOption(page, "Papel no Financeiro", "Tesoureiro");
     const since = new Date();
     await page.getByRole("button", { name: "Enviar convite" }).click();
     await expect(page.getByText(`Convite enviado para ${invited}.`)).toBeVisible();
     await expect(row).toContainText("Convite pendente");
-    await expect(row.getByRole("combobox", { name: `Papel de ${invited}` })).toContainText("Tesoureiro");
+    await expect(row.getByRole("combobox", { name: `Papel no Financeiro de ${invited}` })).toContainText("Tesoureiro");
     const mail = await waitForMail(invited, since);
     expect(mail.text).toContain("/auth/");
   });
 
-  await test.step("mudar para consulta", async () => {
-    await chooseOption(page, `Papel de ${invited}`, "Consulta", row);
-    await row.getByRole("button", { name: `Salvar papel de ${invited}` }).click();
+  await test.step("mudar para consulta no Financeiro e chefe no Inventário", async () => {
+    await chooseOption(page, `Papel no Financeiro de ${invited}`, "Consulta", row);
+    await chooseOption(page, `Papel no Inventário de ${invited}`, "Chefe", row);
+    await row.getByRole("button", { name: `Salvar papéis de ${invited}` }).click();
+    await expect(page.getByText(`Papéis de ${invited} salvos.`)).toBeVisible();
     await expect(async () => {
       await page.reload();
-      await expect(row.getByRole("combobox", { name: `Papel de ${invited}` })).toContainText("Consulta", { timeout: 2_000 });
+      await expect(row.getByRole("combobox", { name: `Papel no Financeiro de ${invited}` })).toContainText("Consulta", { timeout: 2_000 });
+      await expect(row.getByRole("combobox", { name: `Papel no Inventário de ${invited}` })).toContainText("Chefe", { timeout: 2_000 });
     }).toPass();
   });
 

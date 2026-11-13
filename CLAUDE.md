@@ -55,12 +55,22 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 - Forms: every input, select and textarea has a visible label (`<Label htmlFor>`). Placeholders only show examples, never replace the label; `sr-only`/`aria-label` alone is not enough. Exception: search fields with the magnifier icon keep only `aria-label` and a placeholder. In editable table rows, the visible column header is the label (keep a specific `sr-only` label per row).
 - `npx supabase migration up` applies new migrations without resetting local data.
 
+## inventario
+
+- Model and vocabulary in `apps/inventario/docs/modelo.md` (material by unit with tag `GEAS-000-0000` or by lot; divisions as a tree; families with 3-digit code; movements with review status). Migrations live with financeiro's (`032_inventory_catalog.sql`); pgTAP in `supabase/tests/inventory.test.sql`.
+- Roles per app: group admin (`memberships.role = 'admin'`) is manager in both apps; otherwise `memberships.inventory_role` (`manager` = gestor, `chief` = chefe, whose movements start `pendente`, `viewer`). Admin sets both roles in the shared Usuários screen (Financeiro `/usuarios`, Inventário `/configuracoes/usuarios`). Session in `apps/inventario/lib/session.ts` (`member.canEdit`, `canManage`); only file that reads `memberships`.
+- All writes through the `inventory_*` SQL functions (`supabase.rpc`); no direct write policies. Lists read `inventory_material_rows` and `inventory_location_paths`.
+- Routes: `/materiais` (list by location: one tab per root division, subdivisions as group rows, from `inventory_stock_by_location`; `/novo`, `/[id]`, `/[id]/editar`), `/movimentacoes`; Configurações (gear) with tabs `/configuracoes/divisoes|familias|usuarios` (Usuários only for the group admin; `components/settings-tabs.tsx`).
+- Division order is chosen by the manager (`inventory_locations.position`, `inventory_move_location`), never alphabetical: sort by `sort_key` from `inventory_location_paths` (`treeOrder` in `apps/inventario/lib/locations.ts`).
+- Dev data from the group's spreadsheet: `apps/inventario/scripts/planilha-para-csv.mjs` then `importar-planilha.mjs` (local Supabase only; wipes and reloads the group's inventory). The CSVs are group data: never commit them.
+
 ## Shared UI (`packages/ui`, `@geas/ui`)
 
 - Same identity in every internal app: build screens from `@geas/ui`, never hand-rolled CSS classes or app-local copies of primitives.
-- `@geas/ui` (root export): app shell — `AppBrand`, `AppLogin`/`AppLoginForm`, `AppHeader`, `UserMenu`, `PageHeader`, `PageBody`, `SectionTabs`.
+- `@geas/ui` (root export): app shell — `AppBrand`, `AppLogin`/`AppLoginForm`, `AppHeader`, `UserMenu`, `PageHeader`, `PageBody`, `SectionTabs` (pill buttons; below `sm` a menu button with the active tab, `components/section-tabs-menu`); `AppHeader` shows a menu button (`components/app-nav-menu`) below 1024px; `utilities` are `{ href, label, icon, active }`.
 - `@geas/ui/components/<name>`: shadcn/ui (`base-mira`, Base UI primitives — not Radix) plus `section-card`, `stat-card` (`StatCard`, `ListCard`) and `option-controls` (`OptionSelect`, `OptionCombobox`). Add shadcn components with `npx shadcn@latest add <name>` inside `packages/ui`. Imports inside the package use `@geas/ui/...` (self-reference), never `@/`.
 - `@geas/ui/lib/utils` (`cn`) and `@geas/ui/lib/use-action-toast` (Server Action result → toast).
+- Users: `@geas/ui/lib/roles` (domain, group/inventory roles), `@geas/ui/lib/users` (server only, service key: list, invite, save roles, remove) and `@geas/ui/components/users-manager` (screen with one role column per app). Each app keeps thin `"use server"` wrappers that check the admin and revalidate.
 - Theme: each app's `app/globals.css` starts with `@import "@geas/ui/theme.css"` (Tailwind, tokens, shell CSS in `@layer components`, legacy CSS in `@layer legacy` below utilities) and the root `<html>` carries `data-app="financeiro" | "inventario"`, which sets the accent (`--app` → `primary`/`accent`: purple / dark orange).
 
 ## CI/CD

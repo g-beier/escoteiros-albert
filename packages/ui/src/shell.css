@@ -125,12 +125,13 @@
 /* Estrutura extraída do Financeiro: cabeçalho, conta e corpos de página. */
 .geas-header { position:sticky; top:0; z-index:50; display:flex; min-height:60px; align-items:center; justify-content:space-between; gap:20px; padding:8px 16px; border-bottom:1px solid #e8e3dc; background:color-mix(in srgb,var(--geas-surface) 96%,transparent); color:var(--geas-ink); backdrop-filter:blur(12px); }
 .geas-header__nav { display:flex; align-items:center; gap:8px; }
-.geas-header__nav>a { padding:6px 12px; border-radius:999px; color:var(--geas-ink-muted); font-size:14px; font-weight:650; text-decoration:none; transition:color 140ms ease,background 140ms ease; }
-.geas-header__nav>a:hover { background:color-mix(in srgb,var(--app,var(--geas-purple)) 12%,transparent); color:var(--geas-ink); }
-.geas-header__nav>a[aria-current="page"] { background:var(--geas-ink); color:var(--geas-paper); }
+.geas-header__nav>a:not(.geas-header__utility) { padding:6px 12px; border-radius:999px; color:var(--geas-ink-muted); font-size:14px; font-weight:650; text-decoration:none; transition:color 140ms ease,background 140ms ease; }
+.geas-header__nav>a:not(.geas-header__utility):hover { background:color-mix(in srgb,var(--app,var(--geas-purple)) 12%,transparent); color:var(--geas-ink); }
+.geas-header__nav>a:not(.geas-header__utility)[aria-current="page"] { background:var(--geas-ink); color:var(--geas-paper); }
 .geas-header__divider { width:1px; height:20px; margin:0 4px; background:var(--geas-line); }
 .geas-header__utility { display:grid; width:32px; height:32px; place-items:center; border-radius:999px; color:var(--geas-ink-muted); text-decoration:none; }
-.geas-header__utility:hover,.geas-header__utility[aria-current="page"] { background:var(--geas-ink); color:var(--geas-paper); }
+.geas-header__utility:hover { background:#f2efe9; color:var(--geas-ink); }
+.geas-header__utility[aria-current="page"] { background:var(--geas-ink); color:var(--geas-paper); }
 .geas-user-menu { position:relative; }
 .geas-user-menu summary { display:grid; width:32px; height:32px; place-items:center; border-radius:999px; cursor:pointer; list-style:none; }
 .geas-user-menu summary::-webkit-details-marker { display:none; }
@@ -156,4 +157,14 @@
 .geas-page-header__actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-left:auto; }
 .geas-page-header>p { margin:0; color:var(--geas-ink-muted); font-size:12px; }
 .geas-sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
-@media(max-width:760px){.geas-header{flex-wrap:wrap;gap:6px 12px;padding:10px 16px}.geas-header__nav{order:3;width:100%;overflow:auto}.geas-header__nav>a{white-space:nowrap}}
+.geas-header__nav { margin-left:auto; }
+.geas-header__end { display:flex; flex-shrink:0; align-items:center; gap:6px; }
+.geas-header__menu-button { display:none; width:36px; height:36px; place-items:center; border:0; border-radius:999px; background:transparent; color:var(--geas-ink); cursor:pointer; }
+.geas-header__menu-button:hover,.geas-header__menu-button[aria-expanded="true"] { background:#f2efe9; }
+.geas-header__panel { position:absolute; top:100%; right:0; left:0; display:grid; gap:2px; padding:8px 12px 12px; border-bottom:1px solid #e8e3dc; background:var(--geas-surface); box-shadow:0 12px 24px rgba(37,35,40,.10); }
+.geas-header__panel a { padding:10px 12px; border-radius:10px; color:var(--geas-ink); font-size:15px; font-weight:650; text-decoration:none; }
+.geas-header__panel a:hover { background:#f2efe9; }
+.geas-header__panel a[aria-current="page"] { background:var(--geas-ink); color:var(--geas-paper); }
+.geas-header__panel hr { margin:6px 0; border:0; border-top:1px solid var(--geas-line); }
+@media(max-width:1023px){.geas-header{gap:12px}.geas-header__nav{display:none}.geas-header__menu-button{display:grid}}
+@media(max-width:400px){.geas-header{padding:8px 12px}.geas-brand__logo img{width:132px}.geas-brand__apps{width:96px;margin-left:6px}}

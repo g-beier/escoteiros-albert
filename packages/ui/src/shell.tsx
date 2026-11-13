@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "./lib/utils";
+import { AppNavMenu } from "./components/app-nav-menu";
+import { SectionTabsMenu } from "./components/section-tabs-menu";
 
 export type GeasApp = "financeiro" | "inventario";
 
@@ -99,20 +101,31 @@ export function AppLoginForm({ email, error, message, requestOtp, verifyOtp }: {
 }
 
 export type AppNavItem = { href: string; label: string; active: boolean };
+/** Atalho de ícone à direita da navegação (ex.: Configurações); no menu do celular aparece por extenso. */
+export type AppUtility = AppNavItem & { icon: ReactNode };
 
-export function AppHeader({ brand, navigation, utilities, account }: {
+/**
+ * Cabeçalho dos apps. Desktop (≥ 1024px): marca, áreas, utilitários e conta numa linha.
+ * Telas menores: marca, conta e um botão de menu (AppNavMenu) com as áreas e os utilitários.
+ */
+export function AppHeader({ brand, navigation, utilities = [], account }: {
   brand: ReactNode;
   navigation: AppNavItem[];
-  utilities?: ReactNode;
+  utilities?: AppUtility[];
   account: ReactNode;
 }) {
   return <header className="geas-header">
     {brand}
     <nav className="geas-header__nav" aria-label="Navegação principal">
       {navigation.map((item) => <Link key={item.href} href={item.href} aria-current={item.active ? "page" : undefined}>{item.label}</Link>)}
-      {utilities && <><span className="geas-header__divider" aria-hidden />{utilities}</>}
-      {account}
+      {utilities.length > 0 && <span className="geas-header__divider" aria-hidden />}
+      {utilities.map((item) => <Link key={item.href} href={item.href} className="geas-header__utility" aria-label={item.label} title={item.label}
+        aria-current={item.active ? "page" : undefined}>{item.icon}</Link>)}
     </nav>
+    <div className="geas-header__end">
+      {account}
+      <AppNavMenu items={navigation} utilities={utilities.map(({ href, label, active }) => ({ href, label, active }))} />
+    </div>
   </header>;
 }
 
@@ -162,11 +175,15 @@ export function PageBody({ width = "full", className = "", ...props }: React.Com
 
 export type Tab = { href: string; label: string; active: boolean };
 
-/** Abas de uma área, ao lado do título (Extrato: Conciliar/Importar; Configurações: Contas, Rubricas…). */
+/** Abas de uma área, ao lado do título (Extrato: Conciliar/Importar; Configurações: Contas, Rubricas…).
+ * Em telas pequenas, viram um botão com menu (SectionTabsMenu) em vez da linha de botões. */
 export function SectionTabs({ tabs, label }: { tabs: Tab[]; label: string }) {
-  return <nav aria-label={label} className="inline-flex w-fit flex-wrap rounded-full bg-secondary p-0.5">
-    {tabs.map((tab) => <Link key={tab.href} href={tab.href} aria-current={tab.active ? "page" : undefined}
-      className={cn("rounded-full px-3 py-1 text-xs font-semibold no-underline transition-colors",
-        tab.active ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}>{tab.label}</Link>)}
-  </nav>;
+  return <>
+    <nav aria-label={label} className="hidden w-fit flex-wrap rounded-full bg-secondary p-0.5 sm:inline-flex">
+      {tabs.map((tab) => <Link key={tab.href} href={tab.href} aria-current={tab.active ? "page" : undefined}
+        className={cn("rounded-full px-3 py-1 text-xs font-semibold no-underline transition-colors",
+          tab.active ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}>{tab.label}</Link>)}
+    </nav>
+    <SectionTabsMenu tabs={tabs} label={label} className="sm:hidden" />
+  </>;
 }
