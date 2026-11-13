@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { IconAlertTriangle, IconCheck, IconMinus, IconX } from "@tabler/icons-react";
+import { IconAlertTriangle, IconCheck, IconCircleCheck, IconMinus, IconX } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -13,13 +13,14 @@ import { FEE_MONTH_NAMES, type CellState, type FeeRecord, type FeeSplit, type Fe
 import { cn } from "@/lib/utils";
 
 export const STATE_LABELS: Record<CellState, string> = {
-  pago: "pago", atencao: "atenção", nao_pago: "não pago", atrasado: "atrasado", sugestao: "pagamento a confirmar", vazio: "sem registro", fora: "fora do grupo",
+  pago: "pago", atencao: "atenção", nao_pago: "não pago", isento: "isento (não cobrar)", atrasado: "atrasado", sugestao: "pagamento a confirmar", vazio: "sem registro", fora: "fora do grupo",
 };
 
 const STATE_STYLES: Record<CellState, string> = {
   pago: "border-success bg-success text-white",
   atencao: "border-amber-600 bg-amber-300 text-amber-950",
   nao_pago: "border-destructive bg-destructive text-white",
+  isento: "border-success/40 bg-success/10 text-success",
   atrasado: "border-destructive/50 bg-destructive/10 text-destructive",
   sugestao: "border-dashed border-success text-success",
   vazio: "border-border text-transparent",
@@ -31,7 +32,7 @@ export function FeeMark({ state, partial = false, className }: { state: CellStat
   // sugestão parcial (valor menor que a mensalidade): tracejado amarelo com "!"
   if (state === "sugestao" && partial) return <span aria-hidden className={cn("grid size-6 place-items-center rounded-md border border-dashed border-amber-500 text-amber-700", className)}><IconAlertTriangle className="size-3.5" /></span>;
   return <span aria-hidden className={cn("grid size-6 place-items-center rounded-md border", STATE_STYLES[state], className)}>
-    {state === "pago" || state === "sugestao" ? <IconCheck className="size-4" /> : state === "atencao" ? <IconAlertTriangle className="size-3.5" /> : state === "atrasado" || state === "nao_pago" ? <IconX className="size-3.5" /> : state === "fora" ? <IconMinus className="size-3" /> : null}
+    {state === "pago" || state === "sugestao" ? <IconCheck className="size-4" /> : state === "isento" ? <IconCircleCheck className="size-3.5" /> : state === "atencao" ? <IconAlertTriangle className="size-3.5" /> : state === "atrasado" || state === "nao_pago" ? <IconX className="size-3.5" /> : state === "fora" ? <IconMinus className="size-3" /> : null}
   </span>;
 }
 
@@ -111,6 +112,7 @@ export function FeeCell({ name, month, state, record, suggestion, splits, canEdi
         <Button size="sm" variant={chosen === "pago" ? "default" : "outline"} aria-pressed={chosen === "pago"} onClick={() => apply("pago")}><IconCheck /> Pago</Button>
         <Button size="sm" variant="outline" aria-pressed={chosen === "atencao"} className={cn(chosen === "atencao" && "border-amber-600 bg-amber-300 text-amber-950 hover:bg-amber-300")} onClick={() => apply("atencao")}><IconAlertTriangle /> Atenção</Button>
         <Button size="sm" variant="outline" aria-pressed={chosen === "nao_pago"} className={cn("text-destructive", chosen === "nao_pago" && "border-destructive bg-destructive text-white hover:bg-destructive/90 hover:text-white")} onClick={() => apply("nao_pago")}><IconX /> Não pago</Button>
+        <Button size="sm" variant="outline" aria-pressed={chosen === "isento"} className={cn("text-success", chosen === "isento" && "border-success/40 bg-success/10 hover:bg-success/15")} onClick={() => apply("isento")}><IconCircleCheck /> Isento</Button>
         {(record || chosen) && <Button size="sm" variant="ghost" onClick={() => apply(null)}>Limpar</Button>}
       </div>
       <div className="grid gap-1.5">
@@ -118,7 +120,7 @@ export function FeeCell({ name, month, state, record, suggestion, splits, canEdi
           <Label htmlFor={noteId}>Observação</Label>
           <span className="text-[11px] text-muted-foreground" aria-live="polite">{saveState === "saving" ? "Salvando…" : saveState === "saved" ? "Salvo" : ""}</span>
         </div>
-        <Input id={noteId} value={note} maxLength={200} onChange={(e) => editNote(e.target.value)} placeholder="Ex.: prometeu até dia 20; não pagou: viagem" />
+        <Input id={noteId} value={note} maxLength={200} onChange={(e) => editNote(e.target.value)} placeholder="Ex.: prometeu até dia 20; isento: bolsa" />
       </div>
       <fieldset className="grid gap-1.5">
         <legend className="mb-1 text-xs font-semibold">Rateios de mensalidade vinculados</legend>
@@ -133,7 +135,7 @@ export function FeeCell({ name, month, state, record, suggestion, splits, canEdi
         </Label>)}
         <p className="m-0 text-xs text-muted-foreground">{chosen
           ? "Observação e vínculos são gravados automaticamente."
-          : "Escolha Pago, Atenção ou Não pago para gravar; depois disso, observação e vínculos são gravados automaticamente."}</p>
+          : "Escolha Pago, Atenção, Não pago ou Isento para gravar; depois disso, observação e vínculos são gravados automaticamente."}</p>
       </fieldset>
     </PopoverContent>
   </Popover>;

@@ -8,15 +8,17 @@ Grade anual (`/mensalidades?ano=AAAA`) de **março a dezembro** por associado, i
 |---|---|---|
 | **Pago** | registrado (com vínculo opcional a rateios) | ✓ verde |
 | **Atenção** | registrado, com nota (pagou parte, prometeu…) | ! amarelo |
+| **Não pago** | registrado, com nota: dívida confirmada | ✗ vermelho cheio |
+| **Isento** | registrado, com nota opcional: mês que não se cobra (ok sem ser pago) | ✓ em círculo, verde claro |
 | **Atrasado** | calculado: passou do vencimento sem registro | ✗ vermelho |
 | **Sugestão** | calculada: rateio de mensalidade do associado ainda sem caixinha | ✓ tracejado |
 | Vazio | mês futuro ou ainda no prazo | — |
 
 No rodapé, **Alertas** mostra por mês quantos estão atrasados, não pagos ou em atenção; passar o mouse ou focar a célula abre o detalhe do mês (só os estados que ocorrem) e o recebido no mês, que não tem mais linha própria. No desktop a grade ocupa a tela e só as linhas rolam, com cabeçalho e rodapé fixos.
 
-No popover da caixinha, escolher Pago, Atenção ou Não pago grava e mantém o popover aberto; a partir daí a observação é gravada sozinha 400 ms depois da última tecla (ou ao fechar) e marcar/desmarcar um rateio grava na hora.
+No popover da caixinha, escolher Pago, Atenção, Não pago ou Isento grava e mantém o popover aberto; a partir daí a observação é gravada sozinha 400 ms depois da última tecla (ou ao fechar) e marcar/desmarcar um rateio grava na hora.
 
-O filtro **Só com atrasos** (`?atrasados=1`, também no link do Início) mostra apenas quem deve. Isentos no ano (com motivo) saem da grade, aparecem com "Mostrar isentos" e nunca ficam atrasados.
+O filtro **Só com atrasos** (`?atrasados=1`, também no link do Início) mostra apenas quem deve. Isentos no ano (com motivo) saem da grade, aparecem com "Mostrar isentos" e nunca ficam atrasados. **Isento** num mês é diferente: a linha continua na grade e só aquele mês fica sem cobrança (não conta como pago, atraso nem alerta e sai do previsto; `029_fee_exempt_month.sql`).
 
 ## Vencimento (Configurações › Mensalidades)
 
@@ -26,7 +28,7 @@ O filtro **Só com atrasos** (`?atrasados=1`, também no link do Início) mostra
 ## Valores do ano (Configurações › Mensalidades)
 
 - **Mensalidade** por ano (ex.: R$ 60,00) e **desconto percentual** para quem paga os 10 meses de uma vez **até a data-limite** (`019_fee_prices.sql`, `fee_year_settings`).
-- **Previsto × recebido**: previsto = 10 mensalidades (ou o integral com desconto, para quem pagou assim); **em aberto** = previsto − recebido, por associado e no total. Isentos não têm previsto.
+- **Previsto × recebido**: previsto = 10 mensalidades (ou o integral com desconto, para quem pagou assim); **em aberto** = previsto − recebido, por associado e no total. Isentos no ano não têm previsto; meses marcados Isento saem do previsto.
 
 ## Integração com o fluxo de caixa
 

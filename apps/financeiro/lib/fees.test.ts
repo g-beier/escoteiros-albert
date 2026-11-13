@@ -62,7 +62,7 @@ describe("monthSummary", () => {
   it("conta cada estado por mês e soma atrasados com não pagos", () => {
     const row = (first: string) => [first, ...Array(9).fill("vazio")] as never;
     expect(monthSummary([row("pago"), row("atrasado"), row("nao_pago"), row("sugestao")])[0])
-      .toEqual({ pago: 1, atencao: 0, nao_pago: 1, atrasado: 1, sugestao: 1, vazio: 0, fora: 0, late: 2 });
+      .toEqual({ pago: 1, atencao: 0, nao_pago: 1, isento: 0, atrasado: 1, sugestao: 1, vazio: 0, fora: 0, late: 2 });
     expect(monthSummary([row("pago")])[1].vazio).toBe(1);
   });
 });
@@ -148,6 +148,21 @@ describe("valor individual e não pago", () => {
     expect(rows[0].cells[0].state).toBe("nao_pago");
     expect(rows[0].overdue).toBe(1);
     expect(monthSummary([rows[0].cells.map((c) => c.state)])[0].late).toBe(1);
+  });
+});
+
+describe("mês isento", () => {
+  it("não conta como pago, dívida nem alerta e sai do previsto", () => {
+    const rows = buildFeeRows({
+      year: 2026, today: "2026-12-31", settings: { dueRule: "dia_fixo", dueDay: 10, categoryId: null },
+      associates: [{ id: "a", name: "Ana", branch: "lobinho", section: null, active: true }],
+      records: [3, 4].map((month) => ({ associateId: "a", month, status: "isento" as const, note: "bolsa", splitIds: [] })), exemptions: [], suggestions: [],
+    });
+    expect(rows[0].cells[0].state).toBe("isento");
+    expect(rows[0]).toMatchObject({ paid: 0, overdue: 8, exemptMonths: 2, hidden: null });
+    const summary = monthSummary([rows[0].cells.map((c) => c.state)])[0];
+    expect([summary.isento, summary.late, summary.atencao]).toEqual([1, 0, 0]);
+    expect(feeBalance(rows[0], [], 2026, { monthlyCents: 6000, discountPct: 10, deadline: null }).expected).toBe(48000);
   });
 });
 

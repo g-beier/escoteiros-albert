@@ -16,11 +16,11 @@ function done(success?: string): FeeResult {
   return { success };
 }
 
-/** Registra a caixinha: pago ou atenção (com nota e rateios) ou limpa (status nulo). */
+/** Registra a caixinha: pago, atenção, não pago ou isento (com nota e rateios) ou limpa (status nulo). */
 export async function setFeeRecord(payload: unknown): Promise<FeeResult> {
   const parsed = z.object({
     associateId: z.uuid(), year, month,
-    status: z.enum(["pago", "atencao", "nao_pago"]).nullable(),
+    status: z.enum(["pago", "atencao", "nao_pago", "isento"]).nullable(),
     note: z.string().trim().max(200, "Observação: no máximo 200 caracteres.").optional(),
     splitIds: z.array(z.uuid()).max(50).default([]),
   }).safeParse(payload);

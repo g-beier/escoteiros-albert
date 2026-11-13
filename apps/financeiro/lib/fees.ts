@@ -68,13 +68,16 @@ export function todayInSaoPaulo(now = new Date()) {
   return now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
 }
 
-/** Registrados à mão. "nao_pago" é a dívida confirmada (com observação); "atrasado" é só calculado. */
-export type FeeStatus = "pago" | "atencao" | "nao_pago";
+/**
+ * Registrados à mão. "nao_pago" é a dívida confirmada (com observação); "atrasado" é só calculado.
+ * "isento" é o mês que não se cobra (ok sem ser pago): não conta como pago, dívida, alerta nem previsto.
+ */
+export type FeeStatus = "pago" | "atencao" | "nao_pago" | "isento";
 export type FeeRecord = { associateId: string; month: number; status: FeeStatus; note: string | null; splitIds: string[] };
 
 /** pago/atencao registrados; atrasado = passou do vencimento sem registro; sugestao = rateio a confirmar; vazio = o resto. */
 /** "fora": mês em que o associado não está no grupo (saiu, ainda não entrou): sem cobrança nem atraso. */
-export type CellState = "pago" | "atencao" | "nao_pago" | "atrasado" | "sugestao" | "vazio" | "fora";
+export type CellState = "pago" | "atencao" | "nao_pago" | "isento" | "atrasado" | "sugestao" | "vazio" | "fora";
 
 export type MovementKind = "entrada" | "saida";
 export type AssociateMovement = { id: string; associateId: string; date: string; kind: MovementKind; reason: string | null };
@@ -187,13 +190,13 @@ export type FeeBalance = { expected: number; received: number; open: number; int
 
 /**
  * Previsto × recebido por associado: 10 mensalidades (ou o valor integral com desconto, se pago assim);
- * isento não tem previsto. `open` nunca é negativo.
+ * isento no ano não tem previsto; meses marcados "isento" saem do previsto. `open` nunca é negativo.
  */
-export function feeBalance(row: Pick<FeeRow, "exemption"> & { monthsInGroup?: number }, splits: FeeSplit[], year: number, price: FeePrice | null): FeeBalance {
+export function feeBalance(row: Pick<FeeRow, "exemption"> & { monthsInGroup?: number; exemptMonths?: number }, splits: FeeSplit[], year: number, price: FeePrice | null): FeeBalance {
   const inYear = splits.filter((s) => s.entryDate.startsWith(`${year}-`));
   const received = inYear.reduce((sum, s) => sum + s.amountCents, 0);
   if (!price || row.exemption) return { expected: 0, received, open: 0, integral: false };
-  const months = row.monthsInGroup ?? FEE_MONTHS.length;
+  const months = Math.max(0, (row.monthsInGroup ?? FEE_MONTHS.length) - (row.exemptMonths ?? 0));
   const { full, discounted } = annualAmounts(price);
   // o desconto do integral só vale para quem está no grupo o ano todo
   const integral = months === FEE_MONTHS.length && inYear.some((s) => isIntegralPayment(s, price) && s.amountCents === discounted && discounted !== full);
@@ -207,7 +210,7 @@ export type MonthSummary = Record<CellState, number> & { late: number };
 /** Totais por mês (as linhas passadas; a grade exclui os ocultos). */
 export function monthSummary(states: CellState[][]): MonthSummary[] {
   return FEE_MONTHS.map((_, column) => {
-    const summary: MonthSummary = { pago: 0, atencao: 0, nao_pago: 0, atrasado: 0, sugestao: 0, vazio: 0, fora: 0, late: 0 };
+    const summary: MonthSummary = { pago: 0, atencao: 0, nao_pago: 0, isento: 0, atrasado: 0, sugestao: 0, vazio: 0, fora: 0, late: 0 };
     for (const row of states) {
       const state = row[column];
       if (!state) continue;
@@ -230,6 +233,8 @@ export type FeeRow = {
   movements: AssociateMovement[];
   /** Meses do ano em que está no grupo (0 = oculto no ano). */
   monthsInGroup: number;
+  /** Meses no grupo marcados "isento" (não cobrados). */
+  exemptMonths: number;
   /** Por que a linha fica oculta por padrão: isento no ano ou fora do grupo o ano todo. */
   hidden: "isento" | "fora" | null;
   /** Um por mês de FEE_MONTHS. */
@@ -277,6 +282,7 @@ export function buildFeeRows(input: {
       return {
         associate, exemption, cells, movements,
         monthsInGroup: inGroup.size,
+        exemptMonths: cells.filter((c) => c.state === "isento" && inGroup.has(c.month)).length,
         hidden: exemption ? "isento" as const : inGroup.size === 0 ? "fora" as const : null,
         paid: cells.filter((c) => c.state === "pago").length,
         // atrasado (calculado) e não pago (registrado) contam como dívida

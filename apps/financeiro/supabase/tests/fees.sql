@@ -44,6 +44,15 @@ do $$ begin
   if (select note from public.fee_records r join public.associates a on a.id = r.associate_id where a.name = 'Bia') <> 'pagou metade' then raise exception 'FALHOU: nota'; end if;
 end $$;
 
+\echo '--- mês isento é gravado como estado próprio'
+select public.set_fee_record(:'bia', 2026, 6, 'isento', 'bolsa no mês', '{}');
+do $$ begin
+  if (select status::text from public.fee_records r join public.associates a on a.id = r.associate_id where a.name = 'Bia' and r.month = 6) <> 'isento' then
+    raise exception 'FALHOU: mês isento';
+  end if;
+end $$;
+select public.set_fee_record(:'bia', 2026, 6, null, null, '{}');
+
 \echo '--- rateio de outra rubrica ou de outro associado é recusado'
 do $$ begin
   perform public.set_fee_record((select id from public.associates where name = 'Bia'), 2026, 4, 'pago', null,
