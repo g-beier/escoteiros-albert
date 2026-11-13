@@ -30,6 +30,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+        env:
+          # no group database in CI: the site builds without the Realizado section
+          TRANSPARENCY_SKIP: '1'
 
   db-e2e:
     name: SQL tests (pgTAP) and e2e (Playwright)

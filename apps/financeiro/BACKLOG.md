@@ -113,7 +113,7 @@
 
 ## Concluído (2026-11-12, prestação de contas no site)
 
-- **Exportar para o site** no Realizado (`/exportar/transparencia?ano=AAAA`): JSON só com rubricas e valores mês a mês (`lib/export/transparency.ts`); valor lançado direto num grupo sai como "Sem rubrica detalhada". O institucional lê `src/data/prestacao-contas/*.json` no build e mostra o Realizado na página Transparência (sem arquivo, segue a planilha do Google).
+- **Exportar para o site** no Realizado (`/exportar/transparencia?ano=AAAA`): JSON só com rubricas e valores mês a mês (`lib/export/transparency.ts`); valor lançado direto num grupo sai como "Sem rubrica detalhada". O `prebuild` do institucional gera `src/data/prestacao-contas/<ano>.json` direto do banco (`scripts/export-transparency.ts`, credenciais do `.env.local`; sem banco, barra o build) e o build mostra o Realizado na página Transparência; a planilha do Google saiu.
 
 ## A verificar
 
