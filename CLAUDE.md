@@ -12,6 +12,7 @@ npm workspaces (`apps/*`, `packages/*`) with a single root `package-lock.json`. 
 ## Commands (from root)
 
 ```bash
+npm run dev                 # both dev servers in one terminal (concurrently); needs infra:start for financeiro
 npm run dev:institucional   # Astro dev server at localhost:4321
 npm run dev:financeiro      # Next dev server at localhost:3000
 npm run build               # build all apps
