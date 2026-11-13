@@ -1,14 +1,10 @@
 import Link from "next/link";
 import { IconSettings } from "@tabler/icons-react";
+import { AppHeader as SharedHeader, UserMenu } from "@geas/ui";
+import { logout } from "@/app/actions";
 import { Brand } from "@/components/brand";
-import { UserMenu } from "@/components/nav/user-menu";
-import { cn } from "@/lib/utils";
 
-/**
- * Navegação principal: Início · Lançamentos · Extrato (conciliar e importar) · Mensalidades.
- * Configurações (contas, rubricas, formas de pagamento, associados) na engrenagem; email, Usuários e Sair no menu da pessoa.
- */
-const SECTIONS = [
+const sections = [
   { href: "/", label: "Início", match: (path: string) => path === "/" },
   { href: "/lancamentos/movimentacoes", label: "Lançamentos", match: (path: string) => path.startsWith("/lancamentos") },
   { href: "/extrato/conciliar", label: "Extrato", match: (path: string) => path.startsWith("/extrato") },
@@ -17,25 +13,9 @@ const SECTIONS = [
 
 export const isSettingsPath = (path: string) => path.startsWith("/configuracoes");
 
-/** Mesma largura em todas as telas (largura total, margens de 16px), como o corpo das páginas. */
 export function AppHeader({ role, email, current }: { role: string; email: string; current: string }) {
-  const settingsActive = isSettingsPath(current);
-  return <header className="sticky top-0 z-5 flex min-h-(--topbar-h) items-center justify-between border-b border-[#e8e3dc] bg-[color-mix(in_srgb,var(--surface)_96%,transparent)] px-4 py-2 text-foreground backdrop-blur-[12px] max-[760px]:flex-wrap max-[760px]:gap-x-3 max-[760px]:gap-y-1.5 max-[760px]:py-2.5">
-    <Brand />
-    <nav className="flex items-center gap-1 sm:gap-2" aria-label="Navegação principal">
-      {SECTIONS.map((section) => {
-        const active = section.match(current);
-        return <Link key={section.href} href={section.href} aria-current={active ? "page" : undefined}
-          className={cn("rounded-full px-2.5 py-1.5 text-sm font-semibold no-underline transition-colors sm:px-3",
-            active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-accent hover:text-foreground")}>{section.label}</Link>;
-      })}
-      <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-      <Link href={role === "viewer" ? "/configuracoes/associados" : "/configuracoes"} aria-label="Configurações" title="Configurações: contas, rubricas, formas de pagamento e associados"
-        aria-current={settingsActive ? "page" : undefined}
-        className={cn("grid size-8 place-items-center rounded-full transition-colors", settingsActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-accent hover:text-foreground")}>
-        <IconSettings className="size-[18px]" aria-hidden />
-      </Link>
-      <UserMenu email={email} role={role} active={current.startsWith("/usuarios")} />
-    </nav>
-  </header>;
+  const settingsHref = role === "viewer" ? "/configuracoes/associados" : "/configuracoes";
+  return <SharedHeader brand={<Brand />} navigation={sections.map((item) => ({ href:item.href, label:item.label, active:item.match(current) }))}
+    utilities={<Link className="geas-header__utility" href={settingsHref} aria-label="Configurações" aria-current={isSettingsPath(current) ? "page" : undefined}><IconSettings size={18}/></Link>}
+    account={<UserMenu email={email} role={role} logoutAction={logout} usersHref={role === "admin" ? "/usuarios" : undefined} active={current.startsWith("/usuarios")}/>}/>
 }

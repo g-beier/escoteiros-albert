@@ -53,7 +53,7 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--geas-font);
   --font-heading: var(--font-sans);
   --font-numeric: var(--font-sans);
   --color-ring: var(--ring);

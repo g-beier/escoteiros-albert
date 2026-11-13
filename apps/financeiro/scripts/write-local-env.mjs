@@ -29,15 +29,29 @@ if (missing.length > 0) {
   throw new Error(`Supabase local não retornou: ${missing.join(", ")}`);
 }
 
-const env = [
+const sharedEnv = [
   "# Gerado por `npm run infra:env`; não edite manualmente.",
   `NEXT_PUBLIC_SUPABASE_URL=${values.API_URL}`,
   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${publicKey}`,
   `SUPABASE_SECRET_KEY=${secretKey}`,
-  "NEXT_PUBLIC_SITE_URL=http://localhost:3000",
+];
+const financeEnv = [
+  ...sharedEnv,
+  "NEXT_PUBLIC_SITE_URL=http://localhost:4321",
+  "NEXT_PUBLIC_INVENTARIO_URL=http://localhost:3002",
+  "",
+].join("\n");
+const inventoryEnv = [
+  ...sharedEnv,
+  "NEXT_PUBLIC_FINANCEIRO_URL=http://localhost:3000",
   "",
 ].join("\n");
 
-const target = resolve(".env.local");
-writeFileSync(target, env, { mode: 0o600 });
-console.log(`Credenciais locais gravadas em ${target}`);
+const targets = [
+  [resolve(".env.local"), financeEnv],
+  [resolve("../inventario/.env.local"), inventoryEnv],
+];
+for (const [target, contents] of targets) {
+  writeFileSync(target, contents, { mode: 0o600 });
+  console.log(`Credenciais locais gravadas em ${target}`);
+}

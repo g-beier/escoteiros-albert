@@ -1,5 +1,9 @@
 import Link from "next/link";
+import type { Crumb } from "@geas/ui";
 import { cn } from "@/lib/utils";
+
+export { PageBody, PageHeader } from "@geas/ui";
+export type { Crumb, PageWidth } from "@geas/ui";
 
 export type Tab = { href: string; label: string; active: boolean };
 
@@ -10,52 +14,6 @@ export function SectionTabs({ tabs, label }: { tabs: Tab[]; label: string }) {
       className={cn("rounded-full px-3 py-1 text-xs font-semibold no-underline transition-colors",
         tab.active ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}>{tab.label}</Link>)}
   </nav>;
-}
-
-/** Item do caminho; sem `href`, é a tela atual (último item). */
-export type Crumb = { label: React.ReactNode; href?: string };
-
-/** Caminho da tela, sempre começando no Início. Os links de volta levam os filtros de onde se veio. */
-function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
-  const items: Crumb[] = [{ label: "Início", href: "/" }, ...crumbs];
-  return <nav aria-label="Caminho" className="flex h-5 min-w-0 items-center text-xs">
-    <ol className="m-0 flex min-w-0 list-none items-center gap-1.5 p-0">
-      {items.map((crumb, index) => <li key={index} className="flex min-w-0 items-center gap-1.5">
-        {index > 0 && <span aria-hidden className="text-muted-foreground/70">›</span>}
-        {crumb.href
-          ? <Link href={crumb.href} className="shrink-0 font-medium text-muted-foreground no-underline hover:text-foreground hover:underline">{crumb.label}</Link>
-          : <span aria-current="page" className="min-w-0 truncate font-semibold text-foreground">{crumb.label}</span>}
-      </li>)}
-    </ol>
-  </nav>;
-}
-
-/**
- * Cabeçalho comum das telas: caminho (breadcrumbs), título, abas da área, descrição e ações à direita.
- * Mesmo formato compacto em todas as telas; o título fica no mesmo lugar em todas.
- */
-export function PageHeader({ title, description, crumbs, hideTitle, tabs, actions, children }: {
-  title: React.ReactNode;
-  description?: React.ReactNode;
-  /** Caminho depois do Início, terminando na tela atual (sem href). Omitido só no Início. */
-  crumbs?: Crumb[];
-  /** Título só para leitores de tela (Início: a linha mostra apenas as ações à direita). */
-  hideTitle?: boolean;
-  tabs?: React.ReactNode;
-  actions?: React.ReactNode;
-  children?: React.ReactNode;
-}) {
-  return <div className="grid gap-2">
-    {crumbs?.length ? <Breadcrumbs crumbs={crumbs} /> : null}
-    {/* altura mínima fixa: o título fica na mesma posição com ou sem abas e botões ao lado */}
-    <div className="flex min-h-9 flex-wrap items-center gap-x-4 gap-y-2">
-      <h1 className={cn("m-0 min-w-0 text-xl leading-tight font-bold tracking-tight break-words", hideTitle && "sr-only")}>{title}</h1>
-      {tabs}
-      {actions && <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div>}
-    </div>
-    {description && <p className="m-0 text-xs text-balance text-muted-foreground">{description}</p>}
-    {children}
-  </div>;
 }
 
 export type EntryView = "movimentacoes" | "detalhamento" | "realizado";
@@ -114,7 +72,7 @@ export function SettingsTabs({ current, canEdit }: { current: SettingsTab; canEd
  * Corpo das telas: o mesmo contêiner (largura total, margens de 16px) em todas, alinhado ao header,
  * para não haver saltos de largura ao navegar. O conteúdo pode não ocupar tudo.
  */
-export const PAGE_BODY = "grid w-full content-start gap-5 px-4 pt-4 pb-6";
+export const PAGE_BODY = "geas-page geas-page--full";
 
 /**
  * Larguras do corpo: `full` (padrão, fluida) para listas largas como Lançamentos e Extrato;
@@ -123,10 +81,4 @@ export const PAGE_BODY = "grid w-full content-start gap-5 px-4 pt-4 pb-6";
  * Numa área larga com uma aba estreita (Extrato › Importar), o cabeçalho fica largo e só o conteúdo
  * estreita, com `NARROW_CONTENT`.
  */
-export const PAGE_WIDTHS = { full: "", narrow: "mx-auto max-w-[calc(72rem+2rem)]" } as const;
 export const NARROW_CONTENT = "mx-auto w-full max-w-6xl";
-export type PageWidth = keyof typeof PAGE_WIDTHS;
-
-export function PageBody({ className, width = "full", ...props }: React.ComponentProps<"main"> & { width?: PageWidth }) {
-  return <main className={cn(PAGE_BODY, PAGE_WIDTHS[width], className)} {...props} />;
-}

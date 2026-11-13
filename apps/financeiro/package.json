@@ -20,6 +20,7 @@
     "export:transparency": "tsx scripts/export-transparency.ts"
   },
   "dependencies": {
+    "@geas/ui": "*",
     "@base-ui/react": "^1.9.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.0",

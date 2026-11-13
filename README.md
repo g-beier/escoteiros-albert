@@ -6,6 +6,7 @@ Monorepo das aplicações do Grupo Escoteiro Albert Schweitzer, em Porto Alegre,
 
 - `apps/institucional`: site público em Astro, publicado em [escoteirosalbert.com.br](https://escoteirosalbert.com.br).
 - `apps/financeiro`: aplicação de gestão financeira em Next.js, com Supabase.
+- `apps/inventario`: aplicação de patrimônio e materiais em Next.js, usando o mesmo Supabase do Financeiro.
 
 ## Desenvolvimento
 
@@ -13,6 +14,7 @@ Monorepo das aplicações do Grupo Escoteiro Albert Schweitzer, em Porto Alegre,
 npm install
 npm run dev:institucional      # somente o site Astro
 npm run dev:financeiro         # somente a gestão financeira
+npm run dev:inventario        # somente o inventário
 npm run build                  # build de todas as aplicações
 npm run lint
 npm test

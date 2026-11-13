@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import "@geas/ui/styles.css";
 import "./globals.css";
-
-// Fonte do financeiro (variável, com algarismos tabulares). O site institucional segue em Poppins.
-const outfit = Outfit({ subsets: ["latin"], display: "swap", variable: "--font-outfit" });
 
 export const metadata: Metadata = {
   title: "GEAS Financeiro",
@@ -21,5 +18,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-BR" className={outfit.variable}><body>{children}<Toaster /></body></html>;
+  return <html lang="pt-BR"><body>{children}<Toaster /></body></html>;
 }

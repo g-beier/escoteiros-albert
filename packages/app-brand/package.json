@@ -1,0 +1,14 @@
+{
+  "name": "@geas/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/app-brand.tsx",
+    "./styles.css": "./src/app-brand.css"
+  },
+  "peerDependencies": {
+    "next": ">=16",
+    "react": ">=19"
+  }
+}
