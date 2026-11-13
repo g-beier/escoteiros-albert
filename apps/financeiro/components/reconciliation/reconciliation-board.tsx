@@ -8,19 +8,19 @@ import {
   acceptSuggestions, createEntriesFromLines, ignoreStatementLines, linkReconciliation, rejectSuggestion, reopenStatementLine, setEntryAccount,
   setOutsideStatement, unlinkReconciliation, type ReconciliationResult,
 } from "@/app/extrato/conciliar/actions";
-import { OptionSelect, type Option } from "@/components/option-controls";
-import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { OptionSelect, type Option } from "@geas/ui/components/option-controls";
+import { Badge } from "@geas/ui/components/badge";
+import { Button, buttonVariants } from "@geas/ui/components/button";
+import { Checkbox } from "@geas/ui/components/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
+import { Input } from "@geas/ui/components/input";
+import { Label } from "@geas/ui/components/label";
 import { dateBR, shortOfxId, money } from "@/lib/format";
 import {
   IGNORE_REASONS, OTHER_REASON, guessPaymentMethod, ignoreReasonText, lineText, selectionSummary, suggestedEntryName,
   type Closing, type OpenEntry, type OpenLine, type Suggestions,
 } from "@/lib/reconciliation";
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 
 export type LinkSet = { id: string; lines: OpenLine[]; entries: OpenEntry[] };
 

@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { PAGE_BODY, PageHeader } from "@/components/nav/page-header";
 import { NewEntryButton } from "@/components/entries/entry-editor";
 import { SetupNeeded } from "@/components/setup-needed";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@geas/ui/components/button";
 import type { CategoryKind } from "@/lib/categories";
 import type { LedgerRow } from "@/lib/entry-queries";
 import { MONTHS } from "@/lib/export/period";
@@ -14,7 +14,8 @@ import { pageSession } from "@/lib/session";
 import { recentListStart, recentWindowStart } from "@/lib/dashboard";
 import { fetchFeeYear } from "@/lib/fee-queries";
 import { overdueRanking, todayInSaoPaulo } from "@/lib/fees";
-import { cn } from "@/lib/utils";
+import { StatCard as Stat } from "@geas/ui/components/stat-card";
+import { cn } from "@geas/ui/lib/utils";
 
 /** Teto de segurança da lista do Início (a janela é de dias, não de quantidade). */
 const RECENT_LIMIT = 300;
@@ -84,7 +85,8 @@ export default async function Dashboard() {
         <Stat label="Despesas" value={money(expense / 100)} tone="destructive" href={`/lancamentos/detalhamento?de=${year}-01-01&ate=${year}-12-31`} />
         <Stat label="Saldo do ano" value={money((income - expense) / 100)} tone={income - expense < 0 ? "destructive" : "neutral"} />
         <Stat label="Documentos pendentes" value={String(pendingDocs ?? 0)} tone={(pendingDocs ?? 0) > 0 ? "warning" : "neutral"}
-          href={(pendingDocs ?? 0) > 0 ? `/lancamentos/movimentacoes?pasta=pendente&de=${ALL_DATES}` : undefined} icon={(pendingDocs ?? 0) > 0} />
+          href={(pendingDocs ?? 0) > 0 ? `/lancamentos/movimentacoes?pasta=pendente&de=${ALL_DATES}` : undefined}
+          icon={(pendingDocs ?? 0) > 0 && <IconFolderExclamation className="size-5" aria-hidden />} />
       </section>
 
       <div className="grid gap-5 lg:grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[auto_minmax(0,2fr)_minmax(0,1fr)]">
@@ -147,22 +149,4 @@ export default async function Dashboard() {
       </div>
     </main>
   </div>;
-}
-
-const TONES = {
-  success: "text-success",
-  destructive: "text-destructive",
-  warning: "text-[#725d0d]",
-  neutral: "text-foreground",
-} as const;
-
-function Stat({ label, value, tone, href, icon }: { label: string; value: string; tone: keyof typeof TONES; href?: string; icon?: boolean }) {
-  const body = <>
-    <span className="text-xs text-muted-foreground">{label}</span>
-    <span className={cn("num flex items-center gap-1.5 text-xl font-bold", TONES[tone])}>{icon && <IconFolderExclamation className="size-5" aria-hidden />}{value}</span>
-  </>;
-  const className = "grid gap-1 rounded-lg border bg-card px-4 py-3";
-  return href
-    ? <Link href={href} className={cn(className, "transition-colors hover:border-primary")}>{body}</Link>
-    : <div className={className}>{body}</div>;
 }

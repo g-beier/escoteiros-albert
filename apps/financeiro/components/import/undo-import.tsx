@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconArrowBackUp } from "@tabler/icons-react";
 import { deleteStatementImport } from "@/app/extrato/importar/actions";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@geas/ui/components/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
 
 /** Desfaz uma importação inteira (ex.: extrato importado na conta errada). */
 export function UndoImport({ importId, fileName, lineCount }: { importId: string; fileName: string; lineCount: number }) {

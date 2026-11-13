@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
-import { InputGroupAddon } from "@/components/ui/input-group";
+import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@geas/ui/components/combobox";
+import { InputGroupAddon } from "@geas/ui/components/input-group";
 import { categoryLabel, depthOf, sortCategories, type CategoryItem, type CategoryKind } from "@/lib/categories";
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 
 type PickerItem = {
   value: string;

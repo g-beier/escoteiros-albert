@@ -4,7 +4,7 @@ import { EntryViewTabs, PageBody, PageHeader } from "@/components/nav/page-heade
 import { YearSelect } from "@/components/nav/year-select";
 import { RealizedTable } from "@/components/realized/realized-table";
 import { SetupNeeded } from "@/components/setup-needed";
-import { Button } from "@/components/ui/button";
+import { Button } from "@geas/ui/components/button";
 import { exportYears } from "@/lib/export/period";
 import { fetchRealizedModel } from "@/lib/export/queries";
 import { currentYear } from "@/lib/filters";

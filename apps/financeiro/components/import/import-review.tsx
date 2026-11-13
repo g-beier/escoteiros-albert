@@ -1,12 +1,12 @@
 "use client";
 
 import { IconAlertTriangle, IconCircleCheck, IconInfoCircle } from "@tabler/icons-react";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { dateBR, money } from "@/lib/format";
 import type { ParsedStatement } from "@/lib/statement-import";
 import type { PreviewLine } from "@/lib/import-schema";
-import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
+import { Checkbox } from "@geas/ui/components/checkbox";
+import { cn } from "@geas/ui/lib/utils";
 
 const MAX_ROWS = 1000;
 const brl = (cents: number) => money(cents / 100);

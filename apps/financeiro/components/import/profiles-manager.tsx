@@ -4,16 +4,16 @@ import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { IconPencil, IconTrash } from "@tabler/icons-react";
 import { deleteImportProfile, renameImportProfile, type CatalogFormState } from "@/app/configuracoes/actions";
-import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
+import { Badge } from "@geas/ui/components/badge";
+import { Button } from "@geas/ui/components/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
+import { Input } from "@geas/ui/components/input";
+import { Label } from "@geas/ui/components/label";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { dateBR } from "@/lib/format";
 import type { ProfileAccountUse } from "@/lib/import-flow";
-import { useActionToast } from "@/lib/use-action-toast";
+import { useActionToast } from "@geas/ui/lib/use-action-toast";
 
 export type ProfileItem = {
   id: string;

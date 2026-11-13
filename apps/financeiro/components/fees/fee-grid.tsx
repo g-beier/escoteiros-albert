@@ -6,20 +6,20 @@ import { IconCheck, IconChevronRight, IconDots, IconHelpCircle, IconSearch } fro
 import { addAssociateMovement, confirmFeeSuggestions, deleteAssociateMovement, setFeeAssociatePrice, setFeeExemption, setFeeRecord } from "@/app/mensalidades/actions";
 import { FilterOptionsProvider, type FilterOption } from "@/components/entries/filter-options";
 import { MultiFilter } from "@/components/entries/multi-filter";
-import { OptionSelect } from "@/components/option-controls";
+import { OptionSelect } from "@geas/ui/components/option-controls";
 import { FeeCell, FeeMark, STATE_LABELS, type CellChange } from "@/components/fees/fee-cell";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Label } from "@/components/ui/label";
+import { Button } from "@geas/ui/components/button";
+import { Checkbox } from "@geas/ui/components/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
+import { Input } from "@geas/ui/components/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@geas/ui/components/tooltip";
+import { Label } from "@geas/ui/components/label";
 import { branchLabels, isScoutBranch, NO_SECTION } from "@/lib/associates";
 import { feeAmounts, feeBalance, priceForAssociate, todayInSaoPaulo, FEE_MONTH_LABELS, FEE_MONTH_NAMES, FEE_MONTHS, monthSummary, type AssociateMovement, type MonthSummary, type CellState, type MovementKind, type FeePrice, type FeeRow, type FeeSplit, type FeeSuggestion } from "@/lib/fees";
 import { normalizeText } from "@/lib/statement-import";
 import { dateBR, money } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 
 type Optimistic = { associateId: string; month: number; state: CellState | null };
 

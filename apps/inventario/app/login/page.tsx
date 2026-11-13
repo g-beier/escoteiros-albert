@@ -1,19 +1,12 @@
-import { AppLogin } from "@geas/ui";
+import { AppLogin, AppLoginForm } from "@geas/ui";
 import { requestOtp, verifyOtp } from "./actions";
 
-export default async function Login({ searchParams }: { searchParams: Promise<{ email?: string; erro?: string; mensagem?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ erro?: string; mensagem?: string; email?: string }> }) {
   const params = await searchParams;
   const financeUrl = process.env.NEXT_PUBLIC_FINANCEIRO_URL ?? "http://localhost:3000";
   return <AppLogin current="inventario" financeiroHref={financeUrl} inventarioHref="/"
     eyebrow="Tudo no lugar" headline="Materiais cuidados. Escotismo em movimento."
     description="Saiba o que o grupo possui, onde está e quando precisa de atenção.">
-    <span className="geas-login__card-eyebrow">Área restrita</span><h2>Boas-vindas</h2>
-    <p>{params.email ? "Digite o código recebido. Ele expira em poucos minutos." : "Receba um código de acesso no seu e-mail institucional."}</p>
-    <form className="geas-login__form" action={params.email ? verifyOtp : requestOtp}>
-      {params.erro && <div className="geas-login__message geas-login__message--error" role="alert">{params.erro}</div>}
-      {params.mensagem && <div className="geas-login__message" role="status">{params.mensagem}</div>}
-      {params.email ? <><input type="hidden" name="email" value={params.email}/><label className="geas-login__field">Código de acesso<input className="geas-login__token" name="token" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" maxLength={8} autoFocus required/></label><button className="geas-login__button" type="submit">Confirmar código</button><a className="geas-login__button geas-login__button--secondary" href="/login">Usar outro e-mail</a></> : <><label className="geas-login__field">E-mail<input name="email" type="email" pattern=".+@escoteirosalbert\.com\.br" placeholder="nome@escoteirosalbert.com.br" autoComplete="email" required/></label><button className="geas-login__button" type="submit">Enviar código de acesso</button></>}
-      <p className="geas-login__help">Ainda não possui acesso? Solicite um convite ao administrador do grupo.</p>
-    </form>
+    <AppLoginForm email={params.email} error={params.erro} message={params.mensagem} requestOtp={requestOtp} verifyOtp={verifyOtp} />
   </AppLogin>;
 }

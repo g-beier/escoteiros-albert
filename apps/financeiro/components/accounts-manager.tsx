@@ -3,18 +3,18 @@
 import { useActionState, useEffect, useState } from "react";
 import { IconPencil, IconPlus } from "@tabler/icons-react";
 import { createAccount, setAccountActive, updateAccount, type CatalogFormState } from "@/app/configuracoes/actions";
-import { OptionSelect } from "@/components/option-controls";
+import { OptionSelect } from "@geas/ui/components/option-controls";
 import { LedgerCodeInput } from "@/components/ledger-code-input";
-import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
+import { Button } from "@geas/ui/components/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
+import { Input } from "@geas/ui/components/input";
+import { Label } from "@geas/ui/components/label";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { ACCOUNT_KINDS, accountDetails, type Account, type AccountKind } from "@/lib/accounts";
 import { centsToInput, dateBR, money } from "@/lib/format";
-import { useActionToast } from "@/lib/use-action-toast";
-import { cn } from "@/lib/utils";
+import { useActionToast } from "@geas/ui/lib/use-action-toast";
+import { cn } from "@geas/ui/lib/utils";
 
 export type AccountItem = Account & { usage: number };
 

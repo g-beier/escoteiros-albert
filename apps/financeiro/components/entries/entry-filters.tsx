@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { IconFilterOff, IconSearch, IconX } from "@tabler/icons-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@geas/ui/components/button";
+import { Input } from "@geas/ui/components/input";
+import { Label } from "@geas/ui/components/label";
 import { ALL_DATES, defaultFrom } from "@/lib/filters";
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 import { useListParams } from "./filter-options";
 import { MultiFilter } from "./multi-filter";
 

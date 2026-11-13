@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { dateBR } from "@/lib/format";
-import { SectionCard, SectionHeader } from "@/components/section-card";
+import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { UndoImport } from "@/components/import/undo-import";
 import { reconciliationHref } from "@/lib/import-flow";
 import type { RecentImport } from "@/lib/import-queries";

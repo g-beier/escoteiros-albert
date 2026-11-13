@@ -5,17 +5,17 @@ import Link from "next/link";
 import { IconAlertTriangle, IconCheck, IconExternalLink, IconPlus } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { createCatalogItem, setPaymentMethodDefaultAccount, updateCatalogItem, type CatalogFormState } from "@/app/configuracoes/actions";
-import { OptionSelect, type Option } from "@/components/option-controls";
+import { OptionSelect, type Option } from "@geas/ui/components/option-controls";
 import { LedgerCodeInput } from "@/components/ledger-code-input";
-import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
+import { Checkbox } from "@geas/ui/components/checkbox";
+import { Button } from "@geas/ui/components/button";
+import { Input } from "@geas/ui/components/input";
+import { Label } from "@geas/ui/components/label";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import type { CatalogKind } from "@/lib/catalogs";
-import { useActionToast } from "@/lib/use-action-toast";
-import { cn } from "@/lib/utils";
+import { useActionToast } from "@geas/ui/lib/use-action-toast";
+import { cn } from "@geas/ui/lib/utils";
 
 type Item = {
   id: string; name: string; active: boolean; usage: number;

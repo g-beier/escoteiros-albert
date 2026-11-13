@@ -8,13 +8,16 @@ npm workspaces (`apps/*`, `packages/*`) with a single root `package-lock.json`. 
 
 - `apps/institucional` (`@geas/institucional`) — public static site, Astro 6 + Tailwind CSS v4, `escoteirosalbert.com.br`.
 - `apps/financeiro` (`@geas/financeiro`) — financial management app, Next.js (App Router, Server Actions) + Supabase. Needs a Node server; cannot be deployed as static files.
+- `apps/inventario` (`@geas/inventario`) — inventory app (items, locations, movements), Next.js + the same Supabase project as financeiro (tables `inventory_*`, migration in `apps/financeiro/supabase/migrations/`). Port 3002.
+- `packages/ui` (`@geas/ui`) — shared UI of the internal apps (financeiro, inventario), consumed as TS source (no build step).
 
 ## Commands (from root)
 
 ```bash
-npm run dev                 # both dev servers in one terminal (concurrently); needs infra:start for financeiro
+npm run dev                 # all dev servers in one terminal (concurrently); needs infra:start for financeiro/inventario
 npm run dev:institucional   # Astro dev server at localhost:4321
 npm run dev:financeiro      # Next dev server at localhost:3000
+npm run dev:inventario      # Next dev server at localhost:3002
 npm run build               # build all apps
 npm run lint                # lint all apps
 npm test                    # vitest (financeiro)
@@ -50,8 +53,15 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 - Routes: menu item = 1st segment, header tab = 2nd segment (`/lancamentos/movimentacoes|detalhamento|realizado`, `/extrato/conciliar|importar`, `/configuracoes/<aba>`, `/configuracoes/associados`); query string only for filters and display modes. Area roots redirect to the first tab. Movimentações and Detalhamento share `app/lancamentos/entries-screen.tsx`; `voltar` carries the list path + filters (`listHref` in `lib/entries.ts`). The `rubrica` filter is compact (`id` = subtree, `-id` = excluded subtree; `encodeCategorySelection`).
 - Screens: every page header uses `PageHeader` (`components/nav/page-header.tsx`: title, `SectionTabs` beside it, actions on the right, description, filter rows as children) inside `PageBody`/`PAGE_BODY`; never hand-roll an `<h1>` row. Every page except Início passes `crumbs` (path after Início, ending in the current page; `settingsCrumbs`/`extratoCrumbs` helpers); links back carry the filters. Breadcrumbs keep the title in the same place on every page; no separate "Voltar" link. Início has no breadcrumbs and a screen-reader-only title (`hideTitle`): only the actions row shows.
 - Forms: every input, select and textarea has a visible label (`<Label htmlFor>`). Placeholders only show examples, never replace the label; `sr-only`/`aria-label` alone is not enough. Exception: search fields with the magnifier icon keep only `aria-label` and a placeholder. In editable table rows, the visible column header is the label (keep a specific `sr-only` label per row).
-- UI: shadcn/ui (`base-mira`, Base UI primitives — not Radix) on Tailwind v4. Legacy CSS lives in `@layer legacy` in `app/globals.css`. Generated components import `cn` from `@/lib/utils` (not the `cn` npm package).
 - `npx supabase migration up` applies new migrations without resetting local data.
+
+## Shared UI (`packages/ui`, `@geas/ui`)
+
+- Same identity in every internal app: build screens from `@geas/ui`, never hand-rolled CSS classes or app-local copies of primitives.
+- `@geas/ui` (root export): app shell — `AppBrand`, `AppLogin`/`AppLoginForm`, `AppHeader`, `UserMenu`, `PageHeader`, `PageBody`, `SectionTabs`.
+- `@geas/ui/components/<name>`: shadcn/ui (`base-mira`, Base UI primitives — not Radix) plus `section-card`, `stat-card` (`StatCard`, `ListCard`) and `option-controls` (`OptionSelect`, `OptionCombobox`). Add shadcn components with `npx shadcn@latest add <name>` inside `packages/ui`. Imports inside the package use `@geas/ui/...` (self-reference), never `@/`.
+- `@geas/ui/lib/utils` (`cn`) and `@geas/ui/lib/use-action-toast` (Server Action result → toast).
+- Theme: each app's `app/globals.css` starts with `@import "@geas/ui/theme.css"` (Tailwind, tokens, shell CSS in `@layer components`, legacy CSS in `@layer legacy` below utilities) and the root `<html>` carries `data-app="financeiro" | "inventario"`, which sets the accent (`--app` → `primary`/`accent`: purple / dark orange).
 
 ## CI/CD
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { cn } from "./lib/utils";
 
 export type GeasApp = "financeiro" | "inventario";
 
@@ -72,6 +73,31 @@ export function AppLogin({ eyebrow, headline, description, protectedText = "Aces
   </main>;
 }
 
+/** Formulário de acesso por código (OTP) enviado ao e-mail institucional, comum aos apps. */
+export function AppLoginForm({ email, error, message, requestOtp, verifyOtp }: {
+  email?: string; error?: string; message?: string;
+  requestOtp: (formData: FormData) => Promise<void>; verifyOtp: (formData: FormData) => Promise<void>;
+}) {
+  return <>
+    <span className="geas-login__card-eyebrow">Área restrita</span><h2>Boas-vindas</h2>
+    <p>{email ? "Digite o código recebido. Ele expira em poucos minutos." : "Receba um código de acesso no seu e-mail institucional."}</p>
+    <form className="geas-login__form" action={email ? verifyOtp : requestOtp}>
+      {error && <div className="geas-login__message geas-login__message--error" role="alert">{error}</div>}
+      {message && <div className="geas-login__message" role="status">{message}</div>}
+      {email ? <>
+        <input type="hidden" name="email" value={email} />
+        <label className="geas-login__field">Código de acesso<input className="geas-login__token" name="token" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" maxLength={8} autoFocus required /></label>
+        <button className="geas-login__button" type="submit">Confirmar código</button>
+        <a className="geas-login__button geas-login__button--secondary" href="/login">Usar outro e-mail</a>
+      </> : <>
+        <label className="geas-login__field">E-mail<input name="email" type="email" pattern=".+@escoteirosalbert\.com\.br" placeholder="nome@escoteirosalbert.com.br" autoComplete="email" required /></label>
+        <button className="geas-login__button" type="submit">Enviar código de acesso</button>
+      </>}
+      <p className="geas-login__help">Ainda não possui acesso? Solicite um convite ao administrador do grupo.</p>
+    </form>
+  </>;
+}
+
 export type AppNavItem = { href: string; label: string; active: boolean };
 
 export function AppHeader({ brand, navigation, utilities, account }: {
@@ -134,6 +160,13 @@ export function PageBody({ width = "full", className = "", ...props }: React.Com
   return <main className={`geas-page geas-page--${width} ${className}`.trim()} {...props} />;
 }
 
-export function PageTitle({ eyebrow, title, actions, description }: { eyebrow?: ReactNode; title: ReactNode; actions?: ReactNode; description?: ReactNode }) {
-  return <div className="geas-page-title"><div>{eyebrow && <span>{eyebrow}</span>}<h1>{title}</h1>{description && <p>{description}</p>}</div>{actions && <div className="geas-page-title__actions">{actions}</div>}</div>;
+export type Tab = { href: string; label: string; active: boolean };
+
+/** Abas de uma área, ao lado do título (Extrato: Conciliar/Importar; Configurações: Contas, Rubricas…). */
+export function SectionTabs({ tabs, label }: { tabs: Tab[]; label: string }) {
+  return <nav aria-label={label} className="inline-flex w-fit flex-wrap rounded-full bg-secondary p-0.5">
+    {tabs.map((tab) => <Link key={tab.href} href={tab.href} aria-current={tab.active ? "page" : undefined}
+      className={cn("rounded-full px-3 py-1 text-xs font-semibold no-underline transition-colors",
+        tab.active ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}>{tab.label}</Link>)}
+  </nav>;
 }

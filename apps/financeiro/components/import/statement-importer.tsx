@@ -11,11 +11,11 @@ import { dateBR, money } from "@/lib/format";
 import { ImportReview } from "@/components/import/import-review";
 import { OpeningBalanceCheck } from "@/components/import/opening-balance-check";
 import { IgnoreList, KindPrefixes } from "@/components/import/profile-options";
-import { OptionSelect } from "@/components/option-controls";
-import { SectionCard, SectionHeader } from "@/components/section-card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { OptionSelect } from "@geas/ui/components/option-controls";
+import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
+import { Button } from "@geas/ui/components/button";
+import { Checkbox } from "@geas/ui/components/checkbox";
+import { Label } from "@geas/ui/components/label";
 import {
   dropZeroLines, isOfx, newOfxSettings, ofxSettingsFromProfile, parseTextList, profileForAccount, reconciliationHref,
   sameSettings, toImportLines,

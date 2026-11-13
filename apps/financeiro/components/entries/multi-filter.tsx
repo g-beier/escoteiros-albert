@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { IconChevronDown, IconFilter, IconFilterFilled, IconSearch } from "@tabler/icons-react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@geas/ui/components/button";
+import { Checkbox } from "@geas/ui/components/checkbox";
+import { Input } from "@geas/ui/components/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@geas/ui/components/popover";
 import { decodeCategorySelection, encodeCategorySelection } from "@/lib/categories";
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 import { useDimension, useListParams, type FilterKey, type FilterOption } from "./filter-options";
 
 const normalize = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();

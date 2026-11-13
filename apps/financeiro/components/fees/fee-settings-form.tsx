@@ -3,16 +3,16 @@
 import { useActionState, useState } from "react";
 import { saveFeeSettings, saveFeeYearSettings, type FeeSettingsState } from "@/app/mensalidades/actions";
 import { CategoryPicker } from "@/components/entries/category-picker";
-import { OptionSelect } from "@/components/option-controls";
-import { SectionBody, SectionCard, SectionHeader } from "@/components/section-card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { OptionSelect } from "@geas/ui/components/option-controls";
+import { SectionBody, SectionCard, SectionHeader } from "@geas/ui/components/section-card";
+import { Button } from "@geas/ui/components/button";
+import { Input } from "@geas/ui/components/input";
+import { Label } from "@geas/ui/components/label";
 import type { CategoryItem } from "@/lib/categories";
 import { centsToInput, dateBR, money } from "@/lib/format";
 import { parseMoneyToCents } from "@/lib/money";
 import { annualAmounts, DUE_RULE_LABELS, dueDate, FEE_MONTH_LABELS, FEE_MONTHS, type DueRule, type FeePrice, type FeeSettings } from "@/lib/fees";
-import { useActionToast } from "@/lib/use-action-toast";
+import { useActionToast } from "@geas/ui/lib/use-action-toast";
 
 const initial: FeeSettingsState = {};
 const ruleOptions = (Object.keys(DUE_RULE_LABELS) as DueRule[]).map((value) => ({ value, label: DUE_RULE_LABELS[value] }));

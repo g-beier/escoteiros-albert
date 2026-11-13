@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SectionCard } from "@/components/section-card";
+import { SectionCard } from "@geas/ui/components/section-card";
 import { AppHeader } from "@/components/app-header";
 import { PageBody, PageHeader } from "@/components/nav/page-header";
 import { EntryForm, type StatementLinePrefill } from "@/components/entries/entry-form";

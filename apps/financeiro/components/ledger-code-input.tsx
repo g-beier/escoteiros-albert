@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
+import { Input } from "@geas/ui/components/input";
 import { formatLedgerCode, isLedgerCode, LEDGER_CODE_MASK } from "@/lib/ledger-code";
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 
 /** Campo de conta contábil: aplica a máscara ao digitar e marca como inválido enquanto incompleto. */
 export function LedgerCodeInput({ name = "ledgerCode", defaultValue, className, ...props }: Omit<React.ComponentProps<typeof Input>, "value" | "onChange" | "defaultValue"> & { defaultValue?: string | null }) {

@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { IconAlertTriangle, IconCheck, IconCircleCheck, IconMinus, IconX } from "@tabler/icons-react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@geas/ui/components/button";
+import { Checkbox } from "@geas/ui/components/checkbox";
+import { Input } from "@geas/ui/components/input";
+import { Label } from "@geas/ui/components/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@geas/ui/components/popover";
 import { dateBR, money } from "@/lib/format";
 import { FEE_MONTH_NAMES, type CellState, type FeeRecord, type FeeSplit, type FeeStatus, type FeeSuggestion } from "@/lib/fees";
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 
 export const STATE_LABELS: Record<CellState, string> = {
   pago: "pago", atencao: "atenção", nao_pago: "não pago", isento: "isento (não cobrar)", atrasado: "atrasado", sugestao: "pagamento a confirmar", vazio: "sem registro", fora: "fora do grupo",

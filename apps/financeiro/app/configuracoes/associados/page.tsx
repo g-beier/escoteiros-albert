@@ -1,5 +1,5 @@
 import { pageMember } from "@/lib/session";
-import { SectionBody, SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
+import { SectionBody, SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
 import { AppHeader } from "@/components/app-header";
 import { AssociatesImport } from "@/components/associates-import";
 import { FilterOptionsProvider } from "@/components/entries/filter-options";
@@ -7,9 +7,9 @@ import { MultiFilter } from "@/components/entries/multi-filter";
 import { PageBody, PageHeader, SectionTabs, settingsCrumbs, SettingsTabs } from "@/components/nav/page-header";
 import { AssociateRow, NewAssociate, type AssociateItem } from "@/components/new-associate";
 import { SectionsManager } from "@/components/sections-manager";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { branchLabels, groupBySection, isScoutBranch, matchesSections, placementLabel, NO_SECTION, NO_SECTION_PARAM, sectionsOf, type PatrolItem, type SectionItem } from "@/lib/associates";
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 
 type Params = { agrupar?: string; secao?: string };
 

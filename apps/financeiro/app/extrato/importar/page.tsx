@@ -4,11 +4,11 @@ import { RecentImports } from "@/components/import/recent-imports";
 import { StatementImporter, type ImportAccount } from "@/components/import/statement-importer";
 import { SetupNeeded } from "@/components/setup-needed";
 import { extratoCrumbs, ExtratoTabs, NARROW_CONTENT, PageBody, PageHeader } from "@/components/nav/page-header";
-import { SectionCard } from "@/components/section-card";
+import { SectionCard } from "@geas/ui/components/section-card";
 import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
 import { fetchImportProfiles, fetchLastProfileByAccount, fetchRecentImports } from "@/lib/import-queries";
 import { pageSession } from "@/lib/session";
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 
 export default async function ImportPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;

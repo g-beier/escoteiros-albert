@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { OptionSelect, type Option } from "@/components/option-controls";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { OptionSelect, type Option } from "@geas/ui/components/option-controls";
+import { Button } from "@geas/ui/components/button";
+import { Input } from "@geas/ui/components/input";
+import { Label } from "@geas/ui/components/label";
 import { reconciliationHref } from "@/lib/reconciliation";
 
 /** Conta e período da conciliação, guardados na URL (`conta`, `de`, `ate`). */

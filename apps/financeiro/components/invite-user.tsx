@@ -2,11 +2,11 @@
 
 import { useActionState, useState } from "react";
 import { changeRole, inviteUser } from "@/app/usuarios/actions";
-import { OptionSelect } from "@/components/option-controls";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useActionToast } from "@/lib/use-action-toast";
+import { OptionSelect } from "@geas/ui/components/option-controls";
+import { Button } from "@geas/ui/components/button";
+import { Input } from "@geas/ui/components/input";
+import { Label } from "@geas/ui/components/label";
+import { useActionToast } from "@geas/ui/lib/use-action-toast";
 
 const initialState: { error?: string; success?: string } = {};
 

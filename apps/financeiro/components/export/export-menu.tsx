@@ -3,16 +3,16 @@
 import { useState } from "react";
 import { IconChevronDown, IconDownload } from "@tabler/icons-react";
 import { toast } from "sonner";
-import { OptionSelect } from "@/components/option-controls";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { OptionSelect } from "@geas/ui/components/option-controls";
+import { Button } from "@geas/ui/components/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
+import { Input } from "@geas/ui/components/input";
+import { Label } from "@geas/ui/components/label";
 import { describePeriod, MONTHS, periodBounds, type PeriodPreset } from "@/lib/export/period";
 import { CSV_ENCODINGS, type CsvEncoding } from "@/lib/export/csv";
-import type { Option } from "@/components/option-controls";
-import { cn } from "@/lib/utils";
+import type { Option } from "@geas/ui/components/option-controls";
+import { cn } from "@geas/ui/lib/utils";
 
 type View = "movimentacoes" | "detalhamento";
 type PresetKind = PeriodPreset["kind"];

@@ -1,20 +1,7 @@
-import Link from "next/link";
-import type { Crumb } from "@geas/ui";
-import { cn } from "@/lib/utils";
+import { SectionTabs, type Crumb, type Tab } from "@geas/ui";
 
-export { PageBody, PageHeader } from "@geas/ui";
-export type { Crumb, PageWidth } from "@geas/ui";
-
-export type Tab = { href: string; label: string; active: boolean };
-
-/** Abas de uma área (Extrato: Conciliar/Importar; Configurações: Contas, Rubricas…). */
-export function SectionTabs({ tabs, label }: { tabs: Tab[]; label: string }) {
-  return <nav aria-label={label} className="inline-flex w-fit flex-wrap rounded-full bg-secondary p-0.5">
-    {tabs.map((tab) => <Link key={tab.href} href={tab.href} aria-current={tab.active ? "page" : undefined}
-      className={cn("rounded-full px-3 py-1 text-xs font-semibold no-underline transition-colors",
-        tab.active ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}>{tab.label}</Link>)}
-  </nav>;
-}
+export { PageBody, PageHeader, SectionTabs } from "@geas/ui";
+export type { Crumb, PageWidth, Tab } from "@geas/ui";
 
 export type EntryView = "movimentacoes" | "detalhamento" | "realizado";
 

@@ -5,11 +5,11 @@ import { InviteUser, UserRoleForm } from "@/components/invite-user";
 import { removeUser } from "./actions";
 import { AppHeader } from "@/components/app-header";
 import { PageBody, PageHeader } from "@/components/nav/page-header";
-import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
+import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
 import { ConfirmRemove } from "@/components/confirm-remove";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import { Badge } from "@geas/ui/components/badge";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
+import { cn } from "@geas/ui/lib/utils";
 
 const headClass = "h-8 px-3 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase";
 

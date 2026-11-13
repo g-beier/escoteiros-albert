@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { OptionSelect } from "@/components/option-controls";
-import { Label } from "@/components/ui/label";
+import { OptionSelect } from "@geas/ui/components/option-controls";
+import { Label } from "@geas/ui/components/label";
 
 /** Seletor de ano compacto do cabeçalho: cada ano leva ao seu link (o servidor monta os links, com os demais filtros). */
 export function YearSelect({ year, links }: { year: number; links: { year: number; href: string }[] }) {

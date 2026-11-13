@@ -3,14 +3,14 @@
 import { useActionState, useState } from "react";
 import { IconCheck, IconPlus } from "@tabler/icons-react";
 import { createAssociate, updateAssociate, type AssociateFormState } from "@/app/configuracoes/associados/actions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TableCell, TableRow } from "@/components/ui/table";
+import { Button } from "@geas/ui/components/button";
+import { Input } from "@geas/ui/components/input";
+import { Label } from "@geas/ui/components/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@geas/ui/components/select";
+import { TableCell, TableRow } from "@geas/ui/components/table";
 import { placementOptions, placementValue, resolvePlacement, type PatrolItem, type Placement, type ScoutBranch, type SectionItem } from "@/lib/associates";
-import { useActionToast } from "@/lib/use-action-toast";
-import { cn } from "@/lib/utils";
+import { useActionToast } from "@geas/ui/lib/use-action-toast";
+import { cn } from "@geas/ui/lib/utils";
 
 const initial: AssociateFormState = {};
 

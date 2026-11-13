@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 
 /** Cartão de seção (cadastros, importação): borda forte, cabeçalho com título e ações. */
 export function SectionCard({ className, ...props }: React.ComponentProps<"section">) {

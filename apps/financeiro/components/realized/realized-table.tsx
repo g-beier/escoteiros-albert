@@ -3,11 +3,11 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@geas/ui/components/button";
 import { money } from "@/lib/format";
 import { MONTHS, MONTHS_SHORT } from "@/lib/export/period";
 import { rowFilterTokens, type RealizedModel } from "@/lib/export/realized";
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);

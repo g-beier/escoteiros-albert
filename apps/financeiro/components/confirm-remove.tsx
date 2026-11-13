@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@geas/ui/components/button";
 
 export function ConfirmRemove({ email }: { email: string }) {
   return <Button type="submit" variant="destructive" size="sm" aria-label={`Remover acesso de ${email}`} onClick={(event) => {

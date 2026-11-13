@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconDownload, IconFileText, IconFileUpload, IconPhoto, IconTrash } from "@tabler/icons-react";
 import { prepareAttachmentUpload, registerAttachment, removeAttachment } from "@/app/lancamentos/actions";
-import { SectionCard, SectionHeader } from "@/components/section-card";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
+import { Button } from "@geas/ui/components/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
+import { Label } from "@geas/ui/components/label";
 import { ATTACHMENT_ACCEPT, attachmentProblem, fileSize, type Attachment } from "@/lib/attachments";
 
 const dateTime = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });

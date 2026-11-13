@@ -5,7 +5,7 @@ import { ReconciliationFilters } from "@/components/reconciliation/reconciliatio
 import { byDateThenAmount, closingCheck, parsePeriod, suggestMatches, type OpenEntry, type OpenLine } from "@/lib/reconciliation";
 import { pageSession } from "@/lib/session";
 import { extratoCrumbs, ExtratoTabs, PAGE_BODY, PageHeader } from "@/components/nav/page-header";
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 import { fetchPaged } from "@/lib/supabase/paged";
 import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
 

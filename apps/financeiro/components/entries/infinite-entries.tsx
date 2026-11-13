@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { loadEntryPage } from "@/app/actions";
 import { LedgerCards, LedgerTable, SplitCards, SplitTable } from "@/components/entry-tables";
-import { Button } from "@/components/ui/button";
+import { Button } from "@geas/ui/components/button";
 import { useEntryOverrides } from "@/components/entries/entry-editor";
 import { PAGE_SIZE, type EntryPage, type SplitRow, type LedgerRow } from "@/lib/entry-queries";
 import type { SortOrder } from "@/lib/filters";
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 
 type Status = "idle" | "loading" | "done" | "error";
 const number = new Intl.NumberFormat("pt-BR");

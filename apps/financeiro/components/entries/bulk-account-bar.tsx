@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconArrowsExchange, IconX } from "@tabler/icons-react";
 import { moveEntriesAccount } from "@/app/actions";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { OptionSelect, type Option } from "@/components/option-controls";
+import { Button } from "@geas/ui/components/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
+import { Label } from "@geas/ui/components/label";
+import { OptionSelect, type Option } from "@geas/ui/components/option-controls";
 import { useEntrySelection } from "./entry-editor";
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;

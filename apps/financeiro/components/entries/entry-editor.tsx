@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconDots, IconFileDescription, IconFolderCheck, IconFolderExclamation, IconPlus, IconTrash } from "@tabler/icons-react";
 import { deleteEntry, setDocumentFiled } from "@/app/actions";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { Button, buttonVariants } from "@geas/ui/components/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
+import { cn } from "@geas/ui/lib/utils";
 
 export type EntryOverride = { filed?: boolean; deleted?: boolean; accountName?: string; reconciled?: boolean };
 /** Lançamento marcado para ação em lote, com o que a barra precisa mostrar. */

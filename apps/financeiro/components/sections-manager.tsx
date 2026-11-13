@@ -3,15 +3,15 @@
 import { Fragment, useActionState, useState } from "react";
 import { IconCheck, IconPlus } from "@tabler/icons-react";
 import { createPatrol, createSection, updateSectionOrPatrol, type AssociateFormState } from "@/app/configuracoes/associados/actions";
-import { OptionSelect } from "@/components/option-controls";
-import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { OptionSelect } from "@geas/ui/components/option-controls";
+import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
+import { Button } from "@geas/ui/components/button";
+import { Input } from "@geas/ui/components/input";
+import { Label } from "@geas/ui/components/label";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { branchLabels, hasPatrols, SCOUT_BRANCHES, SECTION_BRANCHES, type PatrolItem, type SectionItem } from "@/lib/associates";
-import { useActionToast } from "@/lib/use-action-toast";
-import { cn } from "@/lib/utils";
+import { useActionToast } from "@geas/ui/lib/use-action-toast";
+import { cn } from "@geas/ui/lib/utils";
 
 const initial: AssociateFormState = {};
 // Adulto não tem seção: só os ramos com seções entram aqui

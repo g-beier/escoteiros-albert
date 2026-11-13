@@ -1,9 +1,9 @@
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { EntryCard, EntryLink, EntryRow, EntryRowActions, FolderStatus, useEntrySelection } from "@/components/entries/entry-editor";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Checkbox } from "@geas/ui/components/checkbox";
+import { Label } from "@geas/ui/components/label";
 import { dateBR, money } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { cn } from "@geas/ui/lib/utils";
 import Link from "next/link";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { IconArrowDown, IconArrowUp, IconPaperclip } from "@tabler/icons-react";

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { Toaster } from "@/components/ui/sonner";
-import "@geas/ui/styles.css";
+import { Toaster } from "@geas/ui/components/sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,5 +17,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-BR"><body>{children}<Toaster /></body></html>;
+  return <html lang="pt-BR" data-app="financeiro"><body>{children}<Toaster /></body></html>;
 }

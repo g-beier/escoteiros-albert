@@ -34,7 +34,7 @@ Navegação: **Início · Lançamentos · Extrato · Mensalidades** no menu prin
 
 ## Componentes
 
-shadcn/ui com o preset `b1D0eVNQ` (estilo `base-mira`, primitivas Base UI, ícones Tabler) sobre Tailwind CSS v4. Os tokens semânticos do shadcn são mapeados para a paleta do grupo em `app/globals.css`. Estilos anteriores ao shadcn ficam em `@layer legacy`, abaixo de `components`/`utilities`, para não sobrescrever os utilitários. Adicione componentes com `npx shadcn@latest add <nome>` dentro de `apps/financeiro` e troque eventuais imports de `cn` do pacote `cn` por `@/lib/utils`.
+shadcn/ui com o preset `b1D0eVNQ` (estilo `base-mira`, primitivas Base UI, ícones Tabler) sobre Tailwind CSS v4. Os componentes, o `cn` e o tema (tokens do shadcn mapeados para a paleta do grupo, camada `legacy`) ficam no pacote compartilhado `@geas/ui` (`packages/ui`), usado também pelo Inventário; `app/globals.css` só importa `@geas/ui/theme.css`. Adicione componentes com `npx shadcn@latest add <nome>` dentro de `packages/ui`.
 
 ## Identidade visual
 

@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { IconPlus } from "@tabler/icons-react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@geas/ui/components/button";
+import { Checkbox } from "@geas/ui/components/checkbox";
+import { Input } from "@geas/ui/components/input";
+import { Label } from "@geas/ui/components/label";
+import { Textarea } from "@geas/ui/components/textarea";
 import { normalizeText, type KindPrefixSuggestion } from "@/lib/statement-import";
 
 /** Prefixos de tipo marcados, mais as sugestões tiradas das descrições do arquivo. */
