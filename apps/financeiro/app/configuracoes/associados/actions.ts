@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireEditor } from "@/lib/session";
-import { hasPatrols, hasSections, SCOUT_BRANCHES } from "@/lib/associates";
+import { hasSections, SCOUT_BRANCHES } from "@/lib/associates";
 
 /** Id opcional vindo de um select ("" = nenhum). */
 const optionalId = z.string().trim().transform((value) => value || null).pipe(z.uuid().nullable());
@@ -152,14 +152,6 @@ export async function createPatrol(_previous: AssociateFormState, formData: Form
   if (!sectionId.success) return { error: "Seção inválida." };
   const name = sectionName.safeParse(formData.get("name") ?? "");
   if (!name.success) return { error: name.error.issues[0]?.message };
-  try {
-    // o Clã Pioneiro (e qualquer seção fora dos ramos com equipes) não se divide
-    const { supabase, groupId } = await requireEditor("Sem permissão para gerir seções.");
-    const { data: section } = await supabase.from("sections").select("branch").eq("id", sectionId.data).eq("group_id", groupId).maybeSingle();
-    if (!section) return { error: "Seção não encontrada." };
-    if (!hasPatrols(section.branch)) return { error: "Esta seção não se divide em equipes." };
-  } catch (error) {
-    return fail(error, "Não foi possível salvar.");
-  }
+  // a regra de quem se divide em equipes fica em create_patrol (030_section_branch_rules.sql)
   return runSectionRpc("create_patrol", { p_section_id: sectionId.data, p_name: name.data }, `Equipe “${name.data}” cadastrada.`);
 }

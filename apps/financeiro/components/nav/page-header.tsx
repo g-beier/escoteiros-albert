@@ -53,7 +53,7 @@ export function PageHeader({ title, description, crumbs, hideTitle, tabs, action
       {tabs}
       {actions && <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
-    {description && <p className="m-0 max-w-3xl text-xs text-muted-foreground">{description}</p>}
+    {description && <p className="m-0 text-xs text-balance text-muted-foreground">{description}</p>}
     {children}
   </div>;
 }

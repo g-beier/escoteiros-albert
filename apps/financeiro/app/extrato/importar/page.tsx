@@ -18,7 +18,8 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
   const canEdit = membership.canEdit;
 
   const [{ data: accountRows }, { profiles }, lastProfiles] = await Promise.all([
-    supabase.from("accounts").select("id, name, bank").eq("group_id", groupId).eq("active", true).order("name"),
+    // Caixa (dinheiro) não tem extrato bancário: fica fora do import OFX
+    supabase.from("accounts").select("id, name, bank").eq("group_id", groupId).eq("active", true).neq("kind", "caixa").order("name"),
     canEdit ? fetchImportProfiles(supabase, groupId) : Promise.resolve({ profiles: [] }),
     canEdit ? fetchLastProfileByAccount(supabase, groupId) : Promise.resolve({} as Record<string, string>),
   ]);

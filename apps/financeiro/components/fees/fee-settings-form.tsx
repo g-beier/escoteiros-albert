@@ -48,10 +48,10 @@ export function FeeSettingsForm({ settings, categories, defaultCategoryId, year 
         <span className="text-muted-foreground">Vencimentos de {year}: </span>
         {preview.map((p, i) => <span key={p.month} className="num">{FEE_MONTH_LABELS[p.month]} {dateBR(p.date).slice(0, 5)}{i < preview.length - 1 ? " · " : ""}</span>)}
       </p>}
-      <div className="grid max-w-md gap-1.5">
+      <div className="grid gap-1.5">
         <Label htmlFor="fee-category">Rubrica de mensalidade</Label>
-        <CategoryPicker id="fee-category" value={categoryId} onChange={setCategoryId} categories={categories} preferredKind="receita" usedIds={[]} placeholder="Buscar rubrica…" />
-        <p className="m-0 text-xs text-muted-foreground">Rateios nesta rubrica (e nas de baixo dela) com associado aparecem como sugestão na grade.</p>
+        <div className="max-w-md"><CategoryPicker id="fee-category" value={categoryId} onChange={setCategoryId} categories={categories} preferredKind="receita" usedIds={[]} placeholder="Buscar rubrica…" /></div>
+        <p className="m-0 text-xs text-balance text-muted-foreground">Rateios nesta rubrica (e nas de baixo dela) com associado aparecem como sugestão na grade.</p>
       </div>
       <Button type="submit" className="w-fit" disabled={pending || !validDay}>{pending ? "Salvando…" : "Salvar"}</Button>
     </form>

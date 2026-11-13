@@ -299,10 +299,10 @@ export function closingCheck(period: { from: string; to: string }, imports: Stat
   const start = opening
     ? { date: opening.periodFrom, cents: opening.openingCents! }
     : account.openingDate && inPeriod(account.openingDate) ? { date: account.openingDate, cents: account.openingBalanceCents } : null;
-  if (!start) return { ok: false, reason: "Sem saldo inicial: importe um extrato que informe o saldo anterior do período, ou cadastre a data e o saldo inicial da conta." };
+  if (!start) return { ok: false, reason: "Falta o saldo inicial. Importe um extrato que informe o saldo anterior do período ou cadastre a data e o saldo inicial da conta." };
   const closing = imports.filter((i) => i.closingCents !== null && inPeriod(i.periodTo) && i.periodTo >= start.date)
     .sort((a, b) => b.periodTo.localeCompare(a.periodTo))[0];
-  if (!closing) return { ok: false, reason: "Sem saldo final: nenhuma importação do período informa o saldo final do extrato." };
+  if (!closing) return { ok: false, reason: "Falta o saldo final, porque nenhuma importação do período informa o saldo final do extrato." };
   const window = lines.filter((l) => l.date >= start.date && l.date <= closing.periodTo);
   const movementsCents = window.filter((l) => l.status === "conciliada" || (l.status === "ignorada" && !l.ignoredReason?.startsWith(DUPLICATE_REASON)))
     .reduce((sum, l) => sum + l.amountCents, 0);

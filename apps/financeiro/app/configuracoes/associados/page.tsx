@@ -2,11 +2,13 @@ import { pageMember } from "@/lib/session";
 import { SectionBody, SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
 import { AppHeader } from "@/components/app-header";
 import { AssociatesImport } from "@/components/associates-import";
+import { FilterOptionsProvider } from "@/components/entries/filter-options";
+import { MultiFilter } from "@/components/entries/multi-filter";
 import { PageBody, PageHeader, SectionTabs, settingsCrumbs, SettingsTabs } from "@/components/nav/page-header";
 import { AssociateRow, NewAssociate, type AssociateItem } from "@/components/new-associate";
 import { SectionsManager } from "@/components/sections-manager";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { branchLabels, groupBySection, isScoutBranch, matchesSection, placementLabel, NO_SECTION, NO_SECTION_PARAM, sectionsOf, type PatrolItem, type SectionItem } from "@/lib/associates";
+import { branchLabels, groupBySection, isScoutBranch, matchesSections, placementLabel, NO_SECTION, NO_SECTION_PARAM, sectionsOf, type PatrolItem, type SectionItem } from "@/lib/associates";
 import { cn } from "@/lib/utils";
 
 type Params = { agrupar?: string; secao?: string };
@@ -31,8 +33,11 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
   const counts: Record<string, number> = {};
   for (const a of associates) for (const key of [a.section_id, a.patrol_id]) if (key) counts[key] = (counts[key] ?? 0) + 1;
   const sections = sectionsOf(associates);
-  const sectionFilter = params.secao && (params.secao === NO_SECTION_PARAM || sections.includes(params.secao)) ? params.secao : undefined;
-  const shown = associates.filter((a) => matchesSection(a, sectionFilter));
+  // secao=A,B,nenhuma: uma ou mais seções (mesmo filtro de /mensalidades); valores desconhecidos são ignorados
+  const sectionValues = sections.map((section) => section ?? NO_SECTION_PARAM);
+  const selectedSections = (params.secao ?? "").split(",").map((v) => v.trim()).filter((v) => sectionValues.includes(v));
+  const sectionFilter = selectedSections.length && selectedSections.length < sectionValues.length ? selectedSections.join(",") : undefined;
+  const shown = sectionFilter ? associates.filter((a) => matchesSections(a, selectedSections)) : associates;
   const href = (patch: Params) => {
     const next = new URLSearchParams();
     const merged = { agrupar: bySection ? "secao" : undefined, secao: sectionFilter, ...patch };
@@ -56,11 +61,9 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
           ]} />
         </SectionHeader>
         {sections.length > 1 && <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
-          <span className="text-xs text-muted-foreground">Seção</span>
-          <SectionTabs label="Filtrar por seção" tabs={[
-            { href: href({ secao: undefined }), label: "Todas", active: !sectionFilter },
-            ...sections.map((section) => ({ href: href({ secao: section ?? NO_SECTION_PARAM }), label: section ?? NO_SECTION, active: sectionFilter === (section ?? NO_SECTION_PARAM) })),
-          ]} />
+          <FilterOptionsProvider dimensions={{ secao: { label: "Seção", options: sections.map((section) => ({ value: section ?? NO_SECTION_PARAM, label: section ?? NO_SECTION })) } }}>
+            <MultiFilter filterKey="secao" />
+          </FilterOptionsProvider>
         </div>}
         {!associates.length ? <p className="m-0 px-4 py-4 text-center text-xs text-muted-foreground">Nenhum associado cadastrado.</p>
         : bySection ? <SectionGroups associates={shown} />

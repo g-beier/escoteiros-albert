@@ -309,7 +309,7 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
 function ClosingCard({ closing }: { closing: Closing }) {
   return <section aria-label="Fechamento do período" className="rounded-lg border bg-card px-3 py-2.5">
     <h2 className="m-0 mb-1.5 text-sm font-semibold">Fechamento</h2>
-    {!closing.ok ? <p className="m-0 text-muted-foreground">Não dá para conferir o saldo: {closing.reason}</p> : <>
+    {!closing.ok ? <p className="m-0 text-muted-foreground">Não dá para conferir o saldo. {closing.reason}</p> : <>
       <dl className="m-0 grid gap-x-6 gap-y-1 sm:grid-cols-[auto_auto] sm:justify-start">
         <dt className="text-muted-foreground">Saldo inicial em <span className="num">{dateBR(closing.openingDate)}</span></dt><dd className="m-0 num sm:text-right">{brl(closing.openingCents)}</dd>
         <dt className="text-muted-foreground">+ Movimentos conciliados ou ignorados</dt><dd className="m-0 num sm:text-right">{brl(closing.movementsCents)}</dd>
