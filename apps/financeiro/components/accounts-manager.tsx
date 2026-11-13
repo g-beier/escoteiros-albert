@@ -53,19 +53,19 @@ function AccountRow({ account, canEdit, onEdit }: { account: AccountItem; canEdi
   useActionToast(toggleState);
   const details = accountDetails(account);
   return <TableRow className={cn(!account.active && "text-muted-foreground")}>
-    <TableCell className="px-3 py-1.5">
+    <TableCell className="px-3 py-1">
       <div className="font-medium">{account.name}</div>
       {details && <div className="text-xs text-muted-foreground">{details}</div>}
     </TableCell>
-    <TableCell className="px-3 py-1.5">{ACCOUNT_KINDS[account.kind]}</TableCell>
-    <TableCell className="px-3 py-1.5 num">{account.ledger_code ?? <span className="text-muted-foreground">—</span>}
+    <TableCell className="px-3 py-1">{ACCOUNT_KINDS[account.kind]}</TableCell>
+    <TableCell className="px-3 py-1 num">{account.ledger_code ?? <span className="text-muted-foreground">—</span>}
     </TableCell>
-    <TableCell className="px-3 py-1.5 text-right num">
+    <TableCell className="px-3 py-1 text-right num">
       {money(account.opening_balance_cents / 100)}
       {account.opening_date && <div className="text-xs text-muted-foreground">em {dateBR(account.opening_date)}</div>}
     </TableCell>
-    <TableCell className="px-3 py-1.5 text-right num" title="Lançamentos nesta conta">{account.usage}</TableCell>
-    <TableCell className="px-3 py-1.5">
+    <TableCell className="px-3 py-1 text-right num" title="Lançamentos nesta conta">{account.usage}</TableCell>
+    <TableCell className="px-3 py-1">
       <div className="flex items-center gap-2">
         <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", account.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{account.active ? "Ativa" : "Inativa"}</span>
         {canEdit && <>

@@ -35,7 +35,7 @@ export function ProfilesManager({ profiles }: { profiles: ProfileItem[] }) {
       <SectionCount>{profiles.length} {profiles.length === 1 ? "perfil" : "perfis"}</SectionCount>
     </SectionHeader>
     {profiles.length === 0
-      ? <p className="m-0 p-5 text-sm text-muted-foreground">Nenhum perfil ainda. O primeiro é salvo na primeira importação de extrato.</p>
+      ? <p className="m-0 px-4 py-3 text-xs text-muted-foreground">Nenhum perfil ainda. O primeiro é salvo na primeira importação de extrato.</p>
       : <Table>
         <TableCaption className="sr-only">Perfis de leitura do grupo</TableCaption>
         <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
@@ -60,11 +60,11 @@ function ProfileRow({ profile, onRename }: { profile: ProfileItem; onRename: () 
   useActionToast(state);
   const current = profile.accounts.filter((use) => use.current);
   return <TableRow>
-    <TableCell className="px-3 py-1.5">
+    <TableCell className="px-3 py-1">
       <div className="font-medium">{profile.name}</div>
       {profile.format !== "ofx" && <div className="text-xs text-muted-foreground">Formato {profile.format.toUpperCase()}: não é mais usado na importação</div>}
     </TableCell>
-    <TableCell className="px-3 py-1.5">
+    <TableCell className="px-3 py-1">
       {profile.accounts.length === 0
         ? <span className="text-muted-foreground">Nenhuma importação</span>
         : <div className="flex flex-wrap gap-1.5">{profile.accounts.map((use) => <Badge key={use.accountId} variant={use.current ? "default" : "outline"}
@@ -72,9 +72,9 @@ function ProfileRow({ profile, onRename }: { profile: ProfileItem; onRename: () 
           {use.accountName} <span className="num">({use.imports})</span>{use.current ? " · atual" : ""}
         </Badge>)}</div>}
     </TableCell>
-    <TableCell className="px-3 py-1.5 text-muted-foreground">{profile.summary}</TableCell>
-    <TableCell className="px-3 py-1.5 num">{dateBR(profile.updatedAt.slice(0, 10))}</TableCell>
-    <TableCell className="px-3 py-1.5">
+    <TableCell className="px-3 py-1 text-muted-foreground">{profile.summary}</TableCell>
+    <TableCell className="px-3 py-1 num">{dateBR(profile.updatedAt.slice(0, 10))}</TableCell>
+    <TableCell className="px-3 py-1">
       <div className="flex items-center justify-end gap-1">
         <Button type="button" variant="ghost" size="icon-sm" aria-label={`Renomear ${profile.name}`} onClick={onRename}><IconPencil /></Button>
         <form action={remove} onSubmit={(event) => {

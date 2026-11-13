@@ -13,8 +13,8 @@ Termos usados na interface, no código e na documentação. Quando um termo apar
 | **Rubrica** | Classificação gerencial do grupo, em árvore pelo código (`1.x` receita, `2.x` despesa). Traduzida para a contabilidade pela conta contábil. | `categories.code` |
 | **Conciliação** | Vínculo entre linhas do extrato e lançamentos da mesma conta cujas somas batem (1:1, 1:N, N:1). | `reconciliation_links` |
 | **Mensalidade** | Caixinha associado × mês (março a dezembro): pago ou atenção (registrados), atrasado (calculado pelo vencimento). Ligada aos rateios da rubrica de mensalidade. | `fee_records`, `fee_record_splits` |
-| **Seção** | Divisão de um ramo (Alcateia, Tropa Escoteira, Clã…), cadastrada em Configurações › Associados. O associado só entra numa seção do seu ramo; com uma única seção ativa no ramo, ela vem pré-selecionada. O ramo da seção não muda. | `sections`; `associates.section_id` |
-| **Patrulha** | Equipe opcional dentro da seção (patrulha, matilha…). O associado só entra numa patrulha da sua seção. | `patrols`; `associates.patrol_id` |
+| **Seção** | Divisão de um ramo (Alcateia, Tropa Escoteira, Clã…), cadastrada em Configurações › Associados. Adultos não têm seção (são só o ramo). O ramo da seção não muda. A divisão do associado é escolhida num único seletor em hierarquia (Ramo › Seção › Equipe): a equipe define a seção, e a seção, o ramo. | `sections`; `associates.section_id` |
+| **Patrulha** | Na tela, **Equipe**: divisão opcional da seção (patrulha, matilha…). Só seções de Lobinho, Escoteiro e Sênior se dividem; o Clã Pioneiro não. O associado só entra numa equipe da sua seção. | `patrols`; `associates.patrol_id` |
 | **Isenção** | Associado que não paga mensalidade naquele ano (voluntário, bolsa…), com motivo. | `fee_exemptions` |
 | **Vencimento** | Regra do grupo: dia N, N-ésimo dia útil ou fim do mês. | `fee_settings` |
 | **Documentos** | Situação do comprovante: Pendente ou Arquivado (parâmetro de URL `pasta`, por compatibilidade). | `ledger_entries.document_filed` |

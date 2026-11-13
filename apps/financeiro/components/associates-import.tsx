@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconDownload, IconFileUpload, IconUpload } from "@tabler/icons-react";
 import { importAssociates } from "@/app/configuracoes/associados/actions";
-import { SectionCard, SectionHeader } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { branchLabels, type PatrolItem, type SectionItem } from "@/lib/associates";
 import { ASSOCIATE_CSV_TEMPLATE, parseAssociatesCsv, planAssociatesImport, type ExistingAssociate, type PlannedAssociate } from "@/lib/associates-import";
@@ -20,8 +20,21 @@ const ACTION_LABEL: Record<PlannedAssociate["action"], string> = { nova: "Novo",
 const ORDER: Record<PlannedAssociate["action"], number> = { erro: 0, atualiza: 1, nova: 2, igual: 3 };
 const TEMPLATE_HREF = `data:text/csv;charset=utf-8,${encodeURIComponent(`﻿${ASSOCIATE_CSV_TEMPLATE}`)}`;
 
+/** Botão "Importar CSV" (no cartão Novo associado) que abre a importação num diálogo. */
+export function AssociatesImport(props: { existing: ExistingAssociate[]; sections: SectionItem[]; patrols: PatrolItem[] }) {
+  const [open, setOpen] = useState(false);
+  return <>
+    <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}><IconUpload /> Importar CSV</Button>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="w-[min(56rem,calc(100%-2rem))] lg:max-w-none">
+        {open && <ImportForm {...props} onDone={() => setOpen(false)} />}
+      </DialogContent>
+    </Dialog>
+  </>;
+}
+
 /** Importação de associados por CSV (nome, ramo, seção, patrulha, status), com conferência antes de gravar. */
-export function AssociatesImport({ existing, sections, patrols }: { existing: ExistingAssociate[]; sections: SectionItem[]; patrols: PatrolItem[] }) {
+function ImportForm({ existing, sections, patrols, onDone }: { existing: ExistingAssociate[]; sections: SectionItem[]; patrols: PatrolItem[]; onDone: () => void }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [file, setFile] = useState<{ name: string; text: string } | null>(null);
@@ -50,15 +63,17 @@ export function AssociatesImport({ existing, sections, patrols }: { existing: Ex
       toast.success(result.success);
       setFile(null);
       router.refresh();
+      onDone();
     });
   }
 
-  return <SectionCard aria-labelledby="associates-import-title">
-    <SectionHeader title="Importar associados (CSV)" titleId="associates-import-title"
-      description="Colunas: nome, ramo, seção, patrulha, status. Ramo: Lobinho, Escoteiro, Sênior, Pioneiro ou Adulto. Seção e patrulha (opcionais) precisam estar cadastradas acima. Status: ativo ou inativo (vazio = ativo). Quem já está cadastrado com o mesmo nome é atualizado.">
-      <a href={TEMPLATE_HREF} download="modelo-associados.csv" className="inline-flex items-center gap-1 text-xs font-semibold text-primary no-underline hover:underline"><IconDownload className="size-4" aria-hidden /> Baixar modelo</a>
-    </SectionHeader>
-    <div className="grid gap-4 p-4">
+  return <div className="grid min-w-0 gap-3">
+    <DialogHeader>
+      <DialogTitle>Importar associados (CSV)</DialogTitle>
+      <DialogDescription>Colunas: nome, ramo, seção, patrulha (equipe), status. Ramo: Lobinho, Escoteiro, Sênior, Pioneiro ou Adulto. Seção e equipe (opcionais) precisam estar cadastradas em Seções e equipes. Status: ativo ou inativo (vazio = ativo). Quem já está cadastrado com o mesmo nome é atualizado.</DialogDescription>
+    </DialogHeader>
+    <a href={TEMPLATE_HREF} download="modelo-associados.csv" className="inline-flex w-fit items-center gap-1 text-xs font-semibold text-primary no-underline hover:underline"><IconDownload className="size-4" aria-hidden /> Baixar modelo</a>
+    <div className="grid gap-3">
       <div className="grid max-w-md gap-1.5">
         <Label htmlFor="associates-file">Arquivo CSV</Label>
         <label className="flex h-7 cursor-pointer items-center gap-2 rounded-md border border-dashed border-input bg-card px-2 text-xs hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring/30">
@@ -86,7 +101,7 @@ export function AssociatesImport({ existing, sections, patrols }: { existing: Ex
             <thead className="sticky top-0 bg-muted text-left"><tr>
               <th className="px-2 py-1.5 text-right font-semibold">Linha</th><th className="px-2 py-1.5 font-semibold">Situação</th>
               <th className="px-2 py-1.5 font-semibold">Nome</th><th className="px-2 py-1.5 font-semibold">Ramo</th>
-              <th className="px-2 py-1.5 font-semibold">Seção</th><th className="px-2 py-1.5 font-semibold">Patrulha</th><th className="px-2 py-1.5 font-semibold">Status</th>
+              <th className="px-2 py-1.5 font-semibold">Seção</th><th className="px-2 py-1.5 font-semibold">Equipe</th><th className="px-2 py-1.5 font-semibold">Status</th>
             </tr></thead>
             <tbody>{shown.slice(0, VISIBLE).map((row) => <tr key={row.line} className="border-t">
               <td className="px-2 py-1 text-right text-muted-foreground num">{row.line}</td>
@@ -104,9 +119,9 @@ export function AssociatesImport({ existing, sections, patrols }: { existing: Ex
         </div>}
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={runImport} disabled={pending || toSend.length === 0}><IconUpload /> {pending ? "Importando…" : `Importar ${toSend.length} ${toSend.length === 1 ? "associado" : "associados"}`}</Button>
-          <Button variant="ghost" onClick={() => setFile(null)} disabled={pending}>Cancelar</Button>
+          <Button variant="ghost" onClick={() => setFile(null)} disabled={pending}>Trocar arquivo</Button>
         </div>
       </>}
     </div>
-  </SectionCard>;
+  </div>;
 }

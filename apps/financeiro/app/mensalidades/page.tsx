@@ -1,9 +1,9 @@
 import { AppHeader } from "@/components/app-header";
 import { FeeGrid } from "@/components/fees/fee-grid";
-import { PageBody, PageHeader, SectionTabs } from "@/components/nav/page-header";
+import { PageBody, PageHeader } from "@/components/nav/page-header";
 import { YearSelect } from "@/components/nav/year-select";
 import { SetupNeeded } from "@/components/setup-needed";
-import { matchesSection, NO_SECTION, NO_SECTION_PARAM, sectionsOf } from "@/lib/associates";
+import { matchesSections, NO_SECTION, NO_SECTION_PARAM, sectionsOf } from "@/lib/associates";
 import { fetchFeeYear, fetchFeeYears } from "@/lib/fee-queries";
 import { currentYear } from "@/lib/filters";
 import { DUE_RULE_LABELS } from "@/lib/fees";
@@ -23,8 +23,11 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
   const [data, feeYears] = await Promise.all([fetchFeeYear(supabase, member.groupId, year), fetchFeeYears(supabase, member.groupId)]);
 
   const sections = sectionsOf(data.rows.map((r) => r.associate));
-  const sectionFilter = params.secao && (params.secao === NO_SECTION_PARAM || sections.includes(params.secao)) ? params.secao : undefined;
-  const rows = data.rows.filter((r) => matchesSection(r.associate, sectionFilter));
+  // secao=A,B,nenhuma: uma ou mais seções; valores desconhecidos são ignorados
+  const sectionValues = sections.map((section) => section ?? NO_SECTION_PARAM);
+  const selectedSections = (params.secao ?? "").split(",").map((v) => v.trim()).filter((v) => sectionValues.includes(v));
+  const sectionFilter = selectedSections.length && selectedSections.length < sectionValues.length ? selectedSections.join(",") : undefined;
+  const rows = sectionFilter ? data.rows.filter((r) => matchesSections(r.associate, selectedSections)) : data.rows;
   const sectionIds = new Set(rows.map((r) => r.associate.id));
   const suggestions = data.suggestions.filter((s) => sectionIds.has(s.associateId));
   const href = (patch: Params) => {
@@ -42,20 +45,13 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
   // No desktop a página não rola: a grade ocupa o resto da tela e só as linhas rolam, com cabeçalho e totais fixos.
   return <div className="shell flex min-h-dvh flex-col overflow-clip md:h-dvh md:min-h-0 md:overflow-hidden">
     <AppHeader role={member.role} email={user.email ?? ""} current="/mensalidades" />
-    <PageBody className="md:flex md:min-h-0 md:flex-1 md:flex-col">
+    <PageBody width="narrow" className="md:flex md:min-h-0 md:flex-1 md:flex-col">
       <PageHeader title="Mensalidades" crumbs={[{ label: "Mensalidades" }]}
         actions={<YearSelect year={year} links={years.map((y) => ({ year: y, href: href({ ano: y === thisYear ? undefined : String(y) }) }))} />}
-        description={<>Março a dezembro. Vencimento {rule.toLowerCase()}; depois disso, sem registro, fica atrasado. Pagamentos lançados na rubrica de mensalidade com o associado aparecem como sugestão.{member.canEdit && " Regra e rubrica em Configurações › Mensalidades."}</>}>
-        {sections.length > 1 && <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted-foreground">Seção</span>
-          <SectionTabs label="Filtrar por seção" tabs={[
-            { href: href({ secao: undefined }), label: "Todas", active: !sectionFilter },
-            ...sections.map((section) => ({ href: href({ secao: section ?? NO_SECTION_PARAM }), label: section ?? NO_SECTION, active: sectionFilter === (section ?? NO_SECTION_PARAM) })),
-          ]} />
-        </div>}
-      </PageHeader>
+        description={<>Março a dezembro. Vencimento {rule.toLowerCase()}; depois disso, sem registro, fica atrasado. Pagamentos lançados na rubrica de mensalidade com o associado aparecem como sugestão.{member.canEdit && " Regra e rubrica em Configurações › Mensalidades."}</>} />
       {data.error && <p role="alert" className="m-0 rounded-lg bg-destructive/10 px-3 py-2 text-destructive">Não foi possível carregar as mensalidades: {data.error}</p>}
-      <FeeGrid key={`${year}|${sectionFilter ?? ""}`} year={year} rows={rows} suggestions={suggestions} splitsByAssociate={data.splitsByAssociate} canEdit={member.canEdit} price={data.price} individualPrices={data.individualPrices} onlyOverdue={params.atrasados === "1"} />
+      <FeeGrid key={year} year={year} rows={rows} suggestions={suggestions} splitsByAssociate={data.splitsByAssociate} canEdit={member.canEdit} price={data.price} individualPrices={data.individualPrices} onlyOverdue={params.atrasados === "1"}
+        sectionOptions={sections.length > 1 ? sections.map((section) => ({ value: section ?? NO_SECTION_PARAM, label: section ?? NO_SECTION })) : []} />
     </PageBody>
   </div>;
 }

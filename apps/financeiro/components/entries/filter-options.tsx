@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-export type FilterKey = "conta" | "forma" | "pasta" | "conciliado" | "associado" | "rubrica";
+export type FilterKey = "conta" | "forma" | "pasta" | "conciliado" | "associado" | "rubrica" | "secao";
 export type FilterOption = { value: string; label: string; depth?: number; tone?: "receita" | "despesa" };
 export type FilterDimension = {
   label: string;
@@ -15,7 +15,8 @@ export type FilterDimension = {
   /** Atalhos que marcam um conjunto pronto (ex.: só rubricas inativas). */
   shortcuts?: { label: string; values: string[] }[];
 };
-export type FilterDimensions = Record<FilterKey, FilterDimension>;
+/** Cada tela fornece só as dimensões que usa. */
+export type FilterDimensions = Partial<Record<FilterKey, FilterDimension>>;
 
 const DimensionsContext = createContext<FilterDimensions | null>(null);
 
@@ -26,7 +27,9 @@ export function FilterOptionsProvider({ dimensions, children }: { dimensions: Fi
 export function useDimension(key: FilterKey) {
   const dimensions = useContext(DimensionsContext);
   if (!dimensions) throw new Error("FilterOptionsProvider ausente.");
-  return dimensions[key];
+  const dimension = dimensions[key];
+  if (!dimension) throw new Error(`Filtro "${key}" sem opções no FilterOptionsProvider.`);
+  return dimension;
 }
 
 /** Lê e grava filtros na URL (estado compartilhável), sem rolar a página. */

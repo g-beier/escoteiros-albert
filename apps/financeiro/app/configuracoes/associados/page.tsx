@@ -1,12 +1,12 @@
 import { pageMember } from "@/lib/session";
-import { SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
+import { SectionBody, SectionCard, SectionCount, SectionHeader } from "@/components/section-card";
 import { AppHeader } from "@/components/app-header";
 import { AssociatesImport } from "@/components/associates-import";
 import { PageBody, PageHeader, SectionTabs, settingsCrumbs, SettingsTabs } from "@/components/nav/page-header";
 import { AssociateRow, NewAssociate, type AssociateItem } from "@/components/new-associate";
 import { SectionsManager } from "@/components/sections-manager";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { branchLabels, groupBySection, isScoutBranch, matchesSection, NO_SECTION, NO_SECTION_PARAM, sectionsOf, type PatrolItem, type SectionItem } from "@/lib/associates";
+import { branchLabels, groupBySection, isScoutBranch, matchesSection, placementLabel, NO_SECTION, NO_SECTION_PARAM, sectionsOf, type PatrolItem, type SectionItem } from "@/lib/associates";
 import { cn } from "@/lib/utils";
 
 type Params = { agrupar?: string; secao?: string };
@@ -44,12 +44,11 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
 
   return <div className="shell">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/configuracoes/associados" />
-    <PageBody>
+    <PageBody width="narrow" className="gap-4">
       <PageHeader title="Configurações" crumbs={settingsCrumbs("associados", canEdit)} tabs={<SettingsTabs current="associados" canEdit={canEdit} />}
         description="Lista usada para vincular rateios a associados. Inativos deixam de aparecer nos novos lançamentos." />
-      {canEdit && <SectionsManager {...catalog} counts={counts} />}
-      {canEdit && <SectionCard><SectionHeader title="Novo associado" /><div className="p-4"><NewAssociate {...catalog} /></div></SectionCard>}
-      {canEdit && <AssociatesImport existing={associates} {...catalog} />}
+      {canEdit && <SectionCard><SectionHeader title="Novo associado"><AssociatesImport existing={associates} {...catalog} /></SectionHeader>
+        <SectionBody><NewAssociate {...catalog} /></SectionBody></SectionCard>}
       <SectionCard><SectionHeader title="Cadastrados"><SectionCount>{shown.filter((a) => a.active).length} ativos de {shown.length}</SectionCount>
           <SectionTabs label="Visualização" tabs={[
             { href: href({ agrupar: undefined }), label: "Lista", active: !bySection },
@@ -63,24 +62,25 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
             ...sections.map((section) => ({ href: href({ secao: section ?? NO_SECTION_PARAM }), label: section ?? NO_SECTION, active: sectionFilter === (section ?? NO_SECTION_PARAM) })),
           ]} />
         </div>}
-        {!associates.length ? <div className="px-6 py-12 text-center text-muted-foreground">Nenhum associado cadastrado.</div>
+        {!associates.length ? <p className="m-0 px-4 py-4 text-center text-xs text-muted-foreground">Nenhum associado cadastrado.</p>
         : bySection ? <SectionGroups associates={shown} />
-        : <div className="overflow-x-auto"><Table className="min-w-[860px]">
+        : <div className="overflow-x-auto"><Table className="min-w-[640px]">
           <TableCaption className="sr-only">Associados do grupo</TableCaption>
-          <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent"><TableHead className={headClass}>Nome</TableHead><TableHead className={cn(headClass, "w-44")}>Ramo</TableHead><TableHead className={headClass}>Seção</TableHead><TableHead className={headClass}>Patrulha</TableHead><TableHead className={cn(headClass, "w-24")}>Status</TableHead>{canEdit && <TableHead className={cn(headClass, "w-36")}><span className="sr-only">Ações</span></TableHead>}</TableRow></TableHeader>
+          <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent"><TableHead className={headClass}>Nome</TableHead><TableHead className={cn(headClass, "w-[40%]")}>Divisão</TableHead><TableHead className={cn(headClass, "w-24")}>Status</TableHead>{canEdit && <TableHead className={cn(headClass, "w-36")}><span className="sr-only">Ações</span></TableHead>}</TableRow></TableHeader>
           <TableBody>{shown.map((associate) => canEdit
             ? <AssociateRow key={associate.id} associate={associate} catalog={catalog} />
-            : <TableRow key={associate.id}><TableCell className="px-3 py-1.5">{associate.name}</TableCell><TableCell className="px-3 py-1.5">{isScoutBranch(associate.branch) ? branchLabels[associate.branch] : associate.branch}</TableCell><TableCell className="px-3 py-1.5">{associate.section ?? "—"}</TableCell><TableCell className="px-3 py-1.5">{associate.patrol ?? "—"}</TableCell><TableCell className="px-3 py-1.5">{associate.active ? "Ativo" : "Inativo"}</TableCell></TableRow>)}
+            : <TableRow key={associate.id}><TableCell className="px-3 py-1">{associate.name}</TableCell><TableCell className="px-3 py-1">{placementLabel(associate)}</TableCell><TableCell className="px-3 py-1">{associate.active ? "Ativo" : "Inativo"}</TableCell></TableRow>)}
           </TableBody>
         </Table></div>}
       </SectionCard>
+      {canEdit && <SectionsManager {...catalog} counts={counts} />}
     </PageBody>
   </div>;
 }
 
 /** Visão por seção (só leitura): um bloco por seção, nomes em ordem alfabética, inativos esmaecidos. */
 function SectionGroups({ associates }: { associates: AssociateItem[] }) {
-  return <div className="grid gap-4 p-4">
+  return <div className="grid gap-3 p-3">
     {groupBySection(associates).map((group) => {
       const active = group.members.filter((m) => m.active).length;
       return <section key={group.section ?? NO_SECTION} aria-label={group.section ?? NO_SECTION} className="grid gap-2">

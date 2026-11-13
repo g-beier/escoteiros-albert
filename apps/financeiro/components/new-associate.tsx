@@ -3,50 +3,61 @@
 import { useActionState, useState } from "react";
 import { IconCheck, IconPlus } from "@tabler/icons-react";
 import { createAssociate, updateAssociate, type AssociateFormState } from "@/app/configuracoes/associados/actions";
-import { OptionSelect } from "@/components/option-controls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { branchLabels, defaultSectionFor, patrolChoices, SCOUT_BRANCHES, sectionChoices, type PatrolItem, type ScoutBranch, type SectionItem } from "@/lib/associates";
+import { placementOptions, placementValue, resolvePlacement, type PatrolItem, type Placement, type ScoutBranch, type SectionItem } from "@/lib/associates";
 import { useActionToast } from "@/lib/use-action-toast";
 import { cn } from "@/lib/utils";
 
 const initial: AssociateFormState = {};
-const branchOptions = SCOUT_BRANCHES.map((value) => ({ value, label: branchLabels[value] }));
 
 type Catalog = { sections: SectionItem[]; patrols: PatrolItem[] };
 
-/** Ramo › Seção › Patrulha: a seção depende do ramo (pré-selecionada se o ramo tem uma só) e a patrulha, da seção. */
-function usePlacement({ sections }: Catalog, initialBranch: string, initialSection = "", initialPatrol = "") {
-  const [branch, setBranchState] = useState(initialBranch);
-  const [section, setSectionState] = useState(initialSection);
-  const [patrol, setPatrol] = useState(initialPatrol);
-  const setBranch = (value: string) => { setBranchState(value); setSectionState(defaultSectionFor(sections, value)); setPatrol(""); };
-  const setSection = (value: string) => { setSectionState(value); setPatrol(""); };
-  return { branch, setBranch, section, setSection, patrol, setPatrol };
+/**
+ * Divisão numa seleção só, em hierarquia: Ramo › Seção › Equipe. Escolher a equipe define a seção e o ramo;
+ * escolher a seção define o ramo. Adulto é só o ramo; seções do Pioneiro não têm equipes.
+ */
+function PlacementSelect({ id, catalog, value, current, onValueChange, className, "aria-label": ariaLabel }: {
+  id: string; catalog: Catalog; value: Placement; current?: Placement; onValueChange: (value: Placement) => void; className?: string; "aria-label"?: string;
+}) {
+  const options = placementOptions(catalog.sections, catalog.patrols, current);
+  const selected = placementValue(value);
+  return <Select items={options} value={selected || null} onValueChange={(next) => onValueChange(resolvePlacement((next as string | null) ?? "", catalog.sections, catalog.patrols))}>
+    <SelectTrigger id={id} aria-label={ariaLabel} className={cn("w-full min-w-48", className)}>
+      <SelectValue className="block min-w-0 truncate" placeholder="Selecione…" />
+    </SelectTrigger>
+    <SelectContent alignItemWithTrigger={false} align="start" className="w-auto min-w-(--anchor-width)">
+      {options.map((option) => <SelectItem key={option.value} value={option.value}
+        className={cn(option.depth === 0 && "font-semibold", option.depth === 1 && "pl-5", option.depth === 2 && "pl-8 text-muted-foreground")}>
+        {option.name}
+      </SelectItem>)}
+    </SelectContent>
+  </Select>;
 }
 
-function SectionSelect({ id, catalog, branch, value, current, onValueChange, ...aria }: { id?: string; catalog: Catalog; branch: string; value: string; current?: string | null; onValueChange: (value: string) => void; "aria-label"?: string }) {
-  const options = sectionChoices(catalog.sections, branch, current).map((s) => ({ value: s.id, label: s.active ? s.name : `${s.name} (inativa)` }));
-  return <OptionSelect id={id} value={value} onValueChange={onValueChange} options={options} emptyLabel={branch && !options.length ? "Nenhuma no ramo" : "Sem seção"} disabled={!branch || !options.length} {...aria} />;
+/** Campos escondidos que o servidor espera (ramo, seção e equipe). */
+function PlacementFields({ value, form }: { value: Placement; form?: string }) {
+  return <>
+    <input type="hidden" form={form} name="branch" value={value.branch} />
+    <input type="hidden" form={form} name="sectionId" value={value.sectionId} />
+    <input type="hidden" form={form} name="patrolId" value={value.patrolId} />
+  </>;
 }
 
-function PatrolSelect({ id, catalog, section, value, current, onValueChange, ...aria }: { id?: string; catalog: Catalog; section: string; value: string; current?: string | null; onValueChange: (value: string) => void; "aria-label"?: string }) {
-  const options = patrolChoices(catalog.patrols, section, current).map((p) => ({ value: p.id, label: p.active ? p.name : `${p.name} (inativa)` }));
-  return <OptionSelect id={id} value={value} onValueChange={onValueChange} options={options} emptyLabel="Sem patrulha" disabled={!options.length} {...aria} />;
-}
+const EMPTY: Placement = { branch: "", sectionId: "", patrolId: "" };
 
 export function NewAssociate(catalog: Catalog) {
   const [state, action, pending] = useActionState(createAssociate, initial);
-  const place = usePlacement(catalog, "");
+  const [place, setPlace] = useState<Placement>(EMPTY);
   useActionToast(state);
-  return <form action={action} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
+  return <form action={action} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
     <div className="grid gap-1.5"><Label htmlFor="associate-name">Nome</Label><Input id="associate-name" name="name" maxLength={120} required /></div>
-    <div className="grid gap-1.5"><Label htmlFor="associate-branch">Ramo</Label><OptionSelect id="associate-branch" value={place.branch} onValueChange={place.setBranch} options={branchOptions} /><input type="hidden" name="branch" value={place.branch} /></div>
-    <div className="grid gap-1.5"><Label htmlFor="associate-section">Seção</Label><SectionSelect id="associate-section" catalog={catalog} branch={place.branch} value={place.section} onValueChange={place.setSection} /><input type="hidden" name="sectionId" value={place.section} /></div>
-    <div className="grid gap-1.5"><Label htmlFor="associate-patrol">Patrulha (opcional)</Label><PatrolSelect id="associate-patrol" catalog={catalog} section={place.section} value={place.patrol} onValueChange={place.setPatrol} /><input type="hidden" name="patrolId" value={place.patrol} /></div>
-    <Button type="submit" disabled={pending}><IconPlus /> {pending ? "Salvando…" : "Cadastrar"}</Button>
+    <div className="grid gap-1.5"><Label htmlFor="associate-placement">Divisão</Label>
+      <PlacementSelect id="associate-placement" catalog={catalog} value={place} onValueChange={setPlace} /><PlacementFields value={place} /></div>
+    <Button type="submit" disabled={pending || !place.branch}><IconPlus /> {pending ? "Salvando…" : "Cadastrar"}</Button>
   </form>;
 }
 
@@ -57,21 +68,20 @@ export function AssociateRow({ associate, catalog }: { associate: AssociateItem;
   const [toggleState, toggle, toggling] = useActionState(updateAssociate, initial);
   useActionToast(state);
   useActionToast(toggleState);
-  const place = usePlacement(catalog, associate.branch, associate.section_id ?? "", associate.patrol_id ?? "");
+  const current: Placement = { branch: associate.branch, sectionId: associate.section_id ?? "", patrolId: associate.patrol_id ?? "" };
+  const [place, setPlace] = useState<Placement>(current);
   const formId = `associate-${associate.id}`;
   return <TableRow className={cn(!associate.active && "text-muted-foreground")}>
-    <TableCell className="px-3 py-1.5">
-      <form id={formId} action={save}><input type="hidden" name="id" value={associate.id} /><input type="hidden" name="branch" value={place.branch} /><input type="hidden" name="sectionId" value={place.section} /><input type="hidden" name="patrolId" value={place.patrol} /></form>
+    <TableCell className="px-3 py-1">
+      <form id={formId} action={save}><input type="hidden" name="id" value={associate.id} /></form>
+      <PlacementFields value={place} form={formId} />
       <Label className="sr-only" htmlFor={`${formId}-name`}>Nome</Label>
       <Input form={formId} id={`${formId}-name`} name="name" defaultValue={associate.name} maxLength={120} required />
     </TableCell>
-    <TableCell className="px-3 py-1.5"><Label className="sr-only" htmlFor={`${formId}-branch`}>Ramo de {associate.name}</Label><OptionSelect id={`${formId}-branch`} value={place.branch} onValueChange={place.setBranch} options={branchOptions} /></TableCell>
-    <TableCell className="px-3 py-1.5"><Label className="sr-only" htmlFor={`${formId}-section`}>Seção de {associate.name}</Label>
-      <SectionSelect id={`${formId}-section`} catalog={catalog} branch={place.branch} value={place.section} current={associate.section_id} onValueChange={place.setSection} /></TableCell>
-    <TableCell className="px-3 py-1.5"><Label className="sr-only" htmlFor={`${formId}-patrol`}>Patrulha de {associate.name}</Label>
-      <PatrolSelect id={`${formId}-patrol`} catalog={catalog} section={place.section} value={place.patrol} current={associate.patrol_id} onValueChange={place.setPatrol} /></TableCell>
-    <TableCell className="px-3 py-1.5"><span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", associate.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{associate.active ? "Ativo" : "Inativo"}</span></TableCell>
-    <TableCell className="px-3 py-1.5">
+    <TableCell className="px-3 py-1"><Label className="sr-only" htmlFor={`${formId}-placement`}>Divisão de {associate.name}</Label>
+      <PlacementSelect id={`${formId}-placement`} catalog={catalog} value={place} current={current} onValueChange={setPlace} /></TableCell>
+    <TableCell className="px-3 py-1"><span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", associate.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{associate.active ? "Ativo" : "Inativo"}</span></TableCell>
+    <TableCell className="px-3 py-1">
       <div className="flex items-center gap-1.5">
         <Button form={formId} type="submit" variant="ghost" size="icon-sm" aria-label={`Salvar ${associate.name}`} disabled={saving}><IconCheck /></Button>
         <form action={toggle}><input type="hidden" name="id" value={associate.id} /><input type="hidden" name="active" value={String(!associate.active)} /><Button type="submit" variant="outline" size="sm" disabled={toggling}>{associate.active ? "Inativar" : "Reativar"}</Button></form>

@@ -116,6 +116,17 @@ export function SettingsTabs({ current, canEdit }: { current: SettingsTab; canEd
  */
 export const PAGE_BODY = "grid w-full content-start gap-5 px-4 pt-4 pb-6";
 
-export function PageBody({ className, ...props }: React.ComponentProps<"main">) {
-  return <main className={cn(PAGE_BODY, className)} {...props} />;
+/**
+ * Larguras do corpo: `full` (padrão, fluida) para listas largas como Lançamentos e Extrato;
+ * `narrow` (centralizada, até 72rem + margens) para cadastros e telas que não ganham com mais largura.
+ * O cabeçalho acompanha o corpo, então todas as abas de uma área usam a mesma largura (sem saltos).
+ * Numa área larga com uma aba estreita (Extrato › Importar), o cabeçalho fica largo e só o conteúdo
+ * estreita, com `NARROW_CONTENT`.
+ */
+export const PAGE_WIDTHS = { full: "", narrow: "mx-auto max-w-[calc(72rem+2rem)]" } as const;
+export const NARROW_CONTENT = "mx-auto w-full max-w-6xl";
+export type PageWidth = keyof typeof PAGE_WIDTHS;
+
+export function PageBody({ className, width = "full", ...props }: React.ComponentProps<"main"> & { width?: PageWidth }) {
+  return <main className={cn(PAGE_BODY, PAGE_WIDTHS[width], className)} {...props} />;
 }

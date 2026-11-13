@@ -49,14 +49,13 @@ export function CatalogManager({ kind, title, singular, maxLength, items, canEdi
     </SectionHeader>
     {canEdit && <form action={action} className="grid gap-2 border-b p-3">
       <input type="hidden" name="kind" value={kind} />
-      <p className="m-0 text-sm font-semibold">Nova {singular}</p>
       <div className="flex flex-wrap items-end gap-2">
-        {isCategories && <div className="grid gap-1.5"><Label htmlFor="categories-code">Código</Label>
+        {isCategories && <div className="grid gap-1.5"><Label htmlFor="categories-code">Código da nova rubrica</Label>
           <Input id="categories-code" name="code" placeholder="Ex.: 2.5.6" className="num w-32" required
             aria-invalid={codeTaken ? true : undefined} aria-describedby={codeTaken ? "categories-code-error" : undefined}
             onBlur={(event) => { const code = event.target.value.trim(); setCodeTaken(code ? items.find((item) => item.code === code) ?? null : null); }}
             onChange={() => { if (codeTaken) setCodeTaken(null); }} /></div>}
-        <div className="grid min-w-48 flex-1 gap-1.5"><Label htmlFor={`${kind}-new`}>Nome</Label><Input id={`${kind}-new`} name="name" maxLength={maxLength} required /></div>
+        <div className="grid min-w-48 flex-1 gap-1.5"><Label htmlFor={`${kind}-new`}>{isCategories ? "Nome" : `Nova ${singular}`}</Label><Input id={`${kind}-new`} name="name" maxLength={maxLength} required /></div>
         {isCategories && <div className="grid gap-1.5"><Label htmlFor="categories-ledger">Conta contábil (opcional)</Label><LedgerCodeInput id="categories-ledger" className="w-40" /></div>}
         <Button type="submit" disabled={pending || Boolean(codeTaken)}><IconPlus /> Adicionar</Button>
       </div>
@@ -64,7 +63,7 @@ export function CatalogManager({ kind, title, singular, maxLength, items, canEdi
         <IconAlertTriangle className="size-3.5 shrink-0" aria-hidden />
         O código {codeTaken.code} já é da rubrica “{codeTaken.name}”{codeTaken.active ? "" : " (inativa)"}. Escolha outro código.
       </p>}
-      {isCategories && <p className="text-xs text-muted-foreground">O código define o tipo (1 = receita, 2 = despesa) e a rubrica pai: 2.5.6 fica dentro de 2.5 Pastelada. A conta contábil é opcional aqui, mas obrigatória para exportar à contabilidade.</p>}
+      {isCategories && <p className="m-0 text-xs text-muted-foreground">O código define o tipo (1 = receita, 2 = despesa) e a rubrica pai: 2.5.6 fica dentro de 2.5 Pastelada. A conta contábil é opcional aqui, mas obrigatória para exportar à contabilidade.</p>}
     </form>}
     <Table>
       <TableCaption className="sr-only">{title} do grupo</TableCaption>
@@ -94,7 +93,7 @@ function CatalogRow({ kind, item, maxLength, canEdit, accounts }: { kind: Catalo
   const isCategory = item.code !== undefined;
   const save = <Button type="submit" form={formId} variant="ghost" size="icon-sm" aria-label={`Salvar ${item.name}`} disabled={renaming}><IconCheck /></Button>;
   return <TableRow className={cn(!item.active && "text-muted-foreground")}>
-    <TableCell className="px-3 py-1.5">
+    <TableCell className="px-3 py-1">
       {canEdit ? <form id={formId} action={rename} className="flex items-center gap-1.5" style={{ paddingLeft: `${(item.depth ?? 0) * 1.25}rem` }}>
         {item.code !== undefined && <span className={cn("num w-12 shrink-0 text-right text-xs font-semibold", item.kind === "receita" ? "text-success" : item.kind === "despesa" ? "text-destructive" : "text-muted-foreground")}>{item.code ?? "—"}</span>}
         <input type="hidden" name="kind" value={kind} /><input type="hidden" name="id" value={item.id} />
@@ -104,7 +103,7 @@ function CatalogRow({ kind, item, maxLength, canEdit, accounts }: { kind: Catalo
         {!isCategory && save}
       </form> : item.name}
     </TableCell>
-    {isCategory && <TableCell className="px-3 py-1.5">
+    {isCategory && <TableCell className="px-3 py-1">
       {canEdit ? <div className="flex items-center gap-1.5">
         <Label htmlFor={`${kind}-${item.id}-ledger`} className="sr-only">Conta contábil de {item.name}</Label>
         <LedgerCodeInput id={`${kind}-${item.id}-ledger`} form={formId} defaultValue={item.ledgerCode} className="w-36 shrink-0" />
@@ -112,13 +111,13 @@ function CatalogRow({ kind, item, maxLength, canEdit, accounts }: { kind: Catalo
         {save}
       </div> : <span className="num">{item.ledgerCode ?? "—"}</span>}
     </TableCell>}
-    {accounts && <TableCell className="px-3 py-1.5"><DefaultAccount item={item} accounts={accounts} canEdit={canEdit} /></TableCell>}
-    <TableCell className="px-3 py-1.5 text-right num" title="Rateios ou lançamentos que usam este cadastro">
+    {accounts && <TableCell className="px-3 py-1"><DefaultAccount item={item} accounts={accounts} canEdit={canEdit} /></TableCell>}
+    <TableCell className="px-3 py-1 text-right num" title="Rateios ou lançamentos que usam este cadastro">
       {item.usageHref && item.usage > 0
         ? <Link href={item.usageHref} className="inline-flex items-center gap-1 text-primary hover:underline" title="Ver os rateios que usam esta rubrica (para recategorizar)">{item.usage} <IconExternalLink className="size-3" aria-hidden /><span className="sr-only">ver rateios</span></Link>
         : item.usage}
     </TableCell>
-    <TableCell className="px-3 py-1.5">
+    <TableCell className="px-3 py-1">
       <div className="flex items-center gap-2">{status}
         {canEdit && <form action={toggle}>
           <input type="hidden" name="kind" value={kind} /><input type="hidden" name="id" value={item.id} /><input type="hidden" name="active" value={String(!item.active)} />

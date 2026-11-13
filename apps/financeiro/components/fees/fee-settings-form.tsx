@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { saveFeeSettings, saveFeeYearSettings, type FeeSettingsState } from "@/app/mensalidades/actions";
 import { CategoryPicker } from "@/components/entries/category-picker";
 import { OptionSelect } from "@/components/option-controls";
-import { SectionCard, SectionHeader } from "@/components/section-card";
+import { SectionBody, SectionCard, SectionHeader } from "@/components/section-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +33,7 @@ export function FeeSettingsForm({ settings, categories, defaultCategoryId, year 
 
   return <SectionCard aria-labelledby="fee-settings-title">
     <SectionHeader title="Mensalidades" titleId="fee-settings-title" description="Vencimento usado para marcar as mensalidades atrasadas e rubrica cujos rateios com associado viram sugestão de pagamento." />
-    <form action={action} className="grid gap-4 p-4">
+    <form action={action} className="grid gap-3 p-3">
       <input type="hidden" name="dueRule" value={rule} />
       <input type="hidden" name="categoryId" value={categoryId} />
       <div className="flex flex-wrap items-end gap-3">
@@ -64,12 +64,12 @@ export function FeeYearForm({ prices, currentYear }: { prices: Record<number, Fe
   const [year, setYear] = useState(currentYear);
   return <SectionCard aria-labelledby="fee-year-title">
     <SectionHeader title="Valores por ano" titleId="fee-year-title" description="Mensalidade de março a dezembro e desconto para quem paga os 10 meses de uma vez até a data-limite. Usados no previsto × recebido e para reconhecer pagamentos nas sugestões." />
-    <div className="grid gap-4 p-4">
+    <SectionBody>
       <div className="grid w-fit gap-1.5"><Label htmlFor="fee-year">Ano</Label>
         <OptionSelect id="fee-year" value={String(year)} onValueChange={(value) => setYear(Number(value))}
           options={years.map((y) => ({ value: String(y), label: prices[y] ? String(y) : `${y} (sem valor)` }))} /></div>
       <FeeYearFields key={year} year={year} price={prices[year]} />
-    </div>
+    </SectionBody>
   </SectionCard>;
 }
 

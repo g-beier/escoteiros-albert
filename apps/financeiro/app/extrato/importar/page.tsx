@@ -3,11 +3,12 @@ import { AppHeader } from "@/components/app-header";
 import { RecentImports } from "@/components/import/recent-imports";
 import { StatementImporter, type ImportAccount } from "@/components/import/statement-importer";
 import { SetupNeeded } from "@/components/setup-needed";
-import { extratoCrumbs, ExtratoTabs, PageBody, PageHeader } from "@/components/nav/page-header";
+import { extratoCrumbs, ExtratoTabs, NARROW_CONTENT, PageBody, PageHeader } from "@/components/nav/page-header";
 import { SectionCard } from "@/components/section-card";
 import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
 import { fetchImportProfiles, fetchLastProfileByAccount, fetchRecentImports } from "@/lib/import-queries";
 import { pageSession } from "@/lib/session";
+import { cn } from "@/lib/utils";
 
 export default async function ImportPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
@@ -34,7 +35,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
     <PageBody>
       <PageHeader title="Extrato" crumbs={extratoCrumbs("importar")} tabs={<ExtratoTabs current="importar" accountId={accountId || undefined} />}
         description="Escolha o banco (a conta) e envie o extrato OFX, exportado pelo banco ou convertido. Confira as linhas antes de importar; depois, concilie com os lançamentos." />
-      <div className="grid gap-5">
+      <div className={cn("grid gap-5", NARROW_CONTENT)}>
         {!canEdit && <SectionCard><p className="m-0 p-5 text-sm text-muted-foreground">Somente tesouraria e administração podem importar extratos. Você pode consultar as importações já feitas.</p></SectionCard>}
         {canEdit && accounts.length === 0 && <SectionCard><p className="m-0 p-5 text-sm text-muted-foreground">Nenhuma conta ativa. Cadastre a conta do banco em <Link href="/configuracoes/contas" className="underline">Configurações › Contas</Link> antes de importar.</p></SectionCard>}
         {canEdit && accounts.length > 0 && <StatementImporter accounts={accounts} profiles={profiles} lastProfiles={lastProfiles} accountId={accountId} />}

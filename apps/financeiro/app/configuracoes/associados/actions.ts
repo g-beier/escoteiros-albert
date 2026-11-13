@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireEditor } from "@/lib/session";
-import { SCOUT_BRANCHES } from "@/lib/associates";
+import { hasPatrols, hasSections, SCOUT_BRANCHES } from "@/lib/associates";
 
 /** Id opcional vindo de um select ("" = nenhum). */
 const optionalId = z.string().trim().transform((value) => value || null).pipe(z.uuid().nullable());
@@ -13,7 +13,7 @@ const associateSchema = z.object({
   branch: z.enum(SCOUT_BRANCHES, { message: "Escolha o ramo." }),
   section_id: optionalId,
   patrol_id: optionalId,
-}).refine((data) => !data.patrol_id || data.section_id, { message: "Escolha a seção antes da patrulha." });
+}).refine((data) => !data.patrol_id || data.section_id, { message: "Escolha a seção antes da equipe." });
 
 export type AssociateFormState = { error?: string; success?: string; tone?: "success" | "neutral" };
 
@@ -28,7 +28,7 @@ function readAssociate(formData: FormData) {
 
 /** Chaves compostas de 028_sections.sql: seção de outro ramo ou patrulha de outra seção. */
 function writeError(error: { code?: string; message: string }) {
-  if (error.code === "23503" || error.code === "23514") return "A seção precisa ser do ramo do associado, e a patrulha, da seção escolhida.";
+  if (error.code === "23503" || error.code === "23514") return "A seção precisa ser do ramo do associado, e a equipe, da seção escolhida.";
   return error.message;
 }
 
@@ -128,6 +128,7 @@ async function runSectionRpc(fn: string, args: RpcArgs, success: string, tone?: 
 export async function createSection(_previous: AssociateFormState, formData: FormData): Promise<AssociateFormState> {
   const branch = z.enum(SCOUT_BRANCHES, { message: "Escolha o ramo da seção." }).safeParse(formData.get("branch"));
   if (!branch.success) return { error: branch.error.issues[0]?.message };
+  if (!hasSections(branch.data)) return { error: "Adultos não têm seção: são só o ramo." };
   const name = sectionName.safeParse(formData.get("name") ?? "");
   if (!name.success) return { error: name.error.issues[0]?.message };
   return runSectionRpc("create_section", (groupId) => ({ p_group_id: groupId, p_branch: branch.data, p_name: name.data }), `Seção “${name.data}” cadastrada.`);
@@ -140,7 +141,7 @@ export async function updateSectionOrPatrol(_previous: AssociateFormState, formD
   const name = sectionName.safeParse(formData.get("name") ?? "");
   if (!id.success || !name.success) return { error: name.success ? "Cadastro inválido." : name.error.issues[0]?.message };
   const active = formData.has("active") ? formData.get("active") === "true" : null;
-  const label = kind === "patrol" ? "Patrulha" : "Seção";
+  const label = kind === "patrol" ? "Equipe" : "Seção";
   const message = active === null ? `${label} “${name.data}” salva.` : `${label} “${name.data}” ${active ? "reativada" : "inativada"}.`;
   return runSectionRpc(kind === "patrol" ? "update_patrol" : "update_section",
     { [kind === "patrol" ? "p_patrol_id" : "p_section_id"]: id.data, p_name: name.data, p_active: active }, message, active === false ? "neutral" : undefined);
@@ -151,5 +152,14 @@ export async function createPatrol(_previous: AssociateFormState, formData: Form
   if (!sectionId.success) return { error: "Seção inválida." };
   const name = sectionName.safeParse(formData.get("name") ?? "");
   if (!name.success) return { error: name.error.issues[0]?.message };
-  return runSectionRpc("create_patrol", { p_section_id: sectionId.data, p_name: name.data }, `Patrulha “${name.data}” cadastrada.`);
+  try {
+    // o Clã Pioneiro (e qualquer seção fora dos ramos com equipes) não se divide
+    const { supabase, groupId } = await requireEditor("Sem permissão para gerir seções.");
+    const { data: section } = await supabase.from("sections").select("branch").eq("id", sectionId.data).eq("group_id", groupId).maybeSingle();
+    if (!section) return { error: "Seção não encontrada." };
+    if (!hasPatrols(section.branch)) return { error: "Esta seção não se divide em equipes." };
+  } catch (error) {
+    return fail(error, "Não foi possível salvar.");
+  }
+  return runSectionRpc("create_patrol", { p_section_id: sectionId.data, p_name: name.data }, `Equipe “${name.data}” cadastrada.`);
 }
