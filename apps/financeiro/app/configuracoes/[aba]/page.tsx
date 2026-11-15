@@ -7,11 +7,13 @@ import { currentYear } from "@/lib/filters";
 import { PageBody, PageHeader, settingsCrumbs, SettingsTabs } from "@/components/nav/page-header";
 import { AccountsManager, type AccountItem } from "@/components/accounts-manager";
 import { CatalogManager } from "@/components/catalog-manager";
+import { CategoriesManager } from "@/components/categories-manager";
+import type { SavedCategory } from "@/lib/category-draft";
 import { ProfilesManager, type ProfileItem } from "@/components/import/profiles-manager";
 import { profileAccountUses, profileSettingsSummary, type ProfileImport } from "@/lib/import-flow";
 import { fetchImportProfiles } from "@/lib/import-queries";
 import { CATALOG_KINDS } from "@/lib/catalogs";
-import { depthOf, sortCategories, type CategoryItem } from "@/lib/categories";
+import { sortCategories, type CategoryItem } from "@/lib/categories";
 
 type Row = { id: string; name: string; active: boolean; usage: { count: number }[] };
 type PaymentMethodRow = Row & { default_account_id: string | null };
@@ -19,7 +21,7 @@ type AccountRow = Omit<AccountItem, "usage"> & { usage: { count: number }[] };
 
 const TABS = {
   contas: "Onde o dinheiro está (conta corrente, poupança, caixa), com saldo inicial e conta contábil de contrapartida.",
-  rubricas: "Classificação dos rateios, em árvore pelo código, com a conta contábil usada na exportação para a contabilidade. Para recategorizar, clique no número de uso.",
+  rubricas: "Classificação dos rateios, em árvore pelo código, com a conta contábil usada na exportação para a contabilidade. Para recategorizar alguns rateios, clique no número de uso; para juntar todos na rubrica de cima, exclua a rubrica.",
   formas: "Como o dinheiro se moveu; a conta padrão é sugerida nos novos lançamentos.",
   perfis: "Como o extrato OFX de cada banco é lido: um perfil por banco, aplicado sozinho na próxima importação da conta.",
   mensalidades: "Regra de vencimento das mensalidades e rubrica usada para sugerir pagamentos.",
@@ -63,13 +65,11 @@ export default async function SettingsPage({ params }: { params: Promise<{ aba: 
   }
 
   const tree = sortCategories((categories ?? []) as (CategoryItem & { ledger_code: string | null; usage: { count: number }[] })[]);
-  const parents = new Set(tree.map((c) => c.parent_id).filter(Boolean));
-  const categoryItems = tree.map((c) => ({
-    id: c.id, name: c.name, active: c.active, code: c.code, kind: c.kind, depth: depthOf(c.code), isGroup: parents.has(c.id), ledgerCode: c.ledger_code,
-    usage: c.usage?.[0]?.count ?? 0,
-    // abre o Detalhamento filtrado nesta rubrica (e nas de baixo) para recategorizar
-    usageHref: `/lancamentos/detalhamento?de=tudo&rubrica=${c.id}`,
+  // rascunho da tela de rubricas; ao salvar, o refresh traz o estado novo e a tela recomeça dele
+  const savedCategories: SavedCategory[] = tree.map((c) => ({
+    id: c.id, parent_id: c.parent_id, code: c.code, name: c.name, kind: c.kind, ledger_code: c.ledger_code, active: c.active, usage: c.usage?.[0]?.count ?? 0,
   }));
+  const categoriesVersion = savedCategories.map((c) => [c.id, c.parent_id, c.code, c.name, c.ledger_code, c.active, c.usage].join("|")).join(";");
 
   return <div className="shell">
     <AppHeader role={membership.role} email={user.email ?? ""} current="/configuracoes" />
@@ -81,10 +81,9 @@ export default async function SettingsPage({ params }: { params: Promise<{ aba: 
       {tab === "formas" && <CatalogManager kind="payment_methods" {...CATALOG_KINDS.payment_methods} items={paymentMethodItems} canEdit={canEdit} accounts={accountOptions} />}
       {tab === "mensalidades" && <div className="grid items-start gap-4 lg:grid-cols-2">
         <FeeYearForm prices={feePrices} currentYear={currentYear()} />
-        <FeeSettingsForm settings={feeSettings} categories={tree} year={currentYear()}
-          defaultCategoryId={tree.find((c) => c.code === "1.1")?.id ?? null} />
+        <FeeSettingsForm settings={feeSettings} categories={tree} year={currentYear()} />
       </div>}
-      {tab === "rubricas" && <CatalogManager kind="categories" {...CATALOG_KINDS.categories} items={categoryItems} canEdit={canEdit} />}
+      {tab === "rubricas" && <CategoriesManager key={categoriesVersion} categories={savedCategories} canEdit={canEdit} />}
     </PageBody>
   </div>;
 }

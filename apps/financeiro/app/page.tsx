@@ -132,12 +132,12 @@ export default async function Dashboard() {
         <section aria-labelledby="overdue-title" className="flex flex-col overflow-hidden rounded-lg border bg-card lg:max-xl:col-span-2">
           <div className="flex items-center justify-between border-b px-4 py-2.5">
             <h2 id="overdue-title" className="m-0 text-sm font-semibold">Mensalidades atrasadas</h2>
-            <Link href="/mensalidades?atrasados=1" className="text-xs font-semibold text-primary hover:underline">Ver atrasados</Link>
+            <Link href="/mensalidades/controle?atrasados=1" className="text-xs font-semibold text-primary hover:underline">Ver atrasados</Link>
           </div>
           {overdue.length === 0
             ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhuma mensalidade atrasada em {year}.</p>
             : <ul className="m-0 max-h-96 list-none overflow-auto overscroll-contain p-0 xl:max-h-none xl:min-h-64 xl:flex-1 xl:[contain:size]">{overdue.slice(0, OVERDUE_SHOWN).map(({ associate, overdue: count }) => <li key={associate.id} className="border-t first:border-t-0">
-              <Link href={associate.section ? `/mensalidades?${new URLSearchParams({ secao: associate.section })}` : "/mensalidades"} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-muted">
+              <Link href={associate.section ? `/mensalidades/controle?${new URLSearchParams({ secao: associate.section })}` : "/mensalidades/controle"} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-muted">
                 <span className="min-w-0 flex-1 truncate">{associate.name}{associate.section && <span className="text-muted-foreground"> · {associate.section}</span>}</span>
                 <span className="num shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 font-semibold text-destructive" title={`${count} ${count === 1 ? "mês atrasado" : "meses atrasados"}`}>
                   {count} <span className="sr-only">{count === 1 ? "mês atrasado" : "meses atrasados"}</span></span>

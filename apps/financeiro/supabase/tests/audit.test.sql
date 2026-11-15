@@ -18,8 +18,8 @@ select public.reopen_statement_line(:'line_a2') \gset
 select public.create_account(:'gid_a', 'Conta Auditoria', 'caixa', null, null, null, 0, null, null) as acc_new \gset
 select public.update_account(:'acc_new', 'Conta Auditoria 2', 'caixa', null, null, null, 0, null, null) \gset
 select public.set_ledger_entry_account(:'entry_a', :'acc_new') \gset
-select public.create_category(:'gid_a', '1.9', 'Rubrica Auditoria', null) as cat_new \gset
-select public.update_category(:'cat_new', 'Rubrica Auditoria 2', null) \gset
+select public.create_category(:'gid_a', (select id from public.categories where group_id = :'gid_a' and code = '1'), 'Rubrica Auditoria', null) as cat_new \gset
+select public.update_category(:'cat_new', (select id from public.categories where group_id = :'gid_a' and code = '1'), 'Rubrica Auditoria 2', null) \gset
 select public.set_category_active(:'cat_new', false) \gset
 select public.create_payment_method(:'gid_a', 'Forma Auditoria') as pm_new \gset
 select public.update_payment_method(:'pm_new', 'Forma Auditoria 2') \gset

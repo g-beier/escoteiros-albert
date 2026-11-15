@@ -29,10 +29,12 @@ exception when check_violation then null;
 end $$;
 
 \echo '--- rubricas e formas de pagamento só por funções'
-select public.create_category(:'gid', '2.99', 'Contabilidade teste', null) as cat_parent \gset
-select public.create_category(:'gid', '2.99.1', 'Honorários', '4.1.2.1.0010') as cat_d \gset
-select public.create_category(:'gid', '1.99', 'Doações teste', '3.1.1.1.0005') as cat_r \gset
-select public.update_category(:'cat_parent', 'Contabilidade', '4.1.2.1.0000');
+select id as root_d from public.categories where group_id = :'gid' and code = '2' \gset
+select id as root_r from public.categories where group_id = :'gid' and code = '1' \gset
+select public.create_category(:'gid', :'root_d', 'Contabilidade teste', null) as cat_parent \gset
+select public.create_category(:'gid', :'cat_parent', 'Honorários', '4.1.2.1.0010') as cat_d \gset
+select public.create_category(:'gid', :'root_r', 'Doações teste', '3.1.1.1.0005') as cat_r \gset
+select public.update_category(:'cat_parent', :'root_d', 'Contabilidade', '4.1.2.1.0000');
 select public.set_category_active(:'cat_parent', true);
 select public.create_payment_method(:'gid', 'Cheque') as pm \gset
 select public.update_payment_method(:'pm', 'Cheque nominal');
@@ -71,7 +73,7 @@ end $$;
 \echo '--- consulta: sem permissão de escrita'
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', true);
 do $$ begin
-  perform public.update_category((select id from public.categories where name = 'Honorários'), 'X', null);
+  perform public.update_category((select id from public.categories where name = 'Honorários'), (select parent_id from public.categories where name = 'Honorários'), 'X', null);
   raise exception 'consulta não pode alterar rubricas';
 exception when raise_exception then
   if sqlerrm not like '%sem permissão%' then raise; end if;

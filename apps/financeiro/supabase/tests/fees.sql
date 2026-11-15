@@ -64,7 +64,7 @@ end $$;
 \echo '--- limpar, isentar e configurar'
 select public.set_fee_record(:'bia', 2026, 3, null, null, null);
 select public.set_fee_exemption(:'bia', 2026, 'Voluntária');
-select public.set_fee_settings(:'gid', 'dia_util', 5, null);
+select public.set_fee_settings(:'gid', 'dia_util', 5, :'cat_mens');
 do $$ begin
   if exists (select 1 from public.fee_records r join public.associates a on a.id = r.associate_id where a.name = 'Bia') then raise exception 'FALHOU: limpar'; end if;
   if (select reason from public.fee_exemptions) <> 'Voluntária' then raise exception 'FALHOU: isenção'; end if;

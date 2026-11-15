@@ -18,14 +18,14 @@ const initial: FeeSettingsState = {};
 const ruleOptions = (Object.keys(DUE_RULE_LABELS) as DueRule[]).map((value) => ({ value, label: DUE_RULE_LABELS[value] }));
 
 /** Configurações › Mensalidades: regra de vencimento (com prévia das datas) e rubrica de mensalidade. */
-export function FeeSettingsForm({ settings, categories, defaultCategoryId, year }: {
-  settings: FeeSettings; categories: CategoryItem[]; defaultCategoryId: string | null; year: number;
+export function FeeSettingsForm({ settings, categories, year }: {
+  settings: FeeSettings; categories: CategoryItem[]; year: number;
 }) {
   const [state, action, pending] = useActionState(saveFeeSettings, initial);
   useActionToast(state);
   const [rule, setRule] = useState<DueRule>(settings.dueRule);
   const [day, setDay] = useState(String(settings.dueDay));
-  const [categoryId, setCategoryId] = useState(settings.categoryId ?? defaultCategoryId ?? "");
+  const [categoryId, setCategoryId] = useState(settings.categoryId ?? "");
   const dayNumber = Number(day);
   const maxDay = rule === "dia_util" ? 20 : 28;
   const validDay = rule === "fim_do_mes" || (Number.isInteger(dayNumber) && dayNumber >= 1 && dayNumber <= maxDay);
@@ -51,7 +51,7 @@ export function FeeSettingsForm({ settings, categories, defaultCategoryId, year 
       <div className="grid gap-1.5">
         <Label htmlFor="fee-category">Rubrica de mensalidade</Label>
         <div className="max-w-md"><CategoryPicker id="fee-category" value={categoryId} onChange={setCategoryId} categories={categories} preferredKind="receita" usedIds={[]} placeholder="Buscar rubrica…" /></div>
-        <p className="m-0 text-xs text-balance text-muted-foreground">Rateios nesta rubrica (e nas de baixo dela) com associado aparecem como sugestão na grade.</p>
+        <p className="m-0 text-xs text-balance text-muted-foreground">Rateios nesta rubrica (e nas de baixo dela) com associado aparecem como sugestão na grade.{!categoryId && " Sem rubrica escolhida, a grade não sugere pagamentos."}</p>
       </div>
       <Button type="submit" className="w-fit" disabled={pending || !validDay}>{pending ? "Salvando…" : "Salvar"}</Button>
     </form>

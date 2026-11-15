@@ -24,7 +24,7 @@ function revalidate() {
   revalidatePath("/", "layout");
 }
 
-// Rubricas e formas de pagamento ---------------------------------------------------
+// Formas de pagamento -------------------------------------------------------------
 // Escritas pelas funções SQL de 014_accounting.sql (validadas e auditadas), como as contas.
 
 export async function createCatalogItem(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
@@ -33,59 +33,73 @@ export async function createCatalogItem(_previous: CatalogFormState, formData: F
     const name = readName(formData, kind);
     if (!name.success) return { error: name.error.issues[0]?.message };
     const { supabase, groupId } = await requireEditor("Sem permissão para alterar cadastros.");
-    if (kind === "payment_methods") {
-      const { error } = await supabase.rpc("create_payment_method", { p_group_id: groupId, p_name: name.data });
-      if (error) return { error: error.message };
-      revalidate();
-      return { success: `“${name.data}” cadastrada.` };
-    }
-    const code = z.string().trim().regex(/^[12](\.[0-9]{1,3}){1,4}$/, "Informe o código da rubrica, ex.: 2.5.6 (comece com 1 para receita ou 2 para despesa).").safeParse(formData.get("code") ?? "");
-    if (!code.success) return { error: code.error.issues[0]?.message };
-    const ledgerCode = parseLedgerCode(formData.get("ledgerCode"));
-    if (!ledgerCode.ok) return { error: ledgerCode.error };
-    const { error } = await supabase.rpc("create_category", { p_group_id: groupId, p_code: code.data, p_name: name.data, p_ledger_code: ledgerCode.value });
+    const { error } = await supabase.rpc("create_payment_method", { p_group_id: groupId, p_name: name.data });
     if (error) return { error: error.message };
     revalidate();
-    return { success: `“${code.data} ${name.data}” cadastrada.` };
+    return { success: `“${name.data}” cadastrada.` };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Não foi possível cadastrar." };
   }
 }
 
-/** Ativa/inativa (campo `active`) ou salva nome e, nas rubricas, a conta contábil. */
+/** Ativa/inativa (campo `active`) ou renomeia. */
 export async function updateCatalogItem(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
   try {
     const kind = readKind(formData);
     const id = z.uuid().parse(formData.get("id"));
     const { supabase } = await requireEditor("Sem permissão para alterar cadastros.");
-    const { singular } = CATALOG_KINDS[kind];
-    const label = singular.charAt(0).toUpperCase() + singular.slice(1);
     if (formData.has("active")) {
       const active = formData.get("active") === "true";
-      const { error } = kind === "categories"
-        ? await supabase.rpc("set_category_active", { p_category_id: id, p_active: active })
-        : await supabase.rpc("set_payment_method_active", { p_payment_method_id: id, p_active: active });
+      const { error } = await supabase.rpc("set_payment_method_active", { p_payment_method_id: id, p_active: active });
       if (error) return { error: error.message };
       revalidate();
-      return active ? { success: `${label} reativada.` } : { success: `${label} inativada.`, tone: "neutral" };
+      return active ? { success: "Forma de pagamento reativada." } : { success: "Forma de pagamento inativada.", tone: "neutral" };
     }
     const name = readName(formData, kind);
     if (!name.success) return { error: name.error.issues[0]?.message };
-    if (kind === "payment_methods") {
-      const { error } = await supabase.rpc("update_payment_method", { p_payment_method_id: id, p_name: name.data });
-      if (error) return { error: error.message };
-    } else {
-      const ledgerCode = parseLedgerCode(formData.get("ledgerCode"));
-      if (!ledgerCode.ok) return { error: ledgerCode.error };
-      const { error } = await supabase.rpc("update_category", { p_category_id: id, p_name: name.data, p_ledger_code: ledgerCode.value });
-      if (error) return { error: error.message };
-    }
+    const { error } = await supabase.rpc("update_payment_method", { p_payment_method_id: id, p_name: name.data });
+    if (error) return { error: error.message };
     revalidate();
     return { success: `“${name.data}” salva.` };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Não foi possível salvar." };
   }
 }
+
+// Rubricas ----------------------------------------------------------------------
+// A tela edita a árvore como rascunho (lib/category-draft.ts) e grava tudo de uma vez: save_category_tree (036).
+
+const treeSchema = z.object({
+  nodes: z.array(z.object({
+    key: z.string().min(1).max(64), id: z.uuid().nullable(), parent: z.string().min(1).max(64),
+    position: z.number().int().min(0), name: z.string().trim().min(2, "Toda rubrica precisa de um nome com ao menos 2 caracteres.").max(100),
+    ledgerCode: z.string().nullable(), active: z.boolean(),
+  })).max(2000),
+  deleted: z.array(z.object({ id: z.uuid(), target: z.string().max(64).nullable() })).max(2000),
+});
+
+export async function saveCategoryTree(payload: unknown): Promise<CatalogFormState> {
+  try {
+    const parsed = treeSchema.safeParse(payload);
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+    for (const node of parsed.data.nodes) {
+      const ledgerCode = parseLedgerCode(node.ledgerCode);
+      if (!ledgerCode.ok) return { error: `“${node.name}”: ${ledgerCode.error}` };
+    }
+    const { supabase, groupId } = await requireEditor("Sem permissão para alterar cadastros.");
+    const { data, error } = await supabase.rpc("save_category_tree", { p_group_id: groupId, p_nodes: parsed.data.nodes, p_deleted: parsed.data.deleted });
+    if (error) return { error: error.message };
+    revalidate();
+    const { splits = 0, entries = 0 } = (data ?? {}) as { splits?: number; entries?: number };
+    return { success: splits
+      ? `Rubricas salvas. ${plural(splits, "rateio", "rateios")} de ${plural(entries, "lançamento", "lançamentos")} ${splits === 1 ? "mudou" : "mudaram"} de rubrica.`
+      : "Rubricas salvas." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Não foi possível salvar as rubricas." };
+  }
+}
+
+const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
 // Contas ------------------------------------------------------------------------
 // Escritas pelas funções SQL create_account/update_account/set_account_active (validadas e auditadas).

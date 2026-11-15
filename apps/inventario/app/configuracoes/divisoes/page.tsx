@@ -15,9 +15,6 @@ export default async function LocationsPage() {
     supabase.from("inventory_lots").select("location_id").eq("group_id", member.groupId).gt("quantity", 0),
     supabase.from("inventory_units").select("location_id").eq("group_id", member.groupId).is("written_off_at", null),
   ]);
-  // Primeira/última entre as irmãs: define quais setas de ordem aparecem.
-  const siblings = new Map<string, string[]>();
-  for (const row of rows) siblings.set(row.parent_id ?? "", [...(siblings.get(row.parent_id ?? "") ?? []), row.id]);
   const descriptions = new Map((details ?? []).map((d) => [d.id as string, d.description as string | null]));
 
   // Lotes com saldo e peças ativas por divisão; "com subdivisões" soma em todos os ancestrais.
@@ -31,7 +28,6 @@ export default async function LocationsPage() {
   const locations: LocationItem[] = rows.map((row) => ({
     id: row.id, parentId: row.parent_id, name: row.name, description: descriptions.get(row.id) ?? null, path: row.path,
     depth: row.depth, ancestors: row.ancestors, active: row.active, own: own.get(row.id) ?? 0, total: total.get(row.id) ?? 0,
-    first: siblings.get(row.parent_id ?? "")![0] === row.id, last: siblings.get(row.parent_id ?? "")!.at(-1) === row.id,
   }));
 
   return <div className="shell">
@@ -39,7 +35,7 @@ export default async function LocationsPage() {
     <PageBody width="narrow">
       <PageHeader title="Configurações" tabs={<SettingsTabs current="divisoes" isAdmin={member.isAdmin} />} crumbs={settingsCrumbs("divisoes")}
         description={member.canManage
-          ? "Onde os materiais do grupo ficam guardados. Clique numa divisão para ver o que há nela."
+          ? "Onde os materiais do grupo ficam guardados. Arraste pela alça para reordenar ou pôr dentro de outra; clique numa divisão para ver o que há nela."
           : "Onde os materiais do grupo ficam guardados. Só o gestor do inventário altera as divisões."} />
       <LocationsManager locations={locations} canManage={member.canManage} />
     </PageBody>

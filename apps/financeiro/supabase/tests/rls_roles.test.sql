@@ -44,7 +44,7 @@ select throws_like(format($$select public.move_ledger_entries_account(array[%L]:
 select throws_like(format($$select public.create_account(%L, 'Consulta', 'corrente', null, null, null, 0, null, null)$$, :'gid_a'),
   '%permissão%', 'consulta não cria conta');
 select throws_like(format($$select public.set_account_active(%L, false)$$, :'acc_a'), '%permissão%', 'consulta não desativa conta');
-select throws_like(format($$select public.create_category(%L, '1.9', 'Consulta', null)$$, :'gid_a'), '%permissão%', 'consulta não cria rubrica');
+select throws_like(format($$select public.create_category(%L, %L, 'Consulta', null)$$, :'gid_a', :'cat_a'), '%permissão%', 'consulta não cria rubrica');
 select throws_like(format($$select public.create_payment_method(%L, 'Consulta')$$, :'gid_a'), '%permissão%', 'consulta não cria forma de pagamento');
 select throws_like(format($$select public.import_statement_lines(%L, null, null, 'x.ofx', '2026-03-01', '2026-03-31', null, null,
   '[{"date":"2026-03-20","amountCents":100,"description":"Consulta","externalId":"X1"}]')$$, :'acc_a'), '%permissão%', 'consulta não importa extrato');
@@ -81,7 +81,7 @@ select lives_ok(format($$select public.create_ledger_entry(%L, '2026-03-15', 'Te
 select lives_ok(format($$select public.set_entry_document_filed(%L, true)$$, :'entry_a'), 'tesouraria marca documento');
 select lives_ok(format($$select public.create_account(%L, 'Conta Tesouraria', 'caixa', null, null, null, 0, null, null)$$, :'gid_a'),
   'tesouraria cria conta');
-select lives_ok(format($$select public.create_category(%L, '1.9', 'Rubrica Tesouraria', null)$$, :'gid_a'), 'tesouraria cria rubrica');
+select lives_ok(format($$select public.create_category(%L, %L, 'Rubrica Tesouraria', null)$$, :'gid_a', :'cat_a'), 'tesouraria cria rubrica');
 select lives_ok(format($$select public.create_payment_method(%L, 'Forma Tesouraria')$$, :'gid_a'), 'tesouraria cria forma de pagamento');
 select lives_ok(format($$select public.ignore_statement_lines(array[%L]::uuid[], 'tarifa')$$, :'line_a2'), 'tesouraria ignora linha do extrato');
 select lives_ok(format($$insert into public.associates(group_id, name, branch) values (%L, 'Novo Tesouraria', 'adulto')$$, :'gid_a'),

@@ -2,7 +2,7 @@
 -- lotes, peças com etiqueta, revisão, escrita só pelas funções e isolamento entre grupos.
 -- Rode com `npm run test:db`.
 begin;
-select plan(113);
+select plan(117);
 \ir _fixture.psql
 
 -- Chefe (…f0a4) e gestor (…f0a5) do grupo A: no Financeiro são só consulta.
@@ -45,13 +45,20 @@ select lives_ok(format($$select public.inventory_save_location(%L, %L, null, 'Va
 
 -- Ordem escolhida (034): divisão nova entra no fim; o gestor sobe/desce entre as irmãs.
 select is((select string_agg(name, ',' order by sort_key) from public.inventory_location_paths where group_id = :'gid_a' and depth = 0), 'Cozinha,Vazia,Estante', 'raízes na ordem de criação, não alfabética');
-select lives_ok(format($$select public.inventory_move_location((select id from public.inventory_locations where group_id = %L and parent_id is null and name = 'Estante'), -1)$$, :'gid_a'), 'gestor sobe a divisão');
+select lives_ok(format($$select public.inventory_place_location((select id from public.inventory_locations where group_id = %L and parent_id is null and name = 'Estante'), %L, 'before')$$, :'gid_a', :'vazia'), 'gestor arrasta a divisão para antes de outra');
 select is((select string_agg(name, ',' order by sort_key) from public.inventory_location_paths where group_id = :'gid_a' and depth = 0), 'Cozinha,Estante,Vazia', 'nova ordem das raízes');
-select throws_like(format($$select public.inventory_move_location(%L, -1)$$, :'coz'), 'A divisão já é a primeira%', 'primeira não sobe');
-select throws_like(format($$select public.inventory_move_location(%L, 1)$$, :'vazia'), 'A divisão já é a última%', 'última não desce');
+select throws_like(format($$select public.inventory_place_location(%L, %L, 'inside')$$, :'coz', :'niv'), 'Uma divisão não pode ficar dentro dela mesma%', 'arrastar não cria ciclo');
+select throws_like(format($$select public.inventory_place_location(%L, %L, 'inside')$$, :'est', :'vazia'), 'Reative a divisão%', 'não entra em divisão inativa');
+select throws_like(format($$select public.inventory_place_location((select id from public.inventory_locations where group_id = %L and parent_id is null and name = 'Estante'), %L, 'inside')$$, :'gid_a', :'coz'), 'Já existe a divisão%', 'arrastar não repete nome no nível');
 select public.inventory_save_location(:'gid_a', null, null, 'Despensa', null) as desp \gset
 select lives_ok(format($$select public.inventory_save_location(%L, %L, %L, 'Despensa', null)$$, :'gid_a', :'desp', :'coz'), 'muda de superior');
 select is((select string_agg(name, ',' order by sort_key) from public.inventory_location_paths where parent_id = :'coz'), 'Estante,Despensa', 'ao mudar de superior, entra no fim');
+select public.inventory_place_location(:'desp', :'est', 'before');
+select is((select string_agg(name, ',' order by sort_key) from public.inventory_location_paths where parent_id = :'coz'), 'Despensa,Estante', 'solta antes da irmã');
+select public.inventory_place_location(:'desp', :'est', 'inside');
+select is((select parent_id from public.inventory_locations where id = :'desp'), :'est'::uuid, 'solta dentro de outra divisão');
+select public.inventory_place_location(:'desp', :'est', 'after');
+select is((select string_agg(name, ',' order by sort_key) from public.inventory_location_paths where parent_id = :'coz'), 'Estante,Despensa', 'solta depois, de volta ao nível de cima');
 
 -- Famílias (gestor) ---------------------------------------------------------------------------
 select public.inventory_save_family(:'gid_a', null, 'Barracas', '001') as fam \gset
@@ -64,7 +71,7 @@ select throws_like(format($$select public.inventory_save_family(%L, null, 'barra
 select tests.login('00000000-0000-0000-0000-00000000f0a4') \gset
 select ok(public.can_edit_inventory(:'gid_a') and not public.can_manage_inventory(:'gid_a'), 'chefe edita, mas não gerencia');
 select throws_like(format($$select public.inventory_save_location(%L, null, null, 'Do chefe', null)$$, :'gid_a'), 'Sem permissão para alterar divisões', 'chefe não cria divisão');
-select throws_like(format($$select public.inventory_move_location(%L, 1)$$, :'coz'), 'Divisão não encontrada ou sem permissão', 'chefe não reordena divisões');
+select throws_like(format($$select public.inventory_place_location(%L, %L, 'after')$$, :'coz', :'vazia'), 'Divisão não encontrada ou sem permissão', 'chefe não reordena divisões');
 select throws_like(format($$select public.inventory_save_family(%L, null, 'Do chefe', null)$$, :'gid_a'), 'Sem permissão para alterar famílias', 'chefe não cria família');
 
 -- Materiais (chefe) ---------------------------------------------------------------------------
@@ -199,7 +206,7 @@ select tests.logout() \gset
 
 select is((select count(*)::int from public.audit_events where group_id = :'gid_a' and action like 'inventory.%' and details ? 'movement_id'),
   (select count(*)::int from public.inventory_movements where group_id = :'gid_a'), 'cada movimento tem seu evento de auditoria');
-select is((select count(*)::int from public.audit_events where group_id = :'gid_a' and action ~ '^inventory\.(location|family)_'), 11, 'divisões e famílias auditadas');
+select is((select count(*)::int from public.audit_events where group_id = :'gid_a' and action ~ '^inventory\.(location|family)_'), 14, 'divisões e famílias auditadas');
 
 select * from finish();
 rollback;

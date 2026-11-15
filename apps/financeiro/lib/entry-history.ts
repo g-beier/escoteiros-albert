@@ -122,6 +122,15 @@ function describe(row: AuditRow, names: HistoryNames): { title: string; changes:
       return { title: "Comprovante anexado", changes: [{ label: "Arquivo", after: text(details.file_name) }] };
     case "ledger_entry.attachment_removed":
       return { title: "Comprovante removido", changes: [{ label: "Arquivo", before: text(details.file_name) }] };
+    case "ledger_entry.category_merged": {
+      // rubrica excluída: os nomes vêm gravados no evento (a rubrica de origem não existe mais)
+      const label = (value: unknown) => {
+        const item = (value ?? {}) as { code?: string | null; name?: string };
+        return [item.code, item.name].filter(Boolean).join(" ") || "—";
+      };
+      const from = Array.isArray(details.from) ? details.from.map(label).join(", ") : "—";
+      return { title: "Rubrica excluída: rateios movidos", changes: [{ label: "Rubrica", before: from, after: label(details.to) }] };
+    }
     case "reconciliation.suggestion_rejected":
       return { title: "Sugestão de conciliação recusada", changes: [] };
     default:

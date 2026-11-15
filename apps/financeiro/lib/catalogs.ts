@@ -1,5 +1,4 @@
 export const CATALOG_KINDS = {
-  categories: { title: "Rubricas", singular: "rubrica", maxLength: 100 },
   payment_methods: { title: "Formas de pagamento", singular: "forma de pagamento", maxLength: 60 },
 } as const;
 

@@ -90,8 +90,8 @@ select throws_like(format($$select public.create_account(%L, 'Intrusa', 'corrent
   'B não cria conta em A');
 select throws_like(format($$select public.update_account(%L, 'Hackeada', 'corrente', null, null, null, 0, null, null)$$, :'acc_a'), '%permissão%',
   'B não altera conta de A');
-select throws_like(format($$select public.create_category(%L, '1.9', 'Intrusa', null)$$, :'gid_a'), '%permissão%', 'B não cria rubrica em A');
-select throws_like(format($$select public.update_category(%L, 'Hackeada', null)$$, :'cat_a'), '%permissão%', 'B não altera rubrica de A');
+select throws_like(format($$select public.create_category(%L, %L, 'Intrusa', null)$$, :'gid_a', :'cat_a'), '%permissão%', 'B não cria rubrica em A');
+select throws_like(format($$select public.update_category(%L, null, 'Hackeada', null)$$, :'cat_a'), '%permissão%', 'B não altera rubrica de A');
 select throws_like(format($$select public.create_payment_method(%L, 'Intrusa')$$, :'gid_a'), '%permissão%', 'B não cria forma de pagamento em A');
 select throws_like(format($$select public.set_payment_method_active(%L, false)$$, :'pix_a'), '%permissão%', 'B não desativa forma de pagamento de A');
 select throws_like(format($$select public.import_statement_lines(%L, null, null, 'x.ofx', '2026-03-01', '2026-03-31', null, null,

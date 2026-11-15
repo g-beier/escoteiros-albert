@@ -36,11 +36,11 @@ export async function setLocationActive(_previous: ActionResult, formData: FormD
   return active ? { success: `${location.name} reativada.` } : { success: `${location.name} inativada.`, tone: "neutral" };
 }
 
-/** Sobe ou desce a divisão entre as irmãs (ordem dos locais em Materiais e nos seletores). */
-export async function moveLocation(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
+/** Solta a divisão antes, depois ou dentro (no fim) de outra, arrastando na lista (ordem dos locais em Materiais e nos seletores). */
+export async function placeLocation(id: string, target: string, place: "before" | "after" | "inside"): Promise<ActionResult> {
   const member = await managerOrError("Apenas o gestor do inventário altera divisões.");
   if ("error" in member) return member;
-  const { error } = await member.supabase.rpc("inventory_move_location", { p_id: text(formData, "id"), p_offset: text(formData, "offset") === "-1" ? -1 : 1 });
+  const { error } = await member.supabase.rpc("inventory_place_location", { p_id: id, p_target: target, p_place: place });
   if (error) return { error: error.message };
   revalidatePath("/configuracoes/divisoes"); revalidatePath("/materiais");
   return {};

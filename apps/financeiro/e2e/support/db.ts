@@ -53,7 +53,7 @@ export async function ensureE2eGroup() {
 
 /**
  * Rede de segurança: como o administrador E2E e pelas funções auditadas, desfaz o que algum teste interrompido
- * deixou para trás no grupo E2E: importações de extrato, perfis de leitura e lançamentos com o prefixo E2E.
+ * deixou para trás no grupo E2E: importações de extrato, perfis de leitura, dívidas e lançamentos com o prefixo E2E.
  * A RLS limita tudo ao grupo E2E (é o único grupo desse usuário).
  */
 export function cleanupE2eGroup() {
@@ -64,6 +64,7 @@ export function cleanupE2eGroup() {
     set local role authenticated;
     select public.delete_statement_import(i.id) from public.statement_imports i;
     select public.delete_import_profile(p.id) from public.import_profiles p;
+    select public.delete_debt(d.id) from public.debts d where d.description like ${literal(`${E2E_PREFIX} %`)};
     select public.delete_ledger_entry(e.id) from public.ledger_entries e where e.name like ${literal(`${E2E_PREFIX} %`)};
     commit;
   `);

@@ -108,12 +108,16 @@
 
 - **Mensalidades:** rodapé "Alertas" (atrasados + não pagos + atenção por mês), com tooltip do mês só com os estados que ocorrem e o recebido no mês (a linha "Recebido no mês" saiu); grade ocupa a tela no desktop com rolagem só nas linhas e rodapé fixo; escolher o status mantém o popover aberto e a observação grava sozinha (debounce de 400 ms), rateios gravam ao marcar.
 - **Início:** "Mês a mês" na largura do conteúdo; "Últimos lançamentos" com os últimos 7 dias mais o último dia com lançamentos antes deles, na altura do "Mês a mês" e com rolagem (atrasadas também).
-- **Rubricas:** código já usado avisado ao sair do campo, com o nome da rubrica.
+- **Rubricas:** código já usado avisado ao sair do campo, com o nome da rubrica (substituído em 2026-11-13: o código passou a ser automático).
 - **Seções e patrulhas** (`028_sections.sql`): Ramo › Seção › Patrulha cadastrados em Configurações › Associados; seção vira lista do ramo (pré-selecionada quando há uma só), patrulha opcional; seções antigas em texto descartadas; importação CSV casa seção/patrulha pelo nome. Teste `sections.test.sql`.
 
 ## Concluído (2026-11-12, prestação de contas no site)
 
 - **Exportar para o site** no Realizado (`/exportar/transparencia?ano=AAAA`): JSON só com rubricas e valores mês a mês (`lib/export/transparency.ts`); valor lançado direto num grupo sai como "Sem rubrica detalhada". O `prebuild` do institucional gera `src/data/prestacao-contas/<ano>.json` direto do banco (`scripts/export-transparency.ts`, credenciais do `.env.local`; sem banco, barra o build) e o build mostra o Realizado na página Transparência; a planilha do Google saiu.
+
+## Concluído (2026-11-13, rubricas editáveis)
+
+- **Rubricas** (`036_category_editing.sql`): a árvore é rubrica pai + posição e o código é derivado (`renumber_categories`); lançamentos apontam para o id, então renumerar não mexe em rateio. Configurações › Rubricas edita a árvore como rascunho no navegador (`lib/category-draft.ts`): arrastar pela alça (acima, abaixo ou dentro), renomear, conta contábil, criar, inativar e excluir, com os códigos recalculados na hora; nada grava até "Salvar alterações" (revisão quando há exclusão), que chama `save_category_tree` (tudo ou nada, auditado). Excluir leva os rateios para a rubrica de cima mais próxima que fica, com evento no histórico de cada lançamento. Raízes 1 e 2 fixas. Menu ⋯ por linha (subir/descer, mover para dentro de…) como alternativa ao arrastar. Mensalidade deixa de cair no código 1.1: usa só a rubrica configurada (grupos sem configuração ficaram com a 1.1 da data da migração). Testes `categories.sql`, `category-draft.test.ts` e `e2e/categories.e2e.ts`.
 
 ## A verificar
 

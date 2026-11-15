@@ -66,6 +66,14 @@ describe("describeHistory", () => {
     expect(removed).toMatchObject({ title: "Comprovante removido", changes: [{ label: "Arquivo", before: "nf.pdf" }] });
   });
 
+  it("describes splits moved by a deleted category, with the names stored in the event", () => {
+    const [item] = describeHistory([row("ledger_entry.category_merged", {
+      from: [{ code: "2.2.2", name: "Acampamento de Grupo" }, { code: "2.2.2.1", name: "Transporte" }],
+      to: { id: "x", code: "2.2", name: "Programa" }, splits: 2,
+    })], names);
+    expect(item).toMatchObject({ title: "Rubrica excluída: rateios movidos", changes: [{ label: "Rubrica", before: "2.2.2 Acampamento de Grupo, 2.2.2.1 Transporte", after: "2.2 Programa" }] });
+  });
+
   it("marks an edit without differences", () => {
     expect(describeHistory([row("ledger_entry.updated", { before: base, after: base })], names)[0].title).toBe("Lançamento salvo sem alterações");
   });

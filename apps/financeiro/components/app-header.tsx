@@ -7,7 +7,7 @@ const sections = [
   { href: "/", label: "Início", match: (path: string) => path === "/" },
   { href: "/lancamentos/movimentacoes", label: "Lançamentos", match: (path: string) => path.startsWith("/lancamentos") },
   { href: "/extrato/conciliar", label: "Extrato", match: (path: string) => path.startsWith("/extrato") },
-  { href: "/mensalidades", label: "Mensalidades", match: (path: string) => path.startsWith("/mensalidades") },
+  { href: "/mensalidades/controle", label: "Mensalidades", match: (path: string) => path.startsWith("/mensalidades") },
 ];
 
 export const isSettingsPath = (path: string) => path.startsWith("/configuracoes");

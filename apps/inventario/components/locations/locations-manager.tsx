@@ -1,20 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
-import { IconArrowDown, IconArrowUp, IconPencil, IconPlus } from "@tabler/icons-react";
+import { useActionState, useEffect, useOptimistic, useState, useTransition } from "react";
+import { IconPencil, IconPlus } from "@tabler/icons-react";
+import { toast } from "sonner";
 import { Button } from "@geas/ui/components/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
 import { Input } from "@geas/ui/components/input";
 import { Label } from "@geas/ui/components/label";
 import { OptionSelect } from "@geas/ui/components/option-controls";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
+import { DragHandle, DragHandleSpacer, DROP_CLASS, useTreeDrag, type DropPlace } from "@geas/ui/components/tree-drag";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { Textarea } from "@geas/ui/components/textarea";
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
 import { cn } from "@geas/ui/lib/utils";
-import { moveLocation, saveLocation, setLocationActive } from "@/app/configuracoes/divisoes/actions";
+import { placeLocation, saveLocation, setLocationActive } from "@/app/configuracoes/divisoes/actions";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/table-head";
+import { placeError, placeLocal } from "@/lib/locations";
 
 export type LocationItem = {
   id: string;
@@ -29,17 +32,27 @@ export type LocationItem = {
   own: number;
   /** O mesmo, somando as subdivisões. */
   total: number;
-  /** Primeira/última entre as irmãs (sem seta para subir/descer). */
-  first: boolean;
-  last: boolean;
 };
 
 const initial: ActionResult = {};
 type Editing = { location: LocationItem | null; parentId: string | null };
 
-/** Árvore de divisões na ordem escolhida pelo gestor (setas sobem/descem entre as irmãs); a indentação mostra o nível. */
-export function LocationsManager({ locations, canManage }: { locations: LocationItem[]; canManage: boolean }) {
+/**
+ * Árvore de divisões na ordem escolhida pelo gestor; a indentação mostra o nível. O gestor arrasta pela alça
+ * (acima, abaixo ou no meio de outra, para pôr dentro dela) e cada soltura grava na hora (inventory_place_location).
+ */
+export function LocationsManager({ locations: saved, canManage }: { locations: LocationItem[]; canManage: boolean }) {
   const [editing, setEditing] = useState<Editing | null>(null);
+  const [locations, applyPlace] = useOptimistic(saved, (items, move: { id: string; target: string; place: DropPlace }) => placeLocal(items, move.id, move.target, move.place));
+  const [placing, startPlacing] = useTransition();
+  const drag = useTreeDrag({
+    dropError: (id, target, place) => placeError(locations, id, target, place),
+    onDrop: (id, target, place) => startPlacing(async () => {
+      applyPlace({ id, target, place });
+      const result = await placeLocation(id, target, place);
+      if (result.error) toast.error(result.error);
+    }),
+  });
   const active = locations.filter((location) => location.active).length;
   return <SectionCard aria-labelledby="locations-title">
     <SectionHeader title="Divisões" titleId="locations-title" description="Onde o material fica guardado, em árvore: Diretoria › Armário de ferro, Cozinha › Estante de canecas › 2º nível.">
@@ -54,11 +67,16 @@ export function LocationsManager({ locations, canManage }: { locations: Location
           <TableHead className={HEAD_CLASS}>Divisão</TableHead>
           <TableHead className={cn(HEAD_CLASS, "w-28 text-right")} title="Lotes com saldo e peças nesta divisão">Aqui</TableHead>
           <TableHead className={cn(HEAD_CLASS, "w-36 text-right")} title="Somando as subdivisões">Com subdivisões</TableHead>
-          <TableHead className={cn(HEAD_CLASS, canManage ? "w-72" : "w-24")}>Status</TableHead>
+          <TableHead className={cn(HEAD_CLASS, canManage ? "w-64" : "w-24")}>Status</TableHead>
         </TableRow></TableHeader>
         <TableBody>{locations.map((location) => <LocationRow key={location.id} location={location} canManage={canManage}
+          draggable={canManage && !placing} dragging={drag.dragKey === location.id} drop={drag.dropFor(location.id)}
+          rowProps={drag.rowProps(location.id)} handleProps={drag.handleProps(location.id)}
           onEdit={() => setEditing({ location, parentId: location.parentId })} onAddChild={() => setEditing({ location: null, parentId: location.id })} />)}</TableBody>
       </Table></div>}
+    {drag.dragKey && <p className="m-0 border-t px-4 py-2 text-xs" aria-live="polite">
+      {drag.hint ? <span className="text-destructive">{drag.hint}</span> : <span className="text-muted-foreground">Solte acima, abaixo ou no meio de uma divisão (para pôr dentro dela).</span>}
+    </p>}
     {canManage && <Dialog open={editing !== null} onOpenChange={(open) => { if (!open) setEditing(null); }}>
       <DialogContent className="w-[min(34rem,calc(100%-2rem))]">
         {editing !== null && <LocationForm key={editing.location?.id ?? `new-${editing.parentId ?? "root"}`} editing={editing} locations={locations} onDone={() => setEditing(null)} />}
@@ -67,18 +85,25 @@ export function LocationsManager({ locations, canManage }: { locations: Location
   </SectionCard>;
 }
 
-function LocationRow({ location, canManage, onEdit, onAddChild }: { location: LocationItem; canManage: boolean; onEdit: () => void; onAddChild: () => void }) {
+type RowProps = {
+  location: LocationItem; canManage: boolean; draggable: boolean; dragging: boolean; drop: DropPlace | null;
+  rowProps: ReturnType<ReturnType<typeof useTreeDrag>["rowProps"]>; handleProps: { onDragStart: () => void; onDragEnd: () => void };
+  onEdit: () => void; onAddChild: () => void;
+};
+
+function LocationRow({ location, canManage, draggable, dragging, drop, rowProps, handleProps, onEdit, onAddChild }: RowProps) {
   const [state, toggle, toggling] = useActionState(setLocationActive, initial);
-  const [moveState, move, moving] = useActionState(moveLocation, initial);
   useActionToast(state);
-  useActionToast(moveState);
-  return <TableRow className={cn(!location.active && "text-muted-foreground")}>
+  return <TableRow className={cn(!location.active && "text-muted-foreground", dragging && "opacity-40", drop && DROP_CLASS[drop])} {...rowProps}>
     <TableCell className={CELL_CLASS}>
-      <div style={{ paddingLeft: `${location.depth * 1.25}rem` }} className={cn(location.depth > 0 && "border-l border-dashed")}>
+      <div className="flex items-center gap-1.5">
+      {canManage && (draggable ? <DragHandle id={location.id} {...handleProps} /> : <DragHandleSpacer />)}
+      <div style={{ marginLeft: `${location.depth * 1.25}rem` }} className={cn("min-w-0 flex-1", location.depth > 0 && "border-l border-dashed")}>
         <div className={cn(location.depth > 0 && "pl-2")}>
           <Link href={`/materiais?divisao=${location.id}`} className={cn("hover:underline", location.depth === 0 ? "font-semibold" : "font-medium")}>{location.name}</Link>
           {location.description && <div className="text-xs text-muted-foreground">{location.description}</div>}
         </div>
+      </div>
       </div>
     </TableCell>
     <TableCell className={cn(CELL_CLASS, "num text-right")}>{location.own || <span className="text-muted-foreground">—</span>}</TableCell>
@@ -87,13 +112,6 @@ function LocationRow({ location, canManage, onEdit, onAddChild }: { location: Lo
       <div className="flex items-center gap-2">
         <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", location.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{location.active ? "Ativa" : "Inativa"}</span>
         {canManage && <>
-          <form action={move} className="flex">
-            <input type="hidden" name="id" value={location.id} />
-            <Button type="submit" name="offset" value="-1" variant="ghost" size="icon-sm" disabled={moving || location.first}
-              aria-label={`Subir ${location.path}`} title="Subir"><IconArrowUp /></Button>
-            <Button type="submit" name="offset" value="1" variant="ghost" size="icon-sm" disabled={moving || location.last}
-              aria-label={`Descer ${location.path}`} title="Descer"><IconArrowDown /></Button>
-          </form>
           <Button type="button" variant="ghost" size="icon-sm" aria-label={`Editar ${location.path}`} onClick={onEdit}><IconPencil /></Button>
           {location.active && <Button type="button" variant="ghost" size="icon-sm" aria-label={`Nova subdivisão em ${location.path}`} title="Nova subdivisão" onClick={onAddChild}><IconPlus /></Button>}
           <form action={toggle}>

@@ -24,6 +24,21 @@ export function ExtratoTabs({ current, accountId }: { current: "conciliar" | "im
   ]} />;
 }
 
+export type FeeTab = "controle" | "devedores";
+
+/** Área de Mensalidades: o controle do ano e as anotações de dívidas. */
+export function FeeTabs({ current }: { current: FeeTab }) {
+  return <SectionTabs label="Mensalidades" tabs={[
+    { href: "/mensalidades/controle", label: "Controle", active: current === "controle" },
+    { href: "/mensalidades/devedores", label: "Devedores", active: current === "devedores" },
+  ]} />;
+}
+
+/** Caminho das telas de Mensalidades: Início › Mensalidades › Controle/Devedores. */
+export function feeCrumbs(current: FeeTab): Crumb[] {
+  return [{ label: "Mensalidades", href: "/mensalidades/controle" }, { label: current === "controle" ? "Controle" : "Devedores" }];
+}
+
 export type SettingsTab = "contas" | "rubricas" | "formas" | "perfis" | "associados" | "mensalidades";
 
 export const SETTINGS_LABELS: Record<SettingsTab, string> = {
