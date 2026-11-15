@@ -43,6 +43,6 @@ jobs:
       - name: Link project
         run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
       - name: Pending migrations
-        run: supabase migration list
+        run: supabase migration list --remote
       - name: Apply migrations
-        run: supabase db push
+        run: supabase db push --remote
