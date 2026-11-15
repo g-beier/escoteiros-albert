@@ -1,4 +1,5 @@
-# CI only: lint, types, tests and builds. No deploy (the site goes up by manual FTP).
+# CI: lint, types, tests and builds. The site goes up by manual FTP; DB migrations
+# are applied by supabase-migrations.yml after this passes on main.
 name: CI
 
 on:
