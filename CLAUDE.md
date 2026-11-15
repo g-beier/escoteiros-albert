@@ -77,4 +77,4 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 
 `.github/workflows/ci.yml` runs on push to `main` and on PRs: job `checks` (lint, typecheck incl. `astro check`, vitest, build) and job `db-e2e` (local Supabase via CLI 3.1.0, `supabase test db`, Playwright). No CD for the site: it is deployed by manual FTP to a host we don't own; don't add deploy steps or rely on host config files like `_redirects`.
 
-`.github/workflows/supabase-migrations.yml` runs after a successful CI on `main` (or manually) and applies `apps/financeiro/supabase/migrations` to the production Supabase project with `supabase db push` (secrets `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID`, environment `production`). Migrations only: production auth settings live in the dashboard; never `supabase config push`. Next apps (financeiro, inventario) deploy on Vercel.
+Production database: Supabase's GitHub integration applies `apps/financeiro/supabase/migrations` when `main` changes (it does not wait for CI). Production auth settings live in the dashboard; never `supabase config push` (`config.toml` is local only). Next apps (financeiro, inventario) deploy on Vercel.
