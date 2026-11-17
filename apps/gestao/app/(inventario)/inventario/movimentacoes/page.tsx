@@ -8,9 +8,11 @@ import { AppHeader } from "@/components/inventory/app-header";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
 import {
-  CONDITION_LABELS, MOVEMENT_LABELS, REVIEW_LABELS, WRITE_OFF_LABELS, relatedName, timestampBR,
-  type Condition, type MovementKind, type ReviewStatus, type WriteOffReason,
+  CONDITION_LABELS, MOVEMENT_LABELS, REVIEW_LABELS, WRITE_OFF_LABELS, timestampBR,
+  type Condition, type MovementKind, type ReviewStatus,
 } from "@/lib/inventory/vocabulary";
+import * as locations from "@/lib/server/inventory/locations";
+import * as movements from "@/lib/server/inventory/movements";
 import { pageSession } from "@/lib/server/session";
 
 const LIMIT = 200;
@@ -34,29 +36,23 @@ function href(filters: Filters, change: Filters) {
 
 export default async function Movements({ searchParams }: { searchParams: Promise<{ revisao?: string; tipo?: string }> }) {
   const params = await searchParams;
-  const { supabase, user, member } = await pageSession();
-  if (!member) return <SetupNeeded email={user.email ?? ""} />;
+  const { user, member } = await pageSession();
+  if (!member) return <SetupNeeded email={user.email} />;
   const filters: Filters = {
     revisao: STATUSES.includes(params.revisao as ReviewStatus) ? params.revisao as ReviewStatus : undefined,
     tipo: KINDS.includes(params.tipo as MovementKind) ? params.tipo as MovementKind : undefined,
   };
 
-  let query = supabase.from("inventory_movements")
-    .select("id, kind, quantity, from_location_id, to_location_id, from_condition, to_condition, write_off_reason, notes, review_status, created_at, material_id, inventory_materials(name)")
-    .eq("group_id", member.groupId);
-  if (filters.revisao) query = query.eq("review_status", filters.revisao);
-  if (filters.tipo) query = query.eq("kind", filters.tipo);
-  const [{ data }, { data: paths }] = await Promise.all([
-    query.order("created_at", { ascending: false }).order("id", { ascending: false }).limit(LIMIT),
-    supabase.from("inventory_location_paths").select("id, path").eq("group_id", member.groupId),
+  const [rows, paths] = await Promise.all([
+    movements.list(member.db, member.groupId, { review: filters.revisao, kind: filters.tipo }, LIMIT),
+    locations.listPaths(member.db, member.groupId),
   ]);
-  const rows = data ?? [];
-  const pathOf = new Map((paths ?? []).map((p) => [p.id as string, p.path as string]));
+  const pathOf = new Map(paths.map((p) => [p.id, p.path]));
   const dash = <span className="text-muted-foreground">—</span>;
-  const condition = (value: string | null) => value ? CONDITION_LABELS[value as Condition] : "sem condição";
+  const condition = (value: Condition | null) => value ? CONDITION_LABELS[value] : "sem condição";
 
   return <div className="shell">
-    <AppHeader current="/inventario/movimentacoes" email={user.email ?? ""} role={member.inventory.role} isAdmin={member.isAdmin} />
+    <AppHeader current="/inventario/movimentacoes" email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
     <PageBody>
       <PageHeader title="Movimentações" crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Movimentações" }]}
         description="Toda mudança no inventário: entradas, transferências, condição, ajustes, baixas e edições. Os movimentos dos chefes ficam pendentes até a revisão do gestor.">
@@ -93,17 +89,17 @@ export default async function Movements({ searchParams }: { searchParams: Promis
               const from = m.from_location_id ? pathOf.get(m.from_location_id) : undefined;
               const to = m.to_location_id ? pathOf.get(m.to_location_id) : undefined;
               const detail = m.kind === "condicao" ? `${condition(m.from_condition)} → ${condition(m.to_condition)}`
-                : m.kind === "baixa" && m.write_off_reason ? WRITE_OFF_LABELS[m.write_off_reason as WriteOffReason]
+                : m.kind === "baixa" && m.write_off_reason ? WRITE_OFF_LABELS[m.write_off_reason]
                 : m.kind === "entrada" && m.to_condition ? condition(m.to_condition) : "";
               return <TableRow key={m.id}>
                 <TableCell className={cn(CELL_CLASS, "num text-muted-foreground")}>{timestampBR(m.created_at)}</TableCell>
-                <TableCell className={cn(CELL_CLASS, "font-semibold")}><Link href={`/inventario/materiais/${m.material_id}`} className="hover:underline">{relatedName(m.inventory_materials)}</Link></TableCell>
-                <TableCell className={CELL_CLASS}><Badge variant="outline">{MOVEMENT_LABELS[m.kind as MovementKind]}</Badge></TableCell>
+                <TableCell className={cn(CELL_CLASS, "font-semibold")}><Link href={`/inventario/materiais/${m.material_id}`} className="hover:underline">{m.material_name}</Link></TableCell>
+                <TableCell className={CELL_CLASS}><Badge variant="outline">{MOVEMENT_LABELS[m.kind]}</Badge></TableCell>
                 <TableCell className={cn(CELL_CLASS, "num text-right font-semibold")}>{m.quantity ?? dash}</TableCell>
                 <TableCell className={cn(CELL_CLASS, "max-w-72")}>{from && to ? <>{from} <span className="text-muted-foreground">→</span> {to}</> : from ?? to ?? dash}</TableCell>
                 <TableCell className={CELL_CLASS}>{detail || dash}</TableCell>
                 <TableCell className={cn(CELL_CLASS, "max-w-64 truncate")} title={m.notes ?? undefined}>{m.notes || dash}</TableCell>
-                <TableCell className={CELL_CLASS}><Badge className={REVIEW_BADGE[m.review_status as ReviewStatus]}>{REVIEW_LABELS[m.review_status as ReviewStatus]}</Badge></TableCell>
+                <TableCell className={CELL_CLASS}><Badge className={REVIEW_BADGE[m.review_status]}>{REVIEW_LABELS[m.review_status]}</Badge></TableCell>
               </TableRow>;
             })}</TableBody>
           </Table></div>}

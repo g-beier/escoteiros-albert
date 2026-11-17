@@ -17,12 +17,9 @@ import { formatCents } from "@/lib/format";
 import { ActionDialog } from "./action-dialog";
 import { ConditionField, EntryFields, Field, LocationField, NotesField, SelectField } from "./fields";
 
-export type UnitRow = {
-  id: string; location_id: string; path: string; tag: string | null; legacy_code: string | null; description: string | null;
-  condition: Condition | null; unit_value_cents: number | null; acquired_on: string | null; origin: Origin;
-  supplier: string | null; invoice: string | null; notes: string | null;
-  written_off_at: string | null; write_off_reason: WriteOffReason | null;
-};
+import type { UnitRow } from "@/lib/inventory/model";
+
+export type { UnitRow };
 
 type Mode = "transfer" | "condition" | "writeOff" | "edit";
 

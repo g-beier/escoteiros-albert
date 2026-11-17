@@ -13,6 +13,7 @@ const dataLayer = (severity) => [severity, {
 
 // Áreas já convertidas: a regra é erro. O resto avisa até ser convertido (fase 3).
 const CONVERTED = [
+  "app/(inventario)/**", "components/inventory/**", "lib/inventory/**",
   "app/(gestao)/login/**", "app/(gestao)/auth/**", "app/(gestao)/usuarios/**", "proxy.ts", "lib/action.ts",
 ];
 

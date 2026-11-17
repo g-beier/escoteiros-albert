@@ -16,11 +16,9 @@ import { formatCents } from "@/lib/format";
 import { ActionDialog } from "./action-dialog";
 import { ConditionField, EntryFields, Field, LocationField, NotesField, QuantityField, SelectField } from "./fields";
 
-export type LotRow = {
-  id: string; location_id: string; path: string; quantity: number; condition: Condition | null;
-  unit_value_cents: number | null; expires_on: string | null; acquired_on: string | null; origin: Origin;
-  supplier: string | null; invoice: string | null; notes: string | null;
-};
+import type { LotRow } from "@/lib/inventory/model";
+
+export type { LotRow };
 
 type Mode = "transfer" | "condition" | "adjust" | "writeOff" | "edit";
 

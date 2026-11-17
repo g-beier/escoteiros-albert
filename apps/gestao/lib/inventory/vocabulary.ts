@@ -30,12 +30,6 @@ export const roleOptions = options(ROLE_LABELS);
 /** Formato da etiqueta: GEAS-<família, 3 dígitos>-<contagem, 4 dígitos>. */
 export const TAG_PATTERN = /^GEAS-\d{3}-\d{4}$/;
 
-/** Nome de uma relação do PostgREST, que pode vir como objeto ou lista. */
-export function relatedName(value: unknown): string | undefined {
-  const row = Array.isArray(value) ? value[0] : value;
-  return (row as { name?: string } | null | undefined)?.name;
-}
-
 /** Data (yyyy-mm-dd) no formato brasileiro, sem fuso. */
 export function dateBR(value: string | null | undefined) {
   if (!value) return "";

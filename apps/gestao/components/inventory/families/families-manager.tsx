@@ -14,7 +14,9 @@ import { cn } from "@geas/ui/lib/utils";
 import { saveFamily, setFamilyActive } from "@/app/(inventario)/inventario/configuracoes/familias/actions";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
 
-export type FamilyItem = { id: string; name: string; code: string | null; active: boolean; materials: number; tagged: number };
+import type { FamilyItem } from "@/lib/inventory/model";
+
+export type { FamilyItem };
 
 const initial: ActionResult = {};
 

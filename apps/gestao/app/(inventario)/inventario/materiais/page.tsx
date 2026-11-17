@@ -8,8 +8,11 @@ import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/se
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { cn } from "@geas/ui/lib/utils";
 import { AppHeader } from "@/components/inventory/app-header";
-import { fetchFamilyOptions } from "@/components/inventory/materials/data";
-import { fetchLocationPaths, rootOf, subtree, type LocationPath } from "@/lib/inventory/locations";
+import { rootOf, subtree, type LocationPath } from "@/lib/inventory/locations";
+import type { MaterialRow, StockRow } from "@/lib/inventory/model";
+import * as families from "@/lib/server/inventory/families";
+import * as locations from "@/lib/server/inventory/locations";
+import * as materialsData from "@/lib/server/inventory/materials";
 import { Expiry } from "@/components/inventory/materials/lots-table";
 import { MaterialFilters } from "@/components/inventory/materials/material-filters";
 import { SetupNeeded } from "@/components/shell/setup-needed";
@@ -18,11 +21,6 @@ import { EXPIRY_WARNING_DAYS, daysUntil } from "@/lib/inventory/vocabulary";
 import { formatCents } from "@/lib/format";
 import { pageSession } from "@/lib/server/session";
 
-type MaterialRow = {
-  id: string; name: string; consumable: boolean; minimum_quantity: number | null; active: boolean;
-  quantity: number; next_expiry: string | null; below_minimum: boolean;
-};
-type StockRow = { material_id: string; location_id: string; quantity: number; value_cents: number; next_expiry: string | null };
 type Line = StockRow & { material: MaterialRow };
 
 type Search = { q?: string; familia?: string; divisao?: string; todos?: string; alerta?: string; inativos?: string };
@@ -31,20 +29,15 @@ const byName = (a: Line, b: Line) => a.material.name.localeCompare(b.material.na
 
 export default async function Materials({ searchParams }: { searchParams: Promise<Search> }) {
   const params = await searchParams;
-  const { supabase, user, member } = await pageSession();
-  if (!member) return <SetupNeeded email={user.email ?? ""} />;
+  const { user, member } = await pageSession();
+  if (!member) return <SetupNeeded email={user.email} />;
+  const { db, groupId } = member;
 
-  let materialsQuery = supabase.from("inventory_material_rows")
-    .select("id, name, consumable, minimum_quantity, active, quantity, next_expiry, below_minimum")
-    .eq("group_id", member.groupId);
-  if (params.inativos !== "1") materialsQuery = materialsQuery.eq("active", true);
-  if (params.familia) materialsQuery = materialsQuery.eq("family_id", params.familia);
-  if (params.q?.trim()) materialsQuery = materialsQuery.ilike("name", `%${params.q.trim().replace(/[%_\\]/g, (c) => `\\${c}`)}%`);
-  const [{ data: materialData }, { data: stockData }, paths, families] = await Promise.all([
-    materialsQuery,
-    supabase.from("inventory_stock_by_location").select("material_id, location_id, quantity, value_cents, next_expiry").eq("group_id", member.groupId),
-    fetchLocationPaths(supabase, member.groupId),
-    fetchFamilyOptions(supabase, member.groupId),
+  const [materialData, stock, paths, familyOptions] = await Promise.all([
+    materialsData.list(db, groupId, { includeInactive: params.inativos === "1", familyId: params.familia, search: params.q }),
+    materialsData.stockByLocation(db, groupId),
+    locations.listPaths(db, groupId),
+    families.listOptions(db, groupId),
   ]);
 
   // Local macro (aba): a raiz da divisão pedida; sem divisão, a primeira raiz, ou "Todos" na busca.
@@ -56,8 +49,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
 
   // Material conta pelo total (mínimo e validade de todas as divisões), como no alerta do Início.
   const alerting = (m: MaterialRow) => m.below_minimum || (m.next_expiry !== null && daysUntil(m.next_expiry) <= EXPIRY_WARNING_DAYS);
-  const materials = new Map(((materialData ?? []) as MaterialRow[]).filter((m) => params.alerta !== "1" || alerting(m)).map((m) => [m.id, m]));
-  const stock = (stockData ?? []) as StockRow[];
+  const materials = new Map(materialData.filter((m) => params.alerta !== "1" || alerting(m)).map((m) => [m.id, m]));
   const byLocation = new Map<string, Line[]>();
   for (const row of stock) {
     const material = materials.get(row.material_id);
@@ -77,9 +69,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
 
   // Contagem do ano anterior (conferência / planilha), por material e divisão; a coluna só aparece se houver.
   const previousYear = Number(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).slice(0, 4)) - 1;
-  const { data: countData } = await supabase.from("inventory_counts").select("material_id, location_id, quantity")
-    .eq("group_id", member.groupId).eq("year", previousYear);
-  const previous = new Map((countData ?? []).map((row) => [`${row.material_id}|${row.location_id}`, row.quantity as number]));
+  const previous = await materialsData.countsOfYear(db, groupId, previousYear);
   const showPrevious = previous.size > 0;
   const columns = showPrevious ? 5 : 4;
 
@@ -97,13 +87,13 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   const heading = showAll ? "Todos os locais" : selected && selected.depth > 0 ? selected.path : root?.name ?? "Materiais";
 
   return <div className="shell">
-    <AppHeader current="/inventario/materiais" email={user.email ?? ""} role={member.inventory.role} isAdmin={member.isAdmin} />
+    <AppHeader current="/inventario/materiais" email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
     <PageBody width="narrow">
       <PageHeader title="Materiais" crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais" }]}
         description="Tudo o que o grupo tem, por local: um material em várias divisões aparece em cada uma, com a quantidade de lá."
         actions={member.inventory.canEdit && <Link href="/inventario/materiais/novo" className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}>
         <SectionTabs label="Locais" tabs={tabs} />
-        <MaterialFilters families={families} />
+        <MaterialFilters families={familyOptions} />
       </PageHeader>
       <SectionCard>
         <SectionHeader title={heading}

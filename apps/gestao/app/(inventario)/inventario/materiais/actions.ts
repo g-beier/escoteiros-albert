@@ -3,17 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
+import { InputError, runAction } from "@/lib/action";
+import type { EntryInput } from "@/lib/inventory/model";
 import type { Condition, Origin, Tracking, WriteOffReason } from "@/lib/inventory/vocabulary";
 import { parseMoneyToCents } from "@/lib/money";
+import * as materials from "@/lib/server/inventory/materials";
 import { inventoryEditorOrError } from "@/lib/server/session";
 
-// Todas as escritas passam pelas funções SQL da migration 032 (auditadas; o chefe fica pendente de revisão).
+// Validação dos formulários aqui; as escritas são as funções inventory_* (lib/server/inventory/materials.ts),
+// auditadas, e as do chefe ficam pendentes de revisão.
 
 const CONDITIONS: Condition[] = ["novo", "bom", "regular", "ruim", "manutencao", "inservivel"];
 const ORIGINS: Origin[] = ["compra", "doacao", "fabricacao", "nao_informada"];
 const REASONS: WriteOffReason[] = ["perda", "extravio", "descarte", "doacao", "consumo"];
-
-class InputError extends Error {}
 
 const text = (data: FormData, key: string) => String(data.get(key) ?? "").trim();
 const optional = (data: FormData, key: string) => text(data, key) || null;
@@ -23,6 +25,8 @@ const id = (data: FormData, key: string) => {
   return value;
 };
 const optionalId = (data: FormData, key: string) => (text(data, key) ? id(data, key) : null);
+function integer(data: FormData, key: string, label: string): number;
+function integer(data: FormData, key: string, label: string, required: false): number | null;
 function integer(data: FormData, key: string, label: string, required = true) {
   const value = text(data, key);
   if (!value) {
@@ -51,169 +55,130 @@ function oneOf<T extends string>(data: FormData, key: string, values: T[], fallb
   if (!values.includes(value as T)) throw new InputError("Opção inválida.");
   return value as T;
 }
+function reason(data: FormData) {
+  const value = oneOf(data, "reason", REASONS);
+  if (!value) throw new InputError("Escolha o motivo da baixa.");
+  return value;
+}
 
-/** Executa a ação para chefe/gestor/administrador; erros de validação e do banco viram mensagem. */
-async function run(formData: FormData, action: (rpc: (fn: string, args: Record<string, unknown>) => Promise<unknown>) => Promise<string | void>): Promise<ActionResult> {
-  const member = await inventoryEditorOrError();
-  if ("error" in member) return member;
-  try {
-    const rpc = async (fn: string, args: Record<string, unknown>) => {
-      const { data, error } = await member.supabase.rpc(fn, args);
-      if (error) throw new InputError(error.message);
-      return data;
-    };
-    const success = await action(rpc);
-    const materialId = text(formData, "materialId");
+const entry = (data: FormData): EntryInput => ({
+  unitValueCents: cents(data, "value"), acquiredOn: date(data, "acquiredOn"), origin: oneOf(data, "origin", ORIGINS, "nao_informada"),
+  supplier: optional(data, "supplier"), invoice: optional(data, "invoice"), notes: optional(data, "notes"),
+});
+
+/** Registra para chefe, gestor ou administrador e atualiza a lista, o material e o resumo. */
+function record(data: FormData, work: (db: Parameters<typeof materials.addLot>[0]) => Promise<string>) {
+  return runAction(inventoryEditorOrError, async ({ db }) => {
+    const message = await work(db);
+    const materialId = text(data, "materialId");
     revalidatePath("/inventario/materiais");
     if (materialId) revalidatePath(`/inventario/materiais/${materialId}`);
-    revalidatePath("/");
-    return { success: success || "Registrado." };
-  } catch (error) {
-    if (error instanceof InputError) return { error: error.message };
-    throw error;
-  }
+    revalidatePath("/inventario");
+    return message;
+  });
 }
 
 /** Cadastro e edição do material; ao salvar, volta para o detalhe (onde se lançam lotes ou peças). */
 export async function saveMaterial(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
-  const member = await inventoryEditorOrError();
-  if ("error" in member) return member;
-  let savedId: string;
-  try {
+  let savedId = "";
+  const result = await runAction(inventoryEditorOrError, async ({ db, groupId }) => {
     const tracking = oneOf<Tracking>(formData, "tracking", ["unit", "lot"]);
     if (!tracking) throw new InputError("Escolha se o material é controlado por peça ou por quantidade.");
-    const existing = optionalId(formData, "id");
-    const { data, error } = await member.supabase.rpc("inventory_save_material", {
-      p_group_id: member.groupId,
-      p_id: existing,
-      p_family_id: optionalId(formData, "familyId"),
-      p_name: text(formData, "name"),
-      p_tracking: tracking,
-      p_consumable: tracking === "lot" && formData.get("consumable") === "on",
-      p_minimum_quantity: integer(formData, "minimum", "o estoque mínimo", false),
-      p_description: optional(formData, "description"),
-      p_active: formData.get("active") !== "off",
+    savedId = await materials.save(db, groupId, {
+      id: optionalId(formData, "id"), familyId: optionalId(formData, "familyId"), name: text(formData, "name"), tracking,
+      consumable: tracking === "lot" && formData.get("consumable") === "on",
+      minimumQuantity: integer(formData, "minimum", "o estoque mínimo", false), description: optional(formData, "description"),
+      active: formData.get("active") !== "off",
     });
-    if (error) throw new InputError(error.message);
-    savedId = data as string;
     revalidatePath("/inventario/materiais");
     revalidatePath(`/inventario/materiais/${savedId}`);
-  } catch (error) {
-    if (error instanceof InputError) return { error: error.message };
-    throw error;
-  }
+  });
+  if (result.error) return result;
   redirect(`/inventario/materiais/${savedId}`);
 }
 
-const entryArgs = (formData: FormData) => ({
-  p_unit_value_cents: cents(formData, "value"),
-  p_acquired_on: date(formData, "acquiredOn"),
-  p_origin: oneOf(formData, "origin", ORIGINS, "nao_informada"),
-  p_supplier: optional(formData, "supplier"),
-  p_invoice: optional(formData, "invoice"),
-  p_notes: optional(formData, "notes"),
-});
-
 export async function addLot(_previous: ActionResult, formData: FormData) {
-  return run(formData, async (rpc) => {
-    await rpc("inventory_add_lot", {
-      p_material_id: id(formData, "materialId"),
-      p_location_id: optionalId(formData, "locationId"),
-      p_quantity: integer(formData, "quantity", "a quantidade"),
-      p_condition: oneOf(formData, "condition", CONDITIONS),
-      p_expires_on: date(formData, "expiresOn"),
-      ...entryArgs(formData),
+  return record(formData, async (db) => {
+    await materials.addLot(db, {
+      materialId: id(formData, "materialId"), locationId: optionalId(formData, "locationId"), quantity: integer(formData, "quantity", "a quantidade"),
+      condition: oneOf(formData, "condition", CONDITIONS), expiresOn: date(formData, "expiresOn"), ...entry(formData),
     });
     return "Lote adicionado.";
   });
 }
 
 export async function addUnit(_previous: ActionResult, formData: FormData) {
-  return run(formData, async (rpc) => {
-    await rpc("inventory_add_unit", {
-      p_material_id: id(formData, "materialId"),
-      p_location_id: optionalId(formData, "locationId"),
-      p_tag: optional(formData, "tag"),
-      p_legacy_code: optional(formData, "legacyCode"),
-      p_description: optional(formData, "description"),
-      p_condition: oneOf(formData, "condition", CONDITIONS),
-      ...entryArgs(formData),
+  return record(formData, async (db) => {
+    await materials.addUnit(db, {
+      materialId: id(formData, "materialId"), locationId: optionalId(formData, "locationId"), tag: optional(formData, "tag"),
+      legacyCode: optional(formData, "legacyCode"), description: optional(formData, "description"), condition: oneOf(formData, "condition", CONDITIONS),
+      ...entry(formData),
     });
     return "Peça adicionada.";
   });
 }
 
 export async function transferLot(_previous: ActionResult, formData: FormData) {
-  return run(formData, async (rpc) => {
-    await rpc("inventory_transfer_lot", {
-      p_lot_id: id(formData, "lotId"), p_to_location_id: optionalId(formData, "locationId"),
-      p_quantity: integer(formData, "quantity", "a quantidade"), p_notes: optional(formData, "notes"),
-    });
+  return record(formData, async (db) => {
+    await materials.transferLot(db, id(formData, "lotId"), optionalId(formData, "locationId"), integer(formData, "quantity", "a quantidade"), optional(formData, "notes"));
     return "Lote transferido.";
   });
 }
 
 export async function transferUnit(_previous: ActionResult, formData: FormData) {
-  return run(formData, async (rpc) => {
-    await rpc("inventory_transfer_unit", { p_unit_id: id(formData, "unitId"), p_to_location_id: optionalId(formData, "locationId"), p_notes: optional(formData, "notes") });
+  return record(formData, async (db) => {
+    await materials.transferUnit(db, id(formData, "unitId"), optionalId(formData, "locationId"), optional(formData, "notes"));
     return "Peça transferida.";
   });
 }
 
 export async function setLotCondition(_previous: ActionResult, formData: FormData) {
-  return run(formData, async (rpc) => {
-    await rpc("inventory_set_lot_condition", {
-      p_lot_id: id(formData, "lotId"), p_condition: oneOf(formData, "condition", CONDITIONS),
-      p_quantity: integer(formData, "quantity", "a quantidade"), p_notes: optional(formData, "notes"),
-    });
+  return record(formData, async (db) => {
+    await materials.setLotCondition(db, id(formData, "lotId"), oneOf(formData, "condition", CONDITIONS), integer(formData, "quantity", "a quantidade"), optional(formData, "notes"));
     return "Condição registrada.";
   });
 }
 
 export async function setUnitCondition(_previous: ActionResult, formData: FormData) {
-  return run(formData, async (rpc) => {
-    await rpc("inventory_set_unit_condition", { p_unit_id: id(formData, "unitId"), p_condition: oneOf(formData, "condition", CONDITIONS), p_notes: optional(formData, "notes") });
+  return record(formData, async (db) => {
+    await materials.setUnitCondition(db, id(formData, "unitId"), oneOf(formData, "condition", CONDITIONS), optional(formData, "notes"));
     return "Condição registrada.";
   });
 }
 
 export async function adjustLot(_previous: ActionResult, formData: FormData) {
-  return run(formData, async (rpc) => {
-    await rpc("inventory_adjust_lot", { p_lot_id: id(formData, "lotId"), p_quantity: integer(formData, "quantity", "a quantidade contada"), p_notes: optional(formData, "notes") });
+  return record(formData, async (db) => {
+    await materials.adjustLot(db, id(formData, "lotId"), integer(formData, "quantity", "a quantidade contada"), optional(formData, "notes"));
     return "Contagem ajustada.";
   });
 }
 
 export async function writeOffLot(_previous: ActionResult, formData: FormData) {
-  return run(formData, async (rpc) => {
-    const reason = oneOf(formData, "reason", REASONS);
-    if (!reason) throw new InputError("Escolha o motivo da baixa.");
-    await rpc("inventory_write_off_lot", { p_lot_id: id(formData, "lotId"), p_quantity: integer(formData, "quantity", "a quantidade"), p_reason: reason, p_notes: optional(formData, "notes") });
+  return record(formData, async (db) => {
+    await materials.writeOffLot(db, id(formData, "lotId"), integer(formData, "quantity", "a quantidade"), reason(formData), optional(formData, "notes"));
     return "Baixa registrada.";
   });
 }
 
 export async function writeOffUnit(_previous: ActionResult, formData: FormData) {
-  return run(formData, async (rpc) => {
-    const reason = oneOf(formData, "reason", REASONS);
-    if (!reason) throw new InputError("Escolha o motivo da baixa.");
-    await rpc("inventory_write_off_unit", { p_unit_id: id(formData, "unitId"), p_reason: reason, p_notes: optional(formData, "notes") });
+  return record(formData, async (db) => {
+    await materials.writeOffUnit(db, id(formData, "unitId"), reason(formData), optional(formData, "notes"));
     return "Baixa registrada.";
   });
 }
 
 export async function updateLot(_previous: ActionResult, formData: FormData) {
-  return run(formData, async (rpc) => {
-    await rpc("inventory_update_lot", { p_lot_id: id(formData, "lotId"), p_expires_on: date(formData, "expiresOn"), ...entryArgs(formData) });
+  return record(formData, async (db) => {
+    await materials.updateLot(db, { lotId: id(formData, "lotId"), expiresOn: date(formData, "expiresOn"), ...entry(formData) });
     return "Dados do lote salvos.";
   });
 }
 
 export async function updateUnit(_previous: ActionResult, formData: FormData) {
-  return run(formData, async (rpc) => {
-    await rpc("inventory_update_unit", {
-      p_unit_id: id(formData, "unitId"), p_tag: optional(formData, "tag"), p_legacy_code: optional(formData, "legacyCode"),
-      p_description: optional(formData, "description"), ...entryArgs(formData),
+  return record(formData, async (db) => {
+    await materials.updateUnit(db, {
+      unitId: id(formData, "unitId"), tag: optional(formData, "tag"), legacyCode: optional(formData, "legacyCode"),
+      description: optional(formData, "description"), ...entry(formData),
     });
     return "Dados da peça salvos.";
   });

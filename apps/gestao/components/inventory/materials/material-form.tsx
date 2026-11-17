@@ -12,10 +12,9 @@ import { saveMaterial } from "@/app/(inventario)/inventario/materiais/actions";
 import { trackingOptions, type Tracking } from "@/lib/inventory/vocabulary";
 import { Field } from "./fields";
 
-export type MaterialDefaults = {
-  id: string; name: string; family_id: string | null; tracking: Tracking; consumable: boolean;
-  minimum_quantity: number | null; description: string | null; active: boolean;
-};
+import type { MaterialDefaults } from "@/lib/inventory/model";
+
+export type { MaterialDefaults };
 
 /** Cadastro e edição do material. O controle (peça/quantidade) só muda enquanto não há estoque. */
 export function MaterialForm({ families, material, hasStock = false }: { families: Option[]; material?: MaterialDefaults; hasStock?: boolean }) {

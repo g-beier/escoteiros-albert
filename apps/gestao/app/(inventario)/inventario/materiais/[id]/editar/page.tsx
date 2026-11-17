@@ -2,34 +2,32 @@ import { notFound, redirect } from "next/navigation";
 import { PageBody, PageHeader } from "@geas/ui";
 import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { AppHeader } from "@/components/inventory/app-header";
-import { fetchFamilyOptions } from "@/components/inventory/materials/data";
-import { MaterialForm, type MaterialDefaults } from "@/components/inventory/materials/material-form";
+import { MaterialForm } from "@/components/inventory/materials/material-form";
 import { ReviewNotice } from "@/components/inventory/materials/review-notice";
 import { SetupNeeded } from "@/components/shell/setup-needed";
+import * as families from "@/lib/server/inventory/families";
+import * as materials from "@/lib/server/inventory/materials";
 import { pageSession } from "@/lib/server/session";
 
 export default async function EditMaterial({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { supabase, user, member } = await pageSession();
-  if (!member) return <SetupNeeded email={user.email ?? ""} />;
+  const { user, member } = await pageSession();
+  if (!member) return <SetupNeeded email={user.email} />;
   if (!member.inventory.canEdit) redirect(`/inventario/materiais/${id}`);
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const [{ data: material }, { count: lots }, { count: units }] = await Promise.all([
-    supabase.from("inventory_materials").select("id, name, family_id, tracking, consumable, minimum_quantity, description, active").eq("id", id).eq("group_id", member.groupId).maybeSingle(),
-    supabase.from("inventory_lots").select("id", { count: "exact", head: true }).eq("material_id", id),
-    supabase.from("inventory_units").select("id", { count: "exact", head: true }).eq("material_id", id),
-  ]);
-  if (!material) notFound();
-  const families = await fetchFamilyOptions(supabase, member.groupId, material.family_id as string | null);
+  const found = await materials.getForEdit(member.db, member.groupId, id);
+  if (!found) notFound();
+  const { material, hasStock } = found;
+  const familyOptions = await families.listOptions(member.db, member.groupId, material.family_id);
   return <div className="shell">
-    <AppHeader current={`/inventario/materiais/${id}`} email={user.email ?? ""} role={member.inventory.role} isAdmin={member.isAdmin} />
+    <AppHeader current={`/inventario/materiais/${id}`} email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
     <PageBody width="narrow">
       <PageHeader title={`Editar ${material.name}`}
-        crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais", href: "/inventario/materiais" }, { label: material.name as string, href: `/inventario/materiais/${id}` }, { label: "Editar" }]} />
+        crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais", href: "/inventario/materiais" }, { label: material.name, href: `/inventario/materiais/${id}` }, { label: "Editar" }]} />
       {!member.inventory.canManage && <ReviewNotice />}
       <SectionCard>
         <SectionHeader title="Material" />
-        <div className="p-4"><MaterialForm families={families} material={material as MaterialDefaults} hasStock={(lots ?? 0) + (units ?? 0) > 0} /></div>
+        <div className="p-4"><MaterialForm families={familyOptions} material={material} hasStock={hasStock} /></div>
       </SectionCard>
     </PageBody>
   </div>;

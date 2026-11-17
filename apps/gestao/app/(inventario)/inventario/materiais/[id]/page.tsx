@@ -8,31 +8,22 @@ import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/se
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { cn } from "@geas/ui/lib/utils";
 import { AppHeader } from "@/components/inventory/app-header";
-import { fetchLocationPaths, locationOptions } from "@/lib/inventory/locations";
-import { AddLotButton, Expiry, LotsTable, type LotRow } from "@/components/inventory/materials/lots-table";
+import { locationOptions } from "@/lib/inventory/locations";
+import type { Lot, Movement, Unit } from "@/lib/inventory/model";
+import * as locationsData from "@/lib/server/inventory/locations";
+import * as materials from "@/lib/server/inventory/materials";
+import * as movementsData from "@/lib/server/inventory/movements";
+import { AddLotButton, Expiry, LotsTable } from "@/components/inventory/materials/lots-table";
 import { ReviewNotice } from "@/components/inventory/materials/review-notice";
-import { AddUnitButton, UnitsTable, type UnitRow } from "@/components/inventory/materials/units-table";
+import { AddUnitButton, UnitsTable } from "@/components/inventory/materials/units-table";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
 import {
   CONDITION_LABELS, MOVEMENT_LABELS, REVIEW_LABELS, TRACKING_LABELS, WRITE_OFF_LABELS, timestampBR,
-  type Condition, type MovementKind, type ReviewStatus, type Tracking, type WriteOffReason,
+  type Condition, type ReviewStatus,
 } from "@/lib/inventory/vocabulary";
 import { formatCents } from "@/lib/format";
 import { pageSession } from "@/lib/server/session";
-
-type Material = {
-  id: string; name: string; tracking: Tracking; consumable: boolean; minimum_quantity: number | null; description: string | null; active: boolean;
-  family_id: string | null; family_name: string | null; family_code: string | null;
-  quantity: number; estimated_value_cents: number; next_expiry: string | null; below_minimum: boolean;
-};
-
-type Movement = {
-  id: number; kind: MovementKind; quantity: number | null; from_location_id: string | null; to_location_id: string | null;
-  from_condition: Condition | null; to_condition: Condition | null; write_off_reason: WriteOffReason | null;
-  notes: string | null; details: Record<string, unknown>; review_status: ReviewStatus; created_by: string | null; created_at: string;
-  lot_id: string | null; unit_id: string | null;
-};
 
 const REVIEW_TONES: Record<ReviewStatus, string> = {
   revisado: "text-muted-foreground",
@@ -46,45 +37,34 @@ const EDIT_ACTIONS: Record<string, string> = {
 
 export default async function MaterialDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { supabase, user, member } = await pageSession();
-  if (!member) return <SetupNeeded email={user.email ?? ""} />;
+  const { user, member } = await pageSession();
+  if (!member) return <SetupNeeded email={user.email} />;
+  const { db, groupId } = member;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
 
-  const { data } = await supabase.from("inventory_material_rows")
-    .select("id, name, tracking, consumable, minimum_quantity, description, active, family_id, family_name, family_code, quantity, estimated_value_cents, next_expiry, below_minimum")
-    .eq("id", id).eq("group_id", member.groupId).maybeSingle();
-  if (!data) notFound();
-  const material = data as Material;
+  const material = await materials.get(db, groupId, id);
+  if (!material) notFound();
   const isLot = material.tracking === "lot";
 
-  const [paths, { data: lotData }, { data: unitData }, { data: movementData }, nextTag] = await Promise.all([
-    fetchLocationPaths(supabase, member.groupId),
-    isLot
-      ? supabase.from("inventory_lots").select("id, location_id, quantity, condition, unit_value_cents, expires_on, acquired_on, origin, supplier, invoice, notes").eq("material_id", id).gt("quantity", 0).order("created_at")
-      : Promise.resolve({ data: [] }),
-    isLot
-      ? Promise.resolve({ data: [] })
-      : supabase.from("inventory_units").select("id, location_id, tag, legacy_code, description, condition, unit_value_cents, acquired_on, origin, supplier, invoice, notes, written_off_at, write_off_reason").eq("material_id", id).order("tag", { nullsFirst: false }).order("created_at"),
-    supabase.from("inventory_movements")
-      .select("id, kind, quantity, from_location_id, to_location_id, from_condition, to_condition, write_off_reason, notes, details, review_status, created_by, created_at, lot_id, unit_id")
-      .eq("material_id", id).order("created_at", { ascending: false }).limit(100),
-    !isLot && material.family_id && member.inventory.canEdit
-      ? supabase.rpc("inventory_next_tag", { p_family_id: material.family_id }).then(({ data: tag }) => (tag as string | null) ?? null)
-      : Promise.resolve(null),
+  const [paths, lotData, unitData, movements, nextTag] = await Promise.all([
+    locationsData.listPaths(db, groupId),
+    isLot ? materials.lots(db, id) : Promise.resolve([] as Lot[]),
+    isLot ? Promise.resolve([] as Unit[]) : materials.units(db, id),
+    movementsData.forMaterial(db, id, 100),
+    !isLot && material.family_id && member.inventory.canEdit ? materials.nextTag(db, material.family_id) : Promise.resolve(null),
   ]);
   const pathOf = new Map(paths.map((row) => [row.id, row.path]));
   const withPath = <T extends { location_id: string }>(rows: T[]) => rows
     .map((row) => ({ ...row, path: pathOf.get(row.location_id) ?? "—" }))
     .sort((a, b) => a.path.localeCompare(b.path, "pt-BR"));
-  const lots = withPath((lotData ?? []) as Omit<LotRow, "path">[]);
-  const units = withPath((unitData ?? []) as Omit<UnitRow, "path">[]);
-  const movements = (movementData ?? []) as Movement[];
+  const lots = withPath(lotData);
+  const units = withPath(unitData);
   const unitLabel = new Map(units.map((row) => [row.id, row.tag ?? row.legacy_code ?? "peça"]));
   const locations = locationOptions(paths);
   const pending = movements.filter((row) => row.review_status !== "revisado").length;
 
   return <div className="shell">
-    <AppHeader current={`/inventario/materiais/${id}`} email={user.email ?? ""} role={member.inventory.role} isAdmin={member.isAdmin} />
+    <AppHeader current={`/inventario/materiais/${id}`} email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
     <PageBody>
       <PageHeader title={material.name} crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais", href: "/inventario/materiais" }, { label: material.name }]}
         description={material.description ?? undefined}

@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Option } from "@geas/ui/components/option-controls";
 
 // Divisões em árvore (inventory_location_paths), na ordem escolhida pelo gestor (034).
@@ -15,12 +14,6 @@ export function treeOrder(a: Pick<LocationPath, "sort_key" | "path">, b: Pick<Lo
     if (a.sort_key[i] !== b.sort_key[i]) return a.sort_key[i] - b.sort_key[i];
   }
   return a.sort_key.length - b.sort_key.length || a.path.localeCompare(b.path, "pt-BR");
-}
-
-/** Divisões com o caminho completo ("Cozinha e despensa › Estante de canecas › 2º nível"), na ordem da árvore. */
-export async function fetchLocationPaths(supabase: SupabaseClient, groupId: string): Promise<LocationPath[]> {
-  const { data } = await supabase.from("inventory_location_paths").select("id, parent_id, name, path, depth, active, ancestors, sort_key").eq("group_id", groupId);
-  return ((data ?? []) as LocationPath[]).sort(treeOrder);
 }
 
 /** Divisão raiz (local macro: Diretoria, Alcateia, Cozinha…) de uma divisão. */

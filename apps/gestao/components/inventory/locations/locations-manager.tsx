@@ -19,20 +19,9 @@ import { placeLocation, saveLocation, setLocationActive } from "@/app/(inventari
 import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
 import { placeError, placeLocal } from "@/lib/inventory/locations";
 
-export type LocationItem = {
-  id: string;
-  parentId: string | null;
-  name: string;
-  description: string | null;
-  path: string;
-  depth: number;
-  ancestors: string[];
-  active: boolean;
-  /** Lotes com saldo e peças ativas nesta divisão. */
-  own: number;
-  /** O mesmo, somando as subdivisões. */
-  total: number;
-};
+import type { LocationItem } from "@/lib/inventory/model";
+
+export type { LocationItem };
 
 const initial: ActionResult = {};
 type Editing = { location: LocationItem | null; parentId: string | null };

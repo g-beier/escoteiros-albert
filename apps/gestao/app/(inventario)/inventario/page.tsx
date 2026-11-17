@@ -6,8 +6,11 @@ import { ListCard, StatCard } from "@geas/ui/components/stat-card";
 import { cn } from "@geas/ui/lib/utils";
 import { AppHeader } from "@/components/inventory/app-header";
 import { SetupNeeded } from "@/components/shell/setup-needed";
-import { EXPIRY_WARNING_DAYS, MOVEMENT_LABELS, REVIEW_LABELS, dateBR, daysUntil, relatedName, timestampBR, type MovementKind, type ReviewStatus } from "@/lib/inventory/vocabulary";
+import { EXPIRY_WARNING_DAYS, MOVEMENT_LABELS, REVIEW_LABELS, dateBR, daysUntil, timestampBR } from "@/lib/inventory/vocabulary";
 import { formatCents } from "@/lib/format";
+import * as locations from "@/lib/server/inventory/locations";
+import * as materialsData from "@/lib/server/inventory/materials";
+import * as movementsData from "@/lib/server/inventory/movements";
 import { pageSession } from "@/lib/server/session";
 
 const SHOWN = 8;
@@ -28,32 +31,24 @@ function expiryLabel(date: string) {
 }
 
 export default async function Dashboard() {
-  const { supabase, user, member } = await pageSession();
-  if (!member) return <SetupNeeded email={user.email ?? ""} />;
-  const groupId = member.groupId;
-  const [materials, expiring, paths, pending, recent] = await Promise.all([
-    supabase.from("inventory_material_rows").select("id, name, quantity, minimum_quantity, estimated_value_cents, below_minimum").eq("group_id", groupId).eq("active", true).order("name"),
-    supabase.from("inventory_lots").select("id, quantity, expires_on, location_id, material_id, inventory_materials(name)").eq("group_id", groupId)
-      .gt("quantity", 0).not("expires_on", "is", null).lte("expires_on", dayInSaoPaulo(EXPIRY_WARNING_DAYS)).order("expires_on").limit(100),
-    supabase.from("inventory_location_paths").select("id, path").eq("group_id", groupId),
-    member.inventory.canManage
-      ? supabase.from("inventory_movements").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("review_status", "pendente")
-      : Promise.resolve({ count: 0 }),
-    supabase.from("inventory_movements").select("id, kind, quantity, created_at, review_status, material_id, from_location_id, to_location_id, inventory_materials(name)").eq("group_id", groupId)
-      .order("created_at", { ascending: false }).limit(SHOWN),
+  const { user, member } = await pageSession();
+  if (!member) return <SetupNeeded email={user.email} />;
+  const { db, groupId } = member;
+  const [rows, lots, paths, pendingCount, movements] = await Promise.all([
+    materialsData.summary(db, groupId),
+    materialsData.expiringLots(db, groupId, dayInSaoPaulo(EXPIRY_WARNING_DAYS)),
+    locations.listPaths(db, groupId),
+    member.inventory.canManage ? movementsData.pendingCount(db, groupId) : Promise.resolve(0),
+    movementsData.list(db, groupId, {}, SHOWN),
   ]);
-  const rows = materials.data ?? [];
-  const pathOf = new Map((paths.data ?? []).map((p) => [p.id as string, p.path as string]));
+  const pathOf = new Map(paths.map((p) => [p.id, p.path]));
   const low = rows.filter((m) => m.below_minimum);
-  const lots = expiring.data ?? [];
-  const expired = lots.filter((lot) => daysUntil(lot.expires_on as string) < 0).length;
+  const expired = lots.filter((lot) => daysUntil(lot.expires_on) < 0).length;
   const expiringSoon = lots.length - expired;
   const totalValue = rows.reduce((sum, m) => sum + Number(m.estimated_value_cents ?? 0), 0);
-  const pendingCount = pending.count ?? 0;
-  const movements = recent.data ?? [];
 
   return <div className="shell">
-    <AppHeader current="/inventario" email={user.email ?? ""} role={member.inventory.role} isAdmin={member.isAdmin} />
+    <AppHeader current="/inventario" email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
     <PageBody>
       <PageHeader title="Resumo do inventário" hideTitle actions={<>
         <Link href="/inventario/materiais" className={buttonVariants({ variant: "outline", size: "lg" })}>Ver materiais <IconArrowRight data-icon="inline-end" /></Link>
@@ -75,14 +70,14 @@ export default async function Dashboard() {
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <ListCard title="Validade" titleId="expiry-title" empty={`Nenhum lote vencido ou vencendo nos próximos ${EXPIRY_WARNING_DAYS} dias.`}>
           {lots.length > 0 && <ul className="m-0 list-none p-0">{lots.slice(0, SHOWN).map((lot) => {
-            const days = daysUntil(lot.expires_on as string);
+            const days = daysUntil(lot.expires_on);
             return <li key={lot.id} className="border-t first:border-t-0">
               <Link href={`/inventario/materiais/${lot.material_id}`} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-muted">
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate">{relatedName(lot.inventory_materials)}</span>
-                  <span className="block truncate text-muted-foreground">{pathOf.get(lot.location_id as string)} · {lot.quantity} un.</span>
+                  <span className="block truncate">{lot.material_name}</span>
+                  <span className="block truncate text-muted-foreground">{pathOf.get(lot.location_id)} · {lot.quantity} un.</span>
                 </span>
-                <span className={cn("num shrink-0 rounded-full px-2 py-0.5 font-semibold", days < 0 ? "bg-destructive/10 text-destructive" : "bg-[#f5eed1] text-[#725d0d]")}>{expiryLabel(lot.expires_on as string)}</span>
+                <span className={cn("num shrink-0 rounded-full px-2 py-0.5 font-semibold", days < 0 ? "bg-destructive/10 text-destructive" : "bg-[#f5eed1] text-[#725d0d]")}>{expiryLabel(lot.expires_on)}</span>
               </Link>
             </li>;
           })}
@@ -103,18 +98,18 @@ export default async function Dashboard() {
 
         <ListCard title="Movimentações recentes" titleId="movements-title" href="/inventario/movimentacoes" empty="Nenhuma movimentação registrada." className="lg:max-xl:col-span-2">
           {movements.length > 0 && <ul className="m-0 list-none p-0">{movements.map((movement) => {
-            const where = pathOf.get((movement.to_location_id ?? movement.from_location_id) as string);
+            const where = pathOf.get(movement.to_location_id ?? movement.from_location_id ?? "");
             return <li key={movement.id} className="border-t first:border-t-0">
             <Link href={`/inventario/materiais/${movement.material_id}`} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-muted">
               <span className="min-w-0 flex-1">
-                <span className="block truncate">{relatedName(movement.inventory_materials)}</span>
+                <span className="block truncate">{movement.material_name}</span>
                 <span className="block truncate text-muted-foreground">
-                  {[MOVEMENT_LABELS[movement.kind as MovementKind], movement.quantity != null ? `${movement.quantity} un.` : null, where].filter(Boolean).join(" · ")}
+                  {[MOVEMENT_LABELS[movement.kind], movement.quantity != null ? `${movement.quantity} un.` : null, where].filter(Boolean).join(" · ")}
                 </span>
               </span>
               {movement.review_status !== "revisado" && <span className="shrink-0 rounded-full bg-[#f5eed1] px-2 py-0.5 text-[11px] font-semibold text-[#725d0d]"
-                title={REVIEW_LABELS[movement.review_status as ReviewStatus]}>{movement.review_status === "pendente" ? "Pendente" : "Para revisar"}</span>}
-              <span className="num shrink-0 text-muted-foreground">{timestampBR(movement.created_at as string)}</span>
+                title={REVIEW_LABELS[movement.review_status]}>{movement.review_status === "pendente" ? "Pendente" : "Para revisar"}</span>}
+              <span className="num shrink-0 text-muted-foreground">{timestampBR(movement.created_at)}</span>
             </Link>
           </li>; })}</ul>}
         </ListCard>
