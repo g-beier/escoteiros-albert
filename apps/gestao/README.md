@@ -1,6 +1,6 @@
 # GEAS Gestão
 
-App interno do grupo com os módulos **Financeiro** (`/financeiro/...`, descrito abaixo) e **Inventário** (`/inventario/...`, em migração de `apps/inventario`; ver `../../docs/consolidacao-gestao.md`). Início, login e Usuários ficam na raiz.
+App interno do grupo com os módulos **Financeiro** (`/financeiro/...`, descrito abaixo) e **Inventário** (`/inventario/...`, modelo em [`docs/inventario/modelo.md`](docs/inventario/modelo.md)). Acesso a dados só por `lib/server/` (ver o CLAUDE.md da raiz e `../../docs/consolidacao-gestao.md`). Início, login e Usuários ficam na raiz.
 
 ## Financeiro
 

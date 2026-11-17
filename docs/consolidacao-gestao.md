@@ -298,6 +298,35 @@ Inclui a base da camada, a sessão, o login e os usuários, que os dois módulos
 Pronto quando: nenhum `@supabase` aparece nos caminhos do inventário e o E2E do inventário está
 verde.
 
+**Concluída em 2026-11-17** no branch `gestao/fase-2`:
+
+- **Verificação:** typecheck (todos os workspaces), vitest (271), E2E (29, com 4 novos do inventário:
+  gestor, peça com etiqueta, chefe com movimento pendente, consulta) e `next build` verdes. Lint sem
+  erros; os 16 avisos restantes são do financeiro, que é a fase 3.
+- **`apps/inventario` removido.** A tela Usuários é só `/usuarios`. `@geas/ui` não tem mais código de
+  banco nem depende de `@supabase/supabase-js`.
+- **CI só manual** (`workflow_dispatch`) enquanto durar a consolidação.
+- **Ficaram fora do Git, em `apps/inventario/`:** `.env.local`, `.next` e `node_modules`. Podem ser
+  apagados à mão.
+
+**Retrospectiva** (ajustes ao padrão da seção 4, já aplicados):
+
+- **`rpc(db, fn, args)` tipado** pelos tipos gerados (`npm run db:types`). Pega erro de nome de
+  parâmetro em tempo de compilação. O gerador não marca parâmetro anulável, então o `rpc()` aceita
+  `null` em todos.
+- **Views geradas com colunas anuláveis.** As leituras convertem para os tipos de domínio de
+  `lib/inventory/model.ts`, que são os que as telas usam.
+- **`unwrap`/`rowsOf` tipam pela resposta inteira do PostgREST**, que é uma união de sucesso e erro.
+- **Leituras que falham lançam `DataError`.** Antes, a tela mostrava lista vazia em silêncio. Cada
+  módulo ganha um `error.tsx` (o inventário já tem).
+- **`SessionUser { id, email }`** no lugar do `User` do Supabase. As telas só usavam esses dois campos.
+- **A regra de ESLint funciona com os grupos de rota** (`app/(inventario)/**`): foi testada e dá erro.
+  A lista `CONVERTED` em `eslint.config.mjs` cresce a cada área convertida.
+- **Validação continua nas actions.** As funções de dados recebem entrada já tipada. É o que permite
+  reutilizá-las em scripts na fase 3.5.
+- **Dinheiro:** `parseMoneyToCents` agora é um só (milhar, `R$`, `allowNegative`). O bug achado na fase 0
+  está corrigido e o teste de contas voltou a usar `1.234,56`.
+
 ### Fase 3: financeiro, área por área (≈6–9 dias)
 
 A ordem segue as dependências: primeiro quem é lido por todos, por último quem agrega tudo.

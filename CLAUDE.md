@@ -7,24 +7,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm workspaces (`apps/*`, `packages/*`) with a single root `package-lock.json`. Always run `npm install` from the root, never inside an app.
 
 - `apps/institucional` (`@geas/institucional`) — public static site, Astro 6 + Tailwind CSS v4, `escoteirosalbert.com.br`.
-- `apps/gestao` (`@geas/gestao`) — internal app "Gestão", Next.js (App Router, Server Actions) + Supabase, with one module per route prefix: Financeiro (`/financeiro/...`) and, from phase 2, Inventário (`/inventario/...`). Needs a Node server; cannot be deployed as static files. Consolidation plan and phases: `docs/consolidacao-gestao.md`.
-- `apps/inventario` (`@geas/inventario`) — inventory app (items, locations, movements), Next.js + the same Supabase project (tables `inventory_*`, migration in `apps/gestao/supabase/migrations/`). Port 3002. Being moved into `apps/gestao` (phase 2); don't build new features here.
-- `packages/ui` (`@geas/ui`) — shared UI of the internal apps (financeiro, inventario), consumed as TS source (no build step).
+- `apps/gestao` (`@geas/gestao`) — internal app "Gestão", Next.js (App Router, Server Actions) + Supabase, with one module per route prefix: Financeiro (`/financeiro/...`) and Inventário (`/inventario/...`). Needs a Node server; cannot be deployed as static files. Consolidation plan and phases: `docs/consolidacao-gestao.md`.
+- `packages/ui` (`@geas/ui`) — shared UI of the internal app, consumed as TS source (no build step).
 
 ## Commands (from root)
 
 ```bash
-npm run dev                 # all dev servers in one terminal (concurrently); needs infra:start for financeiro/inventario
+npm run dev                 # gestao + site in one terminal (concurrently); gestao needs infra:start
 npm run dev:institucional   # Astro dev server at localhost:4321
 npm run dev:gestao          # Next dev server at localhost:3000
-npm run dev:inventario      # Next dev server at localhost:3002
 npm run build               # build all apps
 npm run lint                # lint all apps
 npm test                    # vitest (gestao)
 npm run test:db             # pgTAP + SQL scripts (supabase test db, local Supabase)
-npm run test:e2e            # Playwright, desktop Chromium, own next dev on :3210
+npm run test:e2e            # Playwright, desktop Chromium, own next dev on :3210 (E2E_PORT=3000 reuses a running dev server)
 npm run typecheck
 npm run infra:start         # local Supabase (Docker) + writes apps/gestao/.env.local
+npm run db:types --workspace=@geas/gestao   # regenerate lib/server/supabase/database.types.ts after a migration
 ```
 
 Per app: `npm run <script> --workspace=@geas/<app>`.
@@ -42,9 +41,10 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 
 ## gestao
 
-- Layout: `app/(gestao)` (Início `/`, `/login`, `/auth`, `/usuarios`) and one route group per module (`app/(financeiro)/financeiro/...`), each with its own root layout (`RootHtml` in `components/shell/root-layout.tsx`) that sets `<html data-app>`; crossing modules is a full page load. Unknown URLs: `app/global-not-found.tsx`. Pre-consolidation finance URLs (`/lancamentos/...` etc.) redirect in `next.config.ts`.
-- Code per module: pure domain in `lib/finance/` (later `lib/inventory/`), components in `components/finance/`; shared at the root (`lib/money.ts`, `lib/format.ts`, `lib/session.ts`, `lib/auth.ts`, `components/shell/`).
-- Session: `lib/session.ts` is the only file that reads `memberships`. `Member` has `isAdmin`, `finance { role, canEdit }` and `inventory { role, canEdit, canManage }`; guards `pageSession`, `pageMember`, `memberOrError`, `financeEditorOrError`, `requireFinanceEditor`, `requireAdmin`.
+- Layout: `app/(gestao)` (Início `/`, `/login`, `/auth`, `/usuarios`) and one route group per module (`app/(financeiro)/financeiro/...`, `app/(inventario)/inventario/...`), each with its own root layout (`RootHtml` in `components/shell/root-layout.tsx`) that sets `<html data-app>`; crossing modules is a full page load. Unknown URLs: `app/global-not-found.tsx`. Pre-consolidation finance URLs (`/lancamentos/...` etc.) redirect in `next.config.ts`.
+- Code per module: pure domain in `lib/finance/` and `lib/inventory/`, components in `components/finance/` and `components/inventory/`; shared at the root (`lib/money.ts` (`parseMoneyToCents` reads `1.234,56`, `R$`; `allowNegative`), `lib/format.ts` (`money` takes reais, `formatCents` cents), `lib/auth.ts`, `lib/action.ts`, `components/shell/`).
+- **Data layer (`lib/server/`)**: the only code that talks to the database. Only `lib/server/supabase/**` imports `@supabase/*` (ESLint `no-restricted-imports`: error in converted paths, listed in `eslint.config.mjs` `CONVERTED`; warning in finance until phase 3). Screens and actions call use-case functions in `lib/server/<module>/*.ts` (`lib/server/inventory/{locations,families,materials,movements}.ts`, `lib/server/users.ts`) with `member.db` (opaque `Db`, RLS as the user); never build queries in pages. Data modules take typed input, return domain types (`lib/inventory/model.ts`), throw `DataError`, and don't import `next/*`. Validation (`InputError`), `revalidatePath` and `redirect` stay in the action; `runAction(guard, work)` in `lib/action.ts` turns errors into `ActionResult`. Writes are the audited SQL functions via `rpc()` (argument names checked against generated types). `serviceDb()`/`serviceClient()` (secret key) only in `lib/server/users.ts` and scripts. Auth (code, link, sign-out, proxy refresh) only through `lib/server/auth.ts`.
+- Session: `lib/server/session.ts` is the only file that reads `memberships`. `Member` has `db`, `user { id, email }`, `isAdmin`, `finance { role, canEdit }` and `inventory { role, canEdit, canManage }` (`supabase` is deprecated, finance only until phase 3); guards `pageSession`, `pageMember`, `memberOrError`, `financeEditorOrError`, `inventoryEditorOrError`, `inventoryManagerOrError`, `adminOrError`, `requireFinanceEditor`, `requireAdmin`.
 
 ## gestao › financeiro
 
@@ -61,14 +61,14 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 - Forms: every input, select and textarea has a visible label (`<Label htmlFor>`). Placeholders only show examples, never replace the label; `sr-only`/`aria-label` alone is not enough. Exception: search fields with the magnifier icon keep only `aria-label` and a placeholder. In editable table rows, the visible column header is the label (keep a specific `sr-only` label per row).
 - `npx supabase migration up` applies new migrations without resetting local data.
 
-## inventario
+## gestao › inventario
 
-- Model and vocabulary in `apps/inventario/docs/modelo.md` (material by unit with tag `GEAS-000-0000` or by lot; divisions as a tree; families with 3-digit code; movements with review status). Migrations live with financeiro's (`032_inventory_catalog.sql`); pgTAP in `supabase/tests/inventory.test.sql`.
-- Roles per app: group admin (`memberships.role = 'admin'`) is manager in both apps; otherwise `memberships.inventory_role` (`manager` = gestor, `chief` = chefe, whose movements start `pendente`, `viewer`). Admin sets both roles in the shared Usuários screen (Financeiro `/usuarios`, Inventário `/configuracoes/usuarios`). Session in `apps/inventario/lib/session.ts` (`member.canEdit`, `canManage`); only file that reads `memberships`.
-- All writes through the `inventory_*` SQL functions (`supabase.rpc`); no direct write policies. Lists read `inventory_material_rows` and `inventory_location_paths`.
-- Routes: `/materiais` (list by location: one tab per root division, subdivisions as group rows, from `inventory_stock_by_location`; `/novo`, `/[id]`, `/[id]/editar`), `/movimentacoes`; Configurações (gear) with tabs `/configuracoes/divisoes|familias|usuarios` (Usuários only for the group admin; `components/settings-tabs.tsx`).
-- Division order is chosen by the manager by dragging (`inventory_locations.position`, `inventory_place_location` 037: before/after/inside, saved on drop), never alphabetical: sort by `sort_key` from `inventory_location_paths` (`treeOrder` in `apps/inventario/lib/locations.ts`).
-- Dev data from the group's spreadsheet: `apps/inventario/scripts/planilha-para-csv.mjs` then `importar-planilha.mjs` (local Supabase only; wipes and reloads the group's inventory). The CSVs are group data: never commit them.
+- Model and vocabulary in `apps/gestao/docs/inventario/modelo.md` (material by unit with tag `GEAS-000-0000` or by lot; divisions as a tree; families with 3-digit code; movements with review status). Migrations in `supabase/migrations/` (`032_inventory_catalog.sql`); pgTAP in `supabase/tests/inventory.test.sql`; e2e in `e2e/inventory.e2e.ts` (manager, chief, viewer).
+- Roles: group admin (`memberships.role = 'admin'`) is manager in both modules; otherwise `memberships.inventory_role` (`manager` = gestor, `chief` = chefe, whose movements start `pendente`, `viewer`). Admin sets both roles in the shared `/usuarios`.
+- All reads and writes through `lib/server/inventory/*` (writes are the `inventory_*` SQL functions); no direct write policies. Lists read `inventory_material_rows`, `inventory_stock_by_location` and `inventory_location_paths`.
+- Routes: `/inventario` (Resumo), `/inventario/materiais` (list by location: one tab per root division, subdivisions as group rows; `/novo`, `/[id]`, `/[id]/editar`), `/inventario/movimentacoes`; Configurações (gear) with tabs `/inventario/configuracoes/divisoes|familias` (`components/inventory/settings-tabs.tsx`). Read errors show `app/(inventario)/inventario/error.tsx`.
+- Division order is chosen by the manager by dragging (`inventory_locations.position`, `inventory_place_location` 037: before/after/inside, saved on drop), never alphabetical: sort by `sort_key` from `inventory_location_paths` (`treeOrder` in `lib/inventory/locations.ts`).
+- Dev data from the group's spreadsheet: `apps/gestao/scripts/inventory/planilha-para-csv.mjs` then `importar-planilha.mjs` (local Supabase only; wipes and reloads the group's inventory). The CSVs are group data: never commit them.
 
 ## Shared UI (`packages/ui`, `@geas/ui`)
 
@@ -76,7 +76,7 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 - `@geas/ui` (root export): app shell — `AppBrand`, `AppLogin`/`AppLoginForm`, `AppHeader`, `UserMenu`, `PageHeader`, `PageBody`, `SectionTabs` (pill buttons; below `sm` a menu button with the active tab, `components/section-tabs-menu`); `AppHeader` shows a menu button (`components/app-nav-menu`) below 1024px; `utilities` are `{ href, label, icon, active }`.
 - `@geas/ui/components/<name>`: shadcn/ui (`base-mira`, Base UI primitives — not Radix) plus `section-card`, `stat-card` (`StatCard`, `ListCard`), `option-controls` (`OptionSelect`, `OptionCombobox`) and `tree-drag` (`useTreeDrag`, `DragHandle`: drag rows of a tree table before/after/inside; used by Rubricas and Divisões). Reorder only by dragging: no up/down arrows. Add shadcn components with `npx shadcn@latest add <name>` inside `packages/ui`. Imports inside the package use `@geas/ui/...` (self-reference), never `@/`.
 - `@geas/ui/lib/utils` (`cn`) and `@geas/ui/lib/use-action-toast` (Server Action result → toast).
-- Users: `@geas/ui/lib/roles` (domain, group/inventory roles), `@geas/ui/lib/users` (server only, service key: list, invite, save roles, remove) and `@geas/ui/components/users-manager` (screen with one role column per app). Each app keeps thin `"use server"` wrappers that check the admin and revalidate.
+- Users: `@geas/ui/lib/roles` (domain, group/inventory roles) and `@geas/ui/components/users-manager` (screen with one role column per module). Data (list, invite, roles, remove) is `apps/gestao/lib/server/users.ts`; `/usuarios` actions check the admin and revalidate. `@geas/ui` has no database code.
 - Theme: each app's `app/globals.css` starts with `@import "@geas/ui/theme.css"` (Tailwind, tokens, shell CSS in `@layer components`, legacy CSS in `@layer legacy` below utilities) and the root `<html>` carries `data-app="gestao" | "financeiro" | "inventario"` (in gestao, set by each module root layout), which sets the accent (`--app` → `primary`/`accent`: purple / dark orange).
 
 ## CI/CD
