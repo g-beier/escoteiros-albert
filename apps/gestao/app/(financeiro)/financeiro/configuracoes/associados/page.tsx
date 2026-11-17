@@ -1,4 +1,4 @@
-import { pageMember } from "@/lib/session";
+import { pageMember } from "@/lib/server/session";
 import { SectionBody, SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
 import { AppHeader } from "@/components/finance/app-header";
 import { AssociatesImport } from "@/components/finance/associates-import";

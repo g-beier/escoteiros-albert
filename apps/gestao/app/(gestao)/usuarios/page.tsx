@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 import { UsersManager } from "@geas/ui/components/users-manager";
-import { listGroupUsers } from "@geas/ui/lib/users";
+import { listGroupUsers } from "@/lib/server/users";
 import { AppHeader } from "@/components/finance/app-header";
 import { PageBody, PageHeader } from "@/components/finance/nav/page-header";
-import { pageSession } from "@/lib/session";
+import { pageSession } from "@/lib/server/session";
 import { inviteUser, removeUser, saveUserRoles } from "./actions";
 
 export default async function UsersPage() {

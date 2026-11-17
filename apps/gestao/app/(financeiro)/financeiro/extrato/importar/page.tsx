@@ -7,7 +7,7 @@ import { extratoCrumbs, ExtratoTabs, NARROW_CONTENT, PageBody, PageHeader } from
 import { SectionCard } from "@geas/ui/components/section-card";
 import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/finance/accounts";
 import { fetchImportProfiles, fetchLastProfileByAccount, fetchRecentImports } from "@/lib/finance/import-queries";
-import { pageSession } from "@/lib/session";
+import { pageSession } from "@/lib/server/session";
 import { cn } from "@geas/ui/lib/utils";
 
 export default async function ImportPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

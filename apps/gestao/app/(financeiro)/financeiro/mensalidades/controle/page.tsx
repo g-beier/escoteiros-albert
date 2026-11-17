@@ -7,7 +7,7 @@ import { matchesSections, NO_SECTION, NO_SECTION_PARAM, sectionsOf } from "@/lib
 import { fetchFeeYear, fetchFeeYears } from "@/lib/finance/fee-queries";
 import { currentYear } from "@/lib/finance/filters";
 import { DUE_RULE_LABELS } from "@/lib/finance/fees";
-import { pageSession } from "@/lib/session";
+import { pageSession } from "@/lib/server/session";
 
 export const metadata = { title: "Mensalidades · GEAS Financeiro" };
 

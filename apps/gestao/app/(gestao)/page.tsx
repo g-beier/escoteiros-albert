@@ -10,7 +10,7 @@ import type { LedgerRow } from "@/lib/finance/entry-queries";
 import { MONTHS } from "@/lib/finance/export/period";
 import { ALL_DATES, currentYear } from "@/lib/finance/filters";
 import { dateBR, money } from "@/lib/format";
-import { pageSession } from "@/lib/session";
+import { pageSession } from "@/lib/server/session";
 import { recentListStart, recentWindowStart } from "@/lib/finance/dashboard";
 import { fetchFeeYear } from "@/lib/finance/fee-queries";
 import { overdueRanking, todayInSaoPaulo } from "@/lib/finance/fees";

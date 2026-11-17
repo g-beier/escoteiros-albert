@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { memberOrError } from "@/lib/session";
+import { memberOrError } from "@/lib/server/session";
 import { XLSX_MIME } from "./xlsx";
 
 /** Cliente e grupo do usuário logado; qualquer papel pode exportar (é leitura, sob RLS). */

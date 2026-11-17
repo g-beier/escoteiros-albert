@@ -1,6 +1,6 @@
 import { IconSettings } from "@tabler/icons-react";
 import { AppHeader as SharedHeader, UserMenu } from "@geas/ui";
-import { logout } from "@/app/actions";
+import { logout } from "@/app/(gestao)/login/actions";
 import { Brand } from "@/components/shell/brand";
 
 const sections = [

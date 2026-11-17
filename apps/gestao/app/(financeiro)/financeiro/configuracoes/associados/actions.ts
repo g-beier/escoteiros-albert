@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireFinanceEditor } from "@/lib/session";
+import { requireFinanceEditor } from "@/lib/server/session";
 import { hasSections, SCOUT_BRANCHES } from "@/lib/finance/associates";
 
 /** Id opcional vindo de um select ("" = nenhum). */

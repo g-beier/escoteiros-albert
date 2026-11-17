@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { financeEditorOrError } from "@/lib/session";
+import { financeEditorOrError } from "@/lib/server/session";
 import { ATTACHMENT_BUCKET, attachmentPath, attachmentProblem, attachmentType, cleanFileName } from "@/lib/finance/attachments";
 
 type Result = { error?: string; success?: boolean };

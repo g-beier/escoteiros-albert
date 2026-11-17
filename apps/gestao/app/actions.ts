@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
-import { financeEditorOrError, memberOrError } from "@/lib/session";
+import { createClient } from "@/lib/server/supabase/client";
+import { financeEditorOrError, memberOrError } from "@/lib/server/session";
 import { entrySchema, toRpcSplits } from "@/lib/finance/entry-schema";
 import { fetchEntryPage, type EntryPage } from "@/lib/finance/entry-queries";
 import { parseFilters, parseOrder } from "@/lib/finance/filters";
@@ -112,10 +112,4 @@ export async function loadEntryPage(viewInput: unknown, query: unknown, offset: 
   const ctx = await memberOrError();
   if ("error" in ctx) return { view, rows: [], total: null, error: ctx.error };
   return fetchEntryPage(ctx.supabase, ctx.groupId, view, parseFilters(params), parseOrder(params), start.data, false);
-}
-
-export async function logout() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect("/login");
 }

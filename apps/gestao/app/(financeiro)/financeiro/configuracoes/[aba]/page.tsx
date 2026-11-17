@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { pageMember } from "@/lib/session";
+import { pageMember } from "@/lib/server/session";
 import { AppHeader } from "@/components/finance/app-header";
 import { FeeSettingsForm, FeeYearForm } from "@/components/finance/fees/fee-settings-form";
 import { fetchFeePrices, fetchFeeSettings } from "@/lib/finance/fee-queries";

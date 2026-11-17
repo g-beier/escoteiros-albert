@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { financeEditorOrError } from "@/lib/session";
+import { financeEditorOrError } from "@/lib/server/session";
 import { entrySchema, toRpcSplits } from "@/lib/finance/entry-schema";
 
 export type ReconciliationResult = { error?: string; success?: string; id?: string };

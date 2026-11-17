@@ -1,31 +1,40 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { inviteGroupUser, removeGroupUser, saveGroupUserRoles } from "@geas/ui/lib/users";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
-import { createClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/session";
+import { InputError, runAction } from "@/lib/action";
+import { adminOrError } from "@/lib/server/session";
+import * as users from "@/lib/server/users";
 
-// Usuários do grupo: a regra é comum aos apps (@geas/ui/lib/users); aqui só o administrador e o revalidate.
-async function asAdmin(run: (member: Awaited<ReturnType<typeof requireAdmin>>) => Promise<ActionResult>): Promise<ActionResult> {
-  try {
-    const result = await run(await requireAdmin());
-    revalidatePath("/usuarios");
-    return result;
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Não foi possível concluir." };
-  }
+// Usuários do grupo (comum aos módulos): só o administrador; as regras ficam em lib/server/users.ts.
+
+function read<T>(value: T | string): T {
+  if (typeof value === "string") throw new InputError(value);
+  return value;
 }
 
 export async function inviteUser(_previous: ActionResult, formData: FormData) {
-  return asAdmin(async ({ groupId }) => inviteGroupUser(await createClient(), groupId, formData,
-    `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/confirm`));
+  return runAction(adminOrError, async ({ db, groupId }) => {
+    const message = await users.inviteUser(db, groupId, read(users.readInvite(formData)),
+      `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/confirm`);
+    revalidatePath("/usuarios");
+    return message;
+  });
 }
 
 export async function saveUserRoles(_previous: ActionResult, formData: FormData) {
-  return asAdmin(async ({ groupId, user }) => saveGroupUserRoles(await createClient(), groupId, user.id, formData));
+  return runAction(adminOrError, async ({ db, groupId, user }) => {
+    const roles = read(users.readRoles(formData));
+    const changed = await users.saveUserRoles(db, groupId, user.id, roles);
+    revalidatePath("/usuarios");
+    return changed ? { success: `Papéis de ${roles.email} salvos.` } : { success: "Nada mudou.", tone: "neutral" };
+  });
 }
 
 export async function removeUser(_previous: ActionResult, formData: FormData) {
-  return asAdmin(async ({ groupId, user }) => removeGroupUser(await createClient(), groupId, user.id, formData));
+  return runAction(adminOrError, async ({ db, groupId, user }) => {
+    await users.removeUser(db, groupId, user.id, String(formData.get("userId") ?? ""));
+    revalidatePath("/usuarios");
+    return { success: `Acesso de ${String(formData.get("email") ?? "")} removido.`, tone: "neutral" };
+  });
 }

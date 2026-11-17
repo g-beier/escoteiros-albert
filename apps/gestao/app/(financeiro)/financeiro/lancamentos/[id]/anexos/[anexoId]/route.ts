@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { memberOrError } from "@/lib/session";
+import { memberOrError } from "@/lib/server/session";
 import { ATTACHMENT_BUCKET, ATTACHMENT_URL_TTL } from "@/lib/finance/attachments";
 
 /**

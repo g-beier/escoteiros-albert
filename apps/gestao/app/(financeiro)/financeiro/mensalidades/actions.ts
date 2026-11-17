@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { financeEditorOrError } from "@/lib/session";
+import { financeEditorOrError } from "@/lib/server/session";
 import { parseMoneyToCents } from "@/lib/money";
 import { groupPaymentOptions, type PaymentOption } from "@/lib/finance/debts";
 

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { pageMember } from "@/lib/session";
+import { pageMember } from "@/lib/server/session";
 
 /** Configurações abre na primeira aba que a pessoa vê: Contas (tesouraria e administração) ou Associados (consulta). */
 export default async function SettingsIndexPage() {

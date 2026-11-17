@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { IconFolderExclamation, IconHelpCircle } from "@tabler/icons-react";
-import { pageSession } from "@/lib/session";
+import { pageSession } from "@/lib/server/session";
 import { AppHeader } from "@/components/finance/app-header";
 import { EntryViewTabs, PageHeader } from "@/components/finance/nav/page-header";
 import { InfiniteEntries } from "@/components/finance/entries/infinite-entries";

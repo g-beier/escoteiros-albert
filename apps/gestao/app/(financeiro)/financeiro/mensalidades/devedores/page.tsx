@@ -3,7 +3,7 @@ import { DebtsManager } from "@/components/finance/debts/debts-manager";
 import { FeeTabs, feeCrumbs, PageBody, PageHeader } from "@/components/finance/nav/page-header";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { fetchDebts } from "@/lib/finance/debts";
-import { pageSession } from "@/lib/session";
+import { pageSession } from "@/lib/server/session";
 
 export const metadata = { title: "Devedores · GEAS Financeiro" };
 

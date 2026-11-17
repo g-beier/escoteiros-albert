@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireFinanceEditor } from "@/lib/session";
+import { requireFinanceEditor } from "@/lib/server/session";
 import { CATALOG_KINDS, isCatalogKind, type CatalogKind } from "@/lib/finance/catalogs";
 import { parseLedgerCode } from "@/lib/finance/ledger-code";
 import { readAccountForm, toAccountRpc } from "@/lib/finance/accounts";

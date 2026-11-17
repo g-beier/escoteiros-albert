@@ -8,7 +8,7 @@ import { Button } from "@geas/ui/components/button";
 import { exportYears } from "@/lib/finance/export/period";
 import { fetchRealizedModel } from "@/lib/finance/export/queries";
 import { currentYear } from "@/lib/finance/filters";
-import { pageSession } from "@/lib/session";
+import { pageSession } from "@/lib/server/session";
 
 export const metadata = { title: "Realizado · GEAS Financeiro" };
 

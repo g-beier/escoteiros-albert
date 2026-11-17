@@ -17,7 +17,8 @@
     "test:watch": "vitest",
     "test:db": "npm exec --package=supabase -- supabase test db",
     "test:e2e": "playwright test",
-    "export:transparency": "tsx scripts/export-transparency.ts"
+    "export:transparency": "tsx scripts/export-transparency.ts",
+    "db:types": "npm exec --package=supabase -- supabase gen types typescript --schema public | sed \"/^} as const$/q\" > lib/server/supabase/database.types.ts"
   },
   "dependencies": {
     "@geas/ui": "*",

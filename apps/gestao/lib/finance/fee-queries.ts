@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { exportYears } from "@/lib/finance/export/period";
-import { fetchPaged } from "@/lib/supabase/paged";
+import { fetchPaged } from "@/lib/server/supabase/paged";
 import {
   buildFeeRows, DEFAULT_FEE_SETTINGS, priceForAssociate, suggestFeeMonths, todayInSaoPaulo,
   type AssociateMovement, type DueRule, type FeeAssociate, type FeeExemption, type FeePrice, type FeeRecord, type FeeRow, type FeeSettings, type FeeSplit, type FeeSuggestion,

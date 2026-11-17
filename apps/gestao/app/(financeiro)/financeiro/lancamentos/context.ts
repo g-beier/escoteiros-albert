@@ -1,4 +1,4 @@
-import { pageMember } from "@/lib/session";
+import { pageMember } from "@/lib/server/session";
 import type { Catalogs } from "@/components/finance/entries/entry-form";
 
 /** Usuário, papel e cadastros usados pelo formulário de lançamento. */

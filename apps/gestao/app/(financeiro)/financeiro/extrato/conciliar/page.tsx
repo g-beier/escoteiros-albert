@@ -3,10 +3,10 @@ import { SetupNeeded } from "@/components/shell/setup-needed";
 import { ReconciliationBoard, type BoardData, type LinkSet } from "@/components/finance/reconciliation/reconciliation-board";
 import { ReconciliationFilters } from "@/components/finance/reconciliation/reconciliation-filters";
 import { byDateThenAmount, closingCheck, parsePeriod, suggestMatches, type OpenEntry, type OpenLine } from "@/lib/finance/reconciliation";
-import { pageSession } from "@/lib/session";
+import { pageSession } from "@/lib/server/session";
 import { extratoCrumbs, ExtratoTabs, PAGE_BODY, PageHeader } from "@/components/finance/nav/page-header";
 import { cn } from "@geas/ui/lib/utils";
-import { fetchPaged } from "@/lib/supabase/paged";
+import { fetchPaged } from "@/lib/server/supabase/paged";
 import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/finance/accounts";
 
 export const metadata = { title: "Conciliação · GEAS Financeiro" };
