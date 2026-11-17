@@ -33,7 +33,7 @@ test("rubricas: rascunho com arrastar, salvar e excluir levando os rateios para 
   const second = uniqueName("Filha dois");
   const entry = uniqueName("Rubrica excluída");
 
-  await page.goto("/configuracoes/rubricas");
+  await page.goto("/financeiro/configuracoes/rubricas");
   await draftFamily(page, parent, first, second);
   await expect(bar(page)).toContainText("3 novas");
 
@@ -61,7 +61,7 @@ test("rubricas: rascunho com arrastar, salvar e excluir levando os rateios para 
 
   // um rateio na filha; excluir a pai (com as de baixo) leva o rateio para 2 Despesas
   await createEntry(page, { name: entry, direction: "saida", total: "12,00", account: E2E_ACCOUNTS[0], category: second, description: "e2e rubrica" });
-  await page.goto("/configuracoes/rubricas");
+  await page.goto("/financeiro/configuracoes/rubricas");
   await pick(page, parent, /^Excluir/);
   await expect(nameField(page, second)).toHaveCount(0);
   await expect(bar(page)).toContainText("3 excluídas (1 rateio muda de rubrica)");
@@ -73,7 +73,7 @@ test("rubricas: rascunho com arrastar, salvar e excluir levando os rateios para 
   await expect(page.getByText("Rubricas salvas. 1 rateio de 1 lançamento mudou de rubrica.")).toBeVisible();
 
   // o lançamento mostra a troca no histórico
-  await page.goto("/lancamentos/movimentacoes?de=tudo");
+  await page.goto("/financeiro/lancamentos/movimentacoes?de=tudo");
   await page.getByRole("link", { name: entry, exact: true }).first().click();
   await expect(page.getByText("Rubrica excluída: rateios movidos")).toBeVisible();
 });

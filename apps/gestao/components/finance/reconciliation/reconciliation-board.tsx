@@ -7,7 +7,7 @@ import { IconArrowBackUp, IconCheck, IconChevronRight, IconLink, IconPlus, IconS
 import {
   acceptSuggestions, createEntriesFromLines, ignoreStatementLines, linkReconciliation, rejectSuggestion, reopenStatementLine, setEntryAccount,
   setOutsideStatement, unlinkReconciliation, type ReconciliationResult,
-} from "@/app/extrato/conciliar/actions";
+} from "@/app/(financeiro)/financeiro/extrato/conciliar/actions";
 import { OptionSelect, type Option } from "@geas/ui/components/option-controls";
 import { Badge } from "@geas/ui/components/badge";
 import { Button, buttonVariants } from "@geas/ui/components/button";
@@ -64,7 +64,7 @@ function EntryCell({ entry }: { entry: OpenEntry }) {
   return <div className="flex min-w-0 flex-1 items-baseline gap-2">
     <span className="num shrink-0 text-xs text-muted-foreground">{dateBR(entry.date)}</span>
     <span className="min-w-0 flex-1">
-      <Link href={`/lancamentos/${entry.id}`} className="font-medium break-words hover:underline">{entry.name}</Link>
+      <Link href={`/financeiro/lancamentos/${entry.id}`} className="font-medium break-words hover:underline">{entry.name}</Link>
       {entry.paymentMethodName && <span className="ml-1.5 text-xs text-muted-foreground">{entry.paymentMethodName}</span>}
       {entry.unassigned && <Badge variant="outline" className="ml-1.5" title="Digitado sem conta; ao vincular, passa para esta conta">A definir</Badge>}
     </span>
@@ -148,7 +148,7 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
   const entryToggle = (id: string) => canEdit ? () => setSelectedEntries((s) => toggle(s, id)) : undefined;
 
   const lineActions = (line: OpenLine) => canEdit && <>
-    <Link href={`/lancamentos/novo?linha=${line.id}&voltar=${encodeURIComponent(data.returnQuery)}`} className={buttonVariants({ variant: "ghost", size: "sm" })}><IconPlus /> Criar lançamento</Link>
+    <Link href={`/financeiro/lancamentos/novo?linha=${line.id}&voltar=${encodeURIComponent(data.returnQuery)}`} className={buttonVariants({ variant: "ghost", size: "sm" })}><IconPlus /> Criar lançamento</Link>
     <Button variant="ghost" size="sm" onClick={() => setIgnoring([line])} disabled={pending}>Ignorar</Button>
   </>;
   const entryActions = (entry: OpenEntry) => canEdit && <>

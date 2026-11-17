@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconAlertTriangle, IconCash, IconChevronRight, IconDots, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
-import { debtPaymentOptions, deleteDebt, payDebts, saveDebt } from "@/app/mensalidades/actions";
+import { debtPaymentOptions, deleteDebt, payDebts, saveDebt } from "@/app/(financeiro)/financeiro/mensalidades/actions";
 import { centsToInput, dateBR, money } from "@/lib/format";
 import { todayInSaoPaulo } from "@/lib/finance/fees";
 import { parseMoneyToCents } from "@/lib/money";
@@ -158,7 +158,7 @@ function DebtRow({ debt, canEdit, onEdit, onRemove }: { debt: Debt; canEdit: boo
       {debt.agreement && <div className="text-xs text-muted-foreground"><span className="font-semibold">Acordo:</span> {debt.agreement}</div>}
       {debt.payments && debt.payments.length > 0 && <div className="text-xs text-muted-foreground">
         Pago em {debt.payments.map((payment, index) => <span key={payment.entryId}>{index > 0 && ", "}
-          <Link href={`/lancamentos/${payment.entryId}`} className="text-primary hover:underline"
+          <Link href={`/financeiro/lancamentos/${payment.entryId}`} className="text-primary hover:underline"
             title={`${payment.entryName}: ${money(payment.amountCents / 100)} desta dívida, de ${money(payment.entryAvailableCents / 100)} do associado no lançamento`}>
             {dateBR(payment.entryDate)} ({money(payment.amountCents / 100)}{payment.entryAvailableCents !== payment.amountCents && ` de ${money(payment.entryAvailableCents / 100)}`})</Link>
         </span>)}

@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconDownload, IconFileUpload, IconUpload } from "@tabler/icons-react";
-import { importAssociates } from "@/app/configuracoes/associados/actions";
+import { importAssociates } from "@/app/(financeiro)/financeiro/configuracoes/associados/actions";
 import { Button } from "@geas/ui/components/button";
 import { Checkbox } from "@geas/ui/components/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";

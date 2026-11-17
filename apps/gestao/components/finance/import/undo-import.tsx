@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconArrowBackUp } from "@tabler/icons-react";
-import { deleteStatementImport } from "@/app/extrato/importar/actions";
+import { deleteStatementImport } from "@/app/(financeiro)/financeiro/extrato/importar/actions";
 import { Button } from "@geas/ui/components/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
 

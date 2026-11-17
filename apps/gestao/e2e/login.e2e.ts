@@ -5,7 +5,7 @@ import { waitForOtp } from "./support/mail";
 test.use({ storageState: { cookies: [], origins: [] } });
 
 test("sem sessão, as páginas levam ao login", async ({ page }) => {
-  await page.goto("/lancamentos");
+  await page.goto("/financeiro/lancamentos");
   await expect(page).toHaveURL(/\/login/);
   await expect(page.getByRole("button", { name: "Enviar código de acesso" })).toBeVisible();
 });

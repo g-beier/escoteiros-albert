@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { IconPencil, IconPlus } from "@tabler/icons-react";
-import { createAccount, setAccountActive, updateAccount, type CatalogFormState } from "@/app/configuracoes/actions";
+import { createAccount, setAccountActive, updateAccount, type CatalogFormState } from "@/app/(financeiro)/financeiro/configuracoes/actions";
 import { OptionSelect } from "@geas/ui/components/option-controls";
 import { LedgerCodeInput } from "@/components/finance/ledger-code-input";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";

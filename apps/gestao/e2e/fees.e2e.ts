@@ -22,7 +22,7 @@ test.afterAll(() => {
 
 test("mensalidades: sugestão do lançamento, confirmar, marcar, limpar e isentar", async ({ page }) => {
   // Configurações › Mensalidades: a rubrica de mensalidade decide o que vira sugestão
-  await page.goto("/configuracoes/mensalidades");
+  await page.goto("/financeiro/configuracoes/mensalidades");
   const settings = page.getByRole("region", { name: "Mensalidades" });
   await settings.getByRole("combobox", { name: "Rubrica de mensalidade" }).fill("Mensalidades");
   await page.getByRole("option", { name: /Mensalidades/ }).first().click();
@@ -43,7 +43,7 @@ test("mensalidades: sugestão do lançamento, confirmar, marcar, limpar e isenta
     commit;
   `);
 
-  await page.goto(`/mensalidades/controle?ano=${YEAR}`);
+  await page.goto(`/financeiro/mensalidades/controle?ano=${YEAR}`);
   await page.getByRole("searchbox", { name: "Buscar associado" }).fill(associate);
   await expect(cell(page, "abril")).toHaveAccessibleName(`${associate}, abril: pagamento a confirmar`);
 

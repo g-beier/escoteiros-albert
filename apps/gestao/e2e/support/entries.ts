@@ -12,9 +12,9 @@ export async function chooseOption(page: Page, label: string | RegExp, option: s
 
 export type NewEntry = { name: string; direction: "entrada" | "saida"; total: string; account: string; category: string; description: string; date?: string };
 
-/** Preenche e salva /lancamentos/novo; termina de volta na lista. */
+/** Preenche e salva /financeiro/lancamentos/novo; termina de volta na lista. */
 export async function createEntry(page: Page, entry: NewEntry) {
-  await page.goto("/lancamentos/novo");
+  await page.goto("/financeiro/lancamentos/novo");
   await page.getByRole("radio", { name: entry.direction === "entrada" ? "Entrada (receita)" : "Saída (despesa)" }).click();
   if (entry.date) await page.getByLabel("Data", { exact: true }).fill(entry.date);
   await page.getByLabel("Histórico").fill(entry.name);
@@ -29,7 +29,7 @@ export async function createEntry(page: Page, entry: NewEntry) {
   await expect(page.getByText("✓ Valores conferem")).toBeVisible();
   await page.getByRole("button", { name: "Salvar lançamento" }).click();
   await expect(page.getByText("Lançamento salvo.")).toBeVisible();
-  await expect(page).toHaveURL(/\/lancamentos\/movimentacoes(\?|$)/);
+  await expect(page).toHaveURL(/\/financeiro\/lancamentos\/movimentacoes(\?|$)/);
 }
 
 /** Lista de lançamentos (desktop: tabela). */

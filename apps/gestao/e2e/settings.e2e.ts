@@ -20,8 +20,8 @@ test.afterAll(() => {
 });
 
 test("contas: cadastrar, editar e inativar", async ({ page }) => {
-  await page.goto("/configuracoes");
-  await expect(page).toHaveURL(/\/configuracoes\/contas$/);
+  await page.goto("/financeiro/configuracoes");
+  await expect(page).toHaveURL(/\/financeiro\/configuracoes\/contas$/);
   await page.getByRole("button", { name: "Nova conta" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Nome").fill(account);
@@ -50,7 +50,7 @@ test("contas: cadastrar, editar e inativar", async ({ page }) => {
 });
 
 test("formas de pagamento: cadastrar, conta padrão, renomear e inativar", async ({ page }) => {
-  await page.goto("/configuracoes/formas");
+  await page.goto("/financeiro/configuracoes/formas");
   await page.getByLabel("Nova forma de pagamento").fill(method);
   await page.getByRole("button", { name: "Adicionar" }).click();
   await expect(page.getByText(`“${method}” cadastrada.`)).toBeVisible();
@@ -72,7 +72,7 @@ test("formas de pagamento: cadastrar, conta padrão, renomear e inativar", async
 });
 
 test("associados: importar CSV com conferência antes de gravar", async ({ page }) => {
-  await page.goto("/configuracoes/associados");
+  await page.goto("/financeiro/configuracoes/associados");
   await page.getByRole("button", { name: "Importar CSV" }).click();
   const dialog = page.getByRole("dialog");
   const csv = `nome;ramo;seção;patrulha;status\r\n${csvNames[0]};Lobinho;;;ativo\r\n${csvNames[1]};Escoteiro;;;inativo\r\nSem Ramo E2E;Astronauta;;;ativo\r\n`;

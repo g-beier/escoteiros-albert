@@ -54,7 +54,7 @@ export async function updateEntry(entryId: unknown, payload: unknown): Promise<R
   });
   if (error) return { error: error.message };
   revalidatePath("/", "layout");
-  revalidatePath(`/lancamentos/${id.data}`);
+  revalidatePath(`/financeiro/lancamentos/${id.data}`);
   return { success: true };
 }
 

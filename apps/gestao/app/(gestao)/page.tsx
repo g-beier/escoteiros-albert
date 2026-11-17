@@ -1,0 +1,152 @@
+import Link from "next/link";
+import { IconArrowRight, IconFolderExclamation } from "@tabler/icons-react";
+import { AppHeader } from "@/components/finance/app-header";
+import { PAGE_BODY, PageHeader } from "@/components/finance/nav/page-header";
+import { NewEntryButton } from "@/components/finance/entries/entry-editor";
+import { SetupNeeded } from "@/components/shell/setup-needed";
+import { buttonVariants } from "@geas/ui/components/button";
+import type { CategoryKind } from "@/lib/finance/categories";
+import type { LedgerRow } from "@/lib/finance/entry-queries";
+import { MONTHS } from "@/lib/finance/export/period";
+import { ALL_DATES, currentYear } from "@/lib/finance/filters";
+import { dateBR, money } from "@/lib/format";
+import { pageSession } from "@/lib/session";
+import { recentListStart, recentWindowStart } from "@/lib/finance/dashboard";
+import { fetchFeeYear } from "@/lib/finance/fee-queries";
+import { overdueRanking, todayInSaoPaulo } from "@/lib/finance/fees";
+import { StatCard as Stat } from "@geas/ui/components/stat-card";
+import { cn } from "@geas/ui/lib/utils";
+
+/** Teto de segurança da lista do Início (a janela é de dias, não de quantidade). */
+const RECENT_LIMIT = 300;
+
+type Sum = { category_id: string; month: number; amount_cents: number };
+type MonthTotals = { income: number; expense: number };
+
+/** Receitas e despesas por mês (centavos; despesa positiva). Rubrica sem tipo vale pelo sinal. */
+function monthlyTotals(sums: Sum[], kinds: Map<string, CategoryKind | null>): MonthTotals[] {
+  const months = Array.from({ length: 12 }, () => ({ income: 0, expense: 0 }));
+  for (const s of sums) {
+    const amount = Number(s.amount_cents);
+    const kind = kinds.get(s.category_id) ?? (amount < 0 ? "despesa" : "receita");
+    if (kind === "despesa") months[s.month - 1].expense -= amount;
+    else months[s.month - 1].income += amount;
+  }
+  return months;
+}
+
+export default async function Dashboard() {
+  const { supabase, user, member: membership } = await pageSession();
+  if (!membership) return <SetupNeeded email={user.email ?? ""} />;
+  const groupId = membership.groupId;
+  const canEdit = membership.canEdit;
+  const year = currentYear();
+  // Últimos lançamentos: hoje e os 7 dias anteriores, mais o último dia com movimento antes disso.
+  const windowStart = recentWindowStart(todayInSaoPaulo());
+  const recentColumns = "entry_id, entry_date, name, payment_method_name, document, document_filed, total_cents";
+
+  const [{ data: categories }, { data: sums }, { count: pendingDocs }, { data: previous }, feeYear] = await Promise.all([
+    supabase.from("categories").select("id, kind").eq("group_id", groupId),
+    supabase.rpc("realized_by_month", { p_group_id: groupId, p_year: year }),
+    supabase.from("ledger_entries").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("document_filed", false),
+    supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).lt("entry_date", windowStart)
+      .order("entry_date", { ascending: false }).limit(1).maybeSingle(),
+    fetchFeeYear(supabase, groupId, year),
+  ]);
+  const recentStart = recentListStart(windowStart, previous?.entry_date as string | undefined);
+  const { data: recent } = await supabase.from("ledger_entry_rows").select(recentColumns).eq("group_id", groupId).gte("entry_date", recentStart)
+    .order("entry_date", { ascending: false }).order("created_at", { ascending: false }).limit(RECENT_LIMIT);
+
+  const kinds = new Map((categories ?? []).map((c) => [c.id as string, c.kind as CategoryKind | null]));
+  const months = monthlyTotals((sums ?? []) as Sum[], kinds);
+  const income = months.reduce((sum, m) => sum + m.income, 0);
+  const expense = months.reduce((sum, m) => sum + m.expense, 0);
+  // meses até o atual, ou meses com movimento (se houver lançamentos futuros)
+  const thisMonth = Number(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).slice(5, 7));
+  const lastMonth = Math.max(thisMonth, ...months.map((m, i) => (m.income || m.expense ? i + 1 : 0)));
+  const monthRows = months.slice(0, lastMonth).map((m, i) => ({
+    label: MONTHS[i], ...m, balance: m.income - m.expense,
+    accumulated: months.slice(0, i + 1).reduce((sum, x) => sum + x.income - x.expense, 0),
+  }));
+  const recentRows = (recent ?? []) as LedgerRow[];
+  const overdue = overdueRanking(feeYear.rows);
+  const OVERDUE_SHOWN = 12;
+
+  return <div className="shell">
+    <AppHeader role={membership.role} email={user.email ?? ""} current="/" />
+    <main className={PAGE_BODY}>
+      <PageHeader title={`Resumo de ${year}`} hideTitle actions={<>
+        <Link href="/financeiro/lancamentos/movimentacoes" className={buttonVariants({ variant: "outline", size: "lg" })}>Ver lançamentos <IconArrowRight data-icon="inline-end" /></Link>
+        {canEdit && <NewEntryButton returnHref="" />}
+      </>} />
+
+      <section aria-label="Totais do ano" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Receitas" value={money(income / 100)} tone="success" href={`/financeiro/lancamentos/detalhamento?de=${year}-01-01&ate=${year}-12-31`} />
+        <Stat label="Despesas" value={money(expense / 100)} tone="destructive" href={`/financeiro/lancamentos/detalhamento?de=${year}-01-01&ate=${year}-12-31`} />
+        <Stat label="Saldo do ano" value={money((income - expense) / 100)} tone={income - expense < 0 ? "destructive" : "neutral"} />
+        <Stat label="Documentos pendentes" value={String(pendingDocs ?? 0)} tone={(pendingDocs ?? 0) > 0 ? "warning" : "neutral"}
+          href={(pendingDocs ?? 0) > 0 ? `/financeiro/lancamentos/movimentacoes?pasta=pendente&de=${ALL_DATES}` : undefined}
+          icon={(pendingDocs ?? 0) > 0 && <IconFolderExclamation className="size-5" aria-hidden />} />
+      </section>
+
+      <div className="grid gap-5 lg:grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[auto_minmax(0,2fr)_minmax(0,1fr)]">
+        <section aria-labelledby="monthly-title" className="self-start overflow-hidden rounded-lg border bg-card">
+          <h2 id="monthly-title" className="m-0 border-b px-4 py-2.5 text-sm font-semibold">Mês a mês</h2>
+          <div className="overflow-x-auto">
+            <table className="w-auto min-w-0 text-xs whitespace-nowrap">
+              <thead className="bg-muted text-muted-foreground"><tr>
+                <th className="px-2 py-1.5 text-left font-semibold">Mês</th>
+                <th className="px-2 py-1.5 text-right font-semibold">Receitas</th>
+                <th className="px-2 py-1.5 text-right font-semibold">Despesas</th>
+                <th className="px-2 py-1.5 text-right font-semibold">Saldo</th>
+                <th className="px-2 py-1.5 text-right font-semibold">Acumulado</th>
+              </tr></thead>
+              <tbody>{monthRows.map((m) => <tr key={m.label} className="border-t">
+                <td className="px-2 py-1.5">{m.label}</td>
+                <td className="num px-2 py-1.5 text-right text-success">{money(m.income / 100)}</td>
+                <td className="num px-2 py-1.5 text-right text-destructive">{money(m.expense / 100)}</td>
+                <td className={cn("num px-2 py-1.5 text-right font-semibold", m.balance < 0 && "text-destructive")}>{money(m.balance / 100)}</td>
+                <td className={cn("num px-2 py-1.5 text-right text-muted-foreground", m.accumulated < 0 && "text-destructive")}>{money(m.accumulated / 100)}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* No desktop as listas não definem a altura da linha (contain:size): acompanham o "Mês a mês" e rolam por dentro. */}
+        <section aria-labelledby="recent-title" className="flex flex-col overflow-hidden rounded-lg border bg-card">
+          <div className="flex items-center justify-between gap-3 border-b px-4 py-2.5">
+            <h2 id="recent-title" className="m-0 text-sm font-semibold">Últimos lançamentos</h2>
+            <Link href="/financeiro/lancamentos/movimentacoes" className="text-xs font-semibold text-primary hover:underline">Ver todos</Link>
+          </div>
+          {recentRows.length === 0
+            ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhum lançamento ainda.</p>
+            : <ul className="m-0 max-h-96 list-none overflow-auto overscroll-contain p-0 lg:max-h-none lg:min-h-64 lg:flex-1 lg:[contain:size]">{recentRows.map((r) => <li key={r.entry_id} className="border-t first:border-t-0">
+              <Link href={`/financeiro/lancamentos/${r.entry_id}`} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-muted">
+                <span className="num w-20 shrink-0 text-muted-foreground">{dateBR(r.entry_date)}</span>
+                <span className="min-w-0 flex-1 truncate">{r.name}</span>
+                <span className={cn("num shrink-0 font-semibold", r.total_cents < 0 ? "text-destructive" : "text-success")}>{money(r.total_cents / 100)}</span>
+              </Link>
+            </li>)}</ul>}
+        </section>
+
+        <section aria-labelledby="overdue-title" className="flex flex-col overflow-hidden rounded-lg border bg-card lg:max-xl:col-span-2">
+          <div className="flex items-center justify-between border-b px-4 py-2.5">
+            <h2 id="overdue-title" className="m-0 text-sm font-semibold">Mensalidades atrasadas</h2>
+            <Link href="/financeiro/mensalidades/controle?atrasados=1" className="text-xs font-semibold text-primary hover:underline">Ver atrasados</Link>
+          </div>
+          {overdue.length === 0
+            ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhuma mensalidade atrasada em {year}.</p>
+            : <ul className="m-0 max-h-96 list-none overflow-auto overscroll-contain p-0 xl:max-h-none xl:min-h-64 xl:flex-1 xl:[contain:size]">{overdue.slice(0, OVERDUE_SHOWN).map(({ associate, overdue: count }) => <li key={associate.id} className="border-t first:border-t-0">
+              <Link href={associate.section ? `/financeiro/mensalidades/controle?${new URLSearchParams({ secao: associate.section })}` : "/financeiro/mensalidades/controle"} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-muted">
+                <span className="min-w-0 flex-1 truncate">{associate.name}{associate.section && <span className="text-muted-foreground"> · {associate.section}</span>}</span>
+                <span className="num shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 font-semibold text-destructive" title={`${count} ${count === 1 ? "mês atrasado" : "meses atrasados"}`}>
+                  {count} <span className="sr-only">{count === 1 ? "mês atrasado" : "meses atrasados"}</span></span>
+              </Link>
+            </li>)}
+              {overdue.length > OVERDUE_SHOWN && <li className="border-t px-4 py-2 text-xs text-muted-foreground">e mais {overdue.length - OVERDUE_SHOWN} {overdue.length - OVERDUE_SHOWN === 1 ? "associado" : "associados"}</li>}
+            </ul>}
+        </section>
+      </div>
+    </main>
+  </div>;
+}

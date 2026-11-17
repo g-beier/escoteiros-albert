@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconAlertTriangle, IconArrowsMove, IconDeviceFloppy, IconDots, IconExternalLink, IconEye, IconEyeOff, IconPlus, IconTrash } from "@tabler/icons-react";
 import { toast } from "sonner";
-import { saveCategoryTree } from "@/app/configuracoes/actions";
+import { saveCategoryTree } from "@/app/(financeiro)/financeiro/configuracoes/actions";
 import { LedgerCodeInput } from "@/components/finance/ledger-code-input";
 import {
   addNode, createDraft, deletedTarget, draftChanges, draftPayload, draftRows, dropError, moveNode, removeNode, updateNode,
@@ -219,7 +219,7 @@ function CategoryTableRow({ row, saved, canEdit, draggable, dragging, drop, auto
     </TableCell>
     <TableCell className="px-3 py-1 text-right num" title="Rateios que usam esta rubrica">
       {node.usage > 0
-        ? <Link href={`/lancamentos/detalhamento?de=tudo&rubrica=${node.id}`} className="inline-flex items-center gap-1 text-primary hover:underline" title="Ver os rateios que usam esta rubrica (para recategorizar)">{node.usage} <IconExternalLink className="size-3" aria-hidden /><span className="sr-only">ver rateios</span></Link>
+        ? <Link href={`/financeiro/lancamentos/detalhamento?de=tudo&rubrica=${node.id}`} className="inline-flex items-center gap-1 text-primary hover:underline" title="Ver os rateios que usam esta rubrica (para recategorizar)">{node.usage} <IconExternalLink className="size-3" aria-hidden /><span className="sr-only">ver rateios</span></Link>
         : node.usage}
     </TableCell>
     <TableCell className="px-3 py-1">

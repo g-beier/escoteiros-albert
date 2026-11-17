@@ -44,7 +44,7 @@ export function RealizedTable({ model }: { model: RealizedModel }) {
   const hrefFor = (i: number, month: number) => {
     const tokens = rowFilterTokens(model, i);
     if (!tokens.length) return null;
-    return `/lancamentos/detalhamento?${new URLSearchParams({ rubrica: tokens.join(","), ...bounds(year, month) })}`;
+    return `/financeiro/lancamentos/detalhamento?${new URLSearchParams({ rubrica: tokens.join(","), ...bounds(year, month) })}`;
   };
 
   const valueCell = (cents: number, href: string | null, title: string, bold: boolean) => {

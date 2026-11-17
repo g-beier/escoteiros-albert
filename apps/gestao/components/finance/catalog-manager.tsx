@@ -3,7 +3,7 @@
 import { useActionState, useTransition } from "react";
 import { IconCheck, IconPlus } from "@tabler/icons-react";
 import { toast } from "sonner";
-import { createCatalogItem, setPaymentMethodDefaultAccount, updateCatalogItem, type CatalogFormState } from "@/app/configuracoes/actions";
+import { createCatalogItem, setPaymentMethodDefaultAccount, updateCatalogItem, type CatalogFormState } from "@/app/(financeiro)/financeiro/configuracoes/actions";
 import { OptionSelect, type Option } from "@geas/ui/components/option-controls";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
 import { Button } from "@geas/ui/components/button";

@@ -78,15 +78,15 @@ export function ExportMenu({ view, from, to, years, accounts = [] }: { view: Vie
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     let url: string | null = null;
-    if (mode === "realizado") url = `/exportar/realizado?ano=${year}`;
+    if (mode === "realizado") url = `/financeiro/exportar/realizado?ano=${year}`;
     else if (period && mode === "fluxo") {
       const query = new URLSearchParams({ visao: flowView, de: period.from, ate: period.to });
       if (format === "csv") { query.set("formato", "csv"); query.set("codificacao", "utf-8"); }
-      url = `/exportar/fluxo?${query}`;
+      url = `/financeiro/exportar/fluxo?${query}`;
     } else if (period && mode === "contabil") {
       const query = new URLSearchParams({ de: period.from, ate: period.to, codificacao: encoding });
       if (accountId) query.set("conta", accountId);
-      url = `/exportar/contabil?${query}`;
+      url = `/financeiro/exportar/contabil?${query}`;
     }
     if (!url) return;
     setPending(true);

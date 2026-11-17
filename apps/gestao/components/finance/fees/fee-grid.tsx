@@ -3,7 +3,7 @@
 import { Fragment, useMemo, useOptimistic, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { IconCheck, IconChevronRight, IconDots, IconHelpCircle, IconSearch } from "@tabler/icons-react";
-import { addAssociateMovement, confirmFeeSuggestions, deleteAssociateMovement, setFeeAssociatePrice, setFeeExemption, setFeeRecord } from "@/app/mensalidades/actions";
+import { addAssociateMovement, confirmFeeSuggestions, deleteAssociateMovement, setFeeAssociatePrice, setFeeExemption, setFeeRecord } from "@/app/(financeiro)/financeiro/mensalidades/actions";
 import { FilterOptionsProvider, type FilterOption } from "@/components/finance/entries/filter-options";
 import { MultiFilter } from "@/components/finance/entries/multi-filter";
 import { OptionSelect } from "@geas/ui/components/option-controls";

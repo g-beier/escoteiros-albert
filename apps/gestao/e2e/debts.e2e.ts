@@ -20,10 +20,10 @@ test.afterAll(() => {
 
 test("devedores: anotar, editar o acordo e excluir", async ({ page }) => {
   const description = uniqueName("Acampamento");
-  await page.goto("/mensalidades");
-  await expect(page).toHaveURL(/\/mensalidades\/controle$/);
+  await page.goto("/financeiro/mensalidades");
+  await expect(page).toHaveURL(/\/financeiro\/mensalidades\/controle$/);
   await page.getByRole("link", { name: "Devedores" }).first().click();
-  await expect(page).toHaveURL(/\/mensalidades\/devedores$/);
+  await expect(page).toHaveURL(/\/financeiro\/mensalidades\/devedores$/);
 
   await page.getByRole("button", { name: "Nova dívida" }).click();
   const dialog = page.getByRole("dialog");
@@ -79,7 +79,7 @@ test("devedores: um lançamento paga duas dívidas pelo devedor", async ({ page 
     commit;
   `);
 
-  await page.goto("/mensalidades/devedores");
+  await page.goto("/financeiro/mensalidades/devedores");
   const debtorRow = page.getByRole("row").filter({ has: page.getByRole("button", { name: new RegExp(`^${associate}`) }) });
   await expect(debtorRow).toContainText("falta R$ 240,00");
   await debtorRow.getByRole("button", { name: `Ações de ${associate}` }).click();

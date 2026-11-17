@@ -43,9 +43,9 @@ export async function fetchEntry(supabase: SupabaseClient, id: string): Promise<
 
 const LIST_KEYS = ["ordem", "de", "ate", "conta", "forma", "pasta", "conciliado", "associado", "rubrica", "q", "ofx"] as const;
 
-/** Caminho de uma visão da lista (`/lancamentos/movimentacoes` ou `/lancamentos/detalhamento`), com a query dos filtros. */
+/** Caminho de uma visão da lista (`/financeiro/lancamentos/movimentacoes` ou `/financeiro/lancamentos/detalhamento`), com a query dos filtros. */
 export function entriesPath(view: EntryView, query = "") {
-  return `/lancamentos/${view}${query ? `?${query}` : ""}`;
+  return `/financeiro/lancamentos/${view}${query ? `?${query}` : ""}`;
 }
 
 /** Query string da lista (só chaves conhecidas): os filtros, que seguem de uma visão para a outra e voltam dos detalhes. */
@@ -59,7 +59,7 @@ export function listQuery(params: Record<string, string | string[] | undefined> 
   return allowed.toString();
 }
 
-const LIST_PATH = /^\/lancamentos\/(movimentacoes|detalhamento)(?:\?(.*))?$/;
+const LIST_PATH = /^\/financeiro\/lancamentos\/(movimentacoes|detalhamento)(?:\?(.*))?$/;
 
 /** Volta para a lista de onde se veio (`voltar` = caminho da visão + filtros); qualquer outra coisa vai para Movimentações. */
 export function listHref(voltar: string | string[] | undefined) {

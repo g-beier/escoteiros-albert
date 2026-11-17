@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { saveFeeSettings, saveFeeYearSettings, type FeeSettingsState } from "@/app/mensalidades/actions";
+import { saveFeeSettings, saveFeeYearSettings, type FeeSettingsState } from "@/app/(financeiro)/financeiro/mensalidades/actions";
 import { CategoryPicker } from "@/components/finance/entries/category-picker";
 import { OptionSelect } from "@geas/ui/components/option-controls";
 import { SectionBody, SectionCard, SectionHeader } from "@geas/ui/components/section-card";

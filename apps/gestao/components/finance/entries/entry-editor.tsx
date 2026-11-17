@@ -55,7 +55,7 @@ export function EntryListProvider({ canEdit, returnHref, children }: { canEdit: 
     canEdit,
     overrides,
     busyEntryId,
-    detailHref: (entryId) => `/lancamentos/${entryId}${returnHref ? `?voltar=${encodeURIComponent(returnHref)}` : ""}`,
+    detailHref: (entryId) => `/financeiro/lancamentos/${entryId}${returnHref ? `?voltar=${encodeURIComponent(returnHref)}` : ""}`,
     requestDelete: (entryId) => setDeleteId(entryId),
     selected,
     setSelected: (entries, on) => setSelection((current) => {
@@ -107,7 +107,7 @@ export function EntryListProvider({ canEdit, returnHref, children }: { canEdit: 
 }
 
 export function NewEntryButton({ returnHref }: { returnHref: string }) {
-  return <Link href={`/lancamentos/novo${returnHref ? `?voltar=${encodeURIComponent(returnHref)}` : ""}`} className={buttonVariants({ size: "lg" })}><IconPlus /> Novo lançamento</Link>;
+  return <Link href={`/financeiro/lancamentos/novo${returnHref ? `?voltar=${encodeURIComponent(returnHref)}` : ""}`} className={buttonVariants({ size: "lg" })}><IconPlus /> Novo lançamento</Link>;
 }
 
 export function useEntryOverrides() {

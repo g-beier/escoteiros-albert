@@ -8,10 +8,10 @@ import { chooseOption, createEntry, entryRow, search, uniqueName } from "./suppo
 // conciliação ("Criar lançamento" a partir da linha) e filtro Conciliado. Tudo no grupo E2E e desfeito no fim.
 test.afterAll(() => cleanupE2eGroup());
 
-const FIXTURES = resolve(__dirname, "../lib/statement-import/__fixtures__");
+const FIXTURES = resolve(__dirname, "../lib/finance/statement-import/__fixtures__");
 
 async function deleteFromDetail(page: Page, name: string) {
-  await page.goto("/lancamentos/movimentacoes?de=tudo");
+  await page.goto("/financeiro/lancamentos/movimentacoes?de=tudo");
   await search(page, name);
   await entryRow(page, name).getByRole("link", { name, exact: true }).click();
   await page.getByRole("button", { name: "Excluir lançamento" }).click();
@@ -25,7 +25,7 @@ test("mover lançamentos selecionados para outra conta", async ({ page }) => {
   for (const name of names) {
     await createEntry(page, { name, direction: "saida", total: "12,00", account: E2E_ACCOUNTS[0], category: "Telefone", description: "recarga" });
   }
-  await page.goto("/lancamentos/movimentacoes");
+  await page.goto("/financeiro/lancamentos/movimentacoes");
   await search(page, tag);
   for (const name of names) await page.getByRole("checkbox", { name: `Selecionar ${name}` }).click();
   const bar = page.getByRole("region", { name: "Ações em lote" });
@@ -42,7 +42,7 @@ test("mover lançamentos selecionados para outra conta", async ({ page }) => {
 test("anexar, abrir e excluir um comprovante", async ({ page }) => {
   const name = uniqueName("Comprovante");
   await createEntry(page, { name, direction: "saida", total: "33,00", account: E2E_ACCOUNTS[0], category: "Telefone", description: "papelaria" });
-  await page.goto("/lancamentos/movimentacoes");
+  await page.goto("/financeiro/lancamentos/movimentacoes");
   await search(page, name);
   await entryRow(page, name).getByRole("link", { name, exact: true }).click();
   const section = page.getByRole("region", { name: "Comprovantes" });
@@ -58,7 +58,7 @@ test("anexar, abrir e excluir um comprovante", async ({ page }) => {
   expect(response.ok()).toBe(true);
   expect((await response.body()).subarray(0, 4).toString()).toBe("%PDF");
   // a lista mostra o clipe do comprovante
-  await page.goto("/lancamentos/movimentacoes");
+  await page.goto("/financeiro/lancamentos/movimentacoes");
   await search(page, name);
   await expect(entryRow(page, name)).toContainText(/comprovante/i);
   await entryRow(page, name).getByRole("link", { name, exact: true }).click();
@@ -74,20 +74,20 @@ test("importar OFX, criar lançamento pela conciliação, filtrar Conciliado e d
   const account = E2E_ACCOUNTS[1];
 
   await test.step("importar nubank.ofx", async () => {
-    await page.goto("/extrato/importar");
+    await page.goto("/financeiro/extrato/importar");
     await chooseOption(page, "Conta", account);
     await page.getByLabel("Arquivo do extrato").setInputFiles(resolve(FIXTURES, "nubank.ofx"));
     const review = page.getByRole("region", { name: "2. Conferência" });
     await expect(review).toContainText(/\d+ novas/);
     await review.getByRole("button", { name: /^Importar \d+ linhas$/ }).click();
-    await expect(page).toHaveURL(/\/extrato\/conciliar\?/);
+    await expect(page).toHaveURL(/\/financeiro\/extrato\/conciliar\?/);
     await expect(page).toHaveURL(/de=2026-10-01/);
   });
 
   await test.step("criar o lançamento de uma linha do extrato", async () => {
     const line = page.getByRole("region", { name: "Extrato" }).getByRole("listitem").filter({ hasText: "1.500,00" });
     await line.getByRole("link", { name: "Criar lançamento" }).click();
-    await expect(page).toHaveURL(/\/lancamentos\/novo\?linha=/);
+    await expect(page).toHaveURL(/\/financeiro\/lancamentos\/novo\?linha=/);
     await expect(page.getByLabel(/^Valor total/)).toHaveValue("1500,00");
     await page.getByLabel("Histórico").fill(name);
     if (!(await page.getByLabel("Forma de pagamento", { exact: true }).textContent())?.includes("PIX")) await chooseOption(page, "Forma de pagamento", "PIX");
@@ -98,31 +98,31 @@ test("importar OFX, criar lançamento pela conciliação, filtrar Conciliado e d
     await split.getByLabel(/^Valor \(R\$\)/).fill("1500,00");
     await page.getByRole("button", { name: "Salvar lançamento" }).click();
     await expect(page.getByText("Lançamento criado e conciliado.")).toBeVisible();
-    await expect(page).toHaveURL(/\/extrato\/conciliar\?/);
+    await expect(page).toHaveURL(/\/financeiro\/extrato\/conciliar\?/);
     await page.locator("summary", { hasText: "Vinculados" }).click();
     await expect(page.getByRole("link", { name, exact: true })).toBeVisible();
   });
 
   await test.step("filtro Conciliado na lista", async () => {
-    await page.goto(`/lancamentos/movimentacoes?de=tudo&conciliado=sim`);
+    await page.goto(`/financeiro/lancamentos/movimentacoes?de=tudo&conciliado=sim`);
     await search(page, name);
     await expect(entryRow(page, name)).toBeVisible();
     // conciliado = a coluna ID OFX mostra o FITID da linha vinculada
     await expect(entryRow(page, name).getByRole("button", { name: /^Copiar ID OFX / })).toBeVisible();
-    await page.goto(`/lancamentos/movimentacoes?de=tudo&conciliado=nao`);
+    await page.goto(`/financeiro/lancamentos/movimentacoes?de=tudo&conciliado=nao`);
     await search(page, name);
     await expect(entryRow(page, name)).toHaveCount(0);
   });
 
   await test.step("desfazer a importação", async () => {
-    await page.goto("/extrato/importar");
+    await page.goto("/financeiro/extrato/importar");
     await chooseOption(page, "Conta", account);
     const recent = page.getByRole("region", { name: "Importações recentes" });
     await recent.getByRole("row").filter({ hasText: "nubank.ofx" }).getByRole("button", { name: "Desfazer" }).click();
     await page.getByRole("dialog", { name: "Desfazer esta importação?" }).getByRole("button", { name: "Desfazer importação" }).click();
     await expect(recent).toContainText("Nenhum extrato importado nesta conta.");
     // o lançamento continua, agora sem conciliação
-    await page.goto(`/lancamentos/movimentacoes?de=tudo&conciliado=nao`);
+    await page.goto(`/financeiro/lancamentos/movimentacoes?de=tudo&conciliado=nao`);
     await search(page, name);
     await expect(entryRow(page, name)).toBeVisible();
     await expect(entryRow(page, name).getByRole("button", { name: /^Copiar ID OFX / })).toHaveCount(0);

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconDownload, IconFileText, IconFileUpload, IconPhoto, IconTrash } from "@tabler/icons-react";
-import { prepareAttachmentUpload, registerAttachment, removeAttachment } from "@/app/lancamentos/actions";
+import { prepareAttachmentUpload, registerAttachment, removeAttachment } from "@/app/(financeiro)/financeiro/lancamentos/actions";
 import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { Button } from "@geas/ui/components/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
@@ -36,7 +36,7 @@ export function EntryAttachments({ entryId, attachments, canEdit }: { entryId: s
   const [uploading, setUploading] = useState<string | null>(null);
   const [toRemove, setToRemove] = useState<Attachment | null>(null);
   const [removing, startRemove] = useTransition();
-  const base = `/lancamentos/${entryId}/anexos`;
+  const base = `/financeiro/lancamentos/${entryId}/anexos`;
 
   async function onFiles(event: React.ChangeEvent<HTMLInputElement>) {
     const files = [...(event.target.files ?? [])];

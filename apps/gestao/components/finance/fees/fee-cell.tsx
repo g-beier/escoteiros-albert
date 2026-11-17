@@ -130,7 +130,7 @@ export function FeeCell({ name, month, state, record, suggestion, splits, canEdi
           <span className="grid">
             <span><span className="num">{dateBR(split.entryDate)}</span> · <span className="num">{money(split.amountCents / 100)}</span>
               {split.linkedPeriods.length > 0 && <span className="text-muted-foreground"> · já em {split.linkedPeriods.map((p) => FEE_MONTH_NAMES[p % 100] ?? p).join(", ")}</span>}</span>
-            <Link href={`/lancamentos/${split.entryId}`} className="text-xs text-primary hover:underline">{split.description || "ver lançamento"}</Link>
+            <Link href={`/financeiro/lancamentos/${split.entryId}`} className="text-xs text-primary hover:underline">{split.description || "ver lançamento"}</Link>
           </span>
         </Label>)}
         <p className="m-0 text-xs text-muted-foreground">{chosen

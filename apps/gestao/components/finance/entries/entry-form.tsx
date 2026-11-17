@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconArrowDownLeft, IconArrowUpRight, IconPlus, IconTrash } from "@tabler/icons-react";
 import { createEntry, deleteEntry, updateEntry } from "@/app/actions";
-import { createEntryFromStatementLine } from "@/app/extrato/conciliar/actions";
+import { createEntryFromStatementLine } from "@/app/(financeiro)/financeiro/extrato/conciliar/actions";
 import { OptionCombobox, OptionSelect, type Option } from "@geas/ui/components/option-controls";
 import { Button } from "@geas/ui/components/button";
 import { Checkbox } from "@geas/ui/components/checkbox";
