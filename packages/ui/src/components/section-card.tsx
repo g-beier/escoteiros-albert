@@ -2,13 +2,14 @@ import { cn } from "@geas/ui/lib/utils";
 
 /** Cartão de seção (cadastros, importação): borda forte, cabeçalho com título e ações. */
 export function SectionCard({ className, ...props }: React.ComponentProps<"section">) {
-  return <section className={cn("overflow-hidden rounded-2xl border-[1.5px] border-foreground bg-card shadow-sm", className)} {...props} />;
+  return <section className={cn("overflow-hidden rounded-2xl bg-card shadow-[0_8px_24px_rgba(37,35,40,0.10)]", className)} {...props} />;
 }
 
 export function SectionHeader({ title, titleId, description, children }: { title: React.ReactNode; titleId?: string; description?: React.ReactNode; children?: React.ReactNode }) {
-  return <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b px-4 py-2.5">
+  /* Mesmo cinza das linhas zebradas (`muted`), sem linha de borda. */
+  return <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 bg-muted px-4 py-2.5">
     <div className="min-w-0">
-      <h2 id={titleId} className="m-0 text-base font-semibold">{title}</h2>
+      <h2 id={titleId} className="m-0 text-base font-semibold text-foreground">{title}</h2>
       {description && <p className="m-0 text-xs text-balance text-muted-foreground">{description}</p>}
     </div>
     {children && <div className="flex items-center gap-3">{children}</div>}

@@ -20,6 +20,7 @@
     "infra:stop": "npm run infra:stop --workspace=@geas/financeiro",
     "infra:status": "npm run infra:status --workspace=@geas/financeiro",
     "infra:reset": "npm run infra:reset --workspace=@geas/financeiro",
+    "seed:inventario": "node apps/inventario/scripts/seed-demo.mjs",
     "test:db": "npm run test:db --workspace=@geas/financeiro",
     "test:e2e": "npm run test:e2e --workspace=@geas/financeiro"
   },

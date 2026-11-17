@@ -50,8 +50,8 @@
   white-space: nowrap;
 }
 
-.geas-app--financeiro { color: var(--geas-purple); }
-.geas-app--inventario { color: var(--geas-orange); }
+.geas-app--financeiro,
+.geas-app--inventario { color: var(--geas-purple); }
 
 .geas-brand__static {
   transform: translateY(-50%);
@@ -91,7 +91,7 @@
 }
 
 .geas-login { --geas-app-color:var(--geas-purple); --geas-app-color-dark:var(--geas-purple-dark); display:grid; min-height:100vh; grid-template-columns:minmax(0,1.15fr) minmax(420px,.85fr); font-family:var(--geas-font); background:var(--geas-paper); color:var(--geas-ink); }
-.geas-login--inventario { --geas-app-color:var(--geas-orange); --geas-app-color-dark:var(--geas-orange-dark); }
+.geas-login--inventario { --geas-app-color:var(--geas-purple); --geas-app-color-dark:var(--geas-purple-dark); }
 .geas-login__story { position:relative; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden; padding:56px; }
 .geas-login__story::before { content:""; position:absolute; top:20%; right:-44px; width:88px; height:88px; background:var(--geas-app-color); }
 .geas-login--inventario .geas-login__story::before { top:calc(20% + 104px); }

@@ -38,7 +38,7 @@
   --shadow: 5px 6px 0 rgba(37, 35, 40, .09);
   --topbar-h: 60px;
 
-  /* Cor de destaque do app (Financeiro: roxo; Inventário: laranja, ver abaixo). */
+  /* Cor de destaque do app (roxo nos dois; Inventário usa o mesmo primary). */
   --app: var(--purple);
   --app-soft: var(--purple-soft);
   --app-soft-foreground: #3a2690;
@@ -70,12 +70,12 @@
   --radius: 0.625rem;
 }
 
-/* Laranja escuro: o laranja da marca não tem contraste suficiente com texto branco. */
+/* Inventário: mesmo destaque roxo do Financeiro; laranja fica só na decoração/charts. */
 :root[data-app="inventario"] {
-  --app: var(--orange-dark);
-  --app-soft: var(--orange-soft);
-  --app-soft-foreground: #8a2c10;
-  --chart-3: var(--purple);
+  --app: var(--purple);
+  --app-soft: var(--purple-soft);
+  --app-soft-foreground: #3a2690;
+  --chart-3: var(--orange);
 }
 
 @theme inline {
@@ -124,7 +124,8 @@
 
 @layer base {
   * { @apply border-border outline-ring/50; }
-  html { @apply font-sans; }
+  /* Reserva a faixa da scrollbar mesmo sem overflow — evita “pulo” horizontal ao filtrar. */
+  html { @apply font-sans; scrollbar-gutter: stable; }
   body { @apply bg-background text-foreground; }
 }
 

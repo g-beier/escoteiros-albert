@@ -6,22 +6,26 @@ import { fetchFamilyOptions } from "@/components/materials/data";
 import { MaterialForm } from "@/components/materials/material-form";
 import { ReviewNotice } from "@/components/materials/review-notice";
 import { SetupNeeded } from "@/components/setup-needed";
+import { fetchLocationPaths, locationOptions } from "@/lib/locations";
 import { pageSession } from "@/lib/session";
 
 export default async function NewMaterial() {
   const { supabase, user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email ?? ""} />;
-  if (!member.canEdit) redirect("/materiais");
-  const families = await fetchFamilyOptions(supabase, member.groupId);
+  if (!member.canEdit) redirect("/");
+  const [families, locations] = await Promise.all([
+    fetchFamilyOptions(supabase, member.groupId),
+    fetchLocationPaths(supabase, member.groupId).then((paths) => locationOptions(paths)),
+  ]);
   return <div className="shell">
     <AppHeader current="/materiais/novo" email={user.email ?? ""} role={member.role} isAdmin={member.isAdmin} />
     <PageBody width="narrow">
-      <PageHeader title="Novo material" crumbs={[{ label: "Materiais", href: "/materiais" }, { label: "Novo material" }]}
-        description="Depois de cadastrar, adicione os lotes (por quantidade) ou as peças (com etiqueta)." />
+      <PageHeader title="Novo material" crumbs={[{ label: "Materiais", href: "/" }, { label: "Novo material" }]}
+        description="Cadastre um novo material" />
       {!member.canManage && <ReviewNotice />}
       <SectionCard>
         <SectionHeader title="Material" />
-        <div className="p-4"><MaterialForm families={families} /></div>
+        <div className="p-4"><MaterialForm families={families} locations={locations} /></div>
       </SectionCard>
     </PageBody>
   </div>;

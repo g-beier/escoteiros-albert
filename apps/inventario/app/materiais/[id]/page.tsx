@@ -86,12 +86,12 @@ export default async function MaterialDetail({ params }: { params: Promise<{ id:
   return <div className="shell">
     <AppHeader current={`/materiais/${id}`} email={user.email ?? ""} role={member.role} isAdmin={member.isAdmin} />
     <PageBody>
-      <PageHeader title={material.name} crumbs={[{ label: "Materiais", href: "/materiais" }, { label: material.name }]}
+      <PageHeader title={material.name} crumbs={[{ label: "Materiais", href: "/" }, { label: material.name }]}
         description={material.description ?? undefined}
         actions={member.canEdit && <Link href={`/materiais/${id}/editar`} className={buttonVariants({ variant: "outline", size: "lg" })}><IconPencil data-icon="inline-start" /> Editar material</Link>}>
         <dl className="m-0 flex flex-wrap gap-x-6 gap-y-2 text-xs">
           <Fact label="Controle">{TRACKING_LABELS[material.tracking]}{material.consumable && " · consumível"}</Fact>
-          <Fact label="Família">{material.family_name ? <>{material.family_name}{material.family_code && <span className="num text-muted-foreground"> ({material.family_code})</span>}</> : "—"}</Fact>
+          <Fact label="Categoria">{material.family_name ? (material.family_code ? <span className="num">{material.family_code} - {material.family_name}</span> : material.family_name) : "—"}</Fact>
           <Fact label={isLot ? "Quantidade" : "Peças"}>
             <span className={cn("num inline-flex items-center gap-1 font-semibold", material.below_minimum && "text-destructive")}>
               {material.below_minimum && <IconAlertTriangle className="size-3.5" aria-label="Abaixo do mínimo" />}{material.quantity}

@@ -2,7 +2,7 @@
 -- lotes, peças com etiqueta, revisão, escrita só pelas funções e isolamento entre grupos.
 -- Rode com `npm run test:db`.
 begin;
-select plan(117);
+select plan(122);
 \ir _fixture.psql
 
 -- Chefe (…f0a4) e gestor (…f0a5) do grupo A: no Financeiro são só consulta.
@@ -82,8 +82,14 @@ select public.inventory_save_material(:'gid_a', null, :'fam_sem', 'Lampião', 'u
 select throws_like(format($$select public.inventory_save_material(%L, null, null, 'caneca', 'lot', false, null, null)$$, :'gid_a'), 'Já existe o material%', 'nome de material único');
 select is((select review_status::text from public.inventory_movements where material_id = :'can' and kind = 'edicao'), 'pendente', 'cadastro do chefe nasce pendente');
 
+-- Exclusão de material (040): sem estoque; com estoque, só depois da baixa --------------------------------
+select public.inventory_save_material(:'gid_a', null, null, 'Erro de cadastro', 'lot', false, null, null) as trash \gset
+select lives_ok(format($$select public.inventory_delete_material(%L)$$, :'trash'), 'exclui material sem estoque');
+select is((select count(*)::int from public.inventory_materials where id = :'trash'), 0, 'material excluído sumiu');
+
 -- Lote: entrada, transferência, condição, ajuste, baixa ----------------------------------------
 select public.inventory_add_lot(:'can', :'coz', 12, 'bom', 500, null, null, null, null, null, null) as lot \gset
+select throws_like(format($$select public.inventory_delete_material(%L)$$, :'can'), 'Esvazie o estoque%', 'não exclui material com estoque');
 select throws_like(format($$select public.inventory_add_lot(%L, %L, 1, null, null, null, null, null, null, null, null)$$, :'bar', :'coz'), 'Este material é controlado por peça%', 'peça não recebe lote');
 select throws_like(format($$select public.inventory_add_lot(%L, %L, 0, null, null, null, null, null, null, null, null)$$, :'can', :'coz'), 'A quantidade deve ser positiva', 'lote com quantidade positiva');
 select throws_like(format($$select public.inventory_add_lot(%L, %L, 1, null, null, null, null, null, null, null, null)$$, :'can', :'vazia'), 'Escolha uma divisão ativa', 'divisão inativa não recebe material');
@@ -190,6 +196,7 @@ select throws_ok(format($$insert into public.inventory_counts(group_id, year, ma
 select tests.login('00000000-0000-0000-0000-00000000f0a3') \gset
 select is((select count(*)::int from public.inventory_materials where group_id = :'gid_a'), 3, 'consulta lê os materiais');
 select throws_like(format($$select public.inventory_add_lot(%L, %L, 1, null, null, null, null, null, null, null, null)$$, :'can', :'coz'), 'Material não encontrado ou sem permissão', 'consulta não dá entrada');
+select throws_like(format($$select public.inventory_delete_material(%L)$$, :'lamp'), 'Material não encontrado ou sem permissão', 'consulta não exclui material');
 
 -- Grupo B não vê nem altera nada de A -----------------------------------------------------------
 select tests.login('00000000-0000-0000-0000-00000000f0b1') \gset
@@ -204,8 +211,18 @@ select throws_like(format($$select public.inventory_save_location(%L, null, null
 select throws_like(format($$select public.inventory_next_tag(%L)$$, :'fam'), 'Família não encontrada', 'B não consulta etiquetas de A');
 select tests.logout() \gset
 
-select is((select count(*)::int from public.audit_events where group_id = :'gid_a' and action like 'inventory.%' and details ? 'movement_id'),
-  (select count(*)::int from public.inventory_movements where group_id = :'gid_a'), 'cada movimento tem seu evento de auditoria');
+select ok((select exists (
+  select 1 from public.audit_events where group_id = :'gid_a' and action = 'inventory.material_deleted' and entity_id = :'trash'
+)), 'exclusão do material auditada');
+-- Movimentos excluídos com o material deixam o evento de auditoria (rastros); os que restam batem 1:1.
+select ok(not exists (
+  select 1 from public.inventory_movements m
+  where m.group_id = :'gid_a'
+    and not exists (
+      select 1 from public.audit_events a
+      where a.group_id = m.group_id and a.details->>'movement_id' = m.id::text
+    )
+), 'cada movimento restante tem seu evento de auditoria');
 select is((select count(*)::int from public.audit_events where group_id = :'gid_a' and action ~ '^inventory\.(location|family)_'), 14, 'divisões e famílias auditadas');
 
 select * from finish();

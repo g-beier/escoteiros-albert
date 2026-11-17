@@ -27,8 +27,23 @@ export const originOptions = options(ORIGIN_LABELS);
 export const writeOffOptions = options(WRITE_OFF_LABELS);
 export const roleOptions = options(ROLE_LABELS);
 
-/** Formato da etiqueta: GEAS-<família, 3 dígitos>-<contagem, 4 dígitos>. */
+/** Formato da etiqueta: GEAS-<categoria, 3 dígitos>-<contagem, 4 dígitos>. */
 export const TAG_PATTERN = /^GEAS-\d{3}-\d{4}$/;
+
+/** Categorias padrão do inventário (nome + código de etiqueta sequencial). */
+export const DEFAULT_CATEGORIES = [
+  { name: "Acampamento", code: "001" },
+  { name: "Cozinha", code: "002" },
+  { name: "Primeiros Socorros", code: "003" },
+  { name: "Ferramentas", code: "004" },
+  { name: "Cordas", code: "005" },
+  { name: "Iluminação", code: "006" },
+  { name: "Consumíveis", code: "007" },
+  { name: "Uniforme e distintivos", code: "008" },
+  { name: "Escritório", code: "009" },
+  { name: "Limpeza", code: "010" },
+  { name: "Esporte e jogos", code: "011" },
+] as const;
 
 /** Nome de uma relação do PostgREST, que pode vir como objeto ou lista. */
 export function relatedName(value: unknown): string | undefined {
@@ -56,3 +71,58 @@ export function daysUntil(date: string) {
 
 /** Validade que pede atenção: vencida ou vencendo em até 60 dias. */
 export const EXPIRY_WARNING_DAYS = 60;
+
+/** Situação do material na Home: pior critério vence (Ruim > Médio > Bom). */
+export type MaterialStatus = "bom" | "medio" | "ruim";
+
+export const MATERIAL_STATUS_LABELS: Record<MaterialStatus, string> = {
+  bom: "Bom",
+  medio: "Médio",
+  ruim: "Ruim",
+};
+
+/** Ruim: validade vencida ou zerado com mínimo. Médio: abaixo do mínimo ou a vencer. Bom: o resto. */
+export function materialStatus(row: {
+  quantity: number;
+  minimum_quantity: number | null;
+  next_expiry: string | null;
+  below_minimum?: boolean;
+}): MaterialStatus {
+  const below = row.below_minimum ?? (row.minimum_quantity != null && row.quantity < row.minimum_quantity);
+  const days = row.next_expiry ? daysUntil(row.next_expiry) : null;
+  if ((days != null && days < 0) || (row.minimum_quantity != null && row.quantity === 0)) return "ruim";
+  if (below || (days != null && days <= EXPIRY_WARNING_DAYS)) return "medio";
+  return "bom";
+}
+
+/** Dono do material na Home: ramo / diretoria, pela divisão principal (raiz do caminho). */
+export type MaterialOwner = "diretoria" | "escoteiro" | "senior" | "pioneiro" | "lobinho";
+
+export const MATERIAL_OWNER_LABELS: Record<MaterialOwner, string> = {
+  diretoria: "Diretoria",
+  escoteiro: "Escoteiro",
+  senior: "Senior",
+  pioneiro: "Pioneiro",
+  lobinho: "Lobinho",
+};
+
+/** Cores da bolinha do dono (ramos + diretoria). */
+export const MATERIAL_OWNER_DOT: Record<MaterialOwner, string> = {
+  diretoria: "bg-[#2563eb]",
+  escoteiro: "bg-[#14532d]",
+  senior: "bg-[#7a1f3d]",
+  pioneiro: "bg-[#dc2626]",
+  lobinho: "bg-[#eab308]",
+};
+
+/** Infere o dono pela raiz do caminho da divisão (ex.: "Alcateia › Patrulha Lobo"). */
+export function ownerFromLocationPath(path: string | null | undefined): MaterialOwner | null {
+  if (!path || path === "—") return null;
+  const root = path.split(" › ")[0]?.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase() ?? "";
+  if (root.includes("diretor") || root.includes("cozinha") || root.includes("almox")) return "diretoria";
+  if (root.includes("alcat") || root.includes("lobinh")) return "lobinho";
+  if (root.includes("senior") || root.includes("guia")) return "senior";
+  if (root.includes("pion") || root.includes("cla")) return "pioneiro";
+  if (root.includes("escoteir")) return "escoteiro";
+  return null;
+}

@@ -13,8 +13,8 @@ O regulamento patrimonial do grupo está para ser aprovado em assembleia. Até l
 | **Lote** | Quantidade de um material sem etiqueta (pratos, canecas, estacas, remédios) numa divisão, com condição, valor estimado e validade próprios. O mesmo material pode ter vários lotes, na mesma divisão ou em outras: "3 fogareiros bons a R$ 80" e "1 com a caixa quebrada a R$ 40" são dois lotes. | `inventory_stock` *(proposto)* |
 | **Consumível** | Material que acaba com o uso (gás, fita, pilhas, primeiros socorros). Sempre por lote, com **estoque mínimo**; sai por **consumo**. | marcação no material |
 | **Validade** | Data de vencimento do lote, quando houver (remédios, repelente, protetor solar, gás). O app avisa dos lotes vencidos e perto de vencer. | `inventory_stock.expires_on` *(proposto)* |
-| **Família** | Agrupamento de materiais com o mesmo código de etiqueta (3 dígitos): todas as barracas = `001`, independentemente do modelo. | *(proposto)* |
-| **Etiqueta** | Código da peça no formato `GEAS-000-0000`: código da **família** e contagem dentro da família (4 dígitos). Opcional por enquanto: as etiquetas físicas ainda não existem, e o número é preenchido quando a etiqueta for colocada na peça (o app pode sugerir o próximo livre da família). Única no grupo, nunca reaproveitada; não muda quando a peça troca de divisão. | `inventory_units.tag` *(proposto)* |
+| **Categoria** (no banco: família) | Agrupamento de materiais do mesmo tipo, com código de etiqueta sequencial (3 dígitos): Acampamento = `001`, Cozinha = `002`, etc. Na interface chama-se **Categoria**. | `inventory_families` |
+| **Etiqueta** | Código da peça no formato `GEAS-000-0000`: código da **categoria** e contagem dentro dela (4 dígitos). Opcional por enquanto: as etiquetas físicas ainda não existem, e o número é preenchido quando a etiqueta for colocada na peça (o app pode sugerir o próximo livre da categoria). Única no grupo, nunca reaproveitada; não muda quando a peça troca de divisão. | `inventory_units.tag` *(proposto)* |
 | **Divisão** | Onde o material fica guardado na sede, em árvore e com quantos níveis forem precisos: Diretoria › Estante, Diretoria › Armário de ferro, Cozinha › Estante de canecas › 2º nível, Tropa Escoteira › Patrulha Lobo, Distintivos e certificados. A ordem das divisões (e das subdivisões dentro de cada uma) é escolhida pelo gestor, não alfabética; as raízes são os locais macro, as abas da lista de materiais. É o "onde está", não o "de quem é": legalmente, tudo é do grupo, e as patrulhas também são lugar, não dono. Praticamente tudo fica na sede. | `inventory_locations` (`parent_id`, `position`) |
 | **Condição** | Estado da peça ou do lote: novo, bom, regular, ruim, em manutenção, inservível ("ruim" é usado pelo grupo e falta no tipo atual). Num lote, todas as unidades têm a mesma condição: "2 ruins, 1 razoável, 1 ok" são três lotes. Também é conferida na conferência anual. | `inventory_condition` (acrescentar `ruim`) |
 | **Entrada** | Chegada do material ao grupo. Obrigatórios: data, origem (compra, doação, fabricação própria, não informada) e valor estimado. Opcionais: observação, fornecedor e nota fiscal. | colunas da peça / movimento *(proposto)* |
@@ -75,6 +75,8 @@ Fonte: planilha "Doc 31 – Inventário" (uma aba por área, quantidades de 2024
 Scripts (só para o banco local de desenvolvimento; os CSV são dados do grupo e não são versionados):
 
 ```bash
+npm run seed:inventario                                                         # demo (categorias 001–011 + materiais); apaga o inventário do grupo
+npm run seed:inventario -- --grupo "<nome>"                                     # se houver mais de um grupo
 node apps/inventario/scripts/planilha-para-csv.mjs <planilha.xlsx> <pasta>     # gera inventario-lotes.csv e inventario-pecas.csv
 node apps/inventario/scripts/importar-planilha.mjs <pasta> --grupo "<nome>"     # apaga o inventário do grupo e importa pelas funções
 ```

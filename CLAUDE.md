@@ -25,6 +25,7 @@ npm run test:db             # pgTAP + SQL scripts (supabase test db, local Supab
 npm run test:e2e            # Playwright, desktop Chromium, own next dev on :3210
 npm run typecheck
 npm run infra:start         # local Supabase (Docker) + writes apps/financeiro/.env.local
+npm run seed:inventario     # demo inventory data (local Supabase only; wipes the group's inventory)
 ```
 
 Per app: `npm run <script> --workspace=@geas/<app>`.
@@ -57,12 +58,13 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 
 ## inventario
 
-- Model and vocabulary in `apps/inventario/docs/modelo.md` (material by unit with tag `GEAS-000-0000` or by lot; divisions as a tree; families with 3-digit code; movements with review status). Migrations live with financeiro's (`032_inventory_catalog.sql`); pgTAP in `supabase/tests/inventory.test.sql`.
+- Model and vocabulary in `apps/inventario/docs/modelo.md` (material by unit with tag `GEAS-000-0000` or by lot; divisions as a tree; **Categoria** in the UI = `inventory_families` with sequential 3-digit code; movements with review status). Migrations live with financeiro's (`032_inventory_catalog.sql`, delete material in `040_…`); pgTAP in `supabase/tests/inventory.test.sql`.
 - Roles per app: group admin (`memberships.role = 'admin'`) is manager in both apps; otherwise `memberships.inventory_role` (`manager` = gestor, `chief` = chefe, whose movements start `pendente`, `viewer`). Admin sets both roles in the shared Usuários screen (Financeiro `/usuarios`, Inventário `/configuracoes/usuarios`). Session in `apps/inventario/lib/session.ts` (`member.canEdit`, `canManage`); only file that reads `memberships`.
 - All writes through the `inventory_*` SQL functions (`supabase.rpc`); no direct write policies. Lists read `inventory_material_rows` and `inventory_location_paths`.
-- Routes: `/materiais` (list by location: one tab per root division, subdivisions as group rows, from `inventory_stock_by_location`; `/novo`, `/[id]`, `/[id]/editar`), `/movimentacoes`; Configurações (gear) with tabs `/configuracoes/divisoes|familias|usuarios` (Usuários only for the group admin; `components/settings-tabs.tsx`).
+- Routes: Home `/` (materials table + Novo material panel); `/materiais` (list by location); `/movimentacoes`; Configurações (gear) with tabs `/configuracoes/divisoes|familias|usuarios` (tab label **Categorias**; Usuários only for the group admin).
 - Division order is chosen by the manager by dragging (`inventory_locations.position`, `inventory_place_location` 037: before/after/inside, saved on drop), never alphabetical: sort by `sort_key` from `inventory_location_paths` (`treeOrder` in `apps/inventario/lib/locations.ts`).
-- Dev data from the group's spreadsheet: `apps/inventario/scripts/planilha-para-csv.mjs` then `importar-planilha.mjs` (local Supabase only; wipes and reloads the group's inventory). The CSVs are group data: never commit them.
+- Demo data for local testing: `npm run seed:inventario` (`apps/inventario/scripts/seed-demo.mjs`) — local Supabase only; wipes and reloads the group's inventory (categories 001–011, materials for Bom/Médio/Ruim × owners). Optional `--grupo "…"`. Spreadsheet import remains: `planilha-para-csv.mjs` then `importar-planilha.mjs`; CSVs are group data: never commit them.
+- Default category list: `DEFAULT_CATEGORIES` in `apps/inventario/lib/inventory.ts`.
 
 ## Shared UI (`packages/ui`, `@geas/ui`)
 
@@ -71,7 +73,7 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 - `@geas/ui/components/<name>`: shadcn/ui (`base-mira`, Base UI primitives — not Radix) plus `section-card`, `stat-card` (`StatCard`, `ListCard`), `option-controls` (`OptionSelect`, `OptionCombobox`) and `tree-drag` (`useTreeDrag`, `DragHandle`: drag rows of a tree table before/after/inside; used by Rubricas and Divisões). Reorder only by dragging: no up/down arrows. Add shadcn components with `npx shadcn@latest add <name>` inside `packages/ui`. Imports inside the package use `@geas/ui/...` (self-reference), never `@/`.
 - `@geas/ui/lib/utils` (`cn`) and `@geas/ui/lib/use-action-toast` (Server Action result → toast).
 - Users: `@geas/ui/lib/roles` (domain, group/inventory roles), `@geas/ui/lib/users` (server only, service key: list, invite, save roles, remove) and `@geas/ui/components/users-manager` (screen with one role column per app). Each app keeps thin `"use server"` wrappers that check the admin and revalidate.
-- Theme: each app's `app/globals.css` starts with `@import "@geas/ui/theme.css"` (Tailwind, tokens, shell CSS in `@layer components`, legacy CSS in `@layer legacy` below utilities) and the root `<html>` carries `data-app="financeiro" | "inventario"`, which sets the accent (`--app` → `primary`/`accent`: purple / dark orange).
+- Theme: each app's `app/globals.css` starts with `@import "@geas/ui/theme.css"` (Tailwind, tokens, shell CSS in `@layer components`, legacy CSS in `@layer legacy` below utilities) and the root `<html>` carries `data-app="financeiro" | "inventario"`, which sets the accent (`--app` → `primary`/`accent`: purple in both apps).
 
 ## CI/CD
 

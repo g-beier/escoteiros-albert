@@ -34,7 +34,7 @@ function IdentityFields({ prefix, unit, nextTag, familyCode }: { prefix: string;
         pattern="[Gg][Ee][Aa][Ss]-\d{3}-\d{4}" className="num uppercase" />
       <span className="text-[11px] text-muted-foreground">{familyCode
         ? <>Opcional até a etiqueta física ser colocada.{nextTag && <> Próxima livre: <span className="num">{nextTag}</span>.</>}</>
-        : "Defina o código da família do material para etiquetar."}</span>
+        : "Defina o código da categoria do material para etiquetar."}</span>
     </Field>
     <Field id={`${prefix}-legacy`} label="Código antigo">
       <Input id={`${prefix}-legacy`} name="legacyCode" maxLength={30} defaultValue={unit?.legacy_code ?? ""} placeholder="Ex.: B3" />

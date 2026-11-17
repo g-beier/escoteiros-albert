@@ -36,7 +36,7 @@ export function MaterialFilters({ families }: { families: Option[] }) {
       <Input type="search" aria-label="Buscar material pelo nome" placeholder="Buscar material" className={cn("pl-7", q.trim() && "border-primary")} value={q} onChange={(event) => onSearch(event.target.value)} />
     </div>
     <div className="grid gap-1.5">
-      <Label htmlFor="filter-family">Família</Label>
+      <Label htmlFor="filter-family">Categoria</Label>
       <OptionSelect id="filter-family" value={params.get("familia") ?? ""} onValueChange={(value) => apply({ familia: value || null })} options={families} emptyLabel="Todas" className="w-52" />
     </div>
     <div className="flex items-center gap-2 pb-1.5">

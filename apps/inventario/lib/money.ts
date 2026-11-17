@@ -8,7 +8,14 @@ export function parseMoneyToCents(raw: string): number | null {
 }
 
 export function money(cents: number | null | undefined) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format((cents ?? 0) / 100);
+  const value = (cents ?? 0) / 100;
+  const hasCents = (cents ?? 0) % 100 !== 0;
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: hasCents ? 2 : 0,
+  }).format(value);
 }
 
 /** Centavos para o campo do formulário (1250 → "12,50"). */

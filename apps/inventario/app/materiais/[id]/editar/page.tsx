@@ -25,7 +25,7 @@ export default async function EditMaterial({ params }: { params: Promise<{ id: s
     <AppHeader current={`/materiais/${id}`} email={user.email ?? ""} role={member.role} isAdmin={member.isAdmin} />
     <PageBody width="narrow">
       <PageHeader title={`Editar ${material.name}`}
-        crumbs={[{ label: "Materiais", href: "/materiais" }, { label: material.name as string, href: `/materiais/${id}` }, { label: "Editar" }]} />
+        crumbs={[{ label: "Materiais", href: "/" }, { label: material.name as string, href: `/materiais/${id}` }, { label: "Editar" }]} />
       {!member.canManage && <ReviewNotice />}
       <SectionCard>
         <SectionHeader title="Material" />

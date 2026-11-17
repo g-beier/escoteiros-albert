@@ -26,8 +26,8 @@ export default async function FamiliesPage() {
     <PageBody width="narrow">
       <PageHeader title="Configurações" tabs={<SettingsTabs current="familias" isAdmin={member.isAdmin} />} crumbs={settingsCrumbs("familias")}
         description={member.canManage
-          ? "Tipos de material. Clique numa família para ver os materiais dela."
-          : "Tipos de material. Só o gestor do inventário altera as famílias."} />
+          ? "Tipos de material (Acampamento, Cozinha…). Clique numa categoria para ver os materiais."
+          : "Tipos de material. Só o gestor do inventário altera as categorias."} />
       <FamiliesManager families={items} canManage={member.canManage} />
     </PageBody>
   </div>;

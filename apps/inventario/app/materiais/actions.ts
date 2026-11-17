@@ -74,7 +74,7 @@ async function run(formData: FormData, action: (rpc: (fn: string, args: Record<s
   }
 }
 
-/** Cadastro e edição do material; ao salvar, volta para o detalhe (onde se lançam lotes ou peças). */
+/** Cadastro e edição do material; no novo, pode já registrar a primeira entrada (lote ou peças). */
 export async function saveMaterial(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   const member = await editorOrError();
   if ("error" in member) return member;
@@ -83,10 +83,13 @@ export async function saveMaterial(_previous: ActionResult, formData: FormData):
     const tracking = oneOf<Tracking>(formData, "tracking", ["unit", "lot"]);
     if (!tracking) throw new InputError("Escolha se o material é controlado por peça ou por quantidade.");
     const existing = optionalId(formData, "id");
+    const withStock = !existing && formData.get("withStock") === "on";
+    const familyId = optionalId(formData, "familyId");
+    if (!familyId) throw new InputError("Escolha a categoria.");
     const { data, error } = await member.supabase.rpc("inventory_save_material", {
       p_group_id: member.groupId,
       p_id: existing,
-      p_family_id: optionalId(formData, "familyId"),
+      p_family_id: familyId,
       p_name: text(formData, "name"),
       p_tracking: tracking,
       p_consumable: tracking === "lot" && formData.get("consumable") === "on",
@@ -96,8 +99,54 @@ export async function saveMaterial(_previous: ActionResult, formData: FormData):
     });
     if (error) throw new InputError(error.message);
     savedId = data as string;
+
+    if (withStock) {
+      try {
+        const locationId = optionalId(formData, "locationId");
+        if (!locationId) throw new InputError("Escolha a divisão.");
+        const condition = oneOf(formData, "condition", CONDITIONS);
+        if (!condition) throw new InputError("Escolha o estado.");
+        const quantity = integer(formData, "quantity", "a quantidade", false) ?? 1;
+        if (quantity <= 0) throw new InputError("A quantidade deve ser positiva.");
+        if (quantity > 50) throw new InputError("No cadastro, a quantidade máxima é 50.");
+        const entry = {
+          p_condition: condition,
+          ...entryArgs(formData),
+        };
+        if (tracking === "lot") {
+          const { error: stockError } = await member.supabase.rpc("inventory_add_lot", {
+            p_material_id: savedId,
+            p_location_id: locationId,
+            p_quantity: quantity,
+            p_expires_on: date(formData, "expiresOn"),
+            ...entry,
+          });
+          if (stockError) throw new InputError(stockError.message);
+        } else {
+          for (let i = 0; i < quantity; i++) {
+            const { error: stockError } = await member.supabase.rpc("inventory_add_unit", {
+              p_material_id: savedId,
+              p_location_id: locationId,
+              p_tag: null,
+              p_legacy_code: null,
+              p_description: null,
+              ...entry,
+            });
+            if (stockError) throw new InputError(stockError.message);
+          }
+        }
+      } catch (stockError) {
+        revalidatePath("/materiais");
+        revalidatePath(`/materiais/${savedId}`);
+        revalidatePath("/");
+        const message = stockError instanceof InputError ? stockError.message : "Erro ao registrar o estoque.";
+        return { error: `Material cadastrado, mas a entrada falhou: ${message}` };
+      }
+    }
+
     revalidatePath("/materiais");
     revalidatePath(`/materiais/${savedId}`);
+    revalidatePath("/");
   } catch (error) {
     if (error instanceof InputError) return { error: error.message };
     throw error;
@@ -217,4 +266,16 @@ export async function updateUnit(_previous: ActionResult, formData: FormData) {
     });
     return "Dados da peça salvos.";
   });
+}
+
+/** Remove o material do cadastro (sem estoque). Em sucesso, a tela redireciona para a lista. */
+export async function deleteMaterial(materialId: string): Promise<ActionResult> {
+  const member = await editorOrError();
+  if ("error" in member) return member;
+  if (!/^[0-9a-f-]{36}$/i.test(materialId)) return { error: "Registro inválido. Recarregue a página." };
+  const { error } = await member.supabase.rpc("inventory_delete_material", { p_material_id: materialId });
+  if (error) return { error: error.message };
+  revalidatePath("/materiais");
+  revalidatePath("/");
+  return { success: "Material excluído." };
 }
