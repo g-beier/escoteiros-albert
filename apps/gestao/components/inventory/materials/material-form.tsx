@@ -50,9 +50,10 @@ export function MaterialForm({ families, locations = [], material, hasStock = fa
       <Input id="material-name" name="name" required minLength={2} maxLength={120} defaultValue={material?.name} placeholder="Ex.: Barraca iglu 4 pessoas" />
     </Field>
 
+    {/* Fora do fieldset: um fieldset desabilitado não envia os campos de dentro, nem os ocultos. */}
+    <input type="hidden" name="tracking" value={tracking} />
     <fieldset className="grid gap-1.5" disabled={hasStock}>
       <legend className="mb-1.5 text-xs font-medium">Controle</legend>
-      <input type="hidden" name="tracking" value={tracking} />
       <RadioGroup value={tracking} onValueChange={(value) => setTracking(String(value))} className="grid gap-2 sm:grid-cols-2" aria-label="Controle">
         {TRACKING_CHOICES.map((choice) => <FieldLabel key={choice.value} htmlFor={`material-tracking-${choice.value}`} className="has-data-checked:border-primary">
           <ChoiceField orientation="horizontal">
