@@ -240,6 +240,26 @@ Pronto quando:
 - lint, typecheck, vitest, pgTAP e E2E estão verdes, com o E2E já nas rotas novas;
 - as rotas antigas redirecionam.
 
+**Concluída em 2026-11-17** no branch `gestao/fase-1`:
+
+- **Verificação:** lint, typecheck (todos os workspaces), vitest (254), pgTAP (483), E2E (25, com o novo
+  `e2e/routes.e2e.ts`: redirects, raiz do módulo, `data-app` e 404) e `next build` verdes.
+- **Desvios do plano:**
+  - **Rotas:** os literais foram prefixados por codemod (`"/lancamentos` → `"/financeiro/lancamentos`)
+    em vez de passar por um `lib/routes.ts`. O resultado é mais fácil de achar com grep e não exigiu
+    trocar strings por templates. O `lib/routes.ts` só vale a pena se a fase 2 mostrar repetição.
+  - **Header:** o seletor de módulo já existia (`AppBrand` do `@geas/ui`, com `financeiroHref` e
+    `inventarioHref`). O link para o inventário continua sendo `NEXT_PUBLIC_INVENTARIO_URL` até a
+    fase 2. Usuários continua no menu da conta, agora como tela comum aos módulos.
+  - **Supabase local:** o `project_id` continua `geas-financeiro`, para não perder os volumes do
+    Docker (o nome do container é usado no E2E).
+  - **`modelo.md`:** continua em `apps/gestao/docs/`. A mudança para `docs/finance/` fica para quando
+    o inventário trouxer o dele.
+- **Pendente fora do código, no merge para `main`:**
+  - caminho das migrations na integração GitHub do Supabase;
+  - Site URL e Redirect URLs do Auth;
+  - decisão D1.
+
 ### Fase 2: inventário como piloto (≈3–4 dias)
 
 Inclui a base da camada, a sessão, o login e os usuários, que os dois módulos usam.
