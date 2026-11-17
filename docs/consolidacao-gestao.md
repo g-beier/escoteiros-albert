@@ -255,10 +255,10 @@ Pronto quando:
     Docker (o nome do container é usado no E2E).
   - **`modelo.md`:** continua em `apps/gestao/docs/`. A mudança para `docs/finance/` fica para quando
     o inventário trouxer o dele.
-- **Pendente fora do código, no merge para `main`:**
-  - caminho das migrations na integração GitHub do Supabase;
-  - Site URL e Redirect URLs do Auth;
-  - decisão D1.
+- **Fora do código (2026-11-17):** as integrações Git da Vercel e do Supabase foram desconectadas: merge em
+  `main` não faz deploy nem aplica migrations. Como o Supabase vai ser abandonado, o caminho das migrations e as
+  URLs do Auth no painel **não** serão atualizados. Produção fica na última versão publicada até a nova
+  hospedagem (D1); migration nova só chega à produção se aplicada à mão.
 
 ### Fase 2: inventário como piloto (≈3–4 dias)
 
