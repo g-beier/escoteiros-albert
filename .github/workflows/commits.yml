@@ -1,0 +1,36 @@
+# Conventional Commits check (commitlint.config.mjs). PRs are squash-merged with the PR title as
+# the commit subject, so the title is what lands on main; pushes straight to main are checked
+# commit by commit. Required status check in the "main: PR e checks" ruleset.
+name: Commits
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  commitlint:
+    name: Commit messages
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: PR title
+        if: github.event_name == 'pull_request'
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: printf '%s\n' "$TITLE" | npx --no -- commitlint --verbose
+      - name: Pushed commits
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        run: npx --no -- commitlint --from "${{ github.event.before }}" --to "${{ github.sha }}" --verbose

@@ -20,12 +20,16 @@
     "infra:status": "npm run infra:status --workspace=@geas/gestao",
     "infra:reset": "npm run infra:reset --workspace=@geas/gestao",
     "test:db": "npm run test:db --workspace=@geas/gestao",
-    "test:e2e": "npm run test:e2e --workspace=@geas/gestao"
+    "test:e2e": "npm run test:e2e --workspace=@geas/gestao",
+    "prepare": "husky"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
-    "concurrently": "^9.2.5"
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "concurrently": "^9.2.5",
+    "husky": "^9.1.7"
   }
 }

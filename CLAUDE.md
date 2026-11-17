@@ -80,8 +80,12 @@ Per app: `npm run <script> --workspace=@geas/<app>`.
 - Users: `@geas/ui/lib/roles` (domain, group/inventory roles) and `@geas/ui/components/users-manager` (screen with one role column per module). Data (list, invite, roles, remove) is `apps/gestao/lib/server/users.ts`; `/usuarios` actions check the admin and revalidate. `@geas/ui` has no database code.
 - Theme: each app's `app/globals.css` starts with `@import "@geas/ui/theme.css"` (Tailwind, tokens, shell CSS in `@layer components`, legacy CSS in `@layer legacy` below utilities) and the root `<html>` carries `data-app="gestao" | "financeiro" | "inventario"` (in gestao, set by each module root layout), which sets the accent (`--app` → `primary`/`accent`: purple / dark orange).
 
+## Commits and GitHub rules
+
+Full rules in `CONTRIBUTING.md`. Conventional Commits in English, checked by commitlint (`commitlint.config.mjs`; scopes `gestao`, `financeiro`, `inventario`, `ui`, `institucional`, `db`, `e2e`, `deps`, or none) through the husky `commit-msg` hook and the `Commit messages` check. PRs are squash-only (PR title = commit on `main`). Rulesets on `main`: "main: integridade" (no deletion, no force-push, linear history, no bypass) and "main: PR e checks" (PR + required checks, admin bypass). Required check names are the job `name`s in `ci.yml` and `commits.yml`: renaming one means updating the ruleset.
+
 ## CI/CD
 
-`.github/workflows/ci.yml` runs on push to `main` and on PRs: job `checks` (lint, typecheck incl. `astro check`, vitest, build) and job `db-e2e` (local Supabase via CLI 3.1.0, `supabase test db`, Playwright). No CD for the site: it is deployed by manual FTP to a host we don't own; don't add deploy steps or rely on host config files like `_redirects`.
+`.github/workflows/ci.yml` runs on push to `main` and on PRs: job `checks` (lint, typecheck incl. `astro check`, vitest, build) and job `db-e2e` (local Supabase via CLI 3.1.0, `supabase test db`, Playwright). `.github/workflows/commits.yml` runs commitlint on PR titles and on commits pushed to `main`. No CD for the site: it is deployed by manual FTP to a host we don't own; don't add deploy steps or rely on host config files like `_redirects`.
 
 Production (2026-11-17): the Supabase and Vercel Git integrations are disconnected, so nothing deploys or migrates on push. Production keeps the last deployed apps and the current database schema; a new migration reaches production only if someone applies it by hand. Supabase is being left (`docs/migracao-saida-supabase.md`), so its dashboard paths and auth URLs are not updated for `apps/gestao`. Hosting of the internal app is under evaluation and will not be Vercel: don't add deploy steps or host-specific config. Never `supabase config push` (`config.toml` is local only).

@@ -1,12 +1,14 @@
-# CI only: lint, types, tests and builds. The site goes up by manual FTP; production
-# migrations are applied by Supabase's GitHub integration.
+# CI only: lint, types, tests and builds. Nothing deploys from here: the site goes up by manual
+# FTP and production migrations are applied by hand (see CLAUDE.md, CI/CD).
 #
-# Manual only while apps/financeiro + apps/inventario become apps/gestao and hosting is being
-# chosen (docs/consolidacao-gestao.md): nothing runs on push or PR. Restore the push/pull_request
-# triggers when the new hosting is in place.
+# The jobs below are required status checks in the "main: PR e checks" ruleset (CONTRIBUTING.md):
+# renaming a job's `name` means updating the ruleset too.
 name: CI
 
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
