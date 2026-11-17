@@ -1,7 +1,8 @@
 /*
  * Tema dos apps internos do GEAS (Tailwind v4 + shadcn/ui).
  * Cada app importa este arquivo no topo do seu globals.css, no lugar de `@import "tailwindcss"`,
- * e marca o <html> com `data-app="financeiro" | "inventario"` para a cor de destaque.
+ * e marca o <html> com `data-app="gestao" | "financeiro" | "inventario"` para a cor de destaque
+ * (no Gestão, um layout raiz por módulo; "gestao" e "financeiro" usam o roxo padrão).
  * Estilos anteriores ao shadcn ficam em `@layer legacy`, abaixo de components/utilities.
  */
 @layer theme, base, legacy, components, utilities;

@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { editorOrError } from "@/lib/session";
+import { financeEditorOrError } from "@/lib/session";
 import { ATTACHMENT_BUCKET, attachmentPath, attachmentProblem, attachmentType, cleanFileName } from "@/lib/finance/attachments";
 
 type Result = { error?: string; success?: boolean };
@@ -26,7 +26,7 @@ export async function prepareAttachmentUpload(entryId: unknown, file: unknown): 
   if (!id.success || !parsed.success) return { error: "Dados inválidos." };
   const problem = attachmentProblem(parsed.data);
   if (problem) return { error: problem };
-  const ctx = await editorOrError("Sem permissão para anexar comprovantes.");
+  const ctx = await financeEditorOrError("Sem permissão para anexar comprovantes.");
   if ("error" in ctx) return ctx;
   const { data: entry } = await ctx.supabase.from("ledger_entries").select("id").eq("id", id.data).eq("group_id", ctx.groupId).maybeSingle();
   if (!entry) return { error: "Lançamento não encontrado." };
@@ -43,7 +43,7 @@ export async function registerAttachment(entryId: unknown, path: unknown, fileNa
   const storagePath = z.string().min(1).max(300).safeParse(path);
   const name = z.string().min(1).max(500).safeParse(fileName);
   if (!id.success || !storagePath.success || !name.success) return { error: "Dados inválidos." };
-  const ctx = await editorOrError("Sem permissão para anexar comprovantes.");
+  const ctx = await financeEditorOrError("Sem permissão para anexar comprovantes.");
   if ("error" in ctx) return ctx;
   const { error } = await ctx.supabase.rpc("add_entry_attachment", {
     p_entry_id: id.data, p_storage_path: storagePath.data, p_file_name: cleanFileName(name.data),
@@ -61,7 +61,7 @@ export async function registerAttachment(entryId: unknown, path: unknown, fileNa
 export async function removeAttachment(attachmentId: unknown): Promise<Result> {
   const id = z.uuid().safeParse(attachmentId);
   if (!id.success) return { error: "Anexo inválido." };
-  const ctx = await editorOrError("Sem permissão para excluir comprovantes.");
+  const ctx = await financeEditorOrError("Sem permissão para excluir comprovantes.");
   if ("error" in ctx) return ctx;
   const { data: path, error } = await ctx.supabase.rpc("delete_entry_attachment", { p_attachment_id: id.data });
   if (error) return { error: error.message };

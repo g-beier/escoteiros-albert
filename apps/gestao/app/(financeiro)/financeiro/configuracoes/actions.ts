@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireEditor } from "@/lib/session";
+import { requireFinanceEditor } from "@/lib/session";
 import { CATALOG_KINDS, isCatalogKind, type CatalogKind } from "@/lib/finance/catalogs";
 import { parseLedgerCode } from "@/lib/finance/ledger-code";
 import { readAccountForm, toAccountRpc } from "@/lib/finance/accounts";
@@ -32,7 +32,7 @@ export async function createCatalogItem(_previous: CatalogFormState, formData: F
     const kind = readKind(formData);
     const name = readName(formData, kind);
     if (!name.success) return { error: name.error.issues[0]?.message };
-    const { supabase, groupId } = await requireEditor("Sem permissão para alterar cadastros.");
+    const { supabase, groupId } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
     const { error } = await supabase.rpc("create_payment_method", { p_group_id: groupId, p_name: name.data });
     if (error) return { error: error.message };
     revalidate();
@@ -47,7 +47,7 @@ export async function updateCatalogItem(_previous: CatalogFormState, formData: F
   try {
     const kind = readKind(formData);
     const id = z.uuid().parse(formData.get("id"));
-    const { supabase } = await requireEditor("Sem permissão para alterar cadastros.");
+    const { supabase } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
     if (formData.has("active")) {
       const active = formData.get("active") === "true";
       const { error } = await supabase.rpc("set_payment_method_active", { p_payment_method_id: id, p_active: active });
@@ -86,7 +86,7 @@ export async function saveCategoryTree(payload: unknown): Promise<CatalogFormSta
       const ledgerCode = parseLedgerCode(node.ledgerCode);
       if (!ledgerCode.ok) return { error: `“${node.name}”: ${ledgerCode.error}` };
     }
-    const { supabase, groupId } = await requireEditor("Sem permissão para alterar cadastros.");
+    const { supabase, groupId } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
     const { data, error } = await supabase.rpc("save_category_tree", { p_group_id: groupId, p_nodes: parsed.data.nodes, p_deleted: parsed.data.deleted });
     if (error) return { error: error.message };
     revalidate();
@@ -108,7 +108,7 @@ export async function createAccount(_previous: CatalogFormState, formData: FormD
   try {
     const parsed = readAccountForm(formData);
     if (!parsed.success) return { error: parsed.error.issues[0]?.message };
-    const { supabase, groupId } = await requireEditor("Sem permissão para alterar cadastros.");
+    const { supabase, groupId } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
     const { error } = await supabase.rpc("create_account", { p_group_id: groupId, ...toAccountRpc(parsed.data) });
     if (error) return { error: error.message };
     revalidate();
@@ -124,7 +124,7 @@ export async function updateAccount(_previous: CatalogFormState, formData: FormD
     if (!id.success) return { error: "Conta inválida." };
     const parsed = readAccountForm(formData);
     if (!parsed.success) return { error: parsed.error.issues[0]?.message };
-    const { supabase } = await requireEditor("Sem permissão para alterar cadastros.");
+    const { supabase } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
     const { error } = await supabase.rpc("update_account", { p_account_id: id.data, ...toAccountRpc(parsed.data) });
     if (error) return { error: error.message };
     revalidate();
@@ -139,7 +139,7 @@ export async function setAccountActive(_previous: CatalogFormState, formData: Fo
     const id = z.uuid().safeParse(formData.get("id"));
     if (!id.success) return { error: "Conta inválida." };
     const active = formData.get("active") === "true";
-    const { supabase } = await requireEditor("Sem permissão para alterar cadastros.");
+    const { supabase } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
     const { error } = await supabase.rpc("set_account_active", { p_account_id: id.data, p_active: active });
     if (error) return { error: error.message };
     revalidate();
@@ -158,7 +158,7 @@ export async function renameImportProfile(_previous: CatalogFormState, formData:
     if (!id.success) return { error: "Perfil inválido." };
     const name = z.string().trim().min(2, "Informe um nome de perfil com ao menos 2 caracteres.").max(80, "Use até 80 caracteres.").safeParse(formData.get("name") ?? "");
     if (!name.success) return { error: name.error.issues[0]?.message };
-    const { supabase } = await requireEditor("Sem permissão para alterar perfis de leitura.");
+    const { supabase } = await requireFinanceEditor("Sem permissão para alterar perfis de leitura.");
     const { error } = await supabase.rpc("rename_import_profile", { p_profile_id: id.data, p_name: name.data });
     if (error) return { error: error.message };
     revalidate();
@@ -172,7 +172,7 @@ export async function deleteImportProfile(_previous: CatalogFormState, formData:
   try {
     const id = z.uuid().safeParse(formData.get("id"));
     if (!id.success) return { error: "Perfil inválido." };
-    const { supabase } = await requireEditor("Sem permissão para alterar perfis de leitura.");
+    const { supabase } = await requireFinanceEditor("Sem permissão para alterar perfis de leitura.");
     const { error } = await supabase.rpc("delete_import_profile", { p_profile_id: id.data });
     if (error) return { error: error.message };
     revalidate();
@@ -188,7 +188,7 @@ export async function setPaymentMethodDefaultAccount(paymentMethodId: unknown, a
     const method = z.uuid().safeParse(paymentMethodId);
     const account = z.union([z.uuid(), z.literal("")]).safeParse(accountId);
     if (!method.success || !account.success) return { error: "Dados inválidos." };
-    const { supabase } = await requireEditor("Sem permissão para alterar cadastros.");
+    const { supabase } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
     const { error } = await supabase.rpc("set_payment_method_default_account", { p_payment_method_id: method.data, p_account_id: account.data || null });
     if (error) return { error: error.message };
     revalidate();

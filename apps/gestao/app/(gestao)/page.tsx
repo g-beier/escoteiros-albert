@@ -39,7 +39,7 @@ export default async function Dashboard() {
   const { supabase, user, member: membership } = await pageSession();
   if (!membership) return <SetupNeeded email={user.email ?? ""} />;
   const groupId = membership.groupId;
-  const canEdit = membership.canEdit;
+  const canEdit = membership.finance.canEdit;
   const year = currentYear();
   // Últimos lançamentos: hoje e os 7 dias anteriores, mais o último dia com movimento antes disso.
   const windowStart = recentWindowStart(todayInSaoPaulo());
@@ -73,7 +73,7 @@ export default async function Dashboard() {
   const OVERDUE_SHOWN = 12;
 
   return <div className="shell">
-    <AppHeader role={membership.role} email={user.email ?? ""} current="/" />
+    <AppHeader role={membership.finance.role} email={user.email ?? ""} current="/" />
     <main className={PAGE_BODY}>
       <PageHeader title={`Resumo de ${year}`} hideTitle actions={<>
         <Link href="/financeiro/lancamentos/movimentacoes" className={buttonVariants({ variant: "outline", size: "lg" })}>Ver lançamentos <IconArrowRight data-icon="inline-end" /></Link>

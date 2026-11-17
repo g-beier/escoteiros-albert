@@ -40,7 +40,7 @@ export default async function RealizedPage({ searchParams }: { searchParams: Pro
 
   // No desktop a página não rola: a tabela ocupa o resto da tela, com cabeçalho, primeira coluna e saldo fixos.
   return <div className="shell flex min-h-dvh flex-col overflow-clip md:h-dvh md:min-h-0 md:overflow-hidden">
-    <AppHeader role={member.role} email={user.email ?? ""} current="/financeiro/lancamentos/realizado" />
+    <AppHeader role={member.finance.role} email={user.email ?? ""} current="/financeiro/lancamentos/realizado" />
     <PageBody className="md:flex md:min-h-0 md:flex-1 md:flex-col">
       <PageHeader title="Lançamentos" crumbs={[{ label: "Lançamentos", href: "/financeiro/lancamentos" }, { label: `Realizado ${year}` }]}
         tabs={<EntryViewTabs current="realizado" />}

@@ -37,7 +37,7 @@ export async function EntriesScreen({ view, searchParams }: { view: EntryView; s
   const { supabase, user, member: membership } = await pageSession();
   if (!membership) return <SetupNeeded email={user.email ?? ""} />;
   const groupId = membership.groupId;
-  const canEdit = membership.canEdit;
+  const canEdit = membership.finance.canEdit;
 
   const [{ data: categories }, { data: paymentMethods }, { data: associates }, { data: accounts }, firstPage, { count: pendingDocs }, { data: firstEntry }, { data: lastEntry }] = await Promise.all([
     supabase.from("categories").select("id, name, active, code, kind, parent_id").eq("group_id", groupId),
@@ -82,7 +82,7 @@ export async function EntriesScreen({ view, searchParams }: { view: EntryView; s
   // No desktop a página não rola; só as linhas da tabela rolam, sob cabeçalhos fixos.
   // No celular (cartões) a página inteira rola; overflow-clip mantém o cabeçalho e o rodapé fixos funcionando.
   return <div className="shell flex min-h-dvh flex-col overflow-clip before:hidden after:hidden md:h-dvh md:min-h-0 md:overflow-hidden">
-    <AppHeader role={membership.role} email={user.email ?? ""} current={`/financeiro/lancamentos/${view}`} />
+    <AppHeader role={membership.finance.role} email={user.email ?? ""} current={`/financeiro/lancamentos/${view}`} />
     <main className="flex flex-1 flex-col gap-2.5 px-4 pt-4 pb-3 md:min-h-0">
       <FilterOptionsProvider dimensions={dimensions}>
       <EntryListProvider canEdit={canEdit} returnHref={returnHref}>

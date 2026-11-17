@@ -18,7 +18,7 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
   const bySection = params.agrupar === "secao";
   const membership = await pageMember();
   const { supabase, user } = membership;
-  const canEdit = membership.canEdit;
+  const canEdit = membership.finance.canEdit;
   const [{ data }, { data: sectionRows }, { data: patrolRows }] = await Promise.all([
     supabase.from("associate_rows").select("id, name, branch, section_id, section, patrol_id, patrol, active")
       .eq("group_id", membership.groupId).order("active", { ascending: false }).order("name"),
@@ -48,7 +48,7 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
   const headClass = "h-8 px-3 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase";
 
   return <div className="shell">
-    <AppHeader role={membership.role} email={user.email ?? ""} current="/financeiro/configuracoes/associados" />
+    <AppHeader role={membership.finance.role} email={user.email ?? ""} current="/financeiro/configuracoes/associados" />
     <PageBody width="narrow" className="gap-4">
       <PageHeader title="Configurações" crumbs={settingsCrumbs("associados", canEdit)} tabs={<SettingsTabs current="associados" canEdit={canEdit} />}
         description="Lista usada para vincular rateios a associados. Inativos deixam de aparecer nos novos lançamentos." />

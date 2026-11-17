@@ -26,7 +26,7 @@ export async function saveImportProfile(payload: unknown): Promise<ActionResult<
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const ctx = await memberOrError();
   if ("error" in ctx) return { error: ctx.error };
-  if (!ctx.canEdit) return { error: "Sem permissão para alterar perfis de importação." };
+  if (!ctx.finance.canEdit) return { error: "Sem permissão para alterar perfis de importação." };
   const { data, error } = await ctx.supabase.rpc("save_import_profile", {
     p_group_id: ctx.groupId,
     p_profile_id: parsed.data.id ?? null,
@@ -47,7 +47,7 @@ export async function importStatementLines(payload: unknown): Promise<ActionResu
   if ("error" in lines) return { error: lines.error };
   const ctx = await memberOrError();
   if ("error" in ctx) return { error: ctx.error };
-  if (!ctx.canEdit) return { error: "Sem permissão para importar extratos." };
+  if (!ctx.finance.canEdit) return { error: "Sem permissão para importar extratos." };
   const { data, error } = await ctx.supabase.rpc("import_statement_lines", {
     p_account_id: parsed.data.accountId,
     p_profile_id: parsed.data.profileId ?? null,
@@ -81,7 +81,7 @@ export async function previewStatementImport(payload: unknown): Promise<ActionRe
   if ("error" in lines) return { error: lines.error };
   const ctx = await memberOrError();
   if ("error" in ctx) return { error: ctx.error };
-  if (!ctx.canEdit) return { error: "Sem permissão para importar extratos." };
+  if (!ctx.finance.canEdit) return { error: "Sem permissão para importar extratos." };
   const { data, error } = await ctx.supabase.rpc("preview_statement_lines", {
     p_account_id: parsed.data.accountId, p_period_from: parsed.data.periodFrom ?? null, p_period_to: parsed.data.periodTo ?? null,
     p_lines: toRpcLines(lines.lines),
@@ -97,7 +97,7 @@ export async function deleteStatementImport(importId: unknown): Promise<ActionRe
   if (!id.success) return { error: "Importação inválida." };
   const ctx = await memberOrError();
   if ("error" in ctx) return { error: ctx.error };
-  if (!ctx.canEdit) return { error: "Sem permissão para desfazer importações." };
+  if (!ctx.finance.canEdit) return { error: "Sem permissão para desfazer importações." };
   const { data, error } = await ctx.supabase.rpc("delete_statement_import", { p_import_id: id.data });
   if (error) return { error: error.message };
   const result = z.object({ lines: z.number(), unlinked: z.number() }).catch({ lines: 0, unlinked: 0 }).parse(data);

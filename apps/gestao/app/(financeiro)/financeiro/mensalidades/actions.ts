@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { editorOrError } from "@/lib/session";
+import { financeEditorOrError } from "@/lib/session";
 import { parseMoneyToCents } from "@/lib/money";
 import { groupPaymentOptions, type PaymentOption } from "@/lib/finance/debts";
 
@@ -26,7 +26,7 @@ export async function setFeeRecord(payload: unknown): Promise<FeeResult> {
     splitIds: z.array(z.uuid()).max(50).default([]),
   }).safeParse(payload);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const ctx = await editorOrError("Sem permissão para registrar mensalidades.");
+  const ctx = await financeEditorOrError("Sem permissão para registrar mensalidades.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("set_fee_record", {
     p_associate_id: parsed.data.associateId, p_year: parsed.data.year, p_month: parsed.data.month,
@@ -43,7 +43,7 @@ export async function confirmFeeSuggestions(items: unknown): Promise<FeeResult> 
     status: z.enum(["pago", "atencao"]).default("pago"), note: z.string().max(200).optional(),
   })).min(1).max(5000).safeParse(items);
   if (!parsed.success) return { error: "Nenhuma sugestão para confirmar." };
-  const ctx = await editorOrError("Sem permissão para registrar mensalidades.");
+  const ctx = await financeEditorOrError("Sem permissão para registrar mensalidades.");
   if ("error" in ctx) return { error: ctx.error };
   const { data, error } = await ctx.supabase.rpc("confirm_fee_suggestions", { p_items: parsed.data });
   if (error) return { error: error.message };
@@ -57,7 +57,7 @@ export async function setFeeExemption(associateId: unknown, yearValue: unknown, 
     .safeParse({ associateId, year: yearValue, reason });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   if (parsed.data.reason && parsed.data.reason.length < 2) return { error: "Informe o motivo." };
-  const ctx = await editorOrError("Sem permissão para registrar mensalidades.");
+  const ctx = await financeEditorOrError("Sem permissão para registrar mensalidades.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("set_fee_exemption", { p_associate_id: parsed.data.associateId, p_year: parsed.data.year, p_reason: parsed.data.reason || null });
   if (error) return { error: error.message };
@@ -74,7 +74,7 @@ export async function saveFeeSettings(_previous: FeeSettingsState, formData: For
     categoryId: z.union([z.uuid(), z.literal("")]).transform((v) => v || null),
   }).safeParse({ dueRule: formData.get("dueRule"), dueDay: formData.get("dueDay"), categoryId: formData.get("categoryId") ?? "" });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const ctx = await editorOrError("Sem permissão para alterar as configurações.");
+  const ctx = await financeEditorOrError("Sem permissão para alterar as configurações.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("set_fee_settings", {
     p_group_id: ctx.groupId, p_due_rule: parsed.data.dueRule, p_due_day: parsed.data.dueDay, p_category_id: parsed.data.categoryId,
@@ -99,7 +99,7 @@ export async function saveFeeYearSettings(_previous: FeeSettingsState, formData:
   }).safeParse({ year: Number(formData.get("year")), monthly: formData.get("monthly") ?? "", discount: formData.get("discount") || "0", deadline: formData.get("deadline") ?? "" });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   if (parsed.data.discount > 0 && !parsed.data.deadline) return { error: "Informe a data-limite do desconto." };
-  const ctx = await editorOrError("Sem permissão para alterar as configurações.");
+  const ctx = await financeEditorOrError("Sem permissão para alterar as configurações.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("set_fee_year_settings", {
     p_group_id: ctx.groupId, p_year: parsed.data.year, p_monthly_cents: parsed.data.monthly, p_discount_pct: parsed.data.discount, p_deadline: parsed.data.deadline,
@@ -119,7 +119,7 @@ export async function setFeeAssociatePrice(associateId: unknown, yearValue: unkn
   const cents = remove ? null : parseMoneyToCents(parsed.data.monthly);
   if (!remove && (cents === null || cents < 0)) return { error: "Informe o valor mensal (ex.: 40,00)." };
   if (!remove && parsed.data.reason.length < 2) return { error: "Informe o motivo (ex.: irmãos)." };
-  const ctx = await editorOrError("Sem permissão para registrar mensalidades.");
+  const ctx = await financeEditorOrError("Sem permissão para registrar mensalidades.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("set_fee_associate_price", {
     p_associate_id: parsed.data.associateId, p_year: parsed.data.year, p_monthly_cents: cents, p_reason: remove ? null : parsed.data.reason,
@@ -136,7 +136,7 @@ export async function addAssociateMovement(associateId: unknown, date: unknown, 
     reason: z.string().trim().max(120, "Motivo: no máximo 120 caracteres."),
   }).safeParse({ associateId, date, kind, reason });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const ctx = await editorOrError("Sem permissão para registrar movimentações.");
+  const ctx = await financeEditorOrError("Sem permissão para registrar movimentações.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("add_associate_movement", {
     p_associate_id: parsed.data.associateId, p_date: parsed.data.date, p_kind: parsed.data.kind, p_reason: parsed.data.reason || null,
@@ -149,7 +149,7 @@ export async function addAssociateMovement(associateId: unknown, date: unknown, 
 export async function deleteAssociateMovement(movementId: unknown): Promise<FeeResult> {
   const id = z.uuid().safeParse(movementId);
   if (!id.success) return { error: "Movimentação inválida." };
-  const ctx = await editorOrError("Sem permissão para registrar movimentações.");
+  const ctx = await financeEditorOrError("Sem permissão para registrar movimentações.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("delete_associate_movement", { p_movement_id: id.data });
   if (error) return { error: error.message };
@@ -184,7 +184,7 @@ const debtSchema = z.object({
 export async function saveDebt(payload: unknown): Promise<FeeResult> {
   const parsed = debtSchema.safeParse(payload);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const ctx = await editorOrError("Sem permissão para anotar dívidas.");
+  const ctx = await financeEditorOrError("Sem permissão para anotar dívidas.");
   if ("error" in ctx) return { error: ctx.error };
   const { id, associateId, date, amount, description, agreement, payments } = parsed.data;
   const { error } = await ctx.supabase.rpc("save_debt", {
@@ -199,7 +199,7 @@ export async function saveDebt(payload: unknown): Promise<FeeResult> {
 export async function deleteDebt(debtId: unknown): Promise<FeeResult> {
   const id = z.uuid().safeParse(debtId);
   if (!id.success) return { error: "Dívida inválida." };
-  const ctx = await editorOrError("Sem permissão para anotar dívidas.");
+  const ctx = await financeEditorOrError("Sem permissão para anotar dívidas.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("delete_debt", { p_id: id.data });
   if (error) return { error: error.message };
@@ -222,7 +222,7 @@ export async function payDebts(payload: unknown): Promise<FeeResult> {
     })).max(200),
   }).safeParse(payload);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const ctx = await editorOrError("Sem permissão para anotar dívidas.");
+  const ctx = await financeEditorOrError("Sem permissão para anotar dívidas.");
   if ("error" in ctx) return { error: ctx.error };
   const { error } = await ctx.supabase.rpc("pay_debts", {
     p_group_id: ctx.groupId, p_associate_id: parsed.data.associateId, p_entry_id: parsed.data.entryId,
@@ -239,7 +239,7 @@ export async function payDebts(payload: unknown): Promise<FeeResult> {
 export async function debtPaymentOptions(associateId: unknown): Promise<{ error?: string; options?: PaymentOption[] }> {
   const id = z.uuid().safeParse(associateId);
   if (!id.success) return { options: [] };
-  const ctx = await editorOrError("Sem permissão para anotar dívidas.");
+  const ctx = await financeEditorOrError("Sem permissão para anotar dívidas.");
   if ("error" in ctx) return { error: ctx.error };
   const [splits, allocations] = await Promise.all([
     ctx.supabase.from("entry_split_rows").select("entry_id, entry_date, entry_name, amount_cents")

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { editorOrError, memberOrError } from "@/lib/session";
+import { financeEditorOrError, memberOrError } from "@/lib/session";
 import { entrySchema, toRpcSplits } from "@/lib/finance/entry-schema";
 import { fetchEntryPage, type EntryPage } from "@/lib/finance/entry-queries";
 import { parseFilters, parseOrder } from "@/lib/finance/filters";
@@ -94,7 +94,7 @@ export async function moveEntriesAccount(entryIds: unknown, accountId: unknown):
   const account = z.uuid().safeParse(accountId);
   if (!ids.success) return { error: ids.error.issues[0]?.message ?? "Seleção inválida." };
   if (!account.success) return { error: "Escolha a conta." };
-  const ctx = await editorOrError("Sem permissão para mudar a conta dos lançamentos.");
+  const ctx = await financeEditorOrError("Sem permissão para mudar a conta dos lançamentos.");
   if ("error" in ctx) return { error: ctx.error };
   const { data, error } = await ctx.supabase.rpc("move_ledger_entries_account", { p_entry_ids: ids.data, p_account_id: account.data });
   if (error) return { error: error.message };

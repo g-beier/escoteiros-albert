@@ -15,7 +15,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
   const { supabase, user, member: membership } = await pageSession();
   if (!membership) return <SetupNeeded email={user.email ?? ""} />;
   const groupId = membership.groupId;
-  const canEdit = membership.canEdit;
+  const canEdit = membership.finance.canEdit;
 
   const [{ data: accountRows }, { profiles }, lastProfiles] = await Promise.all([
     // Caixa (dinheiro) não tem extrato bancário: fica fora do import OFX
@@ -32,7 +32,7 @@ export default async function ImportPage({ searchParams }: { searchParams: Promi
   const accountName = accounts.find((account) => account.id === accountId)?.name ?? "";
 
   return <div className="shell">
-    <AppHeader role={membership.role} email={user.email ?? ""} current="/financeiro/extrato/importar" />
+    <AppHeader role={membership.finance.role} email={user.email ?? ""} current="/financeiro/extrato/importar" />
     <PageBody>
       <PageHeader title="Extrato" crumbs={extratoCrumbs("importar")} tabs={<ExtratoTabs current="importar" accountId={accountId || undefined} />}
         description="Escolha o banco (a conta) e envie o extrato OFX, exportado pelo banco ou convertido. Confira as linhas antes de importar; depois, concilie com os lançamentos." />

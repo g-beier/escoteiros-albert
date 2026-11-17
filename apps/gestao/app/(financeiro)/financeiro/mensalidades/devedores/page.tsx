@@ -13,21 +13,21 @@ export default async function DebtsPage() {
   const [{ debts, error }, associates] = await Promise.all([
     fetchDebts(supabase, member.groupId),
     // só tesouraria/administração escolhe o associado; a consulta não recebe a lista
-    member.canEdit
+    member.finance.canEdit
       ? supabase.from("associate_rows").select("id, name, section, active").eq("group_id", member.groupId).order("name").limit(5000)
         .then(({ data }) => (data ?? []) as { id: string; name: string; section: string | null; active: boolean }[])
       : Promise.resolve([]),
   ]);
 
   return <div className="shell">
-    <AppHeader role={member.role} email={user.email ?? ""} current="/financeiro/mensalidades/devedores" />
+    <AppHeader role={member.finance.role} email={user.email ?? ""} current="/financeiro/mensalidades/devedores" />
     <PageBody width="narrow">
       <PageHeader title="Mensalidades" tabs={<FeeTabs current="devedores" />} crumbs={feeCrumbs("devedores")}
-        description={member.canEdit
+        description={member.finance.canEdit
           ? "Anotações de dívidas de associados, com o acordo de pagamento e os lançamentos que as pagaram. A consulta vê as dívidas e os valores, mas não de quem são."
           : "Dívidas anotadas pela tesouraria, sem o nome dos associados."} />
       {error && <p role="alert" className="m-0 rounded-lg bg-destructive/10 px-3 py-2 text-destructive">Não foi possível carregar as dívidas: {error}</p>}
-      <DebtsManager debts={debts} canEdit={member.canEdit}
+      <DebtsManager debts={debts} canEdit={member.finance.canEdit}
         associates={associates.map((a) => ({ value: a.id, label: a.section ? `${a.name} (${a.section})` : a.name, active: a.active }))} />
     </PageBody>
   </div>;

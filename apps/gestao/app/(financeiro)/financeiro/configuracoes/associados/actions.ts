@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireEditor } from "@/lib/session";
+import { requireFinanceEditor } from "@/lib/session";
 import { hasSections, SCOUT_BRANCHES } from "@/lib/finance/associates";
 
 /** Id opcional vindo de um select ("" = nenhum). */
@@ -38,7 +38,7 @@ export async function createAssociate(_previous: AssociateFormState, formData: F
   try {
     const parsed = readAssociate(formData);
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-    const { supabase, groupId } = await requireEditor("Sem permissão para gerir associados.");
+    const { supabase, groupId } = await requireFinanceEditor("Sem permissão para gerir associados.");
     const { error } = await supabase.from("associates").insert({ group_id: groupId, ...parsed.data });
     if (error) return { error: writeError(error) };
     revalidatePath("/financeiro/configuracoes/associados");
@@ -52,7 +52,7 @@ export async function createAssociate(_previous: AssociateFormState, formData: F
 export async function updateAssociate(_previous: AssociateFormState, formData: FormData): Promise<AssociateFormState> {
   try {
     const id = z.uuid().parse(formData.get("id"));
-    const { supabase, groupId } = await requireEditor("Sem permissão para gerir associados.");
+    const { supabase, groupId } = await requireFinanceEditor("Sem permissão para gerir associados.");
     let patch: Record<string, unknown>;
     let result: AssociateFormState;
     if (formData.has("active")) {
@@ -89,7 +89,7 @@ export async function importAssociates(rows: unknown): Promise<AssociateFormStat
   try {
     const parsed = z.array(importRow).min(1, "Nenhum associado para importar.").max(5000, "Importe no máximo 5.000 associados por vez.").safeParse(rows);
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-    const { supabase, groupId } = await requireEditor("Sem permissão para gerir associados.");
+    const { supabase, groupId } = await requireFinanceEditor("Sem permissão para gerir associados.");
     const { data, error } = await supabase.rpc("import_associates", { p_group_id: groupId, p_rows: parsed.data });
     if (error) return { error: error.message };
     const result = z.object({ created: z.number(), updated: z.number() }).catch({ created: 0, updated: 0 }).parse(data);
@@ -114,7 +114,7 @@ type RpcArgs = Record<string, unknown> | ((groupId: string) => Record<string, un
 
 async function runSectionRpc(fn: string, args: RpcArgs, success: string, tone?: "neutral"): Promise<AssociateFormState> {
   try {
-    const { supabase, groupId } = await requireEditor("Sem permissão para gerir seções.");
+    const { supabase, groupId } = await requireFinanceEditor("Sem permissão para gerir seções.");
     const { error } = await supabase.rpc(fn, typeof args === "function" ? args(groupId) : args);
     if (error) return { error: error.message };
     revalidatePath("/financeiro/configuracoes/associados");
