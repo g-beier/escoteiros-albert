@@ -93,16 +93,16 @@ function AccountForm({ account, onDone }: { account: AccountItem | null; onDone:
     </DialogHeader>
     {account && <input type="hidden" name="id" value={account.id} />}
     <input type="hidden" name="kind" value={kind} />
-    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_11rem]">
+    <div className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_11rem]">
       <div className="grid gap-1.5"><Label htmlFor={field("name")}>Nome</Label><Input id={field("name")} name="name" defaultValue={account?.name} maxLength={60} placeholder="Ex.: Conta corrente Sicredi" required /></div>
       <div className="grid gap-1.5"><Label htmlFor={field("kind")}>Tipo</Label><OptionSelect id={field("kind")} value={kind} onValueChange={(value) => setKind(value as AccountKind)} options={kindOptions} /></div>
     </div>
-    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_7rem_9rem]">
+    <div className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_7rem_9rem]">
       <div className="grid gap-1.5"><Label htmlFor={field("bank")}>Banco (opcional)</Label><Input id={field("bank")} name="bank" defaultValue={account?.bank ?? ""} maxLength={60} /></div>
       <div className="grid gap-1.5"><Label htmlFor={field("branch")}>Agência</Label><Input id={field("branch")} name="branch" defaultValue={account?.branch ?? ""} maxLength={20} className="num" /></div>
       <div className="grid gap-1.5"><Label htmlFor={field("number")}>Número</Label><Input id={field("number")} name="number" defaultValue={account?.number ?? ""} maxLength={30} className="num" /></div>
     </div>
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid items-start gap-3 sm:grid-cols-2">
       <div className="grid gap-1.5"><Label htmlFor={field("opening-balance")}>Saldo inicial (R$)</Label><Input id={field("opening-balance")} name="openingBalance" inputMode="decimal" placeholder="0,00" defaultValue={account ? centsToInput(account.opening_balance_cents) : ""} className="text-right num" /></div>
       <div className="grid gap-1.5"><Label htmlFor={field("opening-date")}>Data de início</Label><Input id={field("opening-date")} name="openingDate" type="date" defaultValue={account?.opening_date ?? ""} /></div>
     </div>

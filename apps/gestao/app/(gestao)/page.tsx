@@ -52,7 +52,7 @@ export default async function Home() {
     { module: "inventario", count: inventory.pendingReview ?? 0, label: plural(inventory.pendingReview ?? 0, "movimento pendente de revisão", "movimentos pendentes de revisão"),
       href: "/inventario/movimentacoes?revisao=pendente" },
     { module: "inventario", count: inventory.belowMinimum, label: plural(inventory.belowMinimum, "material abaixo do mínimo", "materiais abaixo do mínimo"),
-      href: "/inventario/materiais?alerta=1&todos=1" },
+      href: "/inventario/materiais?alerta=1" },
     { module: "inventario", count: inventory.expired, label: plural(inventory.expired, "lote vencido", "lotes vencidos"), href: "/inventario" },
     { module: "inventario", count: inventory.expiringSoon, label: plural(inventory.expiringSoon, `lote vencendo em ${EXPIRY_WARNING_DAYS} dias`, `lotes vencendo em ${EXPIRY_WARNING_DAYS} dias`), href: "/inventario" },
   ] satisfies Alert[]).filter((alert) => alert.count > 0);
@@ -97,7 +97,7 @@ export default async function Home() {
 /** Cartão de um módulo: nome na cor do módulo, quatro indicadores e o link para o Resumo dele. */
 function ModuleCard({ module, href, linkLabel, children }: { module: Module; href: string; linkLabel: string; children: ReactNode }) {
   const titleId = `${module}-card-title`;
-  return <section aria-labelledby={titleId} className="grid gap-3 rounded-lg border bg-card p-4">
+  return <section aria-labelledby={titleId} className="grid gap-3 surface p-4">
     <div className="flex items-center justify-between gap-3">
       <h2 id={titleId} className={cn("m-0 text-sm font-bold tracking-[.16em] uppercase", `geas-app--${module}`)}>{MODULE_LABEL[module]}</h2>
       <Link href={href} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">{linkLabel} <IconArrowRight className="size-3.5" aria-hidden /></Link>

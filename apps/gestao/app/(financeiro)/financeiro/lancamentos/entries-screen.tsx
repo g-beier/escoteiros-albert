@@ -87,7 +87,7 @@ export async function EntriesScreen({ view, searchParams }: { view: EntryView; s
           </>} />
         <EntryFilters />
         {canEdit && !byCategory && <BulkAccountBar accounts={(accounts ?? []).filter((account) => account.active).map((account) => ({ value: account.id, label: account.name }))} />}
-        <section aria-label={byCategory ? "Detalhamento" : "Movimentações"} className="flex flex-col overflow-clip rounded-lg border bg-card md:min-h-0 md:flex-1 md:overflow-hidden">
+        <section aria-label={byCategory ? "Detalhamento" : "Movimentações"} className="flex flex-col overflow-clip surface md:min-h-0 md:flex-1 md:overflow-hidden">
           <InfiniteEntries key={returnHref} initial={firstPage} query={returnQuery} filtered={filtered} order={order} sortHref={sortHref} />
         </section>
       </EntryListProvider>

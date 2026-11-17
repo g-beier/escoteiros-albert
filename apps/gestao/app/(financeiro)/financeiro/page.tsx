@@ -61,7 +61,7 @@ export default async function FinanceSummary() {
 
       <div className="grid gap-5 lg:grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[auto_minmax(0,2fr)_minmax(0,1fr)]">
         <div className="grid content-start gap-5">
-          <section aria-labelledby="accounts-title" className="overflow-hidden rounded-lg border bg-card">
+          <section aria-labelledby="accounts-title" className="overflow-hidden surface">
             <h2 id="accounts-title" className="m-0 border-b px-4 py-2.5 text-sm font-semibold">Contas</h2>
             {accounts.length === 0
               ? <p className="px-4 py-6 text-center text-xs text-muted-foreground">Nenhuma conta ativa.</p>
@@ -75,7 +75,7 @@ export default async function FinanceSummary() {
               </li>)}</ul>}
           </section>
 
-          <section aria-labelledby="monthly-title" className="overflow-hidden rounded-lg border bg-card">
+          <section aria-labelledby="monthly-title" className="overflow-hidden surface">
             <h2 id="monthly-title" className="m-0 border-b px-4 py-2.5 text-sm font-semibold">Mês a mês</h2>
             <div className="overflow-x-auto">
               <table className="w-auto min-w-0 text-xs whitespace-nowrap">
@@ -99,7 +99,7 @@ export default async function FinanceSummary() {
         </div>
 
         {/* No desktop as listas não definem a altura da linha (contain:size): acompanham a coluna da esquerda e rolam por dentro. */}
-        <section aria-labelledby="recent-title" className="flex flex-col overflow-hidden rounded-lg border bg-card">
+        <section aria-labelledby="recent-title" className="flex flex-col overflow-hidden surface">
           <div className="flex items-center justify-between gap-3 border-b px-4 py-2.5">
             <h2 id="recent-title" className="m-0 text-sm font-semibold">Últimos lançamentos</h2>
             <Link href="/financeiro/lancamentos/movimentacoes" className="text-xs font-semibold text-primary hover:underline">Ver todos</Link>
@@ -115,7 +115,7 @@ export default async function FinanceSummary() {
             </li>)}</ul>}
         </section>
 
-        <section aria-labelledby="overdue-title" className="flex flex-col overflow-hidden rounded-lg border bg-card lg:max-xl:col-span-2">
+        <section aria-labelledby="overdue-title" className="flex flex-col overflow-hidden surface lg:max-xl:col-span-2">
           <div className="flex items-center justify-between border-b px-4 py-2.5">
             <h2 id="overdue-title" className="m-0 text-sm font-semibold">Mensalidades atrasadas</h2>
             <Link href="/financeiro/mensalidades/controle?atrasados=1" className="text-xs font-semibold text-primary hover:underline">Ver atrasados</Link>

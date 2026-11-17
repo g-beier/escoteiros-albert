@@ -188,7 +188,7 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
   return <>
     <SectionCard aria-labelledby="import-file-title">
       <SectionHeader title="1. Banco e arquivo OFX" titleId="import-file-title" description="Escolha a conta do banco deste extrato. Nada é gravado até você confirmar." />
-      <div className="grid gap-3 p-5 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
+      <div className="grid items-start gap-3 p-5 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
         <div className="grid gap-1.5"><Label htmlFor="import-account">Conta</Label>
           <OptionSelect id="import-account" value={accountId} onValueChange={chooseAccount} placeholder="Escolha o banco…" invalid={!!file && !account}
             options={accounts.map((item) => ({ value: item.id, label: item.bank && item.bank !== item.name ? `${item.name} (${item.bank})` : item.name }))} /></div>

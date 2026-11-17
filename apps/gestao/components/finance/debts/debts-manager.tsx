@@ -54,7 +54,7 @@ export function DebtsManager({ debts, canEdit, associates }: { debts: Debt[]; ca
   const debtors = new Set(debts.filter((debt) => debtStatus(debt) !== "quitada").map((debt) => debt.debtorNumber)).size;
 
   return <>
-    <div className="grid gap-3 sm:grid-cols-3">
+    <div className="grid items-start gap-3 sm:grid-cols-3">
       <StatCard label="Em aberto" value={money(totals.openCents / 100)} tone={totals.openCents > 0 ? "destructive" : "neutral"} />
       <StatCard label="Devedores" value={`${debtors} (${totals.openCount} ${totals.openCount === 1 ? "dívida" : "dívidas"})`} />
       <StatCard label="Já pago" value={money(totals.paidCents / 100)} tone="success" />
@@ -272,7 +272,7 @@ function DebtForm({ debt, initialAssociateId, associates, onDone }: { debt: Debt
     <div className="grid gap-1.5"><Label htmlFor={field("associate")}>Associado</Label>
       <OptionCombobox id={field("associate")} value={associateId} onValueChange={(value) => { setAssociateId(value); setPayments({}); }}
         options={associateOptions} placeholder="Buscar associado…" emptyText="Nenhum associado encontrado." /></div>
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid items-start gap-3 sm:grid-cols-2">
       <div className="grid gap-1.5"><Label htmlFor={field("date")}>Data</Label>
         <Input id={field("date")} type="date" value={date} onChange={(event) => setDate(event.target.value)} required /></div>
       <div className="grid gap-1.5"><Label htmlFor={field("amount")}>Valor (R$)</Label>

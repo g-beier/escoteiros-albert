@@ -34,7 +34,7 @@ export function ActionDialog({ open, onOpenChange, title, description, action, s
       </DialogHeader>
       <form action={formAction} className="grid gap-3">
         {Object.entries(hidden).map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)}
-        <div className="grid gap-3 sm:grid-cols-2">{children}</div>
+        <div className="grid items-start gap-3 sm:grid-cols-2">{children}</div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button type="submit" variant={destructive ? "destructive" : "default"} disabled={pending}>{pending ? "Salvando…" : submitLabel}</Button>

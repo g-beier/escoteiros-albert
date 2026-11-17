@@ -123,9 +123,18 @@
   font-feature-settings: "tnum";
 }
 
+/* Superfície dos cartões (seções, indicadores, listas, tabelas): fundo do cartão e borda suave, a mesma em todos.
+   Divisórias internas (cabeçalho, linhas) continuam com `border-b`. */
+@utility surface {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  background-color: var(--card);
+}
+
 @layer base {
   * { @apply border-border outline-ring/50; }
-  html { @apply font-sans; }
+  /* Reserva a faixa da barra de rolagem mesmo sem rolagem: a página não "pula" ao filtrar ou trocar de aba. */
+  html { @apply font-sans; scrollbar-gutter: stable; }
   body { @apply bg-background text-foreground; }
 }
 

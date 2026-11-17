@@ -23,7 +23,7 @@ import { pageSession } from "@/lib/server/session";
 
 type Line = StockRow & { material: MaterialRow };
 
-type Search = { q?: string; familia?: string; divisao?: string; todos?: string; alerta?: string; inativos?: string };
+type Search = { q?: string; familia?: string; divisao?: string; alerta?: string; inativos?: string };
 
 const byName = (a: Line, b: Line) => a.material.name.localeCompare(b.material.name, "pt-BR");
 
@@ -40,11 +40,12 @@ export default async function Materials({ searchParams }: { searchParams: Promis
     families.listOptions(db, groupId),
   ]);
 
-  // Local macro (aba): a raiz da divisão pedida; sem divisão, a primeira raiz, ou "Todos" na busca.
+  // Local macro (aba): a raiz da divisão pedida, ou "Todos".
   const roots = paths.filter((row) => row.depth === 0 && row.active);
   const selected = params.divisao ? paths.find((row) => row.id === params.divisao) : undefined;
-  const showAll = !selected && (params.todos === "1" || Boolean(params.q?.trim()) || roots.length === 0);
-  const root = selected ? rootOf(paths, selected.id) : showAll ? undefined : roots[0];
+  // Sem divisão escolhida, a aba é "Todos" (todos os locais, com os materiais sem estoque no fim).
+  const showAll = !selected;
+  const root = selected ? rootOf(paths, selected.id) : undefined;
   const scope: LocationPath[] = selected ? subtree(paths, selected.id) : root ? subtree(paths, root.id) : paths;
 
   // Material conta pelo total (mínimo e validade de todas as divisões), como no alerta do Início.
@@ -78,11 +79,11 @@ export default async function Materials({ searchParams }: { searchParams: Promis
     const next = new URLSearchParams();
     for (const key of ["q", "familia", "alerta", "inativos"] as const) if (params[key]) next.set(key, params[key]!);
     for (const [key, value] of Object.entries(change)) next.set(key, value);
-    return `/inventario/materiais?${next}`;
+    return next.size ? `/inventario/materiais?${next}` : "/inventario/materiais";
   };
   const tabs = [
+    { href: hrefFor({}), label: "Todos", active: showAll },
     ...roots.map((row) => ({ href: hrefFor({ divisao: row.id }), label: row.name, active: root?.id === row.id })),
-    { href: hrefFor({ todos: "1" }), label: "Todos", active: showAll },
   ];
   const heading = showAll ? "Todos os locais" : selected && selected.depth > 0 ? selected.path : root?.name ?? "Materiais";
 

@@ -163,7 +163,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
         <DirectionButton value="saida" current={draft.direction} onSelect={chooseDirection} disabled={readOnly || locked} />
         {!draft.direction && <span className="text-muted-foreground">Comece escolhendo se o dinheiro entrou ou saiu da conta.</span>}
       </div>
-      <div className="grid gap-3 sm:grid-cols-[10rem_minmax(0,1fr)_10rem]">
+      <div className="grid items-start gap-3 sm:grid-cols-[10rem_minmax(0,1fr)_10rem]">
         <div className="grid gap-1.5"><Label htmlFor="entry-date">Data</Label><Input id="entry-date" type="date" value={draft.date} onChange={(e) => update({ date: e.target.value })} required /></div>
         <div className="grid gap-1.5"><Label htmlFor="entry-name">Histórico</Label><Input id="entry-name" maxLength={200} placeholder="Quem pagou ou recebeu, emitente da nota…" value={draft.name} onChange={(e) => update({ name: e.target.value })} required /></div>
         <div className="grid gap-1.5"><Label htmlFor="entry-total">Valor total (R$){draft.direction && <span className={cn("ml-1", draft.direction === "saida" ? "text-destructive" : "text-success")}>· {draft.direction === "saida" ? "saída" : "entrada"}</span>}</Label><Input id="entry-total" inputMode="decimal" placeholder="0,00" value={draft.total} onChange={(e) => update({ total: e.target.value })} readOnly={locked} title={locked ? "Valor da linha do extrato" : undefined} className="text-right num" required /></div>

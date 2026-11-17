@@ -65,7 +65,7 @@ export default async function MaterialDetail({ params }: { params: Promise<{ id:
 
   return <div className="shell">
     <AppHeader current={`/inventario/materiais/${id}`} email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
-    <PageBody>
+    <PageBody width="narrow">
       <PageHeader title={material.name} crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais", href: "/inventario/materiais" }, { label: material.name }]}
         description={material.description ?? undefined}
         actions={member.inventory.canEdit && <Link href={`/inventario/materiais/${id}/editar`} className={buttonVariants({ variant: "outline", size: "lg" })}><IconPencil data-icon="inline-start" /> Editar material</Link>}>

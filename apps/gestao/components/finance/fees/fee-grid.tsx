@@ -98,7 +98,7 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
   }
 
   return <div className="grid gap-3 md:flex md:min-h-0 md:flex-1 md:flex-col">
-    <dl className="m-0 flex flex-wrap items-stretch rounded-lg border bg-card py-2 [&>div+div]:border-l">
+    <dl className="m-0 flex flex-wrap items-stretch surface py-2 [&>div+div]:border-l">
       <Figure label={`Recebido em ${year}${filtered ? " (na seleção)" : ""}`} value={money(amounts.total / 100)} className="text-success" />
       <Figure label="Pagamentos" value={String(amounts.count)} />
       {price && <Figure label={`Previsto (${money(price.monthlyCents / 100)}/mês)`} value={money(expectedTotal / 100)} />}
@@ -129,8 +129,8 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
     </div>
 
     {visible.length === 0
-      ? <p className="m-0 rounded-lg border bg-card px-4 py-8 text-center text-muted-foreground">{rows.length ? "Ninguém corresponde à busca." : "Nenhum associado ativo. Cadastre em Configurações › Associados."}</p>
-      : <div className="overflow-auto rounded-lg border bg-card md:min-h-0">
+      ? <p className="m-0 surface px-4 py-8 text-center text-muted-foreground">{rows.length ? "Ninguém corresponde à busca." : "Nenhum associado ativo. Cadastre em Configurações › Associados."}</p>
+      : <div className="overflow-auto surface md:min-h-0">
         <table className="w-full min-w-[60rem] table-fixed border-separate border-spacing-0 text-xs">
           <caption className="sr-only">Mensalidades de {year}: associados por mês, de março a dezembro</caption>
           {/* larguras fixas: recolher seções não pode mudar as colunas; o nome fica com o espaço que sobra */}

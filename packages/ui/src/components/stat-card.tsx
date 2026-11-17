@@ -19,7 +19,7 @@ export function StatCard({ label, value, tone = "neutral", href, icon }: {
     <span className="text-xs text-muted-foreground">{label}</span>
     <span className={cn("num flex items-center gap-1.5 text-xl font-bold", TONES[tone])}>{icon}{value}</span>
   </>;
-  const className = "grid gap-1 rounded-lg border bg-card px-4 py-3";
+  const className = "surface grid gap-1 px-4 py-3";
   return href
     ? <Link href={href} className={cn(className, "transition-colors hover:border-primary")}>{body}</Link>
     : <div className={className}>{body}</div>;
@@ -29,7 +29,7 @@ export function StatCard({ label, value, tone = "neutral", href, icon }: {
 export function ListCard({ title, titleId, href, linkLabel, empty, children, className }: {
   title: string; titleId: string; href?: string; linkLabel?: string; empty?: ReactNode; children?: ReactNode; className?: string;
 }) {
-  return <section aria-labelledby={titleId} className={cn("flex flex-col overflow-hidden rounded-lg border bg-card", className)}>
+  return <section aria-labelledby={titleId} className={cn("surface flex flex-col overflow-hidden", className)}>
     <div className="flex items-center justify-between gap-3 border-b px-4 py-2.5">
       <h2 id={titleId} className="m-0 text-sm font-semibold">{title}</h2>
       {href && <Link href={href} className="text-xs font-semibold text-primary hover:underline">{linkLabel ?? "Ver todos"}</Link>}

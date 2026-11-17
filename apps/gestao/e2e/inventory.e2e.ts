@@ -63,22 +63,18 @@ test("gestor: divisões, família, material por quantidade com lote, transferên
   await page.getByRole("dialog").getByRole("button", { name: "Cadastrar família" }).click();
   await expect(page.getByText("Família cadastrada.")).toBeVisible();
 
-  // material por quantidade: lote de 10 a R$ 1.234,56 na divisão de cima
+  // material por quantidade cadastrado já com a primeira entrada: lote de 10 a R$ 1.234,56 na divisão de cima
   await page.goto("/inventario/materiais/novo");
   await page.getByLabel("Nome").fill(lotMaterial);
-  await chooseOption(page, "Controle", "Por quantidade");
+  await page.getByRole("radio", { name: /^Por quantidade/ }).click();
   await page.getByLabel("Estoque mínimo").fill("8");
+  await page.getByRole("checkbox", { name: "Registrar a primeira entrada agora" }).click();
+  await chooseOption(page, "Divisão", root);
+  await page.getByLabel("Quantidade", { exact: true }).fill("10");
+  await page.getByLabel("Valor estimado (unidade)").fill("1.234,56");
   await page.getByRole("button", { name: "Cadastrar material" }).click();
   await expect(page).toHaveURL(/\/inventario\/materiais\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("heading", { name: lotMaterial })).toBeVisible();
-
-  await page.getByRole("button", { name: "Adicionar lote" }).click();
-  const add = page.getByRole("dialog");
-  await chooseOption(page, "Divisão", root, add);
-  await add.getByLabel("Quantidade").fill("10");
-  await add.getByLabel("Valor estimado (unidade)").fill("1.234,56");
-  await add.getByRole("button", { name: "Adicionar" }).click();
-  await expect(page.getByText("Lote adicionado.")).toBeVisible();
   await expect(lotRow(page, root)).toContainText("R$ 1.234,56");
 
   // transferir 4 para a subdivisão: dois lotes (6 e 4)
@@ -105,7 +101,15 @@ test("gestor: divisões, família, material por quantidade com lote, transferên
   await expect(history).toContainText("Consumo");
   await expect(page.getByLabel("Abaixo do mínimo")).toBeVisible();
 
-  // lista por local (busca mostra todos) e movimentações filtradas por tipo
+  // lista por local: sem divisão escolhida, a aba é "Todos" (a primeira); a divisão filtra
+  await page.goto("/inventario/materiais");
+  const tabs = page.getByRole("navigation", { name: "Locais" });
+  await expect(tabs.getByRole("link").first()).toHaveText("Todos");
+  await expect(tabs.getByRole("link", { name: "Todos" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("heading", { name: "Todos os locais" })).toBeVisible();
+  await tabs.getByRole("link", { name: root }).click();
+  await expect(page).toHaveURL(/divisao=[0-9a-f-]{36}/);
+  await expect(page.getByRole("link", { name: lotMaterial })).toBeVisible();
   await page.goto(`/inventario/materiais?q=${encodeURIComponent(lotMaterial)}`);
   const line = page.getByRole("row").filter({ has: page.getByRole("link", { name: lotMaterial }) });
   await expect(line).toContainText("6");
@@ -117,7 +121,7 @@ test("gestor: material por peça com etiqueta da família", async ({ page }) => 
   await page.goto("/inventario/materiais/novo");
   await page.getByLabel("Nome").fill(unitMaterial);
   await chooseOption(page, "Família", `${family} (${code})`);
-  await chooseOption(page, "Controle", "Por peça");
+  await page.getByRole("radio", { name: /^Por peça/ }).click();
   await page.getByRole("button", { name: "Cadastrar material" }).click();
   await expect(page.getByRole("heading", { name: unitMaterial })).toBeVisible();
 

@@ -59,7 +59,7 @@ export function RealizedTable({ model }: { model: RealizedModel }) {
   const saldo = totalOf(roots.receita).map((v, m) => v - totalOf(roots.despesa)[m]);
 
   if (!blocks.length) {
-    return <p className="m-0 rounded-lg border bg-card px-4 py-8 text-center text-muted-foreground">Nenhuma rubrica com código nem movimento em {year}. Cadastre as rubricas em Configurações › Rubricas.</p>;
+    return <p className="m-0 surface px-4 py-8 text-center text-muted-foreground">Nenhuma rubrica com código nem movimento em {year}. Cadastre as rubricas em Configurações › Rubricas.</p>;
   }
 
   return <div className="flex flex-col gap-2 md:min-h-0 md:flex-1">
@@ -70,7 +70,7 @@ export function RealizedTable({ model }: { model: RealizedModel }) {
         <Button variant="outline" size="sm" onClick={() => setCollapsed(new Set(parents.filter((i) => rows[i].depth >= 1)))}>Só grupos</Button>
       </div>
     </div>
-    <div className="overflow-auto rounded-lg border bg-card md:min-h-0">
+    <div className="overflow-auto surface md:min-h-0">
       <table className="w-full min-w-[1180px] border-collapse text-xs">
         <caption className="sr-only">Realizado de {year}: receitas e despesas por rubrica, mês a mês</caption>
         <thead className="sticky top-0 z-10 bg-muted">

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { InputError, runAction } from "@/lib/action";
+import { DataError } from "@/lib/server/db";
 import type { EntryInput } from "@/lib/inventory/model";
 import type { Condition, Origin, Tracking, WriteOffReason } from "@/lib/inventory/vocabulary";
 import { parseMoneyToCents } from "@/lib/money";
@@ -78,22 +79,56 @@ function record(data: FormData, work: (db: Parameters<typeof materials.addLot>[0
   });
 }
 
-/** Cadastro e edição do material; ao salvar, volta para o detalhe (onde se lançam lotes ou peças). */
+/** Peças de uma vez no cadastro (entram sem etiqueta). */
+const MAX_UNITS_ON_CREATE = 50;
+
+/** Primeira entrada pedida no cadastro, já validada (antes de gravar o material). */
+function firstEntry(formData: FormData, tracking: Tracking) {
+  const locationId = optionalId(formData, "locationId");
+  if (!locationId) throw new InputError("Escolha a divisão da primeira entrada.");
+  const quantity = integer(formData, "quantity", "a quantidade");
+  if (quantity < 1) throw new InputError("A quantidade deve ser pelo menos 1.");
+  if (tracking === "unit" && quantity > MAX_UNITS_ON_CREATE) throw new InputError(`No cadastro, registre até ${MAX_UNITS_ON_CREATE} peças; as demais, no detalhe do material.`);
+  return { locationId, quantity, condition: oneOf(formData, "condition", CONDITIONS), expiresOn: date(formData, "expiresOn"), ...entry(formData) };
+}
+
+/**
+ * Cadastro e edição do material; ao salvar, volta para o detalhe (onde se lançam lotes ou peças).
+ * No cadastro, com "Registrar a primeira entrada", grava também um lote (por quantidade) ou as peças (por peça).
+ */
 export async function saveMaterial(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   let savedId = "";
   const result = await runAction(inventoryEditorOrError, async ({ db, groupId }) => {
     const tracking = oneOf<Tracking>(formData, "tracking", ["unit", "lot"]);
     if (!tracking) throw new InputError("Escolha se o material é controlado por peça ou por quantidade.");
+    const id = optionalId(formData, "id");
+    const stock = !id && formData.get("withStock") === "on" ? firstEntry(formData, tracking) : null;
     savedId = await materials.save(db, groupId, {
-      id: optionalId(formData, "id"), familyId: optionalId(formData, "familyId"), name: text(formData, "name"), tracking,
+      id, familyId: optionalId(formData, "familyId"), name: text(formData, "name"), tracking,
       consumable: tracking === "lot" && formData.get("consumable") === "on",
       minimumQuantity: integer(formData, "minimum", "o estoque mínimo", false), description: optional(formData, "description"),
       active: formData.get("active") !== "off",
     });
     revalidatePath("/inventario/materiais");
     revalidatePath(`/inventario/materiais/${savedId}`);
+    revalidatePath("/inventario");
+    if (!stock) return;
+    // O material já existe: uma falha aqui não o desfaz, só avisa (a entrada pode ser feita no detalhe).
+    try {
+      if (tracking === "lot") {
+        await materials.addLot(db, { materialId: savedId, ...stock });
+      } else {
+        for (let i = 0; i < stock.quantity; i++) {
+          await materials.addUnit(db, { materialId: savedId, ...stock, tag: null, legacyCode: null, description: null });
+        }
+      }
+    } catch (error) {
+      if (!(error instanceof DataError)) throw error;
+      savedId = "";
+      throw new DataError(`Material cadastrado, mas a primeira entrada falhou: ${error.message} Registre-a no detalhe do material.`);
+    }
   });
-  if (result.error) return result;
+  if (result.error || !savedId) return result;
   redirect(`/inventario/materiais/${savedId}`);
 }
 

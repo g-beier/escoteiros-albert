@@ -1,8 +1,8 @@
 import { cn } from "@geas/ui/lib/utils";
 
-/** Cartão de seção (cadastros, importação): borda forte, cabeçalho com título e ações. */
+/** Cartão de seção (cadastros, listas, importação): superfície com borda suave, cabeçalho com título e ações. */
 export function SectionCard({ className, ...props }: React.ComponentProps<"section">) {
-  return <section className={cn("overflow-hidden rounded-2xl border-[1.5px] border-foreground bg-card shadow-sm", className)} {...props} />;
+  return <section className={cn("surface overflow-hidden", className)} {...props} />;
 }
 
 export function SectionHeader({ title, titleId, description, children }: { title: React.ReactNode; titleId?: string; description?: React.ReactNode; children?: React.ReactNode }) {

@@ -82,7 +82,7 @@ function FamilyForm({ family, onDone }: { family: FamilyItem | null; onDone: () 
       <DialogDescription>O código só é necessário quando as peças da família forem etiquetadas. Ele não muda depois que houver peças etiquetadas.</DialogDescription>
     </DialogHeader>
     {family && <input type="hidden" name="id" value={family.id} />}
-    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_7rem]">
+    <div className="grid items-start gap-3 sm:grid-cols-[minmax(0,1fr)_7rem]">
       <div className="grid gap-1.5"><Label htmlFor={field("name")}>Nome</Label><Input id={field("name")} name="name" defaultValue={family?.name} minLength={2} maxLength={80} placeholder="Ex.: Barracas" required /></div>
       <div className="grid gap-1.5"><Label htmlFor={field("code")}>Código</Label>
         <Input id={field("code")} name="code" defaultValue={family?.code ?? ""} inputMode="numeric" pattern="[0-9]{3}" maxLength={3} placeholder="001" className="num" /></div>

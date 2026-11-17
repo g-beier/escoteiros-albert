@@ -88,7 +88,7 @@ function Row({ checked, onToggle, label, children, actions, hint }: {
 }
 
 function Column({ title, count, empty, action, children }: { title: string; count: number; empty: string; action?: React.ReactNode; children: React.ReactNode }) {
-  return <section aria-label={title} className="min-w-0 overflow-hidden rounded-lg border bg-card">
+  return <section aria-label={title} className="min-w-0 overflow-hidden surface">
     <h2 className="m-0 flex items-center gap-2 border-b bg-muted/60 px-3 py-2 text-sm font-semibold">{title} <span className="num text-xs font-medium text-muted-foreground">{count}</span>{action && <span className="ml-auto">{action}</span>}</h2>
     {count ? <ul className="m-0 list-none p-0">{children}</ul> : <p className="m-0 px-3 py-4 text-muted-foreground">{empty}</p>}
   </section>;
@@ -96,7 +96,7 @@ function Column({ title, count, empty, action, children }: { title: string; coun
 
 function Collapsible({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
   if (!count) return null;
-  return <details className="group rounded-lg border bg-card">
+  return <details className="group surface">
     <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">
       <IconChevronRight className="size-4 transition-transform group-open:rotate-90" aria-hidden /> {title} <span className="num text-xs font-medium text-muted-foreground">({count})</span>
     </summary>
@@ -162,7 +162,7 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
   return <div className="grid gap-4">
     {data.truncated && <p className="m-0 rounded-lg bg-secondary px-3 py-2 text-xs">Período com muitas linhas: só as primeiras 5.000 de cada lado foram carregadas. Reduza o período.</p>}
 
-    {suggestionCount > 0 && <section aria-label="Sugestões" className="overflow-hidden rounded-lg border border-primary/30 bg-card">
+    {suggestionCount > 0 && <section aria-label="Sugestões" className="overflow-hidden surface border-primary/30!">
       <div className="flex flex-wrap items-center gap-2 border-b bg-primary/5 px-3 py-2">
         <h2 className="m-0 flex items-center gap-1.5 text-sm font-semibold"><IconSparkles className="size-4 text-primary" aria-hidden /> Sugestões <span className="num text-xs font-medium text-muted-foreground">({suggestionCount})</span></h2>
         <span className="text-xs text-muted-foreground">mesmo valor, no mesmo dia ou até 3 dias de diferença</span>
@@ -307,7 +307,7 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
 }
 
 function ClosingCard({ closing }: { closing: Closing }) {
-  return <section aria-label="Fechamento do período" className="rounded-lg border bg-card px-3 py-2.5">
+  return <section aria-label="Fechamento do período" className="surface px-3 py-2.5">
     <h2 className="m-0 mb-1.5 text-sm font-semibold">Fechamento</h2>
     {!closing.ok ? <p className="m-0 text-muted-foreground">Não dá para conferir o saldo. {closing.reason}</p> : <>
       <dl className="m-0 grid gap-x-6 gap-y-1 sm:grid-cols-[auto_auto] sm:justify-start">
