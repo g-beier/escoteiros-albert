@@ -2,9 +2,35 @@
 
 Status: **avaliação** (nada implementado). Data: 2026-11-16.
 
-> 2026-11-17: financeiro e inventario serão consolidados em `apps/gestao`, com uma camada de dados
-> que isola o Supabase (`docs/consolidacao-gestao.md`). Esse plano antecipa a seção 4.2 e reduz as
-> seções 4.3, 4.4 e 4.6 a trocar implementações em `lib/server/`. A hospedagem não será Vercel.
+> **Atualização de 2026-11-17: consolidação feita.** Financeiro e inventário são agora `apps/gestao`, e todo
+> acesso ao banco passa por `apps/gestao/lib/server/` (`docs/consolidacao-gestao.md`). A hospedagem não será
+> Vercel. Com isso, as seções 4.2 a 4.4 abaixo ficaram assim:
+>
+> - **4.2 Dados:** em vez de converter ~170 chamadas espalhadas, reimplementar `lib/server/supabase/*` e os
+>   módulos de `lib/server/{finance,inventory}/*` sobre o driver Postgres, mantendo as assinaturas (`Db`, tipos de
+>   domínio, `DataError`). Telas e actions não mudam, e o ESLint impede `@supabase/*` fora de `lib/server`.
+>   As consultas do Financeiro movidas como estavam usam `untyped(db)` e o PostgREST (selects embutidos,
+>   `count`, `fetchPaged`): são as que mais pedem SQL novo.
+> - **4.3 Auth:** trocar `lib/server/auth.ts` (código, link, logout, renovação no `proxy.ts`) e a tela de login.
+>   A sessão (`lib/server/session.ts`) só usa `currentUser()`.
+> - **4.4 Storage:** trocar `lib/server/files.ts` (URLs assinadas de envio e leitura, remoção). Só os comprovantes
+>   (`lib/server/finance/attachments.ts`) usam.
+> - **Chave de serviço:** só `lib/server/users.ts` (Auth admin e `memberships`) e `scripts/export-transparency.ts`.
+>
+> Funções SQL e tabelas/visões por módulo (o que cada reimplementação precisa cobrir):
+>
+> | Módulo (`lib/server/…`) | Funções SQL | Tabelas e visões lidas |
+> |---|---|---|
+> | `finance/registry` | create/update_account, set_account_active, create/update_payment_method, set_payment_method_active, set_payment_method_default_account, save_category_tree, rename/delete_import_profile | accounts, payment_methods, categories, associates, statement_imports |
+> | `finance/associates` | import_associates, create/update_section, create/update_patrol | associate_rows, associates (insert/update direto), sections, patrols |
+> | `finance/entries` | create/update/delete_ledger_entry, set_entry_document_filed, move_ledger_entries_account, ledger_entry_history | ledger_entries, ledger_entry_rows, entry_split_rows, entry_attachments, categories, reconciliation_link_rows |
+> | `finance/attachments` + `files` | add/delete_entry_attachment | entry_attachments, ledger_entries; bucket `comprovantes` |
+> | `finance/reconciliation` | link/unlink_reconciliation, reject_reconciliation_suggestion, ignore_statement_line(s), reopen_statement_line, set_ledger_entry_outside_statement, set_ledger_entry_account, create_entry_from_statement_line, create_entries_from_statement_lines | statement_lines, ledger_entry_rows, reconciliation_link_rows, reconciliation_rejections, statement_imports, accounts, payment_methods |
+> | `finance/statements` | save_import_profile, import_statement_lines, preview_statement_lines, delete_statement_import, account_balance_before | statement_imports, statement_lines, import_profiles, accounts |
+> | `finance/fees` + `debts` | set_fee_record, confirm_fee_suggestions, set_fee_exemption, set_fee_settings, set_fee_year_settings, set_fee_associate_price, add/delete_associate_movement, debt_rows, save/delete_debt, pay_debts | fee_* , associate_movements, associate_rows, fee_split_candidates, ledger_entries, entry_split_rows, debt_payments |
+> | `finance/reports` + `home` | realized_by_month, account_balance_before | categories, ledger_entries, ledger_entry_rows, entry_split_rows, accounts, statement_lines, groups |
+> | `inventory/*` | inventory_save_location, inventory_place_location, inventory_save_family, inventory_save_material, inventory_add_lot/unit, inventory_transfer_lot/unit, inventory_set_lot/unit_condition, inventory_adjust_lot, inventory_write_off_lot/unit, inventory_update_lot/unit, inventory_next_tag | inventory_locations, inventory_location_paths, inventory_families, inventory_materials, inventory_material_rows, inventory_stock_by_location, inventory_lots, inventory_units, inventory_counts, inventory_movements |
+> | `users` | record_user_invite, admin_change_member_role, admin_change_inventory_role, admin_remove_member | memberships; Auth admin (convite, lista, bloqueio) |
 
 Objetivo: deixar de depender do Supabase (banco, autenticação, storage, ferramentas de dev/CI) e hospedar
 financeiro, inventario e (opcionalmente) o site institucional numa nuvem com custo zero ou mínimo.

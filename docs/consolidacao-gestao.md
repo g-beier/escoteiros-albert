@@ -347,7 +347,41 @@ módulos e um cartão por módulo. O Resumo do financeiro foi para `/financeiro`
 Os dados vêm de `lib/server/finance/home.ts` e `lib/server/inventory/overview.ts`. As mensalidades atrasadas
 ainda passam por `fetchFeeYear` (de `lib/finance/fee-queries.ts`), que será convertido na 3.4.
 
+**Fase 3 concluída em 2026-11-17** no branch `gestao/fase-3` (`c5568ea`):
+
+- **Áreas convertidas:** Cadastros (`registry.ts`, `associates.ts`), Lançamentos (`entries.ts`,
+  `attachments.ts`, `lib/server/files.ts`), Extrato (`reconciliation.ts`, `statements.ts`), Mensalidades e
+  devedores (`fees.ts`, `debts.ts`), Relatórios e exportações (`reports.ts`, inclusive o script de
+  transparência com `serviceDb()`), além do Início (`home.ts`).
+- **Verificação:** typecheck (todos os workspaces), lint sem avisos, vitest (273), E2E (31), pgTAP e
+  `next build` verdes.
+- **Desvios do plano:**
+  - **Módulos de consulta:** os que já existiam (`entry-queries`, `fee-queries`, `import-queries`,
+    `export/queries`, mais `fetchEntry` e `fetchDebts`) foram divididos. Tipos e constantes que os
+    componentes cliente usam ficaram em `lib/finance/` (`entry-rows.ts` etc.); as consultas foram para
+    `lib/server/finance/` sem mudar a lógica.
+  - **Consultas copiadas sem tipos gerados:** essas consultas usam `untyped(db)`, porque montam o
+    `select` dinamicamente. É a parte que mais pede SQL novo na saída do Supabase.
+  - **Formato de retorno das actions:** algumas mantêm o formato que os componentes já esperavam
+    (`{ success: true, id }` nos lançamentos, `{ data }` na importação). Em vez do `runAction`, usam
+    helpers locais com a mesma regra: `InputError`/`DataError` viram `{ error }`.
+  - **`lib/finance/export/route-helpers.ts`** é um helper das rotas Next. Fica fora de `lib/server` e já
+    entrega `db`.
+
 ### Fase 4: fechamento (≈1 dia)
+
+**Concluída em 2026-11-17** (`a0557dd` e documentação):
+
+- [x] Regra de importação do ESLint em erro no app inteiro; só `lib/server/**`, `e2e/**` e `scripts/**`
+  ficam fora dela. Nenhum `@supabase` fora de `lib/server`.
+- [x] `Member` não expõe mais o cliente Supabase (só `db`).
+- [x] Usos de `serviceDb()`/`serviceClient()` revisados: só `lib/server/users.ts` e
+  `scripts/export-transparency.ts`.
+- [x] `@geas/ui` sem `@supabase/*` (já na fase 2).
+- [x] `docs/migracao-saida-supabase.md` atualizado, com as funções SQL e as tabelas de cada módulo.
+- [x] CLAUDE.md atualizado.
+
+Itens originais do plano:
 
 - ESLint `error` no app inteiro. `rg "@supabase" apps/gestao --glob '!lib/server/supabase/**' --glob '!e2e/**'`
   não retorna nada.
