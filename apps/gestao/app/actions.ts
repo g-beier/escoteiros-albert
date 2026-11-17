@@ -5,10 +5,10 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { editorOrError, memberOrError } from "@/lib/session";
-import { entrySchema, toRpcSplits } from "@/lib/entry-schema";
-import { fetchEntryPage, type EntryPage } from "@/lib/entry-queries";
-import { parseFilters, parseOrder } from "@/lib/filters";
-import { ATTACHMENT_BUCKET } from "@/lib/attachments";
+import { entrySchema, toRpcSplits } from "@/lib/finance/entry-schema";
+import { fetchEntryPage, type EntryPage } from "@/lib/finance/entry-queries";
+import { parseFilters, parseOrder } from "@/lib/finance/filters";
+import { ATTACHMENT_BUCKET } from "@/lib/finance/attachments";
 
 type Result = { error?: string; success?: boolean; id?: string };
 

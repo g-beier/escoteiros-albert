@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { memberOrError } from "@/lib/session";
-import { ATTACHMENT_BUCKET, ATTACHMENT_URL_TTL } from "@/lib/attachments";
+import { ATTACHMENT_BUCKET, ATTACHMENT_URL_TTL } from "@/lib/finance/attachments";
 
 /**
  * GET /lancamentos/<id>/anexos/<anexoId>[?baixar=1]

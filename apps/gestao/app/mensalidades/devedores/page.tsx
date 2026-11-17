@@ -1,8 +1,8 @@
-import { AppHeader } from "@/components/app-header";
-import { DebtsManager } from "@/components/debts/debts-manager";
-import { FeeTabs, feeCrumbs, PageBody, PageHeader } from "@/components/nav/page-header";
-import { SetupNeeded } from "@/components/setup-needed";
-import { fetchDebts } from "@/lib/debts";
+import { AppHeader } from "@/components/finance/app-header";
+import { DebtsManager } from "@/components/finance/debts/debts-manager";
+import { FeeTabs, feeCrumbs, PageBody, PageHeader } from "@/components/finance/nav/page-header";
+import { SetupNeeded } from "@/components/shell/setup-needed";
+import { fetchDebts } from "@/lib/finance/debts";
 import { pageSession } from "@/lib/session";
 
 export const metadata = { title: "Devedores · GEAS Financeiro" };

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SectionCard } from "@geas/ui/components/section-card";
-import { AppHeader } from "@/components/app-header";
-import { PageBody, PageHeader } from "@/components/nav/page-header";
-import { EntryForm, type StatementLinePrefill } from "@/components/entries/entry-form";
-import { listHref } from "@/lib/entries";
+import { AppHeader } from "@/components/finance/app-header";
+import { PageBody, PageHeader } from "@/components/finance/nav/page-header";
+import { EntryForm, type StatementLinePrefill } from "@/components/finance/entries/entry-form";
+import { listHref } from "@/lib/finance/entries";
 import { dateBR, money } from "@/lib/format";
-import { guessPaymentMethod, safeReconciliationHref, suggestedEntryName } from "@/lib/reconciliation";
+import { guessPaymentMethod, safeReconciliationHref, suggestedEntryName } from "@/lib/finance/reconciliation";
 import { loadEntryContext } from "../context";
 
 export const metadata = { title: "Novo lançamento · GEAS Financeiro" };

@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { UsersManager } from "@geas/ui/components/users-manager";
 import { listGroupUsers } from "@geas/ui/lib/users";
-import { AppHeader } from "@/components/app-header";
-import { PageBody, PageHeader } from "@/components/nav/page-header";
+import { AppHeader } from "@/components/finance/app-header";
+import { PageBody, PageHeader } from "@/components/finance/nav/page-header";
 import { pageSession } from "@/lib/session";
 import { inviteUser, removeUser, saveUserRoles } from "./actions";
 

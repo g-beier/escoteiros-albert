@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { AppHeader } from "@/components/app-header";
-import { RecentImports } from "@/components/import/recent-imports";
-import { StatementImporter, type ImportAccount } from "@/components/import/statement-importer";
-import { SetupNeeded } from "@/components/setup-needed";
-import { extratoCrumbs, ExtratoTabs, NARROW_CONTENT, PageBody, PageHeader } from "@/components/nav/page-header";
+import { AppHeader } from "@/components/finance/app-header";
+import { RecentImports } from "@/components/finance/import/recent-imports";
+import { StatementImporter, type ImportAccount } from "@/components/finance/import/statement-importer";
+import { SetupNeeded } from "@/components/shell/setup-needed";
+import { extratoCrumbs, ExtratoTabs, NARROW_CONTENT, PageBody, PageHeader } from "@/components/finance/nav/page-header";
 import { SectionCard } from "@geas/ui/components/section-card";
-import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
-import { fetchImportProfiles, fetchLastProfileByAccount, fetchRecentImports } from "@/lib/import-queries";
+import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/finance/accounts";
+import { fetchImportProfiles, fetchLastProfileByAccount, fetchRecentImports } from "@/lib/finance/import-queries";
 import { pageSession } from "@/lib/session";
 import { cn } from "@geas/ui/lib/utils";
 

@@ -1,22 +1,22 @@
 import Link from "next/link";
 import { IconFolderExclamation, IconHelpCircle } from "@tabler/icons-react";
 import { pageSession } from "@/lib/session";
-import { AppHeader } from "@/components/app-header";
-import { EntryViewTabs, PageHeader } from "@/components/nav/page-header";
-import { InfiniteEntries } from "@/components/entries/infinite-entries";
-import { fetchEntryPage } from "@/lib/entry-queries";
-import { EntryListProvider, NewEntryButton } from "@/components/entries/entry-editor";
-import { EntryFilters } from "@/components/entries/entry-filters";
-import { BulkAccountBar } from "@/components/entries/bulk-account-bar";
-import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/accounts";
-import { ExportMenu } from "@/components/export/export-menu";
-import { SetupNeeded } from "@/components/setup-needed";
-import { exportYears } from "@/lib/export/period";
-import { entriesPath, listQuery } from "@/lib/entries";
-import type { EntryView } from "@/lib/entry-queries";
-import { ALL_DATES, hasAnyFilter, NO_ASSOCIATE, parseFilters, parseOrder, type RawSearchParams } from "@/lib/filters";
-import { depthOf, descendantsMap, sortCategories, type CategoryItem } from "@/lib/categories";
-import { FilterOptionsProvider, type FilterDimensions } from "@/components/entries/filter-options";
+import { AppHeader } from "@/components/finance/app-header";
+import { EntryViewTabs, PageHeader } from "@/components/finance/nav/page-header";
+import { InfiniteEntries } from "@/components/finance/entries/infinite-entries";
+import { fetchEntryPage } from "@/lib/finance/entry-queries";
+import { EntryListProvider, NewEntryButton } from "@/components/finance/entries/entry-editor";
+import { EntryFilters } from "@/components/finance/entries/entry-filters";
+import { BulkAccountBar } from "@/components/finance/entries/bulk-account-bar";
+import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/finance/accounts";
+import { ExportMenu } from "@/components/finance/export/export-menu";
+import { SetupNeeded } from "@/components/shell/setup-needed";
+import { exportYears } from "@/lib/finance/export/period";
+import { entriesPath, listQuery } from "@/lib/finance/entries";
+import type { EntryView } from "@/lib/finance/entry-queries";
+import { ALL_DATES, hasAnyFilter, NO_ASSOCIATE, parseFilters, parseOrder, type RawSearchParams } from "@/lib/finance/filters";
+import { depthOf, descendantsMap, sortCategories, type CategoryItem } from "@/lib/finance/categories";
+import { FilterOptionsProvider, type FilterDimensions } from "@/components/finance/entries/filter-options";
 
 
 type CatalogItem = { id: string; name: string; active: boolean };

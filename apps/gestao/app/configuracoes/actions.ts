@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireEditor } from "@/lib/session";
-import { CATALOG_KINDS, isCatalogKind, type CatalogKind } from "@/lib/catalogs";
-import { parseLedgerCode } from "@/lib/ledger-code";
-import { readAccountForm, toAccountRpc } from "@/lib/accounts";
+import { CATALOG_KINDS, isCatalogKind, type CatalogKind } from "@/lib/finance/catalogs";
+import { parseLedgerCode } from "@/lib/finance/ledger-code";
+import { readAccountForm, toAccountRpc } from "@/lib/finance/accounts";
 
 export type CatalogFormState = { error?: string; success?: string; tone?: "success" | "neutral" };
 

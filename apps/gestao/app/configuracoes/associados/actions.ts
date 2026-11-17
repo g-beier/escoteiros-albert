@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireEditor } from "@/lib/session";
-import { hasSections, SCOUT_BRANCHES } from "@/lib/associates";
+import { hasSections, SCOUT_BRANCHES } from "@/lib/finance/associates";
 
 /** Id opcional vindo de um select ("" = nenhum). */
 const optionalId = z.string().trim().transform((value) => value || null).pipe(z.uuid().nullable());

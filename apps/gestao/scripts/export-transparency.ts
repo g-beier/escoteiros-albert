@@ -12,8 +12,8 @@
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { fetchRealizedModel } from "@/lib/export/queries";
-import { buildTransparencyReport } from "@/lib/export/transparency";
+import { fetchRealizedModel } from "@/lib/finance/export/queries";
+import { buildTransparencyReport } from "@/lib/finance/export/transparency";
 
 const OUT_DIR = resolve(__dirname, "../../institucional/src/data/prestacao-contas");
 const GROUP_NAME = process.env.TRANSPARENCY_GROUP ?? "Grupo Escoteiro Albert Schweitzer";

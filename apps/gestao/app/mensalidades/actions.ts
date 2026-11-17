@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { editorOrError } from "@/lib/session";
 import { parseMoneyToCents } from "@/lib/money";
-import { groupPaymentOptions, type PaymentOption } from "@/lib/debts";
+import { groupPaymentOptions, type PaymentOption } from "@/lib/finance/debts";
 
 export type FeeResult = { error?: string; success?: string };
 

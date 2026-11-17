@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { fetchRealizedModel } from "@/lib/export/queries";
-import { errorResponse, exportContext } from "@/lib/export/route-helpers";
-import { buildTransparencyReport } from "@/lib/export/transparency";
+import { fetchRealizedModel } from "@/lib/finance/export/queries";
+import { errorResponse, exportContext } from "@/lib/finance/export/route-helpers";
+import { buildTransparencyReport } from "@/lib/finance/export/transparency";
 
 /** GET /exportar/transparencia?ano=AAAA — JSON do Realizado para a página Transparência do site. */
 export async function GET(request: NextRequest) {

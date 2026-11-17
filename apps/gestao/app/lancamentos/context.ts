@@ -1,5 +1,5 @@
 import { pageMember } from "@/lib/session";
-import type { Catalogs } from "@/components/entries/entry-form";
+import type { Catalogs } from "@/components/finance/entries/entry-form";
 
 /** Usuário, papel e cadastros usados pelo formulário de lançamento. */
 export async function loadEntryContext() {

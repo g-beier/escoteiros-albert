@@ -6,7 +6,7 @@ import { memberOrError } from "@/lib/session";
 import {
   type AccountBalance, fromRpcAccountBalance, fromRpcImportResult, fromRpcPreview, type ImportPreview, importLinesSchema, MAX_IMPORT_LINES, importProfileSchema, importSummary, parseStatementLines, toRpcLines,
   type ImportResult,
-} from "@/lib/import-schema";
+} from "@/lib/finance/import-schema";
 
 export type ImportProfile = {
   id: string;

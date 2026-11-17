@@ -1,13 +1,13 @@
 import { IconDownload, IconWorldUpload } from "@tabler/icons-react";
-import { AppHeader } from "@/components/app-header";
-import { EntryViewTabs, PageBody, PageHeader } from "@/components/nav/page-header";
-import { YearSelect } from "@/components/nav/year-select";
-import { RealizedTable } from "@/components/realized/realized-table";
-import { SetupNeeded } from "@/components/setup-needed";
+import { AppHeader } from "@/components/finance/app-header";
+import { EntryViewTabs, PageBody, PageHeader } from "@/components/finance/nav/page-header";
+import { YearSelect } from "@/components/finance/nav/year-select";
+import { RealizedTable } from "@/components/finance/realized/realized-table";
+import { SetupNeeded } from "@/components/shell/setup-needed";
 import { Button } from "@geas/ui/components/button";
-import { exportYears } from "@/lib/export/period";
-import { fetchRealizedModel } from "@/lib/export/queries";
-import { currentYear } from "@/lib/filters";
+import { exportYears } from "@/lib/finance/export/period";
+import { fetchRealizedModel } from "@/lib/finance/export/queries";
+import { currentYear } from "@/lib/finance/filters";
 import { pageSession } from "@/lib/session";
 
 export const metadata = { title: "Realizado · GEAS Financeiro" };

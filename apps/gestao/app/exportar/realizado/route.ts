@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
-import { fetchRealizedModel } from "@/lib/export/queries";
-import { errorResponse, exportContext, xlsxResponse } from "@/lib/export/route-helpers";
-import { realizedWorkbook } from "@/lib/export/xlsx";
+import { fetchRealizedModel } from "@/lib/finance/export/queries";
+import { errorResponse, exportContext, xlsxResponse } from "@/lib/finance/export/route-helpers";
+import { realizedWorkbook } from "@/lib/finance/export/xlsx";
 
 /** GET /exportar/realizado?ano=AAAA */
 export async function GET(request: NextRequest) {

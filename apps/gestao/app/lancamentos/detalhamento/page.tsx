@@ -1,5 +1,5 @@
 import { EntriesScreen } from "../entries-screen";
-import type { RawSearchParams } from "@/lib/filters";
+import type { RawSearchParams } from "@/lib/finance/filters";
 
 export const metadata = { title: "Detalhamento · GEAS Financeiro" };
 

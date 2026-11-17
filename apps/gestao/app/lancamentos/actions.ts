@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { editorOrError } from "@/lib/session";
-import { ATTACHMENT_BUCKET, attachmentPath, attachmentProblem, attachmentType, cleanFileName } from "@/lib/attachments";
+import { ATTACHMENT_BUCKET, attachmentPath, attachmentProblem, attachmentType, cleanFileName } from "@/lib/finance/attachments";
 
 type Result = { error?: string; success?: boolean };
 export type UploadTicket = { error: string } | { path: string; uploadUrl: string; contentType: string };

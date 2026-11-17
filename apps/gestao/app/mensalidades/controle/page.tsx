@@ -1,12 +1,12 @@
-import { AppHeader } from "@/components/app-header";
-import { FeeGrid } from "@/components/fees/fee-grid";
-import { FeeTabs, feeCrumbs, PageBody, PageHeader } from "@/components/nav/page-header";
-import { YearSelect } from "@/components/nav/year-select";
-import { SetupNeeded } from "@/components/setup-needed";
-import { matchesSections, NO_SECTION, NO_SECTION_PARAM, sectionsOf } from "@/lib/associates";
-import { fetchFeeYear, fetchFeeYears } from "@/lib/fee-queries";
-import { currentYear } from "@/lib/filters";
-import { DUE_RULE_LABELS } from "@/lib/fees";
+import { AppHeader } from "@/components/finance/app-header";
+import { FeeGrid } from "@/components/finance/fees/fee-grid";
+import { FeeTabs, feeCrumbs, PageBody, PageHeader } from "@/components/finance/nav/page-header";
+import { YearSelect } from "@/components/finance/nav/year-select";
+import { SetupNeeded } from "@/components/shell/setup-needed";
+import { matchesSections, NO_SECTION, NO_SECTION_PARAM, sectionsOf } from "@/lib/finance/associates";
+import { fetchFeeYear, fetchFeeYears } from "@/lib/finance/fee-queries";
+import { currentYear } from "@/lib/finance/filters";
+import { DUE_RULE_LABELS } from "@/lib/finance/fees";
 import { pageSession } from "@/lib/session";
 
 export const metadata = { title: "Mensalidades · GEAS Financeiro" };

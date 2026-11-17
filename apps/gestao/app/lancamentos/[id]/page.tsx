@@ -1,18 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { AppHeader } from "@/components/app-header";
-import { PageBody, PageHeader } from "@/components/nav/page-header";
-import { EntryForm } from "@/components/entries/entry-form";
-import { fetchEntry, listHref } from "@/lib/entries";
+import { AppHeader } from "@/components/finance/app-header";
+import { PageBody, PageHeader } from "@/components/finance/nav/page-header";
+import { EntryForm } from "@/components/finance/entries/entry-form";
+import { fetchEntry, listHref } from "@/lib/finance/entries";
 import { dateBR, money } from "@/lib/format";
 import { loadEntryContext } from "../context";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
-import { EntryAttachments } from "@/components/entries/entry-attachments";
-import { ATTACHMENT_COLUMNS, type Attachment } from "@/lib/attachments";
-import { describeHistory, type AuditRow, type HistoryItem, type HistoryNames } from "@/lib/entry-history";
-import type { Catalogs } from "@/components/entries/entry-form";
+import { EntryAttachments } from "@/components/finance/entries/entry-attachments";
+import { ATTACHMENT_COLUMNS, type Attachment } from "@/lib/finance/attachments";
+import { describeHistory, type AuditRow, type HistoryItem, type HistoryNames } from "@/lib/finance/entry-history";
+import type { Catalogs } from "@/components/finance/entries/entry-form";
 
 type LinkedLine = {
   statement_line_id: string; line_date: string; line_description: string; line_kind: string | null; line_counterparty: string | null;

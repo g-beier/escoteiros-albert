@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { editorOrError } from "@/lib/session";
-import { entrySchema, toRpcSplits } from "@/lib/entry-schema";
+import { entrySchema, toRpcSplits } from "@/lib/finance/entry-schema";
 
 export type ReconciliationResult = { error?: string; success?: string; id?: string };
 
