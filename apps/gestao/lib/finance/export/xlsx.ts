@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import type { SplitRow, LedgerRow } from "@/lib/finance/entry-queries";
+import type { SplitRow, LedgerRow } from "@/lib/finance/entry-rows";
 import { LEDGER_EXPORT_COLUMNS, SPLIT_EXPORT_COLUMNS, type Column } from "./columns";
 import { describePeriod, MONTHS_SHORT, type Period } from "./period";
 import type { RealizedModel, RealizedRow } from "./realized";

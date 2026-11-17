@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { ACCOUNTING_COLUMNS, missingLedgerCodes, toAccountingRows } from "@/lib/finance/export/accounting";
 import { encodeCsv, isCsvEncoding, toCsv, type CsvEncoding } from "@/lib/finance/export/csv";
-import { ExportTooLargeError, fetchAllSplitRows } from "@/lib/finance/export/queries";
+import { ExportTooLargeError, fetchAllSplitRows } from "@/lib/server/finance/reports";
 import { periodBounds } from "@/lib/finance/export/period";
 import { csvResponse, errorResponse, exportContext } from "@/lib/finance/export/route-helpers";
 
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   const context = await exportContext();
   if (context.error) return context.error;
   try {
-    const splits = await fetchAllSplitRows(context.supabase, context.groupId, period, account.data);
+    const splits = await fetchAllSplitRows(context.db, context.groupId, period, account.data);
     const missing = missingLedgerCodes(splits);
     if (missing.length) {
       const list = missing.slice(0, 8).join(", ") + (missing.length > 8 ? ` e mais ${missing.length - 8}` : "");

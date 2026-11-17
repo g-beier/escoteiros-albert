@@ -2,72 +2,81 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireFinanceEditor } from "@/lib/server/session";
+import type { ActionResult } from "@geas/ui/lib/use-action-toast";
+import { InputError, runAction } from "@/lib/action";
 import { CATALOG_KINDS, isCatalogKind, type CatalogKind } from "@/lib/finance/catalogs";
 import { parseLedgerCode } from "@/lib/finance/ledger-code";
-import { readAccountForm, toAccountRpc } from "@/lib/finance/accounts";
+import { readAccountForm } from "@/lib/finance/accounts";
+import * as registry from "@/lib/server/finance/registry";
+import { financeEditorOrError } from "@/lib/server/session";
 
-export type CatalogFormState = { error?: string; success?: string; tone?: "success" | "neutral" };
+export type CatalogFormState = ActionResult;
+
+const editor = () => financeEditorOrError("Sem permissão para alterar cadastros.");
+const profileEditor = () => financeEditorOrError("Sem permissão para alterar perfis de leitura.");
+
+/** Primeira mensagem de uma validação zod, como erro para o usuário. */
+function valid<T>(result: { success: true; data: T } | { success: false; error: z.ZodError }, fallback = "Dados inválidos."): T {
+  if (!result.success) throw new InputError(result.error.issues[0]?.message ?? fallback);
+  return result.data;
+}
 
 function readKind(formData: FormData): CatalogKind {
   const kind = formData.get("kind");
-  if (!isCatalogKind(kind)) throw new Error("Cadastro inválido.");
+  if (!isCatalogKind(kind)) throw new InputError("Cadastro inválido.");
   return kind;
 }
 
-function readName(formData: FormData, kind: CatalogKind) {
-  return z.string().trim().min(2, "Informe um nome com ao menos 2 caracteres.").max(CATALOG_KINDS[kind].maxLength).safeParse(formData.get("name") ?? "");
-}
+const readName = (formData: FormData, kind: CatalogKind) =>
+  valid(z.string().trim().min(2, "Informe um nome com ao menos 2 caracteres.").max(CATALOG_KINDS[kind].maxLength).safeParse(formData.get("name") ?? ""));
+const readId = (value: FormDataEntryValue | null, message: string) => valid(z.uuid().safeParse(value), message);
 
 function revalidate() {
   revalidatePath("/financeiro/configuracoes", "layout");
   revalidatePath("/", "layout");
 }
 
-// Formas de pagamento -------------------------------------------------------------
-// Escritas pelas funções SQL de 014_accounting.sql (validadas e auditadas), como as contas.
+// Formas de pagamento (014)
 
 export async function createCatalogItem(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
-  try {
-    const kind = readKind(formData);
-    const name = readName(formData, kind);
-    if (!name.success) return { error: name.error.issues[0]?.message };
-    const { supabase, groupId } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
-    const { error } = await supabase.rpc("create_payment_method", { p_group_id: groupId, p_name: name.data });
-    if (error) return { error: error.message };
+  return runAction(editor, async ({ db, groupId }) => {
+    const name = readName(formData, readKind(formData));
+    await registry.createPaymentMethod(db, groupId, name);
     revalidate();
-    return { success: `“${name.data}” cadastrada.` };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Não foi possível cadastrar." };
-  }
+    return `“${name}” cadastrada.`;
+  });
 }
 
 /** Ativa/inativa (campo `active`) ou renomeia. */
 export async function updateCatalogItem(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
-  try {
+  return runAction(editor, async ({ db }) => {
     const kind = readKind(formData);
-    const id = z.uuid().parse(formData.get("id"));
-    const { supabase } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
+    const id = readId(formData.get("id"), "Cadastro inválido.");
     if (formData.has("active")) {
       const active = formData.get("active") === "true";
-      const { error } = await supabase.rpc("set_payment_method_active", { p_payment_method_id: id, p_active: active });
-      if (error) return { error: error.message };
+      await registry.setPaymentMethodActive(db, id, active);
       revalidate();
       return active ? { success: "Forma de pagamento reativada." } : { success: "Forma de pagamento inativada.", tone: "neutral" };
     }
     const name = readName(formData, kind);
-    if (!name.success) return { error: name.error.issues[0]?.message };
-    const { error } = await supabase.rpc("update_payment_method", { p_payment_method_id: id, p_name: name.data });
-    if (error) return { error: error.message };
+    await registry.renamePaymentMethod(db, id, name);
     revalidate();
-    return { success: `“${name.data}” salva.` };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Não foi possível salvar." };
-  }
+    return `“${name}” salva.`;
+  });
 }
 
-// Rubricas ----------------------------------------------------------------------
-// A tela edita a árvore como rascunho (lib/category-draft.ts) e grava tudo de uma vez: save_category_tree (036).
+/** Conta padrão da forma de pagamento; `accountId` vazio remove o padrão. */
+export async function setPaymentMethodDefaultAccount(paymentMethodId: unknown, accountId: unknown): Promise<CatalogFormState> {
+  return runAction(editor, async ({ db }) => {
+    const method = valid(z.uuid().safeParse(paymentMethodId));
+    const account = valid(z.union([z.uuid(), z.literal("")]).safeParse(accountId));
+    await registry.setPaymentMethodDefaultAccount(db, method, account || null);
+    revalidate();
+    return account ? { success: "Conta padrão salva." } : { success: "Conta padrão removida.", tone: "neutral" };
+  });
+}
+
+// Rubricas: a tela edita a árvore como rascunho (lib/finance/category-draft.ts) e grava tudo de uma vez (036).
 
 const treeSchema = z.object({
   nodes: z.array(z.object({
@@ -78,122 +87,71 @@ const treeSchema = z.object({
   deleted: z.array(z.object({ id: z.uuid(), target: z.string().max(64).nullable() })).max(2000),
 });
 
-export async function saveCategoryTree(payload: unknown): Promise<CatalogFormState> {
-  try {
-    const parsed = treeSchema.safeParse(payload);
-    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-    for (const node of parsed.data.nodes) {
-      const ledgerCode = parseLedgerCode(node.ledgerCode);
-      if (!ledgerCode.ok) return { error: `“${node.name}”: ${ledgerCode.error}` };
-    }
-    const { supabase, groupId } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
-    const { data, error } = await supabase.rpc("save_category_tree", { p_group_id: groupId, p_nodes: parsed.data.nodes, p_deleted: parsed.data.deleted });
-    if (error) return { error: error.message };
-    revalidate();
-    const { splits = 0, entries = 0 } = (data ?? {}) as { splits?: number; entries?: number };
-    return { success: splits
-      ? `Rubricas salvas. ${plural(splits, "rateio", "rateios")} de ${plural(entries, "lançamento", "lançamentos")} ${splits === 1 ? "mudou" : "mudaram"} de rubrica.`
-      : "Rubricas salvas." };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Não foi possível salvar as rubricas." };
-  }
-}
-
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
-// Contas ------------------------------------------------------------------------
-// Escritas pelas funções SQL create_account/update_account/set_account_active (validadas e auditadas).
+export async function saveCategoryTree(payload: unknown): Promise<CatalogFormState> {
+  return runAction(editor, async ({ db, groupId }) => {
+    const tree = valid(treeSchema.safeParse(payload));
+    for (const node of tree.nodes) {
+      const ledgerCode = parseLedgerCode(node.ledgerCode);
+      if (!ledgerCode.ok) throw new InputError(`“${node.name}”: ${ledgerCode.error}`);
+    }
+    const { splits, entries } = await registry.saveCategoryTree(db, groupId, tree.nodes, tree.deleted);
+    revalidate();
+    return splits
+      ? `Rubricas salvas. ${plural(splits, "rateio", "rateios")} de ${plural(entries, "lançamento", "lançamentos")} ${splits === 1 ? "mudou" : "mudaram"} de rubrica.`
+      : "Rubricas salvas.";
+  });
+}
+
+// Contas (create_account/update_account/set_account_active)
 
 export async function createAccount(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
-  try {
-    const parsed = readAccountForm(formData);
-    if (!parsed.success) return { error: parsed.error.issues[0]?.message };
-    const { supabase, groupId } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
-    const { error } = await supabase.rpc("create_account", { p_group_id: groupId, ...toAccountRpc(parsed.data) });
-    if (error) return { error: error.message };
+  return runAction(editor, async ({ db, groupId }) => {
+    const account = valid(readAccountForm(formData));
+    await registry.createAccount(db, groupId, account);
     revalidate();
-    return { success: `Conta “${parsed.data.name}” cadastrada.` };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Não foi possível cadastrar a conta." };
-  }
+    return `Conta “${account.name}” cadastrada.`;
+  });
 }
 
 export async function updateAccount(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
-  try {
-    const id = z.uuid().safeParse(formData.get("id"));
-    if (!id.success) return { error: "Conta inválida." };
-    const parsed = readAccountForm(formData);
-    if (!parsed.success) return { error: parsed.error.issues[0]?.message };
-    const { supabase } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
-    const { error } = await supabase.rpc("update_account", { p_account_id: id.data, ...toAccountRpc(parsed.data) });
-    if (error) return { error: error.message };
+  return runAction(editor, async ({ db }) => {
+    const id = readId(formData.get("id"), "Conta inválida.");
+    const account = valid(readAccountForm(formData));
+    await registry.updateAccount(db, id, account);
     revalidate();
-    return { success: `Conta “${parsed.data.name}” salva.` };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Não foi possível salvar a conta." };
-  }
+    return `Conta “${account.name}” salva.`;
+  });
 }
 
 export async function setAccountActive(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
-  try {
-    const id = z.uuid().safeParse(formData.get("id"));
-    if (!id.success) return { error: "Conta inválida." };
+  return runAction(editor, async ({ db }) => {
+    const id = readId(formData.get("id"), "Conta inválida.");
     const active = formData.get("active") === "true";
-    const { supabase } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
-    const { error } = await supabase.rpc("set_account_active", { p_account_id: id.data, p_active: active });
-    if (error) return { error: error.message };
+    await registry.setAccountActive(db, id, active);
     revalidate();
     return active ? { success: "Conta reativada." } : { success: "Conta inativada.", tone: "neutral" };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Não foi possível alterar a conta." };
-  }
+  });
 }
 
-// Perfis de leitura do extrato -------------------------------------------------------
-// Escritos por rename_import_profile/delete_import_profile (026, validadas e auditadas).
+// Perfis de leitura do extrato (026)
 
 export async function renameImportProfile(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
-  try {
-    const id = z.uuid().safeParse(formData.get("id"));
-    if (!id.success) return { error: "Perfil inválido." };
-    const name = z.string().trim().min(2, "Informe um nome de perfil com ao menos 2 caracteres.").max(80, "Use até 80 caracteres.").safeParse(formData.get("name") ?? "");
-    if (!name.success) return { error: name.error.issues[0]?.message };
-    const { supabase } = await requireFinanceEditor("Sem permissão para alterar perfis de leitura.");
-    const { error } = await supabase.rpc("rename_import_profile", { p_profile_id: id.data, p_name: name.data });
-    if (error) return { error: error.message };
+  return runAction(profileEditor, async ({ db }) => {
+    const id = readId(formData.get("id"), "Perfil inválido.");
+    const name = valid(z.string().trim().min(2, "Informe um nome de perfil com ao menos 2 caracteres.").max(80, "Use até 80 caracteres.").safeParse(formData.get("name") ?? ""));
+    await registry.renameImportProfile(db, id, name);
     revalidate();
-    return { success: `Perfil “${name.data}” salvo.` };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Não foi possível renomear o perfil." };
-  }
+    return `Perfil “${name}” salvo.`;
+  });
 }
 
 export async function deleteImportProfile(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
-  try {
-    const id = z.uuid().safeParse(formData.get("id"));
-    if (!id.success) return { error: "Perfil inválido." };
-    const { supabase } = await requireFinanceEditor("Sem permissão para alterar perfis de leitura.");
-    const { error } = await supabase.rpc("delete_import_profile", { p_profile_id: id.data });
-    if (error) return { error: error.message };
+  return runAction(profileEditor, async ({ db }) => {
+    const id = readId(formData.get("id"), "Perfil inválido.");
+    await registry.deleteImportProfile(db, id);
     revalidate();
     return { success: "Perfil excluído. As importações feitas com ele continuam.", tone: "neutral" };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Não foi possível excluir o perfil." };
-  }
-}
-
-/** Conta padrão da forma de pagamento; `accountId` vazio remove o padrão. */
-export async function setPaymentMethodDefaultAccount(paymentMethodId: unknown, accountId: unknown): Promise<CatalogFormState> {
-  try {
-    const method = z.uuid().safeParse(paymentMethodId);
-    const account = z.union([z.uuid(), z.literal("")]).safeParse(accountId);
-    if (!method.success || !account.success) return { error: "Dados inválidos." };
-    const { supabase } = await requireFinanceEditor("Sem permissão para alterar cadastros.");
-    const { error } = await supabase.rpc("set_payment_method_default_account", { p_payment_method_id: method.data, p_account_id: account.data || null });
-    if (error) return { error: error.message };
-    revalidate();
-    return account.data ? { success: "Conta padrão salva." } : { success: "Conta padrão removida.", tone: "neutral" };
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Não foi possível salvar a conta padrão." };
-  }
+  });
 }

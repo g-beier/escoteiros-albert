@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { DataError } from "@/lib/server/db";
+import { downloadUrl } from "@/lib/server/finance/attachments";
 import { memberOrError } from "@/lib/server/session";
-import { ATTACHMENT_BUCKET, ATTACHMENT_URL_TTL } from "@/lib/finance/attachments";
 
 /**
- * GET /lancamentos/<id>/anexos/<anexoId>[?baixar=1]
+ * GET /financeiro/lancamentos/<id>/anexos/<anexoId>[?baixar=1]
  * Redireciona para uma URL assinada de curta duração do bucket privado. Qualquer membro do grupo
  * (inclusive consulta) pode abrir; a RLS de `entry_attachments` e a política do bucket conferem o grupo.
  */
@@ -13,14 +14,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!z.uuid().safeParse(id).success || !z.uuid().safeParse(anexoId).success) return text("Anexo não encontrado.", 404);
   const member = await memberOrError();
   if ("error" in member) return text(member.error, 401);
-  const { data: attachment } = await member.supabase.from("entry_attachments")
-    .select("storage_path, file_name").eq("id", anexoId).eq("entry_id", id).maybeSingle();
-  if (!attachment) return text("Anexo não encontrado.", 404);
-  const download = request.nextUrl.searchParams.has("baixar");
-  const { data, error } = await member.supabase.storage.from(ATTACHMENT_BUCKET)
-    .createSignedUrl(attachment.storage_path as string, ATTACHMENT_URL_TTL, download ? { download: attachment.file_name as string } : undefined);
-  if (error || !data) return text("Não foi possível abrir o anexo.", 502);
-  const response = NextResponse.redirect(data.signedUrl, 303);
+  let url: string | null;
+  try {
+    url = await downloadUrl(member.db, id, anexoId, request.nextUrl.searchParams.has("baixar"));
+  } catch (error) {
+    if (error instanceof DataError) return text("Não foi possível abrir o anexo.", 502);
+    throw error;
+  }
+  if (!url) return text("Anexo não encontrado.", 404);
+  const response = NextResponse.redirect(url, 303);
   response.headers.set("Cache-Control", "no-store");
   response.headers.set("Referrer-Policy", "no-referrer");
   return response;

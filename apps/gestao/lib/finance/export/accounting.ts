@@ -1,4 +1,4 @@
-import type { SplitRow } from "@/lib/finance/entry-queries";
+import type { SplitRow } from "@/lib/finance/entry-rows";
 import { csvText } from "./csv";
 import { ofxIds, type Column } from "./columns";
 

@@ -5,7 +5,7 @@ import { loadEntryPage } from "@/app/actions";
 import { LedgerCards, LedgerTable, SplitCards, SplitTable } from "@/components/finance/entry-tables";
 import { Button } from "@geas/ui/components/button";
 import { useEntryOverrides } from "@/components/finance/entries/entry-editor";
-import { PAGE_SIZE, type EntryPage, type SplitRow, type LedgerRow } from "@/lib/finance/entry-queries";
+import { PAGE_SIZE, type EntryPage, type SplitRow, type LedgerRow } from "@/lib/finance/entry-rows";
 import type { SortOrder } from "@/lib/finance/filters";
 import { cn } from "@geas/ui/lib/utils";
 

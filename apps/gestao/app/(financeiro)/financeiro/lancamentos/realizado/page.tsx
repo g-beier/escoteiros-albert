@@ -6,7 +6,7 @@ import { RealizedTable } from "@/components/finance/realized/realized-table";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { Button } from "@geas/ui/components/button";
 import { exportYears } from "@/lib/finance/export/period";
-import { fetchRealizedModel } from "@/lib/finance/export/queries";
+import { entryDateRange, fetchRealizedModel } from "@/lib/server/finance/reports";
 import { currentYear } from "@/lib/finance/filters";
 import { pageSession } from "@/lib/server/session";
 
@@ -15,24 +15,21 @@ export const metadata = { title: "Realizado · GEAS Financeiro" };
 /** Realizado do ano na tela: o mesmo conteúdo da planilha de /exportar/realizado, sem baixar. */
 export default async function RealizedPage({ searchParams }: { searchParams: Promise<{ ano?: string }> }) {
   const params = await searchParams;
-  const { supabase, user, member } = await pageSession();
-  if (!member) return <SetupNeeded email={user.email ?? ""} />;
+  const { user, member } = await pageSession();
+  if (!member) return <SetupNeeded email={user.email} />;
   const thisYear = currentYear();
   const requested = Number(params.ano);
   const year = Number.isInteger(requested) && requested >= 2000 && requested <= 2100 ? requested : thisYear;
 
-  const [{ data: firstEntry }, { data: lastEntry }] = await Promise.all([
-    supabase.from("ledger_entries").select("entry_date").eq("group_id", member.groupId).order("entry_date").limit(1).maybeSingle(),
-    supabase.from("ledger_entries").select("entry_date").eq("group_id", member.groupId).order("entry_date", { ascending: false }).limit(1).maybeSingle(),
-  ]);
-  const years = exportYears(firstEntry?.entry_date, lastEntry?.entry_date);
+  const range = await entryDateRange(member.db, member.groupId);
+  const years = exportYears(range.first, range.last);
   if (!years.includes(year)) years.push(year);
   years.sort((a, b) => b - a);
 
   let model = null;
   let error: string | null = null;
   try {
-    model = await fetchRealizedModel(supabase, member.groupId, year);
+    model = await fetchRealizedModel(member.db, member.groupId, year);
   } catch (e) {
     console.error("realizado", e);
     error = e instanceof Error ? e.message : "erro desconhecido";
@@ -40,7 +37,7 @@ export default async function RealizedPage({ searchParams }: { searchParams: Pro
 
   // No desktop a página não rola: a tabela ocupa o resto da tela, com cabeçalho, primeira coluna e saldo fixos.
   return <div className="shell flex min-h-dvh flex-col overflow-clip md:h-dvh md:min-h-0 md:overflow-hidden">
-    <AppHeader role={member.finance.role} email={user.email ?? ""} current="/financeiro/lancamentos/realizado" />
+    <AppHeader role={member.finance.role} email={user.email} current="/financeiro/lancamentos/realizado" />
     <PageBody className="md:flex md:min-h-0 md:flex-1 md:flex-col">
       <PageHeader title="Lançamentos" crumbs={[{ label: "Lançamentos", href: "/financeiro/lancamentos" }, { label: `Realizado ${year}` }]}
         tabs={<EntryViewTabs current="realizado" />}

@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * Devedores (Mensalidades › Devedores, migrations 038 e 039): dívidas de associados com acordo e pagamentos.
@@ -97,25 +96,6 @@ export function groupDebts(debts: Debt[]): DebtorGroup[] {
     || (a.associateId && b.associateId ? a.label.localeCompare(b.label, "pt-BR") : number(a) - number(b)));
 }
 
-type DebtRow = {
-  id: string; debt_date: string; amount_cents: number; paid_cents: number; description: string; agreement: string | null;
-  associate_id: string | null; associate_name: string | null; debtor_number: number; payments: DebtPayment[] | null;
-  payment_mismatch: boolean | null;
-};
-
-export async function fetchDebts(supabase: SupabaseClient, groupId: string): Promise<{ debts: Debt[]; error?: string }> {
-  const { data, error } = await supabase.rpc("debt_rows", { p_group_id: groupId });
-  const debts = ((data ?? []) as DebtRow[]).map((row) => ({
-    id: row.id, date: row.debt_date, amountCents: Number(row.amount_cents), paidCents: Number(row.paid_cents),
-    description: row.description, agreement: row.agreement, associateId: row.associate_id, associateName: row.associate_name, debtorNumber: Number(row.debtor_number),
-    payments: row.payments?.map((p) => ({
-      ...p, amountCents: Number(p.amountCents), paidCents: Number(p.paidCents),
-      entryAvailableCents: Number(p.entryAvailableCents), entryUnallocatedCents: Number(p.entryUnallocatedCents),
-    })) ?? null,
-    paymentMismatch: row.payment_mismatch,
-  }));
-  return { debts, error: error?.message };
-}
 
 /** Lançamento que pode pagar dívidas do associado, com o que já está alocado a cada dívida dele. */
 export type PaymentOption = {

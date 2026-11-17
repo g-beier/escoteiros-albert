@@ -1,10 +1,11 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { DataError } from "@/lib/server/db";
+import * as attachments from "@/lib/server/finance/attachments";
 import { financeEditorOrError } from "@/lib/server/session";
-import { ATTACHMENT_BUCKET, attachmentPath, attachmentProblem, attachmentType, cleanFileName } from "@/lib/finance/attachments";
+import { attachmentProblem } from "@/lib/finance/attachments";
 
 type Result = { error?: string; success?: boolean };
 export type UploadTicket = { error: string } | { path: string; uploadUrl: string; contentType: string };
@@ -15,10 +16,14 @@ const fileSchema = z.object({
   size: z.number().int().nonnegative(),
 });
 
+const failure = (error: unknown) => {
+  if (error instanceof DataError) return { error: error.message };
+  throw error;
+};
+
 /**
  * 1º passo do envio: valida e devolve uma URL de envio assinada para o navegador mandar o arquivo
- * direto ao Storage (o arquivo não passa pelo servidor do app). Criar a URL já exige a política
- * de envio do bucket (tesouraria/administração do grupo do lançamento).
+ * direto ao storage (o arquivo não passa pelo servidor do app).
  */
 export async function prepareAttachmentUpload(entryId: unknown, file: unknown): Promise<UploadTicket> {
   const id = z.uuid().safeParse(entryId);
@@ -28,13 +33,11 @@ export async function prepareAttachmentUpload(entryId: unknown, file: unknown): 
   if (problem) return { error: problem };
   const ctx = await financeEditorOrError("Sem permissão para anexar comprovantes.");
   if ("error" in ctx) return ctx;
-  const { data: entry } = await ctx.supabase.from("ledger_entries").select("id").eq("id", id.data).eq("group_id", ctx.groupId).maybeSingle();
-  if (!entry) return { error: "Lançamento não encontrado." };
-  const type = attachmentType(parsed.data.name, parsed.data.type)!;
-  const path = attachmentPath(ctx.groupId, id.data, randomUUID(), type);
-  const { data, error } = await ctx.supabase.storage.from(ATTACHMENT_BUCKET).createSignedUploadUrl(path);
-  if (error || !data) return { error: "Não foi possível preparar o envio." };
-  return { path, uploadUrl: data.signedUrl, contentType: type };
+  try {
+    return await attachments.prepareUpload(ctx.db, ctx.groupId, id.data, parsed.data);
+  } catch (error) {
+    return failure(error);
+  }
 }
 
 /** 2º passo: registra o arquivo já enviado. Se o registro falhar, o arquivo é apagado. */
@@ -45,13 +48,10 @@ export async function registerAttachment(entryId: unknown, path: unknown, fileNa
   if (!id.success || !storagePath.success || !name.success) return { error: "Dados inválidos." };
   const ctx = await financeEditorOrError("Sem permissão para anexar comprovantes.");
   if ("error" in ctx) return ctx;
-  const { error } = await ctx.supabase.rpc("add_entry_attachment", {
-    p_entry_id: id.data, p_storage_path: storagePath.data, p_file_name: cleanFileName(name.data),
-  });
-  if (error) {
-    // Só apaga o que está na pasta deste lançamento; a política do bucket confere o grupo.
-    if (storagePath.data.startsWith(`${ctx.groupId}/${id.data}/`)) await ctx.supabase.storage.from(ATTACHMENT_BUCKET).remove([storagePath.data]);
-    return { error: error.message };
+  try {
+    await attachments.register(ctx.db, ctx.groupId, id.data, storagePath.data, name.data);
+  } catch (error) {
+    return failure(error);
   }
   revalidatePath(`/financeiro/lancamentos/${id.data}`);
   revalidatePath("/financeiro/lancamentos", "layout");
@@ -63,10 +63,11 @@ export async function removeAttachment(attachmentId: unknown): Promise<Result> {
   if (!id.success) return { error: "Anexo inválido." };
   const ctx = await financeEditorOrError("Sem permissão para excluir comprovantes.");
   if ("error" in ctx) return ctx;
-  const { data: path, error } = await ctx.supabase.rpc("delete_entry_attachment", { p_attachment_id: id.data });
-  if (error) return { error: error.message };
-  const { error: storageError } = await ctx.supabase.storage.from(ATTACHMENT_BUCKET).remove([path as string]);
-  if (storageError) console.error("remover anexo do storage", path, storageError.message);
+  try {
+    await attachments.remove(ctx.db, id.data);
+  } catch (error) {
+    return failure(error);
+  }
   revalidatePath("/financeiro/lancamentos", "layout");
   return { success: true };
 }

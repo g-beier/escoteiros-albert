@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { expect, it } from "vitest";
-import type { LedgerRow } from "@/lib/finance/entry-queries";
+import type { LedgerRow } from "@/lib/finance/entry-rows";
 import { LEDGER_EXPORT_COLUMNS } from "./columns";
 import { toCsv } from "./csv";
 import { ledgerWorkbook } from "./xlsx";

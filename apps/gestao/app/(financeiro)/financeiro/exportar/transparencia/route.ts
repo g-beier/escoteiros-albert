@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { fetchRealizedModel } from "@/lib/finance/export/queries";
+import { fetchRealizedModel } from "@/lib/server/finance/reports";
 import { errorResponse, exportContext } from "@/lib/finance/export/route-helpers";
 import { buildTransparencyReport } from "@/lib/finance/export/transparency";
 
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const context = await exportContext();
   if (context.error) return context.error;
   try {
-    const report = buildTransparencyReport(await fetchRealizedModel(context.supabase, context.groupId, year));
+    const report = buildTransparencyReport(await fetchRealizedModel(context.db, context.groupId, year));
     return new NextResponse(`${JSON.stringify(report, null, 2)}\n`, {
       headers: {
         "Content-Type": "application/json; charset=utf-8",

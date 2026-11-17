@@ -1,6 +1,6 @@
 import { monthlyTotals, nextDay, recentListStart, recentWindowStart, type MonthTotals } from "@/lib/finance/dashboard";
-import type { LedgerRow } from "@/lib/finance/entry-queries";
-import { fetchFeeYear } from "@/lib/finance/fee-queries";
+import type { LedgerRow } from "@/lib/finance/entry-rows";
+import { fetchFeeYear } from "./fees";
 import { overdueRanking } from "@/lib/finance/fees";
 import type { Db } from "@/lib/server/db";
 import { rowsOf, rpc, sb, unwrap } from "@/lib/server/supabase/db";
@@ -59,5 +59,5 @@ export async function accountBalances(db: Db, groupId: string, today: string): P
 
 /** Associados com mensalidade atrasada no ano, do maior número de meses para o menor. */
 export async function overdueFees(db: Db, groupId: string, year: number) {
-  return overdueRanking((await fetchFeeYear(sb(db), groupId, year)).rows);
+  return overdueRanking((await fetchFeeYear(db, groupId, year)).rows);
 }

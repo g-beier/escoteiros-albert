@@ -7,25 +7,22 @@ import { EntryForm, type StatementLinePrefill } from "@/components/finance/entri
 import { listHref } from "@/lib/finance/entries";
 import { dateBR, money } from "@/lib/format";
 import { guessPaymentMethod, safeReconciliationHref, suggestedEntryName } from "@/lib/finance/reconciliation";
+import { statementLine, type StatementLine } from "@/lib/server/finance/statements";
 import { loadEntryContext } from "../context";
 
 export const metadata = { title: "Novo lançamento · GEAS Financeiro" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-type StatementLine = { id: string; account_id: string; line_date: string; description: string; kind: string | null; counterparty: string | null; amount_cents: number; status: string; trn_type: string | null };
-
 export default async function NewEntryPage({ searchParams }: { searchParams: Promise<{ voltar?: string; linha?: string }> }) {
   const { voltar, linha } = await searchParams;
-  const { supabase, user, role, canEdit, catalogs } = await loadEntryContext();
+  const { db, user, role, canEdit, catalogs } = await loadEntryContext();
   if (!canEdit) notFound();
 
   // "Criar lançamento" na conciliação: a linha do extrato preenche data, histórico, valor, conta e forma provável
   let line: StatementLine | null = null;
   if (linha && UUID.test(linha)) {
-    const { data } = await supabase.from("statement_lines")
-      .select("id, account_id, line_date, description, kind, counterparty, amount_cents, status, trn_type").eq("id", linha).maybeSingle();
-    line = data as StatementLine | null;
+    line = await statementLine(db, linha);
     if (!line) notFound();
   }
   const backHref = line ? safeReconciliationHref(voltar) : listHref(voltar);
@@ -35,7 +32,7 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
   } : undefined;
 
   return <div className="shell">
-    <AppHeader role={role} email={user.email ?? ""} current="/financeiro/lancamentos/novo" />
+    <AppHeader role={role} email={user.email} current="/financeiro/lancamentos/novo" />
     <PageBody>
       <PageHeader title="Novo lançamento"
         crumbs={line ? [{ label: "Extrato", href: "/financeiro/extrato/conciliar" }, { label: "Conciliar", href: backHref }, { label: "Novo lançamento" }] : [{ label: "Lançamentos", href: backHref }, { label: "Novo lançamento" }]}

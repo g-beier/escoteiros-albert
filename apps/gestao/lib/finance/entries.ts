@@ -1,5 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { EntryView } from "@/lib/finance/entry-queries";
+import type { EntryView } from "@/lib/finance/entry-rows";
 
 export type EditableEntry = {
   id: string;
@@ -16,30 +15,6 @@ export type EditableEntry = {
   splits: { categoryId: string; amountCents: number; description: string; associateId: string | null }[];
 };
 
-type SplitRow = { category_id: string; amount_cents: number; description: string; associate_id: string | null; created_at: string; id: string };
-
-/** Carrega um lançamento com seus rateios na ordem em que foram gravados (RLS restringe ao grupo). */
-export async function fetchEntry(supabase: SupabaseClient, id: string): Promise<EditableEntry | null> {
-  const { data } = await supabase.from("ledger_entries")
-    .select("id, entry_date, name, payment_method_id, account_id, document, document_filed, notes, total_cents, created_at, updated_at, entry_splits(id, category_id, amount_cents, description, associate_id, created_at)")
-    .eq("id", id).maybeSingle();
-  if (!data) return null;
-  const splits = [...(data.entry_splits as SplitRow[])].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
-  return {
-    id: data.id,
-    date: data.entry_date,
-    name: data.name,
-    paymentMethodId: data.payment_method_id,
-    accountId: data.account_id,
-    document: data.document ?? "",
-    documentFiled: data.document_filed,
-    notes: data.notes ?? "",
-    totalCents: data.total_cents,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-    splits: splits.map((s) => ({ categoryId: s.category_id, amountCents: s.amount_cents, description: s.description, associateId: s.associate_id })),
-  };
-}
 
 const LIST_KEYS = ["ordem", "de", "ate", "conta", "forma", "pasta", "conciliado", "associado", "rubrica", "q", "ofx"] as const;
 

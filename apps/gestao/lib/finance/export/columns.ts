@@ -1,4 +1,4 @@
-import type { LedgerRow, SplitRow } from "@/lib/finance/entry-queries";
+import type { LedgerRow, SplitRow } from "@/lib/finance/entry-rows";
 
 /**
  * Colunas das exportações, independentes do formato: o valor sai no tipo do domínio

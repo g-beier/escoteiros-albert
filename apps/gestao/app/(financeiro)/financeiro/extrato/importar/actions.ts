@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { DataError, type Db } from "@/lib/server/db";
+import * as statements from "@/lib/server/finance/statements";
 import { memberOrError } from "@/lib/server/session";
 import {
   type AccountBalance, fromRpcAccountBalance, fromRpcImportResult, fromRpcPreview, type ImportPreview, importLinesSchema, MAX_IMPORT_LINES, importProfileSchema, importSummary, parseStatementLines, toRpcLines,
@@ -20,23 +22,27 @@ export type ImportProfile = {
 
 type ActionResult<T = undefined> = { error?: string; success?: string; data?: T };
 
+/** Membro (e, com `denied`, só tesouraria/administração); `DataError` vira `{ error }`. */
+async function withDb<T>(denied: string | null, work: (db: Db, groupId: string) => Promise<ActionResult<T>>): Promise<ActionResult<T>> {
+  const ctx = await memberOrError();
+  if ("error" in ctx) return { error: ctx.error };
+  if (denied && !ctx.finance.canEdit) return { error: denied };
+  try {
+    return await work(ctx.db, ctx.groupId);
+  } catch (error) {
+    if (error instanceof DataError) return { error: error.message };
+    throw error;
+  }
+}
+
 /** Cria (sem `id`) ou atualiza um perfil de importação. */
 export async function saveImportProfile(payload: unknown): Promise<ActionResult<{ id: string }>> {
   const parsed = importProfileSchema.safeParse(payload);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const ctx = await memberOrError();
-  if ("error" in ctx) return { error: ctx.error };
-  if (!ctx.finance.canEdit) return { error: "Sem permissão para alterar perfis de importação." };
-  const { data, error } = await ctx.supabase.rpc("save_import_profile", {
-    p_group_id: ctx.groupId,
-    p_profile_id: parsed.data.id ?? null,
-    p_name: parsed.data.name,
-    p_format: parsed.data.format,
-    p_header_signature: parsed.data.headerSignature || null,
-    p_settings: parsed.data.settings,
+  return withDb("Sem permissão para alterar perfis de importação.", async (db, groupId) => {
+    const id = await statements.saveProfile(db, groupId, parsed.data);
+    return { success: `Perfil “${parsed.data.name}” salvo.`, data: { id } };
   });
-  if (error) return { error: error.message };
-  return { success: `Perfil “${parsed.data.name}” salvo.`, data: { id: data as string } };
 }
 
 /** Grava as linhas do extrato como abertas; duplicatas são puladas pelo banco. */
@@ -45,25 +51,12 @@ export async function importStatementLines(payload: unknown): Promise<ActionResu
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const lines = parseStatementLines(parsed.data.lines);
   if ("error" in lines) return { error: lines.error };
-  const ctx = await memberOrError();
-  if ("error" in ctx) return { error: ctx.error };
-  if (!ctx.finance.canEdit) return { error: "Sem permissão para importar extratos." };
-  const { data, error } = await ctx.supabase.rpc("import_statement_lines", {
-    p_account_id: parsed.data.accountId,
-    p_profile_id: parsed.data.profileId ?? null,
-    p_profile_settings: parsed.data.profileSettings ?? null,
-    p_file_name: parsed.data.fileName,
-    p_period_from: parsed.data.periodFrom ?? null,
-    p_period_to: parsed.data.periodTo ?? null,
-    p_opening_balance_cents: parsed.data.openingBalanceCents ?? null,
-    p_closing_balance_cents: parsed.data.closingBalanceCents ?? null,
-    p_lines: toRpcLines(lines.lines),
+  return withDb("Sem permissão para importar extratos.", async (db) => {
+    const result = fromRpcImportResult(await statements.importLines(db, { ...parsed.data, lines: toRpcLines(lines.lines) }));
+    if (!result) return { error: "Resposta inesperada do banco ao importar." };
+    revalidatePath("/", "layout");
+    return { success: importSummary(result), data: result };
   });
-  if (error) return { error: error.message };
-  const result = fromRpcImportResult(data);
-  if (!result) return { error: "Resposta inesperada do banco ao importar." };
-  revalidatePath("/", "layout");
-  return { success: importSummary(result), data: result };
 }
 
 const previewPayload = z.object({
@@ -79,31 +72,22 @@ export async function previewStatementImport(payload: unknown): Promise<ActionRe
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const lines = parseStatementLines(parsed.data.lines);
   if ("error" in lines) return { error: lines.error };
-  const ctx = await memberOrError();
-  if ("error" in ctx) return { error: ctx.error };
-  if (!ctx.finance.canEdit) return { error: "Sem permissão para importar extratos." };
-  const { data, error } = await ctx.supabase.rpc("preview_statement_lines", {
-    p_account_id: parsed.data.accountId, p_period_from: parsed.data.periodFrom ?? null, p_period_to: parsed.data.periodTo ?? null,
-    p_lines: toRpcLines(lines.lines),
+  return withDb("Sem permissão para importar extratos.", async (db) => {
+    const preview = fromRpcPreview(await statements.previewLines(db, parsed.data.accountId, parsed.data.periodFrom ?? null, parsed.data.periodTo ?? null, toRpcLines(lines.lines)));
+    return preview ? { data: preview } : { error: "Resposta inesperada do banco na conferência." };
   });
-  if (error) return { error: error.message };
-  const preview = fromRpcPreview(data);
-  return preview ? { data: preview } : { error: "Resposta inesperada do banco na conferência." };
 }
 
 /** Desfaz uma importação inteira: apaga as linhas e desfaz os vínculos de conciliação delas. */
 export async function deleteStatementImport(importId: unknown): Promise<ActionResult> {
   const id = z.uuid().safeParse(importId);
   if (!id.success) return { error: "Importação inválida." };
-  const ctx = await memberOrError();
-  if ("error" in ctx) return { error: ctx.error };
-  if (!ctx.finance.canEdit) return { error: "Sem permissão para desfazer importações." };
-  const { data, error } = await ctx.supabase.rpc("delete_statement_import", { p_import_id: id.data });
-  if (error) return { error: error.message };
-  const result = z.object({ lines: z.number(), unlinked: z.number() }).catch({ lines: 0, unlinked: 0 }).parse(data);
-  revalidatePath("/", "layout");
-  const lines = `${result.lines} ${result.lines === 1 ? "linha removida" : "linhas removidas"}`;
-  return { success: result.unlinked ? `Importação desfeita: ${lines}; ${result.unlinked} ${result.unlinked === 1 ? "conciliação desfeita" : "conciliações desfeitas"}.` : `Importação desfeita: ${lines}.` };
+  return withDb("Sem permissão para desfazer importações.", async (db) => {
+    const result = await statements.deleteImport(db, id.data);
+    revalidatePath("/", "layout");
+    const lines = `${result.lines} ${result.lines === 1 ? "linha removida" : "linhas removidas"}`;
+    return { success: result.unlinked ? `Importação desfeita: ${lines}; ${result.unlinked} ${result.unlinked === 1 ? "conciliação desfeita" : "conciliações desfeitas"}.` : `Importação desfeita: ${lines}.` };
+  });
 }
 
 const balancePayload = z.object({ accountId: z.uuid({ message: "Escolha a conta." }), date: z.iso.date({ message: "Data inválida." }) });
@@ -112,10 +96,8 @@ const balancePayload = z.object({ accountId: z.uuid({ message: "Escolha a conta.
 export async function accountBalanceBefore(payload: unknown): Promise<ActionResult<AccountBalance>> {
   const parsed = balancePayload.safeParse(payload);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const ctx = await memberOrError();
-  if ("error" in ctx) return { error: ctx.error };
-  const { data, error } = await ctx.supabase.rpc("account_balance_before", { p_account_id: parsed.data.accountId, p_date: parsed.data.date });
-  if (error) return { error: error.message };
-  const balance = fromRpcAccountBalance(data);
-  return balance ? { data: balance } : { error: "Resposta inesperada do banco ao calcular o saldo." };
+  return withDb(null, async (db) => {
+    const balance = fromRpcAccountBalance(await statements.balanceBefore(db, parsed.data.accountId, parsed.data.date));
+    return balance ? { data: balance } : { error: "Resposta inesperada do banco ao calcular o saldo." };
+  });
 }

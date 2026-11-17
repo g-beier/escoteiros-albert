@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { LEDGER_EXPORT_COLUMNS, SPLIT_EXPORT_COLUMNS } from "@/lib/finance/export/columns";
 import { encodeCsv, isCsvEncoding, toCsv } from "@/lib/finance/export/csv";
-import { ExportTooLargeError, fetchAllLedgerRows, fetchAllSplitRows } from "@/lib/finance/export/queries";
+import { ExportTooLargeError, fetchAllLedgerRows, fetchAllSplitRows } from "@/lib/server/finance/reports";
 import { periodBounds } from "@/lib/finance/export/period";
 import { csvResponse, errorResponse, exportContext, xlsxResponse } from "@/lib/finance/export/route-helpers";
 import { ledgerWorkbook, splitWorkbook } from "@/lib/finance/export/xlsx";
@@ -23,12 +23,12 @@ export async function GET(request: NextRequest) {
   const name = `fluxo-${byCategory ? "detalhamento" : "movimentacoes"}_${period.from}_${period.to}`;
   try {
     if (byCategory) {
-      const rows = await fetchAllSplitRows(context.supabase, context.groupId, period);
+      const rows = await fetchAllSplitRows(context.db, context.groupId, period);
       return csv
         ? csvResponse(encodeCsv(toCsv(SPLIT_EXPORT_COLUMNS, rows), encoding), `${name}.csv`, encoding)
         : xlsxResponse(await splitWorkbook(rows, period), `${name}.xlsx`);
     }
-    const rows = await fetchAllLedgerRows(context.supabase, context.groupId, period);
+    const rows = await fetchAllLedgerRows(context.db, context.groupId, period);
     return csv
       ? csvResponse(encodeCsv(toCsv(LEDGER_EXPORT_COLUMNS, rows), encoding), `${name}.csv`, encoding)
       : xlsxResponse(await ledgerWorkbook(rows, period), `${name}.xlsx`);

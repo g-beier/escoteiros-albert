@@ -12,7 +12,7 @@ import { Textarea } from "@geas/ui/components/textarea";
 import { cn } from "@geas/ui/lib/utils";
 import { addUnit, setUnitCondition, transferUnit, updateUnit, writeOffUnit } from "@/app/(inventario)/inventario/materiais/actions";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
-import { CONDITION_LABELS, ORIGIN_LABELS, WRITE_OFF_LABELS, dateBR, timestampBR, writeOffOptions, type Condition, type Origin, type WriteOffReason } from "@/lib/inventory/vocabulary";
+import { CONDITION_LABELS, ORIGIN_LABELS, WRITE_OFF_LABELS, dateBR, timestampBR, writeOffOptions } from "@/lib/inventory/vocabulary";
 import { formatCents } from "@/lib/format";
 import { ActionDialog } from "./action-dialog";
 import { ConditionField, EntryFields, Field, LocationField, NotesField, SelectField } from "./fields";

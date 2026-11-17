@@ -11,7 +11,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { cn } from "@geas/ui/lib/utils";
 import { addLot, adjustLot, setLotCondition, transferLot, updateLot, writeOffLot } from "@/app/(inventario)/inventario/materiais/actions";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
-import { CONDITION_LABELS, EXPIRY_WARNING_DAYS, ORIGIN_LABELS, dateBR, daysUntil, writeOffOptions, type Condition, type Origin } from "@/lib/inventory/vocabulary";
+import { CONDITION_LABELS, EXPIRY_WARNING_DAYS, ORIGIN_LABELS, dateBR, daysUntil, writeOffOptions } from "@/lib/inventory/vocabulary";
 import { formatCents } from "@/lib/format";
 import { ActionDialog } from "./action-dialog";
 import { ConditionField, EntryFields, Field, LocationField, NotesField, QuantityField, SelectField } from "./fields";

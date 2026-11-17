@@ -6,33 +6,33 @@ import { SetupNeeded } from "@/components/shell/setup-needed";
 import { extratoCrumbs, ExtratoTabs, NARROW_CONTENT, PageBody, PageHeader } from "@/components/finance/nav/page-header";
 import { SectionCard } from "@geas/ui/components/section-card";
 import { PLACEHOLDER_ACCOUNT_NAME } from "@/lib/finance/accounts";
-import { fetchImportProfiles, fetchLastProfileByAccount, fetchRecentImports } from "@/lib/finance/import-queries";
+import { fetchImportProfiles, fetchLastProfileByAccount, fetchRecentImports, importAccounts } from "@/lib/server/finance/statements";
 import { pageSession } from "@/lib/server/session";
 import { cn } from "@geas/ui/lib/utils";
 
 export default async function ImportPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
-  const { supabase, user, member: membership } = await pageSession();
-  if (!membership) return <SetupNeeded email={user.email ?? ""} />;
-  const groupId = membership.groupId;
+  const { user, member: membership } = await pageSession();
+  if (!membership) return <SetupNeeded email={user.email} />;
+  const { db, groupId } = membership;
   const canEdit = membership.finance.canEdit;
 
-  const [{ data: accountRows }, { profiles }, lastProfiles] = await Promise.all([
+  const [accountRows, { profiles }, lastProfiles] = await Promise.all([
     // Caixa (dinheiro) não tem extrato bancário: fica fora do import OFX
-    supabase.from("accounts").select("id, name, bank").eq("group_id", groupId).eq("active", true).neq("kind", "caixa").order("name"),
-    canEdit ? fetchImportProfiles(supabase, groupId) : Promise.resolve({ profiles: [] }),
-    canEdit ? fetchLastProfileByAccount(supabase, groupId) : Promise.resolve({} as Record<string, string>),
+    importAccounts(db, groupId),
+    canEdit ? fetchImportProfiles(db, groupId) : Promise.resolve({ profiles: [] }),
+    canEdit ? fetchLastProfileByAccount(db, groupId) : Promise.resolve({} as Record<string, string>),
   ]);
   // "A definir" é só um destino provisório de lançamentos antigos; não recebe extrato.
-  const accounts = ((accountRows ?? []) as ImportAccount[]).filter((account) => account.name !== PLACEHOLDER_ACCOUNT_NAME);
+  const accounts = (accountRows as ImportAccount[]).filter((account) => account.name !== PLACEHOLDER_ACCOUNT_NAME);
   const requested = typeof params.conta === "string" ? params.conta : "";
   // A conta (banco) é escolhida em cada importação; só vem preenchida quando a URL já indica uma.
   const accountId = accounts.some((account) => account.id === requested) ? requested : "";
-  const recent = accountId ? await fetchRecentImports(supabase, groupId, accountId) : { rows: [], error: undefined };
+  const recent = accountId ? await fetchRecentImports(db, groupId, accountId) : { rows: [], error: undefined };
   const accountName = accounts.find((account) => account.id === accountId)?.name ?? "";
 
   return <div className="shell">
-    <AppHeader role={membership.finance.role} email={user.email ?? ""} current="/financeiro/extrato/importar" />
+    <AppHeader role={membership.finance.role} email={user.email} current="/financeiro/extrato/importar" />
     <PageBody>
       <PageHeader title="Extrato" crumbs={extratoCrumbs("importar")} tabs={<ExtratoTabs current="importar" accountId={accountId || undefined} />}
         description="Escolha o banco (a conta) e envie o extrato OFX, exportado pelo banco ou convertido. Confira as linhas antes de importar; depois, concilie com os lançamentos." />

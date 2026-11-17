@@ -2,25 +2,25 @@ import { AppHeader } from "@/components/finance/app-header";
 import { DebtsManager } from "@/components/finance/debts/debts-manager";
 import { FeeTabs, feeCrumbs, PageBody, PageHeader } from "@/components/finance/nav/page-header";
 import { SetupNeeded } from "@/components/shell/setup-needed";
-import { fetchDebts } from "@/lib/finance/debts";
+import { fetchDebts } from "@/lib/server/finance/debts";
+import { listForPicker } from "@/lib/server/finance/associates";
 import { pageSession } from "@/lib/server/session";
 
 export const metadata = { title: "Devedores · GEAS Financeiro" };
 
 export default async function DebtsPage() {
-  const { supabase, user, member } = await pageSession();
-  if (!member) return <SetupNeeded email={user.email ?? ""} />;
+  const { user, member } = await pageSession();
+  if (!member) return <SetupNeeded email={user.email} />;
   const [{ debts, error }, associates] = await Promise.all([
-    fetchDebts(supabase, member.groupId),
+    fetchDebts(member.db, member.groupId),
     // só tesouraria/administração escolhe o associado; a consulta não recebe a lista
     member.finance.canEdit
-      ? supabase.from("associate_rows").select("id, name, section, active").eq("group_id", member.groupId).order("name").limit(5000)
-        .then(({ data }) => (data ?? []) as { id: string; name: string; section: string | null; active: boolean }[])
+      ? listForPicker(member.db, member.groupId)
       : Promise.resolve([]),
   ]);
 
   return <div className="shell">
-    <AppHeader role={member.finance.role} email={user.email ?? ""} current="/financeiro/mensalidades/devedores" />
+    <AppHeader role={member.finance.role} email={user.email} current="/financeiro/mensalidades/devedores" />
     <PageBody width="narrow">
       <PageHeader title="Mensalidades" tabs={<FeeTabs current="devedores" />} crumbs={feeCrumbs("devedores")}
         description={member.finance.canEdit

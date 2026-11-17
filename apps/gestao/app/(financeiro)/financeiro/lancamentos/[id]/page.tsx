@@ -4,20 +4,16 @@ import { z } from "zod";
 import { AppHeader } from "@/components/finance/app-header";
 import { PageBody, PageHeader } from "@/components/finance/nav/page-header";
 import { EntryForm } from "@/components/finance/entries/entry-form";
-import { fetchEntry, listHref } from "@/lib/finance/entries";
+import { listHref } from "@/lib/finance/entries";
+import * as attachmentsData from "@/lib/server/finance/attachments";
+import { fetchEntry, history as entryHistory, linkedStatementLines, type LinkedLine } from "@/lib/server/finance/entries";
 import { dateBR, money } from "@/lib/format";
 import { loadEntryContext } from "../context";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { EntryAttachments } from "@/components/finance/entries/entry-attachments";
-import { ATTACHMENT_COLUMNS, type Attachment } from "@/lib/finance/attachments";
-import { describeHistory, type AuditRow, type HistoryItem, type HistoryNames } from "@/lib/finance/entry-history";
+import { describeHistory, type HistoryItem, type HistoryNames } from "@/lib/finance/entry-history";
 import type { Catalogs } from "@/components/finance/entries/entry-form";
-
-type LinkedLine = {
-  statement_line_id: string; line_date: string; line_description: string; line_kind: string | null; line_counterparty: string | null;
-  line_amount_cents: number; line_external_id: string | null; line_trn_type: string | null;
-};
 
 /** Linhas do extrato (OFX) vinculadas: o "fato" do banco por trás deste lançamento. */
 function StatementLines({ lines }: { lines: LinkedLine[] }) {
@@ -85,22 +81,17 @@ export const metadata = { title: "Lançamento · GEAS Financeiro" };
 export default async function EntryDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ voltar?: string }> }) {
   const [{ id }, { voltar }] = await Promise.all([params, searchParams]);
   if (!z.uuid().safeParse(id).success) notFound();
-  const { supabase, user, role, canEdit, catalogs } = await loadEntryContext();
-  const [entry, { data: statementLines }, { data: attachments }, { data: auditRows }] = await Promise.all([
-    fetchEntry(supabase, id),
-    supabase.from("reconciliation_link_rows")
-      .select("statement_line_id, line_date, line_description, line_kind, line_counterparty, line_amount_cents, line_external_id, line_trn_type")
-      .eq("ledger_entry_id", id).order("line_date"),
-    supabase.from("entry_attachments").select(ATTACHMENT_COLUMNS).eq("entry_id", id).order("created_at").order("id"),
-    supabase.rpc("ledger_entry_history", { p_entry_id: id }),
+  const { db, user, role, canEdit, catalogs } = await loadEntryContext();
+  const [entry, statementLines, attachments, auditRows] = await Promise.all([
+    fetchEntry(db, id), linkedStatementLines(db, id), attachmentsData.listForEntry(db, id), entryHistory(db, id),
   ]);
   if (!entry) notFound();
   const backHref = listHref(voltar);
-  const history = describeHistory((auditRows ?? []) as AuditRow[], historyNames(catalogs));
+  const history = describeHistory(auditRows, historyNames(catalogs));
   const edited = entry.updatedAt.slice(0, 19) !== entry.createdAt.slice(0, 19);
 
   return <div className="shell">
-    <AppHeader role={role} email={user.email ?? ""} current={`/financeiro/lancamentos/${id}`} />
+    <AppHeader role={role} email={user.email} current={`/financeiro/lancamentos/${id}`} />
     <PageBody>
       <PageHeader title={entry.name} crumbs={[{ label: "Lançamentos", href: backHref }, { label: entry.name }]}
         description={<>
@@ -109,9 +100,9 @@ export default async function EntryDetailPage({ params, searchParams }: { params
           {" · "}criado em {dateTime.format(new Date(entry.createdAt))}{edited && <> · alterado em {dateTime.format(new Date(entry.updatedAt))}</>}
           {!canEdit && " · somente consulta"}
         </>} />
-      {(statementLines?.length ?? 0) > 0 && <StatementLines lines={statementLines as LinkedLine[]} />}
+      {statementLines.length > 0 && <StatementLines lines={statementLines} />}
       <SectionCard className="p-5"><EntryForm entry={entry} catalogs={catalogs} canEdit={canEdit} backHref={backHref} /></SectionCard>
-      <EntryAttachments entryId={id} attachments={(attachments ?? []) as Attachment[]} canEdit={canEdit} />
+      <EntryAttachments entryId={id} attachments={attachments} canEdit={canEdit} />
       <History items={history} />
     </PageBody>
   </div>;

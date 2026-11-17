@@ -7,7 +7,7 @@ import { cn } from "@geas/ui/lib/utils";
 import Link from "next/link";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { IconArrowDown, IconArrowUp, IconPaperclip } from "@tabler/icons-react";
-import type { SplitRow, LedgerRow } from "@/lib/finance/entry-queries";
+import type { SplitRow, LedgerRow } from "@/lib/finance/entry-rows";
 import type { SortOrder } from "@/lib/finance/filters";
 import { MultiFilter } from "@/components/finance/entries/multi-filter";
 import type { FilterKey } from "@/components/finance/entries/filter-options";

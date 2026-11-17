@@ -1,89 +1,78 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createClient } from "@/lib/server/supabase/client";
-import { financeEditorOrError, memberOrError } from "@/lib/server/session";
-import { entrySchema, toRpcSplits } from "@/lib/finance/entry-schema";
-import { fetchEntryPage, type EntryPage } from "@/lib/finance/entry-queries";
+import { InputError } from "@/lib/action";
+import { entrySchema } from "@/lib/finance/entry-schema";
+import type { EntryPage } from "@/lib/finance/entry-rows";
 import { parseFilters, parseOrder } from "@/lib/finance/filters";
-import { ATTACHMENT_BUCKET } from "@/lib/finance/attachments";
+import { DataError } from "@/lib/server/db";
+import * as entries from "@/lib/server/finance/entries";
+import { financeEditorOrError, memberOrError, type Member } from "@/lib/server/session";
+
+// Lançamentos (formulário, lista e ações em lote). As regras de quem pode o quê ficam nas funções SQL:
+// aqui qualquer membro chama, e o banco recusa quem não é tesouraria/administração.
 
 type Result = { error?: string; success?: boolean; id?: string };
 
-export async function createEntry(payload: unknown): Promise<Result> {
+/** Executa com o membro da sessão; `InputError`/`DataError` viram `{ error }`. */
+async function withMember<T extends object>(guard: () => Promise<Member | { error: string }>, work: (member: Member) => Promise<T>): Promise<T | { error: string }> {
+  const member = await guard();
+  if ("error" in member) return member;
+  try {
+    return await work(member);
+  } catch (error) {
+    if (error instanceof InputError || error instanceof DataError) return { error: error.message };
+    throw error;
+  }
+}
+
+function readEntry(payload: unknown) {
   const parsed = entrySchema.safeParse(payload);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const ctx = await memberOrError();
-  if ("error" in ctx) return { error: ctx.error };
-  const { data, error } = await ctx.supabase.rpc("create_ledger_entry", {
-    p_group_id: ctx.groupId,
-    p_entry_date: parsed.data.date,
-    p_name: parsed.data.name,
-    p_payment_method_id: parsed.data.paymentMethodId,
-    p_account_id: parsed.data.accountId,
-    p_document: parsed.data.document || null,
-    p_document_filed: parsed.data.documentFiled,
-    p_total_cents: parsed.data.totalCents,
-    p_splits: toRpcSplits(parsed.data.splits),
-    p_notes: parsed.data.notes?.trim() || null,
+  if (!parsed.success) throw new InputError(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+  return parsed.data;
+}
+
+function readId(value: unknown, message = "Lançamento inválido.") {
+  const parsed = z.uuid().safeParse(value);
+  if (!parsed.success) throw new InputError(message);
+  return parsed.data;
+}
+
+export async function createEntry(payload: unknown): Promise<Result> {
+  return withMember(memberOrError, async ({ db, groupId }) => {
+    const id = await entries.create(db, groupId, readEntry(payload));
+    revalidatePath("/", "layout");
+    return { success: true, id };
   });
-  if (error) return { error: error.message };
-  revalidatePath("/", "layout");
-  return { success: true, id: data as string };
 }
 
 export async function updateEntry(entryId: unknown, payload: unknown): Promise<Result> {
-  const id = z.uuid().safeParse(entryId);
-  const parsed = entrySchema.safeParse(payload);
-  if (!id.success) return { error: "Lançamento inválido." };
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("update_ledger_entry", {
-    p_entry_id: id.data,
-    p_entry_date: parsed.data.date,
-    p_name: parsed.data.name,
-    p_payment_method_id: parsed.data.paymentMethodId,
-    p_account_id: parsed.data.accountId,
-    p_document: parsed.data.document || null,
-    p_document_filed: parsed.data.documentFiled,
-    p_total_cents: parsed.data.totalCents,
-    p_splits: toRpcSplits(parsed.data.splits),
-    p_notes: parsed.data.notes?.trim() || null,
+  return withMember(memberOrError, async ({ db }) => {
+    const id = readId(entryId);
+    await entries.update(db, id, readEntry(payload));
+    revalidatePath("/", "layout");
+    revalidatePath(`/financeiro/lancamentos/${id}`);
+    return { success: true };
   });
-  if (error) return { error: error.message };
-  revalidatePath("/", "layout");
-  revalidatePath(`/financeiro/lancamentos/${id.data}`);
-  return { success: true };
 }
 
 export async function deleteEntry(entryId: unknown): Promise<Result> {
-  const id = z.uuid().safeParse(entryId);
-  if (!id.success) return { error: "Lançamento inválido." };
-  const supabase = await createClient();
-  // Os registros de anexo saem em cascata; os arquivos do Storage são apagados aqui, depois.
-  const { data: attachments } = await supabase.from("entry_attachments").select("storage_path").eq("entry_id", id.data);
-  const { error } = await supabase.rpc("delete_ledger_entry", { p_entry_id: id.data });
-  if (error) return { error: error.message };
-  const paths = (attachments ?? []).map((row) => row.storage_path as string);
-  if (paths.length) {
-    const { error: storageError } = await supabase.storage.from(ATTACHMENT_BUCKET).remove(paths);
-    if (storageError) console.error("remover anexos do lançamento excluído", id.data, storageError.message);
-  }
-  revalidatePath("/", "layout");
-  return { success: true };
+  return withMember(memberOrError, async ({ db }) => {
+    await entries.remove(db, readId(entryId));
+    revalidatePath("/", "layout");
+    return { success: true };
+  });
 }
 
 export async function setDocumentFiled(entryId: unknown, filed: unknown): Promise<Result> {
-  const id = z.uuid().safeParse(entryId);
-  const value = z.boolean().safeParse(filed);
-  if (!id.success || !value.success) return { error: "Dados inválidos." };
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("set_entry_document_filed", { p_entry_id: id.data, p_filed: value.data });
-  if (error) return { error: error.message };
-  revalidatePath("/", "layout");
-  return { success: true };
+  return withMember(memberOrError, async ({ db }) => {
+    const value = z.boolean().safeParse(filed);
+    if (!value.success) throw new InputError("Dados inválidos.");
+    await entries.setDocumentFiled(db, readId(entryId, "Dados inválidos."), value.data);
+    revalidatePath("/", "layout");
+    return { success: true };
+  });
 }
 
 export type MoveResult = { error?: string; moved?: number; unchanged?: number; unlinked?: number };
@@ -94,13 +83,11 @@ export async function moveEntriesAccount(entryIds: unknown, accountId: unknown):
   const account = z.uuid().safeParse(accountId);
   if (!ids.success) return { error: ids.error.issues[0]?.message ?? "Seleção inválida." };
   if (!account.success) return { error: "Escolha a conta." };
-  const ctx = await financeEditorOrError("Sem permissão para mudar a conta dos lançamentos.");
-  if ("error" in ctx) return { error: ctx.error };
-  const { data, error } = await ctx.supabase.rpc("move_ledger_entries_account", { p_entry_ids: ids.data, p_account_id: account.data });
-  if (error) return { error: error.message };
-  revalidatePath("/", "layout");
-  const result = data as { moved: number; unchanged: number; unlinked: number };
-  return { moved: result.moved, unchanged: result.unchanged, unlinked: result.unlinked };
+  return withMember(() => financeEditorOrError("Sem permissão para mudar a conta dos lançamentos."), async ({ db }) => {
+    const result = await entries.moveToAccount(db, ids.data, account.data);
+    revalidatePath("/", "layout");
+    return { moved: result.moved, unchanged: result.unchanged, unlinked: result.unlinked };
+  });
 }
 
 /** Próxima página da rolagem infinita; os filtros chegam como a query string da lista. */
@@ -111,5 +98,5 @@ export async function loadEntryPage(viewInput: unknown, query: unknown, offset: 
   if (!start.success) return { view, rows: [], total: null, error: "Página inválida." };
   const ctx = await memberOrError();
   if ("error" in ctx) return { view, rows: [], total: null, error: ctx.error };
-  return fetchEntryPage(ctx.supabase, ctx.groupId, view, parseFilters(params), parseOrder(params), start.data, false);
+  return entries.fetchEntryPage(ctx.db, ctx.groupId, view, parseFilters(params), parseOrder(params), start.data, false);
 }

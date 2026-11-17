@@ -1,8 +1,9 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { SPLIT_COLUMNS, LEDGER_COLUMNS, type SplitRow, type LedgerRow } from "@/lib/finance/entry-queries";
+import type { Db } from "@/lib/server/db";
+import { untyped, unwrap } from "@/lib/server/supabase/db";
+import { SPLIT_COLUMNS, LEDGER_COLUMNS, type SplitRow, type LedgerRow } from "@/lib/finance/entry-rows";
 import type { CategoryItem } from "@/lib/finance/categories";
-import type { Period } from "./period";
-import { buildRealizedModel, type RealizedSum } from "./realized";
+import type { Period } from "@/lib/finance/export/period";
+import { buildRealizedModel, type RealizedSum } from "@/lib/finance/export/realized";
 
 const BATCH = 1000;
 /** Teto de segurança para uma planilha; acima disso, pedir um período menor. */
@@ -24,7 +25,8 @@ async function fetchAll<T>(page: (from: number, to: number) => PromiseLike<{ dat
   }
 }
 
-export function fetchAllLedgerRows(supabase: SupabaseClient, groupId: string, { from, to }: Period) {
+export function fetchAllLedgerRows(db: Db, groupId: string, { from, to }: Period) {
+  const supabase = untyped(db);
   return fetchAll<LedgerRow>((start, end) => supabase.from("ledger_entry_rows").select(LEDGER_COLUMNS)
     .eq("group_id", groupId).gte("entry_date", from).lte("entry_date", to)
     .order("entry_date").order("created_at").order("entry_id")
@@ -32,7 +34,8 @@ export function fetchAllLedgerRows(supabase: SupabaseClient, groupId: string, { 
 }
 
 /** Rateios do período; `accountId` restringe a uma conta (exportação contábil por conta). */
-export function fetchAllSplitRows(supabase: SupabaseClient, groupId: string, { from, to }: Period, accountId?: string) {
+export function fetchAllSplitRows(db: Db, groupId: string, { from, to }: Period, accountId?: string) {
+  const supabase = untyped(db);
   return fetchAll<SplitRow>((start, end) => {
     let query = supabase.from("entry_split_rows").select(SPLIT_COLUMNS)
       .eq("group_id", groupId).gte("entry_date", from).lte("entry_date", to);
@@ -42,7 +45,8 @@ export function fetchAllSplitRows(supabase: SupabaseClient, groupId: string, { f
 }
 
 /** Rubricas e somas por mês do ano: base do Realizado (tela e planilha). */
-export async function fetchRealizedModel(supabase: SupabaseClient, groupId: string, year: number) {
+export async function fetchRealizedModel(db: Db, groupId: string, year: number) {
+  const supabase = untyped(db);
   const [{ data: categories, error: categoriesError }, { data: sums, error: sumsError }] = await Promise.all([
     supabase.from("categories").select("id, name, active, code, kind, parent_id").eq("group_id", groupId),
     supabase.rpc("realized_by_month", { p_group_id: groupId, p_year: year }),
@@ -50,4 +54,19 @@ export async function fetchRealizedModel(supabase: SupabaseClient, groupId: stri
   const error = categoriesError ?? sumsError;
   if (error) throw new Error(error.message);
   return buildRealizedModel((categories ?? []) as CategoryItem[], (sums ?? []) as RealizedSum[], year);
+}
+
+/** Primeira e última data com lançamentos (anos do Realizado e das exportações). */
+export async function entryDateRange(db: Db, groupId: string): Promise<{ first?: string; last?: string }> {
+  const supabase = untyped(db);
+  const [first, last] = await Promise.all([
+    supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date").limit(1).maybeSingle().then(unwrap),
+    supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date", { ascending: false }).limit(1).maybeSingle().then(unwrap),
+  ]);
+  return { first: (first as { entry_date: string } | null)?.entry_date, last: (last as { entry_date: string } | null)?.entry_date };
+}
+
+/** Id do grupo pelo nome (script da transparência, com a chave de serviço). */
+export async function groupIdByName(db: Db, name: string): Promise<string | null> {
+  return ((unwrap(await untyped(db).from("groups").select("id").eq("name", name).maybeSingle())) as { id: string } | null)?.id ?? null;
 }

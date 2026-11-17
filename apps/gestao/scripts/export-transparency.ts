@@ -11,8 +11,8 @@
  */
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { createClient } from "@supabase/supabase-js";
-import { fetchRealizedModel } from "@/lib/finance/export/queries";
+import { entryDateRange, fetchRealizedModel, groupIdByName } from "@/lib/server/finance/reports";
+import { serviceDb } from "@/lib/server/supabase/service";
 import { buildTransparencyReport } from "@/lib/finance/export/transparency";
 
 const OUT_DIR = resolve(__dirname, "../../institucional/src/data/prestacao-contas");
@@ -51,20 +51,16 @@ async function main() {
     return;
   }
 
-  const supabase = createClient(url, key, { auth: { persistSession: false } });
-  const { data: group, error: groupError } = await supabase.from("groups").select("id").eq("name", GROUP_NAME).maybeSingle();
-  if (groupError) fail(`banco indisponível em ${url} (${groupError.message}). O Supabase está rodando?`);
-  if (!group) fail(`grupo "${GROUP_NAME}" não encontrado.`);
+  const db = serviceDb();
+  const groupId = await groupIdByName(db, GROUP_NAME).catch((error: Error) => fail(`banco indisponível em ${url} (${error.message}). O Supabase está rodando?`));
+  if (!groupId) fail(`grupo "${GROUP_NAME}" não encontrado.`);
 
-  const [{ data: first }, { data: last }] = await Promise.all([
-    supabase.from("ledger_entries").select("entry_date").eq("group_id", group.id).order("entry_date").limit(1).maybeSingle(),
-    supabase.from("ledger_entries").select("entry_date").eq("group_id", group.id).order("entry_date", { ascending: false }).limit(1).maybeSingle(),
-  ]);
+  const { first, last } = await entryDateRange(db, groupId);
   if (!first || !last) fail("nenhum lançamento no grupo.");
 
   const years: number[] = [];
-  for (let y = Number(first.entry_date.slice(0, 4)); y <= Number(last.entry_date.slice(0, 4)); y++) years.push(y);
-  const reports = await Promise.all(years.map(async (y) => buildTransparencyReport(await fetchRealizedModel(supabase, group.id, y))));
+  for (let y = Number(first.slice(0, 4)); y <= Number(last.slice(0, 4)); y++) years.push(y);
+  const reports = await Promise.all(years.map(async (y) => buildTransparencyReport(await fetchRealizedModel(db, groupId, y))));
 
   // só troca os arquivos depois de ler tudo: uma falha no meio não deixa o site com metade dos anos
   clearReports();

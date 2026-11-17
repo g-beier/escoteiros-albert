@@ -6,7 +6,7 @@ import { XLSX_MIME } from "./xlsx";
 export async function exportContext() {
   const member = await memberOrError();
   if ("error" in member) return { error: errorResponse(member.error, 403) };
-  return { supabase: member.supabase, groupId: member.groupId };
+  return { db: member.db, groupId: member.groupId };
 }
 
 export function errorResponse(message: string, status = 400) {

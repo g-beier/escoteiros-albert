@@ -2,16 +2,33 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { InputError } from "@/lib/action";
+import { entrySchema } from "@/lib/finance/entry-schema";
+import { DataError, type Db } from "@/lib/server/db";
+import * as reconciliation from "@/lib/server/finance/reconciliation";
 import { financeEditorOrError } from "@/lib/server/session";
-import { entrySchema, toRpcSplits } from "@/lib/finance/entry-schema";
 
 export type ReconciliationResult = { error?: string; success?: string; id?: string };
 
 const ids = z.array(z.uuid()).min(1).max(200);
 
-function done(success: string, id?: string): ReconciliationResult {
-  revalidatePath("/", "layout");
-  return { success, id };
+/** Tesouraria/administração; erros de validação e do banco viram `{ error }`; sucesso revalida tudo. */
+async function reconcile(work: (db: Db) => Promise<ReconciliationResult>): Promise<ReconciliationResult> {
+  const ctx = await financeEditorOrError("Sem permissão para conciliar.");
+  if ("error" in ctx) return { error: ctx.error };
+  try {
+    const result = await work(ctx.db);
+    if (result.success) revalidatePath("/", "layout");
+    return result;
+  } catch (error) {
+    if (error instanceof InputError || error instanceof DataError) return { error: error.message };
+    throw error;
+  }
+}
+
+function valid<T>(result: { success: true; data: T } | { success: false; error: z.ZodError }, message?: string): T {
+  if (!result.success) throw new InputError(message ?? result.error.issues[0]?.message ?? "Dados inválidos.");
+  return result.data;
 }
 
 /** Vincula linhas do extrato e lançamentos cujas somas batem (1:1, 1:N ou N:1). */
@@ -19,11 +36,10 @@ export async function linkReconciliation(lineIds: unknown, entryIds: unknown): P
   const lines = ids.safeParse(lineIds);
   const entries = ids.safeParse(entryIds);
   if (!lines.success || !entries.success) return { error: "Selecione ao menos uma linha do extrato e um lançamento." };
-  const ctx = await financeEditorOrError("Sem permissão para conciliar.");
-  if ("error" in ctx) return { error: ctx.error };
-  const { error } = await ctx.supabase.rpc("link_reconciliation", { p_statement_line_ids: lines.data, p_ledger_entry_ids: entries.data });
-  if (error) return { error: error.message };
-  return done(lines.data.length + entries.data.length > 2 ? "Vínculo criado." : "Par conciliado.");
+  return reconcile(async (db) => {
+    await reconciliation.link(db, lines.data, entries.data);
+    return { success: lines.data.length + entries.data.length > 2 ? "Vínculo criado." : "Par conciliado." };
+  });
 }
 
 /** Aceita várias sugestões 1:1; cada par é gravado separadamente e os que falharem são informados. */
@@ -35,8 +51,13 @@ export async function acceptSuggestions(pairs: unknown): Promise<ReconciliationR
   let accepted = 0;
   let firstError: string | undefined;
   for (const pair of parsed.data) {
-    const { error } = await ctx.supabase.rpc("link_reconciliation", { p_statement_line_ids: [pair.lineId], p_ledger_entry_ids: [pair.entryId] });
-    if (error) firstError ??= error.message; else accepted += 1;
+    try {
+      await reconciliation.link(ctx.db, [pair.lineId], [pair.entryId]);
+      accepted += 1;
+    } catch (error) {
+      if (!(error instanceof DataError)) throw error;
+      firstError ??= error.message;
+    }
   }
   if (accepted) revalidatePath("/", "layout");
   if (firstError) return { error: accepted ? `${accepted} conciliadas; ${parsed.data.length - accepted} falharam: ${firstError}` : firstError };
@@ -44,57 +65,48 @@ export async function acceptSuggestions(pairs: unknown): Promise<ReconciliationR
 }
 
 export async function unlinkReconciliation(lineId: unknown): Promise<ReconciliationResult> {
-  const id = z.uuid().safeParse(lineId);
-  if (!id.success) return { error: "Linha inválida." };
-  const ctx = await financeEditorOrError("Sem permissão para conciliar.");
-  if ("error" in ctx) return { error: ctx.error };
-  const { error } = await ctx.supabase.rpc("unlink_reconciliation", { p_statement_line_id: id.data });
-  if (error) return { error: error.message };
-  return done("Vínculo desfeito.");
+  return reconcile(async (db) => {
+    await reconciliation.unlink(db, valid(z.uuid().safeParse(lineId), "Linha inválida."));
+    return { success: "Vínculo desfeito." };
+  });
 }
 
 export async function rejectSuggestion(lineId: unknown, entryId: unknown): Promise<ReconciliationResult> {
-  const line = z.uuid().safeParse(lineId);
-  const entry = z.uuid().safeParse(entryId);
-  if (!line.success || !entry.success) return { error: "Sugestão inválida." };
-  const ctx = await financeEditorOrError("Sem permissão para conciliar.");
-  if ("error" in ctx) return { error: ctx.error };
-  const { error } = await ctx.supabase.rpc("reject_reconciliation_suggestion", { p_statement_line_id: line.data, p_ledger_entry_id: entry.data });
-  if (error) return { error: error.message };
-  return done("Sugestão recusada; o par não será sugerido de novo.");
+  return reconcile(async (db) => {
+    const line = valid(z.uuid().safeParse(lineId), "Sugestão inválida.");
+    const entry = valid(z.uuid().safeParse(entryId), "Sugestão inválida.");
+    await reconciliation.reject(db, line, entry);
+    return { success: "Sugestão recusada; o par não será sugerido de novo." };
+  });
 }
+
+const reasonSchema = z.string().trim().min(2, "Informe o motivo.").max(200, "Motivo: no máximo 200 caracteres.");
 
 export async function ignoreStatementLine(lineId: unknown, reason: unknown): Promise<ReconciliationResult> {
   const id = z.uuid().safeParse(lineId);
-  const text = z.string().trim().min(2, "Informe o motivo.").max(200, "Motivo: no máximo 200 caracteres.").safeParse(reason);
   if (!id.success) return { error: "Linha inválida." };
+  const text = reasonSchema.safeParse(reason);
   if (!text.success) return { error: text.error.issues[0]?.message };
-  const ctx = await financeEditorOrError("Sem permissão para conciliar.");
-  if ("error" in ctx) return { error: ctx.error };
-  const { error } = await ctx.supabase.rpc("ignore_statement_line", { p_id: id.data, p_reason: text.data });
-  if (error) return { error: error.message };
-  return done("Linha ignorada.");
+  return reconcile(async (db) => {
+    await reconciliation.ignoreLine(db, id.data, text.data);
+    return { success: "Linha ignorada." };
+  });
 }
 
 export async function reopenStatementLine(lineId: unknown): Promise<ReconciliationResult> {
-  const id = z.uuid().safeParse(lineId);
-  if (!id.success) return { error: "Linha inválida." };
-  const ctx = await financeEditorOrError("Sem permissão para conciliar.");
-  if ("error" in ctx) return { error: ctx.error };
-  const { error } = await ctx.supabase.rpc("reopen_statement_line", { p_id: id.data });
-  if (error) return { error: error.message };
-  return done("Linha reaberta.");
+  return reconcile(async (db) => {
+    await reconciliation.reopenLine(db, valid(z.uuid().safeParse(lineId), "Linha inválida."));
+    return { success: "Linha reaberta." };
+  });
 }
 
 export async function setOutsideStatement(entryId: unknown, outside: unknown): Promise<ReconciliationResult> {
-  const id = z.uuid().safeParse(entryId);
-  const value = z.boolean().safeParse(outside);
-  if (!id.success || !value.success) return { error: "Dados inválidos." };
-  const ctx = await financeEditorOrError("Sem permissão para conciliar.");
-  if ("error" in ctx) return { error: ctx.error };
-  const { error } = await ctx.supabase.rpc("set_ledger_entry_outside_statement", { p_entry_id: id.data, p_outside: value.data });
-  if (error) return { error: error.message };
-  return done(value.data ? "Lançamento marcado como fora do extrato." : "Lançamento voltou para a conciliação.");
+  return reconcile(async (db) => {
+    const id = valid(z.uuid().safeParse(entryId), "Dados inválidos.");
+    const value = valid(z.boolean().safeParse(outside), "Dados inválidos.");
+    await reconciliation.setOutsideStatement(db, id, value);
+    return { success: value ? "Lançamento marcado como fora do extrato." : "Lançamento voltou para a conciliação." };
+  });
 }
 
 export async function setEntryAccount(entryId: unknown, accountId: unknown): Promise<ReconciliationResult> {
@@ -102,11 +114,10 @@ export async function setEntryAccount(entryId: unknown, accountId: unknown): Pro
   const account = z.uuid().safeParse(accountId);
   if (!id.success) return { error: "Lançamento inválido." };
   if (!account.success) return { error: "Escolha a conta." };
-  const ctx = await financeEditorOrError("Sem permissão para conciliar.");
-  if ("error" in ctx) return { error: ctx.error };
-  const { error } = await ctx.supabase.rpc("set_ledger_entry_account", { p_entry_id: id.data, p_account_id: account.data });
-  if (error) return { error: error.message };
-  return done("Conta do lançamento alterada.");
+  return reconcile(async (db) => {
+    await reconciliation.setEntryAccount(db, id.data, account.data);
+    return { success: "Conta do lançamento alterada." };
+  });
 }
 
 /** Cria o lançamento a partir da linha do extrato e já o vincula a ela (uma transação no banco). */
@@ -115,21 +126,7 @@ export async function createEntryFromStatementLine(lineId: unknown, payload: unk
   const parsed = entrySchema.safeParse(payload);
   if (!id.success) return { error: "Linha inválida." };
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const ctx = await financeEditorOrError("Sem permissão para conciliar.");
-  if ("error" in ctx) return { error: ctx.error };
-  const { data, error } = await ctx.supabase.rpc("create_entry_from_statement_line", {
-    p_statement_line_id: id.data,
-    p_entry_date: parsed.data.date,
-    p_name: parsed.data.name,
-    p_payment_method_id: parsed.data.paymentMethodId,
-    p_document: parsed.data.document || null,
-    p_document_filed: parsed.data.documentFiled,
-    p_total_cents: parsed.data.totalCents,
-    p_splits: toRpcSplits(parsed.data.splits),
-    p_notes: parsed.data.notes?.trim() || null,
-  });
-  if (error) return { error: error.message };
-  return done("Lançamento criado e conciliado.", data as string);
+  return reconcile(async (db) => ({ success: "Lançamento criado e conciliado.", id: await reconciliation.createEntryFromLine(db, id.data, parsed.data) }));
 }
 
 const bulkItem = z.object({
@@ -147,24 +144,20 @@ const bulkItem = z.object({
 export async function createEntriesFromLines(items: unknown): Promise<ReconciliationResult> {
   const parsed = z.array(bulkItem).min(1, "Selecione ao menos uma linha.").max(500, "Crie no máximo 500 lançamentos por vez.").safeParse(items);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const ctx = await financeEditorOrError("Sem permissão para conciliar.");
-  if ("error" in ctx) return { error: ctx.error };
-  const { data, error } = await ctx.supabase.rpc("create_entries_from_statement_lines", { p_items: parsed.data });
-  if (error) return { error: error.message };
-  const count = Number(data);
-  return done(`${count} ${count === 1 ? "lançamento criado e conciliado" : "lançamentos criados e conciliados"}. Recategorize em Lançamentos › Detalhamento.`);
+  return reconcile(async (db) => {
+    const count = await reconciliation.createEntriesFromLines(db, parsed.data);
+    return { success: `${count} ${count === 1 ? "lançamento criado e conciliado" : "lançamentos criados e conciliados"}. Recategorize em Lançamentos › Detalhamento.` };
+  });
 }
 
 /** Ignora várias linhas abertas com o mesmo motivo. */
 export async function ignoreStatementLines(lineIds: unknown, reason: unknown): Promise<ReconciliationResult> {
   const parsedIds = z.array(z.uuid()).min(1).max(1000).safeParse(lineIds);
-  const text = z.string().trim().min(2, "Informe o motivo.").max(200, "Motivo: no máximo 200 caracteres.").safeParse(reason);
   if (!parsedIds.success) return { error: "Selecione ao menos uma linha." };
+  const text = reasonSchema.safeParse(reason);
   if (!text.success) return { error: text.error.issues[0]?.message };
-  const ctx = await financeEditorOrError("Sem permissão para conciliar.");
-  if ("error" in ctx) return { error: ctx.error };
-  const { data, error } = await ctx.supabase.rpc("ignore_statement_lines", { p_ids: parsedIds.data, p_reason: text.data });
-  if (error) return { error: error.message };
-  const count = Number(data);
-  return done(count === 1 ? "Linha ignorada." : `${count} linhas ignoradas.`);
+  return reconcile(async (db) => {
+    const count = await reconciliation.ignoreLines(db, parsedIds.data, text.data);
+    return { success: count === 1 ? "Linha ignorada." : `${count} linhas ignoradas.` };
+  });
 }

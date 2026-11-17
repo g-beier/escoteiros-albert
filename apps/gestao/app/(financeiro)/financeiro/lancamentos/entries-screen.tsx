@@ -4,7 +4,8 @@ import { pageSession } from "@/lib/server/session";
 import { AppHeader } from "@/components/finance/app-header";
 import { EntryViewTabs, PageHeader } from "@/components/finance/nav/page-header";
 import { InfiniteEntries } from "@/components/finance/entries/infinite-entries";
-import { fetchEntryPage } from "@/lib/finance/entry-queries";
+import { countInAccount, fetchEntryPage, listStats } from "@/lib/server/finance/entries";
+import { entryCatalogs } from "@/lib/server/finance/registry";
 import { EntryListProvider, NewEntryButton } from "@/components/finance/entries/entry-editor";
 import { EntryFilters } from "@/components/finance/entries/entry-filters";
 import { BulkAccountBar } from "@/components/finance/entries/bulk-account-bar";
@@ -13,11 +14,10 @@ import { ExportMenu } from "@/components/finance/export/export-menu";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { exportYears } from "@/lib/finance/export/period";
 import { entriesPath, listQuery } from "@/lib/finance/entries";
-import type { EntryView } from "@/lib/finance/entry-queries";
+import type { EntryView } from "@/lib/finance/entry-rows";
 import { ALL_DATES, hasAnyFilter, NO_ASSOCIATE, parseFilters, parseOrder, type RawSearchParams } from "@/lib/finance/filters";
 import { depthOf, descendantsMap, sortCategories, type CategoryItem } from "@/lib/finance/categories";
 import { FilterOptionsProvider, type FilterDimensions } from "@/components/finance/entries/filter-options";
-
 
 type CatalogItem = { id: string; name: string; active: boolean };
 const toOptions = (items: CatalogItem[] | null) => (items ?? []).map((item) => ({ value: item.id, label: item.active ? item.name : `${item.name} (inativo)` }));
@@ -34,29 +34,20 @@ export async function EntriesScreen({ view, searchParams }: { view: EntryView; s
   const filtered = hasAnyFilter(filters);
   const returnQuery = listQuery(params);
   const returnHref = entriesPath(view, returnQuery);
-  const { supabase, user, member: membership } = await pageSession();
-  if (!membership) return <SetupNeeded email={user.email ?? ""} />;
-  const groupId = membership.groupId;
+  const { user, member: membership } = await pageSession();
+  if (!membership) return <SetupNeeded email={user.email} />;
+  const { db, groupId } = membership;
   const canEdit = membership.finance.canEdit;
 
-  const [{ data: categories }, { data: paymentMethods }, { data: associates }, { data: accounts }, firstPage, { count: pendingDocs }, { data: firstEntry }, { data: lastEntry }] = await Promise.all([
-    supabase.from("categories").select("id, name, active, code, kind, parent_id").eq("group_id", groupId),
-    supabase.from("payment_methods").select("id, name, active").eq("group_id", groupId).order("name"),
-    supabase.from("associates").select("id, name, active").eq("group_id", groupId).order("name"),
-    supabase.from("accounts").select("id, name, active").eq("group_id", groupId).order("name"),
-    fetchEntryPage(supabase, groupId, view, filters, order, 0, true),
-    supabase.from("ledger_entries").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("document_filed", false),
-    supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date").limit(1).maybeSingle(),
-    supabase.from("ledger_entries").select("entry_date").eq("group_id", groupId).order("entry_date", { ascending: false }).limit(1).maybeSingle(),
+  const [{ categories, paymentMethods, associates, accounts }, firstPage, { pendingDocs, firstDate, lastDate }] = await Promise.all([
+    entryCatalogs(db, groupId), fetchEntryPage(db, groupId, view, filters, order, 0, true), listStats(db, groupId),
   ]);
   // lançamentos digitados sem conta ficam em "A definir" (011) até serem movidos ou conciliados
-  const undefinedAccount = (accounts ?? []).find((account) => account.name === PLACEHOLDER_ACCOUNT_NAME);
-  const { count: undefinedCount } = undefinedAccount
-    ? await supabase.from("ledger_entries").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("account_id", undefinedAccount.id)
-    : { count: 0 };
+  const undefinedAccount = accounts.find((account) => account.name === PLACEHOLDER_ACCOUNT_NAME);
+  const undefinedCount = undefinedAccount ? await countInAccount(db, groupId, undefinedAccount.id) : 0;
   const onlyUndefined = undefinedAccount && filters.accountIds.length === 1 && filters.accountIds[0] === undefinedAccount.id;
-  const years = exportYears(firstEntry?.entry_date, lastEntry?.entry_date);
-  const tree = sortCategories((categories ?? []) as CategoryItem[]);
+  const years = exportYears(firstDate, lastDate);
+  const tree = sortCategories(categories as CategoryItem[]);
   const dimensions: FilterDimensions = {
     conta: { label: "Conta", options: toOptions(accounts) },
     forma: { label: "Forma pgto", options: toOptions(paymentMethods) },
@@ -82,7 +73,7 @@ export async function EntriesScreen({ view, searchParams }: { view: EntryView; s
   // No desktop a página não rola; só as linhas da tabela rolam, sob cabeçalhos fixos.
   // No celular (cartões) a página inteira rola; overflow-clip mantém o cabeçalho e o rodapé fixos funcionando.
   return <div className="shell flex min-h-dvh flex-col overflow-clip before:hidden after:hidden md:h-dvh md:min-h-0 md:overflow-hidden">
-    <AppHeader role={membership.finance.role} email={user.email ?? ""} current={`/financeiro/lancamentos/${view}`} />
+    <AppHeader role={membership.finance.role} email={user.email} current={`/financeiro/lancamentos/${view}`} />
     <main className="flex flex-1 flex-col gap-2.5 px-4 pt-4 pb-3 md:min-h-0">
       <FilterOptionsProvider dimensions={dimensions}>
       <EntryListProvider canEdit={canEdit} returnHref={returnHref}>

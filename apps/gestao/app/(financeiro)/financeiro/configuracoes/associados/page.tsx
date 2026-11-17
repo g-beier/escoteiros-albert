@@ -1,3 +1,4 @@
+import * as associatesData from "@/lib/server/finance/associates";
 import { pageMember } from "@/lib/server/session";
 import { SectionBody, SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
 import { AppHeader } from "@/components/finance/app-header";
@@ -8,7 +9,7 @@ import { PageBody, PageHeader, SectionTabs, settingsCrumbs, SettingsTabs } from 
 import { AssociateRow, NewAssociate, type AssociateItem } from "@/components/finance/new-associate";
 import { SectionsManager } from "@/components/finance/sections-manager";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
-import { branchLabels, groupBySection, isScoutBranch, matchesSections, placementLabel, NO_SECTION, NO_SECTION_PARAM, sectionsOf, type PatrolItem, type SectionItem } from "@/lib/finance/associates";
+import { branchLabels, groupBySection, isScoutBranch, matchesSections, placementLabel, NO_SECTION, NO_SECTION_PARAM, sectionsOf } from "@/lib/finance/associates";
 import { cn } from "@geas/ui/lib/utils";
 
 type Params = { agrupar?: string; secao?: string };
@@ -17,19 +18,9 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
   const params = await searchParams;
   const bySection = params.agrupar === "secao";
   const membership = await pageMember();
-  const { supabase, user } = membership;
+  const { user } = membership;
   const canEdit = membership.finance.canEdit;
-  const [{ data }, { data: sectionRows }, { data: patrolRows }] = await Promise.all([
-    supabase.from("associate_rows").select("id, name, branch, section_id, section, patrol_id, patrol, active")
-      .eq("group_id", membership.groupId).order("active", { ascending: false }).order("name"),
-    supabase.from("sections").select("id, branch, name, active").eq("group_id", membership.groupId).order("name"),
-    supabase.from("patrols").select("id, section_id, name, active").eq("group_id", membership.groupId).order("name"),
-  ]);
-  const associates = (data ?? []) as AssociateItem[];
-  const catalog = {
-    sections: (sectionRows ?? []) as SectionItem[],
-    patrols: (patrolRows ?? []).map((p) => ({ id: p.id as string, sectionId: p.section_id as string, name: p.name as string, active: p.active as boolean })) satisfies PatrolItem[],
-  };
+  const { associates, catalog } = await associatesData.listWithCatalog(membership.db, membership.groupId);
   const counts: Record<string, number> = {};
   for (const a of associates) for (const key of [a.section_id, a.patrol_id]) if (key) counts[key] = (counts[key] ?? 0) + 1;
   const sections = sectionsOf(associates);
@@ -48,7 +39,7 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
   const headClass = "h-8 px-3 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase";
 
   return <div className="shell">
-    <AppHeader role={membership.finance.role} email={user.email ?? ""} current="/financeiro/configuracoes/associados" />
+    <AppHeader role={membership.finance.role} email={user.email} current="/financeiro/configuracoes/associados" />
     <PageBody width="narrow" className="gap-4">
       <PageHeader title="Configurações" crumbs={settingsCrumbs("associados", canEdit)} tabs={<SettingsTabs current="associados" canEdit={canEdit} />}
         description="Lista usada para vincular rateios a associados. Inativos deixam de aparecer nos novos lançamentos." />

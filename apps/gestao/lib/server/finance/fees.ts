@@ -1,4 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Db } from "@/lib/server/db";
+import { rpc, untyped } from "@/lib/server/supabase/db";
 import { exportYears } from "@/lib/finance/export/period";
 import { fetchPaged } from "@/lib/server/supabase/paged";
 import {
@@ -10,14 +11,16 @@ type SettingsRow = { due_rule: DueRule; due_day: number; category_id: string | n
 type RecordRow = { associate_id: string; month: number; status: FeeRecord["status"]; note: string | null; fee_record_splits: { split_id: string }[] };
 type SplitRow = { split_id: string; associate_id: string; entry_id: string; entry_date: string; amount_cents: number; description: string; linked_periods: number[] };
 
-export async function fetchFeeSettings(supabase: SupabaseClient, groupId: string): Promise<FeeSettings> {
+export async function fetchFeeSettings(db: Db, groupId: string): Promise<FeeSettings> {
+  const supabase = untyped(db);
   const { data } = await supabase.from("fee_settings").select("due_rule, due_day, category_id").eq("group_id", groupId).maybeSingle();
   const row = data as SettingsRow | null;
   return row ? { dueRule: row.due_rule, dueDay: row.due_day, categoryId: row.category_id } : DEFAULT_FEE_SETTINGS;
 }
 
 /** Valor da mensalidade e desconto do integral, por ano. */
-export async function fetchFeePrices(supabase: SupabaseClient, groupId: string): Promise<Record<number, FeePrice>> {
+export async function fetchFeePrices(db: Db, groupId: string): Promise<Record<number, FeePrice>> {
+  const supabase = untyped(db);
   const { data } = await supabase.from("fee_year_settings").select("year, monthly_cents, annual_discount_pct, annual_deadline").eq("group_id", groupId);
   const prices: Record<number, FeePrice> = {};
   for (const row of (data ?? []) as { year: number; monthly_cents: number; annual_discount_pct: number; annual_deadline: string | null }[]) {
@@ -41,10 +44,11 @@ export type FeeYear = {
 };
 
 /** Tudo o que a grade de um ano precisa: configurações, associados, registros, isenções e rateios de mensalidade. */
-export async function fetchFeeYear(supabase: SupabaseClient, groupId: string, year: number, today = todayInSaoPaulo()): Promise<FeeYear> {
+export async function fetchFeeYear(db: Db, groupId: string, year: number, today = todayInSaoPaulo()): Promise<FeeYear> {
+  const supabase = untyped(db);
   const [settings, prices, individual, movements, associates, records, exemptions, splits] = await Promise.all([
-    fetchFeeSettings(supabase, groupId),
-    fetchFeePrices(supabase, groupId),
+    fetchFeeSettings(db, groupId),
+    fetchFeePrices(db, groupId),
     fetchPaged<{ associate_id: string; monthly_cents: number; reason: string }>((from, to) => supabase.from("fee_associate_prices")
       .select("associate_id, monthly_cents, reason").eq("group_id", groupId).eq("year", year).order("associate_id").range(from, to), 20_000),
     fetchPaged<{ id: string; associate_id: string; movement_date: string; kind: AssociateMovement["kind"]; reason: string | null }>((from, to) =>
@@ -91,7 +95,8 @@ export async function fetchFeeYear(supabase: SupabaseClient, groupId: string, ye
  * Anos do seletor de Mensalidades: do primeiro ao último ano com algo para mostrar (registros de mensalidade,
  * valores do ano ou lançamentos, que viram sugestões), sempre com o ano atual; mais recentes primeiro.
  */
-export async function fetchFeeYears(supabase: SupabaseClient, groupId: string) {
+export async function fetchFeeYears(db: Db, groupId: string) {
+  const supabase = untyped(db);
   const edge = (table: "fee_records" | "fee_year_settings", ascending: boolean) =>
     supabase.from(table).select("year").eq("group_id", groupId).order("year", { ascending }).limit(1).maybeSingle();
   const entry = (ascending: boolean) =>
@@ -101,4 +106,49 @@ export async function fetchFeeYears(supabase: SupabaseClient, groupId: string) {
     .filter((value) => value !== undefined && value !== null).map(Number);
   if (!years.length) return exportYears();
   return exportYears(`${Math.min(...years)}-01-01`, `${Math.max(...years)}-01-01`);
+}
+
+// Escritas (funções auditadas de 018–022) ---------------------------------------------------------------
+
+export type FeeStatusInput = "pago" | "atencao" | "nao_pago" | "isento";
+
+/** Caixinha de um mês (status nulo limpa), com observação e rateios vinculados. */
+export async function setRecord(db: Db, input: { associateId: string; year: number; month: number; status: FeeStatusInput | null; note: string | null; splitIds: string[] }) {
+  await rpc(db, "set_fee_record", {
+    p_associate_id: input.associateId, p_year: input.year, p_month: input.month, p_status: input.status, p_note: input.note, p_split_ids: input.splitIds,
+  });
+}
+
+/** Confirma sugestões (pago + vínculo ao rateio) em lote; devolve quantas. */
+export async function confirmSuggestions(db: Db, items: { associateId: string; year: number; month: number; splitId: string; status: "pago" | "atencao"; note?: string }[]): Promise<number> {
+  return Number(await rpc(db, "confirm_fee_suggestions", { p_items: items as never }));
+}
+
+/** Isenta no ano (com motivo) ou remove a isenção (`null`). */
+export async function setExemption(db: Db, associateId: string, year: number, reason: string | null) {
+  await rpc(db, "set_fee_exemption", { p_associate_id: associateId, p_year: year, p_reason: reason });
+}
+
+export async function saveSettings(db: Db, groupId: string, input: { dueRule: DueRule; dueDay: number; categoryId: string | null }) {
+  await rpc(db, "set_fee_settings", { p_group_id: groupId, p_due_rule: input.dueRule, p_due_day: input.dueDay, p_category_id: input.categoryId });
+}
+
+export async function saveYearSettings(db: Db, groupId: string, input: { year: number; monthlyCents: number; discountPct: number; deadline: string | null }) {
+  await rpc(db, "set_fee_year_settings", {
+    p_group_id: groupId, p_year: input.year, p_monthly_cents: input.monthlyCents, p_discount_pct: input.discountPct, p_deadline: input.deadline,
+  });
+}
+
+/** Valor individual do associado no ano; `monthlyCents` nulo remove. */
+export async function setAssociatePrice(db: Db, associateId: string, year: number, monthlyCents: number | null, reason: string | null) {
+  await rpc(db, "set_fee_associate_price", { p_associate_id: associateId, p_year: year, p_monthly_cents: monthlyCents, p_reason: reason });
+}
+
+/** Entrada (ou retorno) e saída do associado: definem os meses cobrados. */
+export async function addMovement(db: Db, associateId: string, date: string, kind: "entrada" | "saida", reason: string | null) {
+  await rpc(db, "add_associate_movement", { p_associate_id: associateId, p_date: date, p_kind: kind, p_reason: reason });
+}
+
+export async function deleteMovement(db: Db, movementId: string) {
+  await rpc(db, "delete_associate_movement", { p_movement_id: movementId });
 }

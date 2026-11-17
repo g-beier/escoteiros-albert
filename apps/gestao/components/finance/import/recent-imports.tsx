@@ -4,7 +4,7 @@ import { dateBR } from "@/lib/format";
 import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { UndoImport } from "@/components/finance/import/undo-import";
 import { reconciliationHref } from "@/lib/finance/import-flow";
-import type { RecentImport } from "@/lib/finance/import-queries";
+import type { RecentImport } from "@/lib/server/finance/statements";
 
 const dateTime = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
 

@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { fetchRealizedModel } from "@/lib/finance/export/queries";
+import { fetchRealizedModel } from "@/lib/server/finance/reports";
 import { errorResponse, exportContext, xlsxResponse } from "@/lib/finance/export/route-helpers";
 import { realizedWorkbook } from "@/lib/finance/export/xlsx";
 
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const context = await exportContext();
   if (context.error) return context.error;
   try {
-    const model = await fetchRealizedModel(context.supabase, context.groupId, year);
+    const model = await fetchRealizedModel(context.db, context.groupId, year);
     return xlsxResponse(await realizedWorkbook(model), `realizado-${year}.xlsx`);
   } catch (error) {
     console.error("export realizado", error);

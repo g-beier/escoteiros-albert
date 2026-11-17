@@ -10,6 +10,11 @@ type Functions = Database["public"]["Functions"];
 
 export const asDb = (client: SupabaseClient) => client as unknown as Db;
 export const sb = (db: Db) => db as unknown as Supabase;
+/**
+ * Cliente sem os tipos gerados, para as consultas do Financeiro movidas como estavam (fase 3) e que montam o
+ * `select` dinamicamente. Código novo usa `sb()`.
+ */
+export const untyped = (db: Db) => db as unknown as SupabaseClient;
 
 // Respostas do PostgREST são uniões (sucesso | erro): o tipo dos dados sai da resposta inteira.
 type Result = { data: unknown; error: { message: string; code?: string } | null };

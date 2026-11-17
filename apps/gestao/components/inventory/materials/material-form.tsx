@@ -9,7 +9,7 @@ import { OptionSelect, type Option } from "@geas/ui/components/option-controls";
 import { Textarea } from "@geas/ui/components/textarea";
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
 import { saveMaterial } from "@/app/(inventario)/inventario/materiais/actions";
-import { trackingOptions, type Tracking } from "@/lib/inventory/vocabulary";
+import { trackingOptions } from "@/lib/inventory/vocabulary";
 import { Field } from "./fields";
 
 import type { MaterialDefaults } from "@/lib/inventory/model";
