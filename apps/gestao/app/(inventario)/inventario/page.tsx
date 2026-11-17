@@ -50,7 +50,7 @@ export default async function Dashboard() {
   return <div className="shell">
     <AppHeader current="/inventario" email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
     <PageBody>
-      <PageHeader title="Resumo do inventário" hideTitle actions={<>
+      <PageHeader title="Resumo do inventário" crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Resumo" }]} actions={<>
         <Link href="/inventario/materiais" className={buttonVariants({ variant: "outline", size: "lg" })}>Ver materiais <IconArrowRight data-icon="inline-end" /></Link>
         {member.inventory.canEdit && <Link href="/inventario/materiais/novo" className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}
       </>} />

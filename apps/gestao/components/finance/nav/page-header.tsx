@@ -1,6 +1,14 @@
-import { SectionTabs, type Crumb, type Tab } from "@geas/ui";
+import type { ComponentProps } from "react";
+import { PageHeader as SharedPageHeader, SectionTabs, type Crumb, type Tab } from "@geas/ui";
 
-export { PageBody, PageHeader, SectionTabs } from "@geas/ui";
+export { PageBody, SectionTabs } from "@geas/ui";
+
+const MODULE_CRUMB: Crumb = { label: "Financeiro", href: "/financeiro" };
+
+/** Cabeçalho das telas do Financeiro: o caminho ganha "Financeiro" logo depois de Início. */
+export function PageHeader({ crumbs, ...props }: ComponentProps<typeof SharedPageHeader>) {
+  return <SharedPageHeader {...props} crumbs={crumbs?.length ? [MODULE_CRUMB, ...crumbs] : crumbs} />;
+}
 export type { Crumb, PageWidth, Tab } from "@geas/ui";
 
 export type EntryView = "movimentacoes" | "detalhamento" | "realizado";

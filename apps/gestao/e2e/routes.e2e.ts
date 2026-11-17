@@ -12,10 +12,14 @@ test("endereços antigos do financeiro redirecionam com a query", async ({ page 
   await expect(page).toHaveURL(/\/financeiro\/mensalidades\/controle$/);
 });
 
-test("raiz do módulo vai para a primeira área e cada layout marca o módulo", async ({ page }) => {
+test("raiz de cada módulo é o resumo dele e cada layout marca o módulo", async ({ page }) => {
   await page.goto("/financeiro");
-  await expect(page).toHaveURL(/\/financeiro\/lancamentos\/movimentacoes$/);
+  await expect(page.getByRole("heading", { name: /^Resumo de \d{4}$/ })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Navegação principal" }).getByRole("link", { name: "Resumo" })).toHaveAttribute("aria-current", "page");
   await expect(page.locator("html")).toHaveAttribute("data-app", "financeiro");
+  await page.goto("/inventario");
+  await expect(page.getByRole("heading", { name: "Resumo do inventário" })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("data-app", "inventario");
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-app", "gestao");
 });

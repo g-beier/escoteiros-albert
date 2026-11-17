@@ -52,6 +52,7 @@
 
 .geas-app--financeiro { color: var(--geas-purple); }
 .geas-app--inventario { color: var(--geas-orange); }
+.geas-app--gestao { color: var(--geas-ink); }
 
 .geas-brand__static {
   transform: translateY(-50%);
@@ -75,10 +76,10 @@
 
 .geas-brand__apps:hover .geas-brand__option,
 .geas-brand__apps:focus-within .geas-brand__option { opacity: 1; filter: blur(0); }
-.geas-brand__apps:hover .geas-brand__option--current,
-.geas-brand__apps:focus-within .geas-brand__option--current { transform: translateY(calc(-50% - 12px)); }
-.geas-brand__apps:hover .geas-brand__option--other,
-.geas-brand__apps:focus-within .geas-brand__option--other { transform: translateY(calc(-50% + 12px)); }
+.geas-brand__apps:hover .geas-brand__option--up,
+.geas-brand__apps:focus-within .geas-brand__option--up { transform: translateY(calc(-50% - 12px)); }
+.geas-brand__apps:hover .geas-brand__option--down,
+.geas-brand__apps:focus-within .geas-brand__option--down { transform: translateY(calc(-50% + 12px)); }
 
 @media (prefers-reduced-motion: reduce) {
   .geas-brand__static, .geas-brand__option { transition: none; }

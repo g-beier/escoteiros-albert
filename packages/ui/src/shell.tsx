@@ -4,45 +4,49 @@ import { cn } from "./lib/utils";
 import { AppNavMenu } from "./components/app-nav-menu";
 import { SectionTabsMenu } from "./components/section-tabs-menu";
 
-export type GeasApp = "financeiro" | "inventario";
+/** Módulo atual; "gestao" = telas comuns (Início, Usuários), sem módulo. */
+export type GeasApp = "gestao" | "financeiro" | "inventario";
+type GeasModule = Exclude<GeasApp, "gestao">;
 
 type AppBrandProps = {
   current: GeasApp;
+  /** Início do módulo atual (o rótulo leva para lá). */
   currentHref?: string;
+  /** Destino do logo: o Início geral. */
+  homeHref?: string;
   financeiroHref: string;
   inventarioHref: string;
   light?: boolean;
 };
 
 const APPS: Record<GeasApp, { label: string }> = {
+  gestao: { label: "Gestão" },
   financeiro: { label: "Financeiro" },
   inventario: { label: "Inventário" },
 };
 
-/** Identidade comum e seletor dos aplicativos internos do GEAS. */
+/** Identidade comum e seletor de módulo. Ao passar o mouse, mostra os dois módulos (o atual em cima). */
 export function AppBrand({
   current,
   currentHref = "/",
+  homeHref = "/",
   financeiroHref,
   inventarioHref,
   light = false,
 }: AppBrandProps) {
-  const other: GeasApp = current === "financeiro" ? "inventario" : "financeiro";
-  const hrefs: Record<GeasApp, string> = {
-    financeiro: current === "financeiro" ? currentHref : financeiroHref,
-    inventario: current === "inventario" ? currentHref : inventarioHref,
-  };
+  const hrefs: Record<GeasModule, string> = { financeiro: financeiroHref, inventario: inventarioHref };
+  const [up, down]: GeasModule[] = current === "inventario" ? ["inventario", "financeiro"] : ["financeiro", "inventario"];
 
   return <div className="geas-brand" data-theme={light ? "dark" : "light"}>
-    <Link href={currentHref} className="geas-brand__logo" aria-label={`Grupo Escoteiro Albert Schweitzer — ${APPS[current].label}`}>
+    <Link href={homeHref} className="geas-brand__logo" aria-label="Grupo Escoteiro Albert Schweitzer — Início">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={light ? "/images/logo-dark.svg" : "/images/logo.svg"} alt="Grupo Escoteiro Albert Schweitzer" width="210" height="60" />
     </Link>
-    <div className="geas-brand__apps" aria-label="Trocar de aplicativo">
+    <div className="geas-brand__apps" aria-label="Trocar de módulo">
       <Link href={currentHref} className={`geas-brand__static geas-app--${current}`}>{APPS[current].label}</Link>
       <div className="geas-brand__options">
-        <Link href={hrefs[current]} className={`geas-brand__option geas-brand__option--current geas-app--${current}`} aria-current="page">{APPS[current].label}</Link>
-        <a href={hrefs[other]} className={`geas-brand__option geas-brand__option--other geas-app--${other}`}>{APPS[other].label}</a>
+        {[up, down].map((app, index) => <a key={app} href={hrefs[app]} aria-current={app === current ? "page" : undefined}
+          className={`geas-brand__option geas-brand__option--${index === 0 ? "up" : "down"} geas-app--${app}`}>{APPS[app].label}</a>)}
       </div>
     </div>
   </div>;

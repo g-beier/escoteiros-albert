@@ -14,3 +14,27 @@ export function recentWindowStart(today: string, days = RECENT_DAYS): string {
 export function recentListStart(windowStart: string, previousDay: string | null | undefined): string {
   return previousDay && previousDay < windowStart ? previousDay : windowStart;
 }
+
+/** Total de receitas ou despesas de um mês (centavos; despesa positiva). */
+export type MonthTotals = { income: number; expense: number };
+
+/** Soma do Realizado por rubrica e mês (`realized_by_month`). */
+export type MonthSum = { category_id: string; month: number; amount_cents: number };
+
+/** Receitas e despesas por mês (12 meses). Rubrica sem tipo vale pelo sinal. */
+export function monthlyTotals(sums: MonthSum[], kinds: Map<string, "receita" | "despesa" | null>): MonthTotals[] {
+  const months = Array.from({ length: 12 }, () => ({ income: 0, expense: 0 }));
+  for (const s of sums) {
+    const amount = Number(s.amount_cents);
+    const kind = kinds.get(s.category_id) ?? (amount < 0 ? "despesa" : "receita");
+    if (kind === "despesa") months[s.month - 1].expense -= amount;
+    else months[s.month - 1].income += amount;
+  }
+  return months;
+}
+
+/** Dia seguinte (AAAA-MM-DD): saldo "hoje" = tudo antes de amanhã. */
+export function nextDay(day: string): string {
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, date + 1)).toISOString().slice(0, 10);
+}

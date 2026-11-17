@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { UsersManager } from "@geas/ui/components/users-manager";
 import { listGroupUsers } from "@/lib/server/users";
-import { AppHeader } from "@/components/finance/app-header";
-import { PageBody, PageHeader } from "@/components/finance/nav/page-header";
+import { GestaoHeader } from "@/components/shell/gestao-header";
+import { PageBody, PageHeader } from "@geas/ui";
 import { pageSession } from "@/lib/server/session";
 import { inviteUser, removeUser, saveUserRoles } from "./actions";
 
@@ -12,7 +12,7 @@ export default async function UsersPage() {
   const users = await listGroupUsers(member.groupId);
 
   return <div className="shell">
-    <AppHeader role={member.finance.role} email={user.email ?? ""} current="/usuarios" />
+    <GestaoHeader current="/usuarios" email={user.email} role={member.finance.role} isAdmin={member.isAdmin} />
     <PageBody width="narrow">
       <PageHeader title="Usuários" crumbs={[{ label: "Usuários" }]} description="Convide pessoas do domínio institucional e defina o acesso de cada uma no Financeiro e no Inventário." />
       <UsersManager users={users} currentUserId={user.id} actions={{ invite: inviteUser, save: saveUserRoles, remove: removeUser }} />
