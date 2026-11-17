@@ -33,10 +33,13 @@ export function MaterialsSection({
   useEffect(() => {
     if (!open) return;
     function onPointerDown(event: PointerEvent) {
-      const target = event.target as Node;
-      if (shellRef.current?.contains(target)) return;
+      const el = event.target as HTMLElement | null;
+      if (!el) return;
+      if (shellRef.current?.contains(el)) return;
       // Clique no botão é tratado pelo próprio toggle.
-      if ((event.target as HTMLElement | null)?.closest?.("[data-new-material-trigger]")) return;
+      if (el.closest("[data-new-material-trigger]")) return;
+      // Select/Combobox (Base UI) renderizam o popup em portal fora do painel.
+      if (el.closest("[data-slot=select-content], [data-slot=combobox-content], [data-base-ui-portal]")) return;
       setOpen(false);
     }
     document.addEventListener("pointerdown", onPointerDown);
