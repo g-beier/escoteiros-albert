@@ -11,17 +11,10 @@ const dataLayer = (severity) => [severity, {
   ],
 }];
 
-// Áreas já convertidas: a regra é erro. O resto avisa até ser convertido (fase 3).
-const CONVERTED = [
-  "app/(inventario)/**", "components/inventory/**", "lib/inventory/**",
-  "app/(gestao)/**", "app/(financeiro)/financeiro/page.tsx", "components/shell/**", "proxy.ts", "lib/action.ts",
-];
-
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
-  { files: ["**/*.{ts,tsx,mts}"], rules: { "no-restricted-imports": dataLayer("warn") } },
-  { files: CONVERTED, rules: { "no-restricted-imports": dataLayer("error") } },
+  { files: ["**/*.{ts,tsx,mts}"], rules: { "no-restricted-imports": dataLayer("error") } },
   { files: ["lib/server/**", "e2e/**", "scripts/**"], rules: { "no-restricted-imports": "off" } },
   globalIgnores([".next/**", "next-env.d.ts", "playwright-report/**", "test-results/**", "lib/server/supabase/database.types.ts"]),
 ]);
