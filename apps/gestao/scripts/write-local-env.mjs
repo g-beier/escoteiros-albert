@@ -35,23 +35,7 @@ const sharedEnv = [
   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${publicKey}`,
   `SUPABASE_SECRET_KEY=${secretKey}`,
 ];
-const financeEnv = [
-  ...sharedEnv,
-  "NEXT_PUBLIC_SITE_URL=http://localhost:4321",
-  "NEXT_PUBLIC_INVENTARIO_URL=http://localhost:3002",
-  "",
-].join("\n");
-const inventoryEnv = [
-  ...sharedEnv,
-  "NEXT_PUBLIC_FINANCEIRO_URL=http://localhost:3000",
-  "",
-].join("\n");
-
-const targets = [
-  [resolve(".env.local"), financeEnv],
-  [resolve("../inventario/.env.local"), inventoryEnv],
-];
-for (const [target, contents] of targets) {
-  writeFileSync(target, contents, { mode: 0o600 });
-  console.log(`Credenciais locais gravadas em ${target}`);
-}
+const contents = [...sharedEnv, "NEXT_PUBLIC_SITE_URL=http://localhost:4321", ""].join("\n");
+const target = resolve(".env.local");
+writeFileSync(target, contents, { mode: 0o600 });
+console.log(`Credenciais locais gravadas em ${target}`);

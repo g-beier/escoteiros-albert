@@ -1,6 +1,7 @@
-import { AppBrand } from "@geas/ui";
+import { AppBrand, type GeasApp } from "@geas/ui";
 
-export function Brand({ href = "/", light = false }: { href?: string; light?: boolean }) {
-  const inventoryUrl = process.env.NEXT_PUBLIC_INVENTARIO_URL ?? "http://localhost:3002";
-  return <AppBrand current="financeiro" currentHref={href} financeiroHref={href} inventarioHref={inventoryUrl} light={light} />;
+/** Marca com o seletor de módulo do Gestão. O logo leva ao início do módulo (o do Financeiro é o Início geral). */
+export function Brand({ module = "financeiro", light = false }: { module?: GeasApp; light?: boolean }) {
+  return <AppBrand current={module} currentHref={module === "inventario" ? "/inventario" : "/"}
+    financeiroHref="/financeiro" inventarioHref="/inventario" light={light} />;
 }

@@ -7,10 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently --names gestao,inventario,site --prefix-colors blue,yellow,green --kill-others-on-fail \"npm:dev:gestao\" \"npm:dev:inventario\" \"npm:dev:institucional\"",
+    "dev": "concurrently --names gestao,site --prefix-colors blue,green --kill-others-on-fail \"npm:dev:gestao\" \"npm:dev:institucional\"",
     "dev:institucional": "npm run dev --workspace=@geas/institucional",
     "dev:gestao": "npm run dev --workspace=@geas/gestao",
-    "dev:inventario": "npm run dev --workspace=@geas/inventario",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present && npm run lint:eslint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
