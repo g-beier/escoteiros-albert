@@ -7,21 +7,21 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently --names financeiro,inventario,site --prefix-colors blue,yellow,green --kill-others-on-fail \"npm:dev:financeiro\" \"npm:dev:inventario\" \"npm:dev:institucional\"",
+    "dev": "concurrently --names gestao,inventario,site --prefix-colors blue,yellow,green --kill-others-on-fail \"npm:dev:gestao\" \"npm:dev:inventario\" \"npm:dev:institucional\"",
     "dev:institucional": "npm run dev --workspace=@geas/institucional",
-    "dev:financeiro": "npm run dev --workspace=@geas/financeiro",
+    "dev:gestao": "npm run dev --workspace=@geas/gestao",
     "dev:inventario": "npm run dev --workspace=@geas/inventario",
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present && npm run lint:eslint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "format": "npm run format --workspaces --if-present",
-    "infra:start": "npm run infra:start --workspace=@geas/financeiro",
-    "infra:stop": "npm run infra:stop --workspace=@geas/financeiro",
-    "infra:status": "npm run infra:status --workspace=@geas/financeiro",
-    "infra:reset": "npm run infra:reset --workspace=@geas/financeiro",
-    "test:db": "npm run test:db --workspace=@geas/financeiro",
-    "test:e2e": "npm run test:e2e --workspace=@geas/financeiro"
+    "infra:start": "npm run infra:start --workspace=@geas/gestao",
+    "infra:stop": "npm run infra:stop --workspace=@geas/gestao",
+    "infra:status": "npm run infra:status --workspace=@geas/gestao",
+    "infra:reset": "npm run infra:reset --workspace=@geas/gestao",
+    "test:db": "npm run test:db --workspace=@geas/gestao",
+    "test:e2e": "npm run test:e2e --workspace=@geas/gestao"
   },
   "engines": {
     "node": ">=22"

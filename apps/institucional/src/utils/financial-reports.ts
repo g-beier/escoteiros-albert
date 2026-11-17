@@ -3,7 +3,7 @@ import { z } from 'zod';
 /**
  * Realizado exportado pelo financeiro ("Exportar para o site", /exportar/transparencia?ano=AAAA).
  * Coloque o arquivo em src/data/prestacao-contas/; o build valida e gera a seção na página Transparência.
- * Formato definido em apps/financeiro/lib/export/transparency.ts (mantenha os dois em sincronia).
+ * Formato definido em apps/gestao/lib/export/transparency.ts (mantenha os dois em sincronia).
  */
 const reportSchema = z.object({
   version: z.literal(1),

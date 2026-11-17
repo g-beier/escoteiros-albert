@@ -1,8 +1,8 @@
 /**
  * Gera o Realizado público de cada ano com lançamentos em apps/institucional/src/data/prestacao-contas/<ano>.json.
- * Roda antes do build do site (`prebuild` do institucional); também à mão: `npm run export:transparency --workspace=@geas/financeiro`.
+ * Roda antes do build do site (`prebuild` do institucional); também à mão: `npm run export:transparency --workspace=@geas/gestao`.
  *
- * Lê o banco com a chave secreta de apps/financeiro/.env.local (ou das variáveis de ambiente).
+ * Lê o banco com a chave secreta de apps/gestao/.env.local (ou das variáveis de ambiente).
  * Sem credenciais, sem banco no ar ou sem lançamentos, falha e barra o build: o site não sai sem a prestação de contas.
  * TRANSPARENCY_SKIP=1 pula a geração (CI, que não tem o banco do grupo); a página sai sem a seção.
  * Banco local (Docker, dados fictícios) nunca vai para o site: apaga os arquivos e a página sai sem a seção.
@@ -43,7 +43,7 @@ async function main() {
   if (existsSync(envFile)) process.loadEnvFile(envFile);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SECRET_KEY;
-  if (!url || !key) fail("sem NEXT_PUBLIC_SUPABASE_URL/SUPABASE_SECRET_KEY (apps/financeiro/.env.local).");
+  if (!url || !key) fail("sem NEXT_PUBLIC_SUPABASE_URL/SUPABASE_SECRET_KEY (apps/gestao/.env.local).");
   if (isLocal(url) && process.env.TRANSPARENCY_ALLOW_LOCAL !== "1") {
     clearReports();
     console.warn(`\n⚠️  ${url} é o Supabase local (dados fictícios): a página Transparência sai sem o Realizado.`);

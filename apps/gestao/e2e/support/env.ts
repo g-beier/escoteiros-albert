@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-/** Carrega apps/financeiro/.env.local (gerado por `npm run infra:env`) sem sobrescrever o ambiente. */
+/** Carrega apps/gestao/.env.local (gerado por `npm run infra:env`) sem sobrescrever o ambiente. */
 export function loadLocalEnv() {
   const file = resolve(__dirname, "../../.env.local");
   if (existsSync(file)) process.loadEnvFile(file);

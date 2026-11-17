@@ -13,7 +13,7 @@ export function psql(sql: string): string {
 const literal = (value: string) => `'${value.replaceAll("'", "''")}'`;
 
 export function adminClient() {
-  if (!SUPABASE_SECRET_KEY) throw new Error("SUPABASE_SECRET_KEY ausente: rode `npm run infra:env` (gera apps/financeiro/.env.local).");
+  if (!SUPABASE_SECRET_KEY) throw new Error("SUPABASE_SECRET_KEY ausente: rode `npm run infra:env` (gera apps/gestao/.env.local).");
   return createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
