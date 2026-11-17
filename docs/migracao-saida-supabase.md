@@ -109,6 +109,77 @@ us-central). Regiões no Brasil costumam ser mais caras. Conferir na calculadora
 
 O site institucional pode ficar no FTP atual: movê-lo é opcional e independente do resto.
 
+### 3.1 Alternativa no Google Cloud: uma VM (Compute Engine)
+
+Em vez de Cloud Run + Cloud SQL, tudo roda numa VM só: o app `gestao`, o Postgres e o proxy HTTPS,
+com os comprovantes no Cloud Storage. O trabalho da seção 4 é o mesmo. Muda só a infra (fase 6).
+
+**Por que considerar:** o grupo tem poucos usuários e carga baixa. Uma VM sai mais barata que o
+Cloud SQL mais o Cloud Run, e tem uma conta só e uma instância só, o que simplifica o cache do Next
+(4.6). Também não tem partida a frio. **Custo da escolha:** atualizações do SO e do Postgres e
+backups ficam por nossa conta, e não há alta disponibilidade (uma falha da VM tira o app do ar até
+ela voltar). Para o uso do grupo isso é aceitável.
+
+#### Máquina: recomendado, mínimo e justificativas
+
+| Item | Recomendado | Mínimo | Justificativa |
+|---|---|---|---|
+| Tipo | **e2-small** (2 vCPU compartilhadas, 2 GB) | **e2-micro** (2 vCPU compartilhadas, 1 GB) + 2 GB de swap | Em uso, o Next standalone ocupa ~250–350 MB, o Postgres ajustado ~300–500 MB, o Caddy ~30 MB e o SO ~200 MB. 2 GB dá folga para exportações XLSX (`exceljs`) e importação de OFX. 1 GB funciona, mas depende de swap e fica lento em picos. O build não roda na VM em nenhum dos dois casos. |
+| Região | **`southamerica-east1`** (São Paulo) | `us-central1`, `us-east1` ou `us-west1` | São Paulo tem latência de ~10–30 ms para os usuários, contra ~150 ms nos EUA, e os dados ficam no Brasil. Só as três regiões dos EUA entram na camada sempre gratuita (1 e2-micro + 30 GB de disco padrão). |
+| SO | **Debian 12** ou Ubuntu 24.04 LTS, com `unattended-upgrades` | idem | São LTS com atualização de segurança automática e Docker oficial. Container-Optimized OS também serve, mas complica o cron de backup e as ferramentas de diagnóstico. |
+| Disco | **30 GB pd-balanced** | 20 GB pd-standard (30 GB na camada gratuita) | O banco atual tem poucas centenas de MB. O resto é imagens Docker, logs e WAL. O pd-balanced dá latência estável ao Postgres, e o pd-standard (HDD) basta para o volume baixo. |
+| IP | **IPv4 externo estático** | idem | O DNS de `gestao.escoteirosalbert.com.br` aponta para ele, e o Let's Encrypt precisa do IP fixo. Um IP externo em uso é cobrado por hora, inclusive na camada gratuita. |
+| Backup do banco | **`pg_dump` diário** para bucket com lifecycle de 90 dias + **snapshot diário** do disco (7 dias) | `pg_dump` diário (30 dias) | O dump restaura em qualquer Postgres e serve de saída da VM. O snapshot volta a máquina inteira em minutos. Não há backup gerenciado como no Cloud SQL, então essa parte é obrigatória. |
+| Comprovantes | **Cloud Storage** (bucket privado, Standard, mesma região) | idem | Fora da VM, o disco não cresce com os anexos e um snapshot não leva arquivos. A URL assinada V4 mantém o envio e o download direto do navegador (4.4). |
+| Custo indicativo | ~US$ 20–30/mês | ~US$ 4–5/mês (IP + bucket) | Conferir na calculadora (fontes). São Paulo custa ~50% mais que os EUA. Sem crédito Google, é custo real. |
+
+**Quando subir para e2-medium (4 GB):** quando houver memória sob pressão (swap em uso constante,
+OOM no `dmesg`), quando precisar de mais de uma instância do app (por exemplo, o site
+institucional na mesma VM com SSR) ou se a opção for rodar o Supabase self-hosted (seção 7). A
+troca de tipo só precisa parar e religar a VM. O disco e o IP continuam os mesmos.
+
+#### O que roda na VM (docker compose)
+
+| Serviço | Imagem | Exposição | Justificativa |
+|---|---|---|---|
+| `caddy` | `caddy:2` | 80/443 públicas | O HTTPS é automático (Let's Encrypt) e a configuração cabe em 3 linhas. Dispensa o load balancer (~US$ 18/mês). |
+| `gestao` | imagem própria (`output: "standalone"`), gerada no GitHub Actions e publicada no Artifact Registry ou no GHCR | só na rede interna | Um `next build` do monorepo não cabe com folga em 1–2 GB. Na VM só se faz pull. |
+| `postgres` | `postgres:17` (com pgcrypto) | rede interna + `127.0.0.1:5432` da VM | O banco nunca fica acessível pela internet. O acesso administrativo (export, migrations) é por túnel IAP até o localhost da VM. |
+
+Configuração do Postgres para 2 GB (1 GB entre parênteses): `shared_buffers=256MB` (128MB),
+`effective_cache_size=768MB` (384MB), `work_mem=8MB` (4MB), `max_connections=30`. O pool do app
+fica em 5 conexões.
+
+#### Rede e segurança
+
+- **Firewall:** só 80 e 443 abertas para `0.0.0.0/0`. A 22 só aceita o intervalo do IAP
+  (`35.235.240.0/20`), e o SSH sempre passa por `gcloud compute ssh --tunnel-through-iap`. O login
+  é pelo **OS Login**, com contas do Workspace e sem chaves SSH soltas.
+- **Service account própria da VM** (não a padrão do Compute), com:
+  - `roles/storage.objectAdmin` só no bucket `comprovantes` e `roles/storage.objectCreator` no
+    bucket de backups;
+  - `roles/iam.serviceAccountTokenCreator` sobre ela mesma, para assinar URLs V4 via `signBlob`
+    sem chave JSON no disco.
+- **Segredos** (`DATABASE_URL`, segredo do OAuth, chave de sessão): no Secret Manager, lidos na
+  subida, ou num `.env` com permissão 600 fora do repositório.
+- **Bucket de backups** com retenção bloqueada (bucket lock) curta, para que um invasor na VM não
+  apague o histórico.
+- **Login Google** (4.3): o OAuth client "Interno" fica no mesmo projeto GCP.
+- **Monitoramento:** o Ops Agent mostra memória e disco no Cloud Monitoring. Um uptime check em
+  `/login` avisa por e-mail. Somam-se os alertas de orçamento (seção 8).
+
+#### O que muda no plano
+
+- **4.5, export de transparência:** o prebuild do institucional acessa o banco por túnel
+  (`gcloud compute ssh gestao --tunnel-through-iap -- -N -L 5432:localhost:5432`, com o Postgres
+  publicando a porta só em `127.0.0.1` da VM). Não precisa liberar IP no firewall.
+- **4.5, migrations em produção:** são aplicadas por `psql`/`dbmate` pelo mesmo túnel. A
+  automação por GitHub Actions fica para quando a hospedagem estiver decidida.
+- **4.6, cache e partida a frio:** com uma instância sempre ligada, `revalidatePath` funciona sem
+  ressalva e não há partida a frio.
+- **4.6, deploy:** `docker compose pull && docker compose up -d` na VM.
+- **Corte (fase 7):** igual, com restore no Postgres da VM.
+
 ## 4. Trabalho necessário (independente da nuvem)
 
 ### 4.1 Banco: shim de compatibilidade e rebaseline
@@ -300,6 +371,9 @@ Se a reunião com o Google sugerir Firebase, o caminho compatível com este plan
 4. **Site institucional:** fica no FTP ou vai para Static Web Apps / Firebase Hosting.
 5. **Instância mínima** dos apps: 0 (grátis, com partida a frio) ou 1.
 6. **Região:** Brasil (latência menor, preço maior) ou EUA (franquia maior, mais barata).
+7. **No Google Cloud:** VM única (3.1) ou Cloud Run + Cloud SQL. Uma VM com e2-medium também
+   rodaria o Supabase self-hosted como passo intermediário. Isso tira o projeto do Supabase Cloud
+   sem reescrever auth e storage, mas não é a saída completa do Supabase que é o objetivo deste plano.
 
 ### Perguntas para a reunião com o Google
 
@@ -333,3 +407,7 @@ Se a reunião com o Google sugerir Firebase, o caminho compatível com este plan
 - Cloud SQL db-f1-micro (indicativo): https://www.bytebase.com/dbcost/cloudsql/instance/db-f1-micro/
 - Cloud Run (franquia): https://cloud.google.com/run/pricing
 - Google for Nonprofits: https://support.google.com/nonprofits
+- Compute Engine (preços por tipo de máquina e região): https://cloud.google.com/compute/vm-instance-pricing
+- Camada sempre gratuita do Google Cloud (e2-micro): https://cloud.google.com/free/docs/free-cloud-features#compute
+- Calculadora do Google Cloud: https://cloud.google.com/products/calculator
+- SSH por IAP: https://cloud.google.com/iap/docs/using-tcp-forwarding
