@@ -342,6 +342,11 @@ A ordem segue as dependências: primeiro quem é lido por todos, por último que
 
 Cada linha é um PR e segue o método da seção 5.
 
+**3.6 adiantada em 2026-11-17** (`62329c4`): `/` virou o Início geral, com o que precisa de atenção nos dois
+módulos e um cartão por módulo. O Resumo do financeiro foi para `/financeiro`, agora com o saldo das contas.
+Os dados vêm de `lib/server/finance/home.ts` e `lib/server/inventory/overview.ts`. As mensalidades atrasadas
+ainda passam por `fetchFeeYear` (de `lib/finance/fee-queries.ts`), que será convertido na 3.4.
+
 ### Fase 4: fechamento (≈1 dia)
 
 - ESLint `error` no app inteiro. `rg "@supabase" apps/gestao --glob '!lib/server/supabase/**' --glob '!e2e/**'`
