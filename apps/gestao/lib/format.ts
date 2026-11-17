@@ -11,8 +11,14 @@ export function dateBR(value: string) {
   );
 }
 
-/** Centavos para o formato editável do formulário (ex.: -1005 → "-10,05"). */
-export function centsToInput(cents: number) {
+/** Centavos em reais ("R$ 1.234,56"); ausente vale zero. `money` recebe reais. */
+export function formatCents(cents: number | string | null | undefined) {
+  return money(Number(cents ?? 0) / 100);
+}
+
+/** Centavos para o formato editável do formulário (ex.: -1005 → "-10,05"; ausente → ""). */
+export function centsToInput(cents: number | null | undefined) {
+  if (cents == null) return "";
   const sign = cents < 0 ? "-" : "";
   const abs = Math.abs(cents);
   return `${sign}${Math.floor(abs / 100)},${String(abs % 100).padStart(2, "0")}`;

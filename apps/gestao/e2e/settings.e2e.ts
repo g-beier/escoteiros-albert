@@ -27,8 +27,7 @@ test("contas: cadastrar, editar e inativar", async ({ page }) => {
   await dialog.getByLabel("Nome").fill(account);
   await chooseOption(page, "Tipo", "Poupança", dialog);
   await dialog.getByLabel("Banco (opcional)").fill("Banco E2E");
-  // sem separador de milhar: parseMoneyToCents do financeiro ainda recusa "1.234,56" (unificação na fase 2)
-  await dialog.getByLabel("Saldo inicial (R$)").fill("1234,56");
+  await dialog.getByLabel("Saldo inicial (R$)").fill("1.234,56");
   await dialog.getByLabel("Data de início").fill("2026-01-01");
   await dialog.getByRole("button", { name: "Cadastrar conta" }).click();
   await expect(page.getByText(`Conta “${account}” cadastrada.`)).toBeVisible();
