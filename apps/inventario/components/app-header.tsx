@@ -5,9 +5,10 @@ import { Brand } from "@/components/brand";
 import { SETTINGS_HOME } from "@/components/settings-tabs";
 import { ROLE_LABELS, type InventoryRole } from "@/lib/inventory";
 
-/** Menu = Início; Materiais e Movimentações ficam fora do menu (rotas ainda existem). Configurações na engrenagem. */
+/** Menu = Início + Histórico. Materiais fica fora do menu (rota ainda existe). Configurações na engrenagem. */
 const sections = [
   { href: "/", label: "Início", match: (path: string) => path === "/" },
+  { href: "/historico", label: "Histórico", match: (path: string) => path.startsWith("/historico") || path.startsWith("/movimentacoes") },
 ];
 
 export function AppHeader({ current, email, role, isAdmin }: { current: string; email: string; role: InventoryRole; isAdmin: boolean }) {

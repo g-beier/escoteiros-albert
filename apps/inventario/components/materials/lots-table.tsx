@@ -2,19 +2,19 @@
 
 import { useState } from "react";
 import { IconDots, IconPlus } from "@tabler/icons-react";
-import { Badge } from "@geas/ui/components/badge";
-import { Button } from "@geas/ui/components/button";
+import { Button, buttonVariants } from "@geas/ui/components/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
 import { Input } from "@geas/ui/components/input";
 import type { Option } from "@geas/ui/components/option-controls";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { cn } from "@geas/ui/lib/utils";
 import { addLot, adjustLot, setLotCondition, transferLot, updateLot, writeOffLot } from "@/app/materiais/actions";
-import { CELL_CLASS, HEAD_CLASS } from "@/components/table-head";
+import { SOFT_CELL, SOFT_HEAD, SOFT_ROW_DARK, SOFT_ROW_LIGHT, SOFT_TABLE, softRowRound } from "@/components/table-head";
 import { CONDITION_LABELS, EXPIRY_WARNING_DAYS, ORIGIN_LABELS, dateBR, daysUntil, writeOffOptions, type Condition, type Origin } from "@/lib/inventory";
 import { money } from "@/lib/money";
 import { ActionDialog } from "./action-dialog";
 import { ConditionField, EntryFields, Field, LocationField, NotesField, QuantityField, SelectField } from "./fields";
+import { ConditionPill } from "./condition-pill";
 
 export type LotRow = {
   id: string; location_id: string; path: string; quantity: number; condition: Condition | null;
@@ -24,18 +24,19 @@ export type LotRow = {
 
 type Mode = "transfer" | "condition" | "adjust" | "writeOff" | "edit";
 
-/** Validade com destaque: vencida (vermelho) ou perto de vencer (amarelo). */
+/** Validade: vencida só muda a cor (como na Home), sem o texto “(vencido)”. */
 export function Expiry({ date }: { date: string | null }) {
-  if (!date) return <span className="text-muted-foreground">—</span>;
+  if (!date) return null;
   const days = daysUntil(date);
-  const tone = days < 0 ? "text-destructive font-semibold" : days <= EXPIRY_WARNING_DAYS ? "text-[#725d0d] font-semibold" : "";
-  return <span className={cn("num", tone)} title={days < 0 ? "Vencido" : `Vence em ${days} dias`}>{dateBR(date)}{days < 0 && " (vencido)"}</span>;
+  return <span className={cn("num font-normal", days < 0 && "text-[#e2445c]")} title={days < 0 ? "Vencido" : days <= EXPIRY_WARNING_DAYS ? `Vence em ${days} dias` : undefined}>{dateBR(date)}</span>;
 }
 
 export function AddLotButton({ materialId, locations }: { materialId: string; locations: Option[] }) {
   const [open, setOpen] = useState(false);
   return <>
-    <Button size="sm" onClick={() => setOpen(true)}><IconPlus data-icon="inline-start" /> Adicionar lote</Button>
+    <button type="button" onClick={() => setOpen(true)} className={cn(buttonVariants({ size: "sm", variant: "ghost" }), "rounded-md border-transparent bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}>
+      <IconPlus data-icon="inline-start" /> Adicionar lote
+    </button>
     {open && <ActionDialog open onOpenChange={setOpen} title="Adicionar lote" description="Entrada de unidades deste material numa divisão." action={addLot} submitLabel="Adicionar" hidden={{ materialId }}>
       <LocationField id="lot-new-location" locations={locations} />
       <QuantityField id="lot-new-quantity" defaultValue={1} />
@@ -56,41 +57,48 @@ export function LotsTable({ materialId, lots, locations, canEdit }: { materialId
 
   if (lots.length === 0) return <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhum lote com unidades.</p>;
   return <>
-    <div className="overflow-x-auto"><Table className="min-w-[860px]">
-      <TableCaption className="sr-only">Lotes do material</TableCaption>
-      <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
-        <TableHead className={HEAD_CLASS}>Divisão</TableHead>
-        <TableHead className={cn(HEAD_CLASS, "w-24 text-right")}>Quantidade</TableHead>
-        <TableHead className={cn(HEAD_CLASS, "w-32")}>Condição</TableHead>
-        <TableHead className={cn(HEAD_CLASS, "w-28 text-right")}>Valor unit.</TableHead>
-        <TableHead className={cn(HEAD_CLASS, "w-32")}>Validade</TableHead>
-        <TableHead className={cn(HEAD_CLASS, "w-32")}>Origem</TableHead>
-        <TableHead className={HEAD_CLASS}>Observação</TableHead>
-        {canEdit && <TableHead className={cn(HEAD_CLASS, "w-12")}><span className="sr-only">Ações</span></TableHead>}
-      </TableRow></TableHeader>
-      <TableBody>{lots.map((row) => <TableRow key={row.id}>
-        <TableCell className={cn(CELL_CLASS, "whitespace-normal")}>{row.path}</TableCell>
-        <TableCell className={cn(CELL_CLASS, "num text-right font-semibold")}>{row.quantity}</TableCell>
-        <TableCell className={CELL_CLASS}>{row.condition ? <Badge variant="outline">{CONDITION_LABELS[row.condition]}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
-        <TableCell className={cn(CELL_CLASS, "num text-right")}>{row.unit_value_cents != null ? money(row.unit_value_cents) : <span className="text-muted-foreground">—</span>}</TableCell>
-        <TableCell className={CELL_CLASS}><Expiry date={row.expires_on} /></TableCell>
-        <TableCell className={CELL_CLASS}>{ORIGIN_LABELS[row.origin]}{row.acquired_on && <span className="num block text-[11px] text-muted-foreground">{dateBR(row.acquired_on)}</span>}</TableCell>
-        <TableCell className={cn(CELL_CLASS, "max-w-72 whitespace-normal text-muted-foreground")}>{[row.notes, row.supplier, row.invoice && `NF ${row.invoice}`].filter(Boolean).join(" · ") || "—"}</TableCell>
-        {canEdit && <TableCell className={CELL_CLASS}>
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações do lote em ${row.path}`}><IconDots /></Button>} />
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setActive({ mode: "transfer", lot: row })}>Transferir</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActive({ mode: "condition", lot: row })}>Mudar condição</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActive({ mode: "adjust", lot: row })}>Ajustar contagem</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActive({ mode: "edit", lot: row })}>Editar dados de entrada</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" onClick={() => setActive({ mode: "writeOff", lot: row })}>Dar baixa</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </TableCell>}
-      </TableRow>)}</TableBody>
-    </Table></div>
+    <div className="grid gap-2 p-3">
+      <div className="overflow-x-auto"><Table className={SOFT_TABLE}>
+        <TableCaption className="sr-only">Lotes do material</TableCaption>
+        <TableHeader className="[&_tr]:border-0"><TableRow className="border-0 hover:bg-transparent">
+          <TableHead className={cn(SOFT_HEAD, "rounded-l-2xl")}>Divisão</TableHead>
+          <TableHead className={cn(SOFT_HEAD, "w-24 text-right")}>Quantidade</TableHead>
+          <TableHead className={cn(SOFT_HEAD, "w-32")}>Condição</TableHead>
+          <TableHead className={cn(SOFT_HEAD, "w-28 text-right")}>Valor unit.</TableHead>
+          <TableHead className={cn(SOFT_HEAD, "w-32")}>Validade</TableHead>
+          <TableHead className={cn(SOFT_HEAD, "w-32")}>Origem</TableHead>
+          <TableHead className={cn(SOFT_HEAD, !canEdit && "rounded-r-2xl")}>Observação</TableHead>
+          {canEdit && <TableHead className={cn(SOFT_HEAD, "w-12 rounded-r-2xl")}><span className="sr-only">Ações</span></TableHead>}
+        </TableRow></TableHeader>
+        <TableBody>{lots.map((row, index) => {
+          const dark = index % 2 === 1;
+          const rowBg = dark ? SOFT_ROW_DARK : SOFT_ROW_LIGHT;
+          const round = softRowRound(dark);
+          return <TableRow key={row.id} className="border-0 hover:bg-transparent">
+            <TableCell className={cn(SOFT_CELL, "whitespace-normal font-normal", rowBg, round)}>{row.path}</TableCell>
+            <TableCell className={cn(SOFT_CELL, "num text-right font-normal", rowBg, round)}>{row.quantity}</TableCell>
+            <TableCell className={cn(SOFT_CELL, rowBg, round)}><ConditionPill condition={row.condition} /></TableCell>
+            <TableCell className={cn(SOFT_CELL, "num text-right font-normal", rowBg, round)}>{row.unit_value_cents != null ? money(row.unit_value_cents) : ""}</TableCell>
+            <TableCell className={cn(SOFT_CELL, rowBg, round)}><Expiry date={row.expires_on} /></TableCell>
+            <TableCell className={cn(SOFT_CELL, "font-normal", rowBg, round)}>{ORIGIN_LABELS[row.origin]}{row.acquired_on && <span className="num block text-[11px] text-muted-foreground">{dateBR(row.acquired_on)}</span>}</TableCell>
+            <TableCell className={cn(SOFT_CELL, "max-w-72 whitespace-normal font-normal text-muted-foreground", rowBg, round)}>{[row.notes, row.supplier, row.invoice && `NF ${row.invoice}`].filter(Boolean).join(" · ") || ""}</TableCell>
+            {canEdit && <TableCell className={cn(SOFT_CELL, rowBg, round)}>
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações do lote em ${row.path}`}><IconDots /></Button>} />
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setActive({ mode: "transfer", lot: row })}>Transferir</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActive({ mode: "condition", lot: row })}>Mudar condição</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActive({ mode: "adjust", lot: row })}>Ajustar contagem</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActive({ mode: "edit", lot: row })}>Editar dados de entrada</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive" onClick={() => setActive({ mode: "writeOff", lot: row })}>Dar baixa</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>}
+          </TableRow>;
+        })}</TableBody>
+      </Table></div>
+    </div>
 
     {lot && active.mode === "transfer" && <ActionDialog open onOpenChange={close} title="Transferir lote" action={transferLot} submitLabel="Transferir" hidden={hidden}
       description={`De ${lot.path}. Transferir parte das unidades cria um lote novo no destino.`}>
