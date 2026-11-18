@@ -44,15 +44,7 @@ const {
   <div class="mx-auto max-w-7xl p-4 md:px-8">
     <div class={`md:flex ${isReversed ? 'md:flex-row-reverse' : ''} md:gap-16`}>
       <div class="self-center md:basis-1/2">
-        {content && <div class="mb-12 text-lg" set:html={content} />}
-
-        {
-          callToAction && (
-            <div class="text-primary -mt-8 mb-8">
-              <Button variant="link" {...callToAction} />
-            </div>
-          )
-        }
+        {content && <div class="text-lg" set:html={content} />}
 
         <ItemGrid
           items={items}
@@ -67,6 +59,14 @@ const {
             action: 'text-lg font-medium leading-6  ml-2 rtl:ml-0 rtl:mr-2',
           }}
         />
+
+        {
+          callToAction && (
+            <div class="text-primary mt-8">
+              <Button variant="link" {...callToAction} />
+            </div>
+          )
+        }
       </div>
       <div aria-hidden="true" class="mt-10 md:mt-0 md:basis-1/2">
         {

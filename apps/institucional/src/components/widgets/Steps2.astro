@@ -1,5 +1,6 @@
 ---
 import { Icon } from 'astro-icon/components';
+import { Image } from 'astro:assets';
 import WidgetWrapper from '~/components/ui/WidgetWrapper.astro';
 import Headline from '~/components/ui/Headline.astro';
 import Button from '~/components/ui/Button.astro';
@@ -11,6 +12,7 @@ const {
   tagline,
   callToAction = await Astro.slots.render('callToAction'),
   items = [],
+  image = await Astro.slots.render('image'),
   isReversed = false,
 
   id,
@@ -46,6 +48,24 @@ const {
           )
         }
       </div>
+
+      {
+        image &&
+          (typeof image === 'string' ? (
+            <Fragment set:html={image} />
+          ) : (
+            <Image
+              class="w-full rounded-md bg-gray-400 object-cover object-center shadow-lg"
+              widths={[400, 768]}
+              sizes="(max-width: 768px) 100vw, 560px"
+              width={560}
+              height={420}
+              layout="full-width"
+              fetchpriority="low"
+              {...image}
+            />
+          ))
+      }
     </div>
     <div class="w-full px-0 lg:w-1/2">
       <ul class="space-y-10">
