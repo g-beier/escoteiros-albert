@@ -1,0 +1,210 @@
+---
+import Content from '~/components/widgets/Content.astro';
+import FaQs from '~/components/widgets/FAQs.astro';
+import Features from '~/components/widgets/Features.astro';
+import Features2 from '~/components/widgets/Features2.astro';
+import Steps2 from '~/components/widgets/Steps2.astro';
+import Layout from '~/layouts/PageLayout.astro';
+
+import forumJovens from '~/assets/images/forum-jovens.jpg';
+import { getAsset } from '~/utils/permalinks';
+
+const metadata = {
+  title: 'Ciclo de Programa',
+  description:
+    'Como os jovens do G.E. Albert Schweitzer avaliam, escolhem e planejam as atividades da sua seção, e como as famílias podem apoiar a participação deles.',
+};
+---
+
+<Layout metadata={metadata}>
+  <Content
+    tagline="Ciclo de Programa"
+    title="Como as atividades são escolhidas?"
+    subtitle="No Escotismo, as atividades não chegam prontas: são os próprios jovens que avaliam a sua seção, propõem ideias e decidem o que vão fazer. A cada semestre, esse processo se repete em um ciclo de programa."
+  />
+
+  <Steps2
+    title="Etapas do Ciclo"
+    items={[
+      {
+        title: 'Avaliação e diagnóstico',
+        icon: 'tabler:number-1',
+        description:
+          'Os jovens e os chefes avaliam a seção e fazem uma descrição da situação atual e quais são os próximos pontos a trabalhar.',
+      },
+      {
+        title: 'Seleção e planejamento',
+        icon: 'tabler:number-2',
+        description:
+          'A partir da ênfase escolhida e do interesse dos jovens, surgem as ideias de atividades que serão escolhidas de forma democrática. Escolhidas as atividades, construímos o calendário da seção com envolvimento progressivo dos jovens.',
+      },
+      {
+        title: 'Execução',
+        icon: 'tabler:number-3',
+        description:
+          'O calendário é apresentado à Diretoria e aos responsáveis, e inicia-se a aplicação das atividades pela duração do ciclo de programa — cerca de um semestre.',
+      },
+    ]}
+    image={{ src: forumJovens, alt: 'Jovens participando de um momento democrático' }}
+  />
+
+  <Features2
+    tagline="Por que participar"
+    title="Cada jovem tem voz no calendário"
+    subtitle="As reuniões de avaliação e de escolha das atividades fazem parte do programa educativo, tanto quanto um acampamento ou uma excursão."
+    columns={2}
+    items={[
+      {
+        title: 'Protagonismo',
+        description:
+          'O jovem deixa de ser apenas participante e passa a ser autor das atividades. Quem ajuda a escolher se compromete mais com o que foi escolhido.',
+        icon: 'tabler:speakerphone',
+      },
+      {
+        title: 'Vivência democrática',
+        description:
+          'Propor ideias, ouvir os colegas, defender seu ponto de vista e votar. Quando a maioria escolhe outro caminho, saber ser voto vencido e participar com a mesma vontade. É cidadania na prática.',
+        icon: 'tabler:checkbox',
+      },
+      {
+        title: 'Progressão pessoal',
+        description:
+          'A avaliação do ciclo é também o momento de o jovem olhar para o próprio desenvolvimento e combinar com seus chefes os próximos desafios.',
+        icon: 'tabler:route',
+      },
+      {
+        title: 'Responsabilidade com a equipe',
+        description:
+          'Na matilha, na patrulha ou na equipe, cada jovem representa os colegas. Quando alguém falta, a equipe perde uma voz na decisão.',
+        icon: 'tabler:users-group',
+      },
+    ]}
+  />
+
+  <Features
+    tagline="Órgãos juvenis"
+    title="Onde os jovens decidem"
+    subtitle="Em cada ramo, os jovens se reúnem em espaços próprios para avaliar e planejar a vida da seção, com o apoio dos chefes."
+    columns={2}
+    items={[
+      {
+        title: 'Ramo Lobinho',
+        description:
+          'Na <b>Roca de Conselho</b>, a Alcateia toda conversa sobre as atividades realizadas e escolhe, de forma lúdica, as próximas.',
+        icon: 'tabler:paw',
+      },
+      {
+        title: 'Ramo Escoteiro',
+        description:
+          'Cada patrulha discute suas ideias no <b>Conselho de Patrulha</b>; a <b>Assembleia de Tropa</b> decide as atividades, e a <b>Corte de Honra</b>, formada pelos monitores, organiza o calendário.',
+        icon: 'tabler:plant-2',
+      },
+      {
+        title: 'Ramo Sênior',
+        description:
+          'Como no Ramo Escoteiro, com <b>Conselho de Patrulha</b>, <b>Assembleia de Tropa</b> e <b>Corte de Honra</b>, e com mais autonomia para os jovens conduzirem o planejamento.',
+        icon: 'tabler:compass',
+      },
+      {
+        title: 'Ramo Pioneiro',
+        description:
+          'A <b>Assembleia de Clã</b> define as atividades e projetos, e a <b>Comissão Administrativa (COMAD)</b>, eleita pelos pioneiros, coordena a execução.',
+        icon: 'tabler:world-map',
+      },
+    ]}
+  />
+
+  <Features
+    tagline="Para as famílias"
+    title="Como apoiar a participação"
+    subtitle="A família é parceira do Escotismo. Algumas atitudes simples fazem diferença para que o jovem viva o ciclo de programa por inteiro."
+    columns={2}
+    items={[
+      {
+        title: 'Garanta a presença nas reuniões de avaliação e planejamento',
+        description:
+          'Essas datas estão no calendário da seção.<br/>Trate-as com a mesma prioridade de um acampamento: é ali que o próximo semestre é decidido.',
+        icon: 'tabler:calendar-check',
+      },
+      {
+        title: 'Converse em casa sobre o ciclo',
+        description:
+          'Pergunte o que foi avaliado, quais ideias o jovem pretende propor e o que a seção escolheu. Incentive, mas deixe que as ideias sejam dele.',
+        icon: 'tabler:message-circle',
+      },
+      {
+        title: 'Ajude a lidar com o voto vencido',
+        description:
+          'Nem sempre a ideia preferida do seu filho ou filha será a escolhida, e tudo bem! Acolha a frustração, valorize que ele ou ela participou e incentive a viver com alegria a atividade que a turma escolheu. Na próxima votação, quem sabe?',
+        icon: 'tabler:heart-handshake',
+      },
+      {
+        title: 'Reserve as datas do calendário',
+        description:
+          'Quando o calendário for apresentado, organize a agenda da família para que o jovem possa cumprir o que ele mesmo ajudou a planejar.',
+        icon: 'tabler:calendar-event',
+        callToAction: {
+          text: 'Calendário do grupo',
+          href: getAsset('geas03-calendario.pdf'),
+          icon: 'tabler:download',
+          size: 'small',
+          variant: 'primary',
+        },
+      },
+      {
+        title: 'Avise as ausências com antecedência',
+        description:
+          'Se não for possível comparecer, avise os chefes da seção. Assim a equipe pode se reorganizar e o jovem pode enviar suas ideias por um colega.',
+        icon: 'tabler:bell',
+      },
+      {
+        title: 'Valorize o compromisso',
+        description:
+          'Cumprir o que foi combinado com a equipe é um exercício da Lei Escoteira. O exemplo e o apoio da família reforçam esse aprendizado.',
+        icon: 'tabler:award',
+      },
+    ]}
+  />
+
+  <FaQs
+    title="Dúvidas frequentes"
+    subtitle="Algumas das principais dúvidas sobre o funcionamento do ciclo de programa."
+    items={[
+      {
+        title: 'Quanto dura um ciclo de programa?',
+        description:
+          'Cerca de um semestre. No início de cada ciclo, a seção avalia o período anterior e planeja as atividades do seguinte.',
+      },
+      {
+        title: 'Quando o calendário é divulgado?',
+        description:
+          'Depois de aprovado pela Diretoria, o calendário da seção é apresentado aos responsáveis pelos chefes, junto com as datas das atividades de grupo.',
+      },
+      {
+        title: 'Os adultos não participam da escolha?',
+        description:
+          'Os chefes acompanham todo o processo: orientam a avaliação, ajudam a transformar ideias em atividades seguras e viáveis e garantem o equilíbrio do programa. A decisão, porém, é dos jovens.',
+      },
+      {
+        title: 'Meu filho ou filha faltou à reunião de planejamento. E agora?',
+        description:
+          'As atividades serão escolhidas sem a sua participação. Converse com os chefes da seção para saber o que foi decidido e como ele ou ela pode contribuir no restante do ciclo.',
+      },
+      {
+        title: 'E se a atividade que meu filho ou filha queria não for escolhida?',
+        description:
+          'Faz parte! Na democracia, nem sempre a nossa proposta vence. Aprender a defender uma ideia, aceitar a decisão da maioria e se dedicar ao que o grupo escolheu é uma das lições mais valiosas do ciclo de programa. E as ideias que ficaram de fora podem voltar no próximo ciclo.',
+      },
+      {
+        title: 'Lobinhos também decidem?',
+        description:
+          'Sim, de acordo com a idade. Na Alcateia, a escolha é feita de forma simples e lúdica; à medida que crescem, os jovens assumem cada vez mais o planejamento.',
+      },
+      {
+        title: 'Posso sugerir atividades?',
+        description:
+          'Sugestões das famílias são bem-vindas, especialmente ofertas de ajuda (locais, transporte, conhecimentos). Fale com os chefes da seção; eles podem apresentar as possibilidades aos jovens.',
+      },
+    ]}
+  />
+</Layout>
