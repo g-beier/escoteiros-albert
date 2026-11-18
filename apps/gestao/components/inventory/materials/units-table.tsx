@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { IconDots, IconPlus } from "@tabler/icons-react";
-import { Badge } from "@geas/ui/components/badge";
-import { Button } from "@geas/ui/components/button";
+import { Button, buttonVariants } from "@geas/ui/components/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
 import { Input } from "@geas/ui/components/input";
 import type { Option } from "@geas/ui/components/option-controls";
@@ -11,10 +10,11 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { Textarea } from "@geas/ui/components/textarea";
 import { cn } from "@geas/ui/lib/utils";
 import { addUnit, setUnitCondition, transferUnit, updateUnit, writeOffUnit } from "@/app/(inventario)/inventario/materiais/actions";
-import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
+import { SOFT_CELL, SOFT_HEAD, SOFT_ROW_DARK, SOFT_ROW_LIGHT, SOFT_TABLE, softRowRound } from "@/components/inventory/table-head";
 import { CONDITION_LABELS, ORIGIN_LABELS, WRITE_OFF_LABELS, dateBR, timestampBR, writeOffOptions } from "@/lib/inventory/vocabulary";
-import { formatCents } from "@/lib/format";
+import { formatInventoryCents } from "@/lib/format";
 import { ActionDialog } from "./action-dialog";
+import { ConditionPill } from "./condition-pill";
 import { ConditionField, EntryFields, Field, LocationField, NotesField, SelectField } from "./fields";
 
 import type { UnitRow } from "@/lib/inventory/model";
@@ -45,7 +45,9 @@ function IdentityFields({ prefix, unit, nextTag, familyCode }: { prefix: string;
 export function AddUnitButton({ materialId, locations, nextTag, familyCode }: { materialId: string; locations: Option[]; nextTag: string | null; familyCode: string | null }) {
   const [open, setOpen] = useState(false);
   return <>
-    <Button size="sm" onClick={() => setOpen(true)}><IconPlus data-icon="inline-start" /> Adicionar peça</Button>
+    <button type="button" onClick={() => setOpen(true)} className={cn(buttonVariants({ size: "sm", variant: "ghost" }), "rounded-md border-transparent bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}>
+      <IconPlus data-icon="inline-start" /> Adicionar peça
+    </button>
     {open && <ActionDialog open onOpenChange={setOpen} title="Adicionar peça" description="Entrada de uma peça deste material." action={addUnit} submitLabel="Adicionar" hidden={{ materialId }}>
       <LocationField id="unit-new-location" locations={locations} />
       <IdentityFields prefix="unit-new" nextTag={nextTag} familyCode={familyCode} />
@@ -69,42 +71,49 @@ export function UnitsTable({ materialId, units, locations, canEdit, nextTag, fam
   return <>
     {current.length === 0
       ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhuma peça cadastrada.</p>
-      : <div className="overflow-x-auto"><Table className="min-w-[860px]">
-        <TableCaption className="sr-only">Peças do material</TableCaption>
-        <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
-          <TableHead className={cn(HEAD_CLASS, "w-36")}>Etiqueta</TableHead>
-          <TableHead className={cn(HEAD_CLASS, "w-24")}>Cód. antigo</TableHead>
-          <TableHead className={HEAD_CLASS}>Divisão</TableHead>
-          <TableHead className={cn(HEAD_CLASS, "w-32")}>Condição</TableHead>
-          <TableHead className={cn(HEAD_CLASS, "w-28 text-right")}>Valor</TableHead>
-          <TableHead className={HEAD_CLASS}>Descrição</TableHead>
-          {canEdit && <TableHead className={cn(HEAD_CLASS, "w-12")}><span className="sr-only">Ações</span></TableHead>}
-        </TableRow></TableHeader>
-        <TableBody>{current.map((row) => <TableRow key={row.id}>
-          <TableCell className={cn(CELL_CLASS, "num font-semibold")}>{row.tag ?? <span className="font-normal text-muted-foreground">sem etiqueta</span>}</TableCell>
-          <TableCell className={cn(CELL_CLASS, "num")}>{row.legacy_code ?? <span className="text-muted-foreground">—</span>}</TableCell>
-          <TableCell className={cn(CELL_CLASS, "whitespace-normal")}>{row.path}</TableCell>
-          <TableCell className={CELL_CLASS}>{row.condition ? <Badge variant="outline">{CONDITION_LABELS[row.condition]}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
-          <TableCell className={cn(CELL_CLASS, "num text-right")}>{row.unit_value_cents != null ? formatCents(row.unit_value_cents) : <span className="text-muted-foreground">—</span>}</TableCell>
-          <TableCell className={cn(CELL_CLASS, "max-w-80 whitespace-normal text-muted-foreground")}>
-            {[row.description, row.notes, row.origin !== "nao_informada" && ORIGIN_LABELS[row.origin], row.acquired_on && dateBR(row.acquired_on)].filter(Boolean).join(" · ") || "—"}
-          </TableCell>
-          {canEdit && <TableCell className={CELL_CLASS}>
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações da ${label(row)}`}><IconDots /></Button>} />
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setActive({ mode: "transfer", unit: row })}>Transferir</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActive({ mode: "condition", unit: row })}>Mudar condição</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActive({ mode: "edit", unit: row })}>{row.tag ? "Editar dados" : "Editar e etiquetar"}</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive" onClick={() => setActive({ mode: "writeOff", unit: row })}>Dar baixa</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </TableCell>}
-        </TableRow>)}</TableBody>
-      </Table></div>}
+      : <div className="grid gap-2 p-3">
+        <div className="overflow-x-auto"><Table className={SOFT_TABLE}>
+          <TableCaption className="sr-only">Peças do material</TableCaption>
+          <TableHeader className="[&_tr]:border-0"><TableRow className="border-0 hover:bg-transparent">
+            <TableHead className={cn(SOFT_HEAD, "w-36 rounded-l-2xl")}>Etiqueta</TableHead>
+            <TableHead className={cn(SOFT_HEAD, "w-24")}>Cód. antigo</TableHead>
+            <TableHead className={SOFT_HEAD}>Divisão</TableHead>
+            <TableHead className={cn(SOFT_HEAD, "w-32")}>Condição</TableHead>
+            <TableHead className={cn(SOFT_HEAD, "w-28 text-right")}>Valor</TableHead>
+            <TableHead className={cn(SOFT_HEAD, !canEdit && "rounded-r-2xl")}>Descrição</TableHead>
+            {canEdit && <TableHead className={cn(SOFT_HEAD, "w-12 rounded-r-2xl")}><span className="sr-only">Ações</span></TableHead>}
+          </TableRow></TableHeader>
+          <TableBody>{current.map((row, index) => {
+            const dark = index % 2 === 1;
+            const rowBg = dark ? SOFT_ROW_DARK : SOFT_ROW_LIGHT;
+            const round = softRowRound(dark);
+            return <TableRow key={row.id} className="border-0 hover:bg-transparent">
+              <TableCell className={cn(SOFT_CELL, "num font-normal", rowBg, round)}>{row.tag ?? <span className="text-muted-foreground">sem etiqueta</span>}</TableCell>
+              <TableCell className={cn(SOFT_CELL, "num font-normal", rowBg, round)}>{row.legacy_code ?? ""}</TableCell>
+              <TableCell className={cn(SOFT_CELL, "whitespace-normal font-normal", rowBg, round)}>{row.path}</TableCell>
+              <TableCell className={cn(SOFT_CELL, rowBg, round)}><ConditionPill condition={row.condition} /></TableCell>
+              <TableCell className={cn(SOFT_CELL, "num text-right font-normal", rowBg, round)}>{row.unit_value_cents != null ? formatInventoryCents(row.unit_value_cents) : ""}</TableCell>
+              <TableCell className={cn(SOFT_CELL, "max-w-80 whitespace-normal font-normal text-muted-foreground", rowBg, round)}>
+                {[row.description, row.notes, row.origin !== "nao_informada" && ORIGIN_LABELS[row.origin], row.acquired_on && dateBR(row.acquired_on)].filter(Boolean).join(" · ") || ""}
+              </TableCell>
+              {canEdit && <TableCell className={cn(SOFT_CELL, rowBg, round)}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações da ${label(row)}`}><IconDots /></Button>} />
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setActive({ mode: "transfer", unit: row })}>Transferir</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setActive({ mode: "condition", unit: row })}>Mudar condição</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setActive({ mode: "edit", unit: row })}>{row.tag ? "Editar dados" : "Editar e etiquetar"}</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem variant="destructive" onClick={() => setActive({ mode: "writeOff", unit: row })}>Dar baixa</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>}
+            </TableRow>;
+          })}</TableBody>
+        </Table></div>
+      </div>}
 
-    {writtenOff.length > 0 && <details className="border-t px-4 py-2.5 text-xs">
+    {writtenOff.length > 0 && <details className="mx-3 mb-3 rounded-xl bg-muted/50 px-3 py-2.5 text-xs">
       <summary className="cursor-pointer font-semibold text-muted-foreground">Peças baixadas ({writtenOff.length})</summary>
       <ul className="m-0 mt-2 grid list-none gap-1 p-0">{writtenOff.map((row) => <li key={row.id} className="flex flex-wrap gap-x-2 text-muted-foreground">
         <span className="num font-semibold text-foreground">{label(row)}</span>

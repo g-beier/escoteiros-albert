@@ -3,11 +3,11 @@ import type { ReactNode } from "react";
 import { Toaster } from "@geas/ui/components/sonner";
 
 /** Módulo do Gestão: cada um tem o próprio layout raiz, que marca o <html> com a cor de destaque (`theme.css`). */
-export type GestaoModule = "gestao" | "financeiro" | "inventario";
+export type GestaoModule = "gestao" | "financeiro" | "inventario" | "atividades";
 
 export const baseMetadata: Metadata = {
   title: "GEAS Gestão",
-  description: "Gestão financeira e de materiais do grupo escoteiro",
+  description: "Gestão financeira, materiais e atividades do grupo escoteiro",
   icons: {
     icon: [
       { url: "/favicon.ico", type: "image/png", sizes: "128x128" },

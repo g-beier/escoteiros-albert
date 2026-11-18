@@ -7,11 +7,12 @@ import { Button } from "@geas/ui/components/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
 import { Input } from "@geas/ui/components/input";
 import { Label } from "@geas/ui/components/label";
-import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
+import { SectionCount } from "@geas/ui/components/section-card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
 import { cn } from "@geas/ui/lib/utils";
 import { saveFamily, setFamilyActive } from "@/app/(inventario)/inventario/configuracoes/familias/actions";
+import { SoftSectionCard, SoftSectionHeader } from "@/components/inventory/soft-section-card";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
 
 import type { FamilyItem } from "@/lib/inventory/model";
@@ -22,11 +23,11 @@ const initial: ActionResult = {};
 
 export function FamiliesManager({ families, canManage }: { families: FamilyItem[]; canManage: boolean }) {
   const [editing, setEditing] = useState<FamilyItem | "new" | null>(null);
-  return <SectionCard aria-labelledby="families-title">
-    <SectionHeader title="Famílias" titleId="families-title" description="Agrupam materiais do mesmo tipo (todas as barracas, todos os fogareiros). O código de 3 dígitos entra na etiqueta: GEAS-001-0001.">
+  return <SoftSectionCard aria-labelledby="families-title">
+    <SoftSectionHeader title="Famílias" titleId="families-title" description="Agrupam materiais do mesmo tipo (todas as barracas, todos os fogareiros). O código de 3 dígitos entra na etiqueta: GEAS-001-0001.">
       <SectionCount>{families.filter((f) => f.active).length} ativas de {families.length}</SectionCount>
       {canManage && <Button onClick={() => setEditing("new")}><IconPlus /> Nova família</Button>}
-    </SectionHeader>
+    </SoftSectionHeader>
     {families.length === 0
       ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhuma família cadastrada ainda.</p>
       : <div className="overflow-x-auto"><Table className="min-w-[560px]">
@@ -45,7 +46,7 @@ export function FamiliesManager({ families, canManage }: { families: FamilyItem[
         {editing !== null && <FamilyForm key={editing === "new" ? "new" : editing.id} family={editing === "new" ? null : editing} onDone={() => setEditing(null)} />}
       </DialogContent>
     </Dialog>}
-  </SectionCard>;
+  </SoftSectionCard>;
 }
 
 function FamilyRow({ family, canManage, onEdit }: { family: FamilyItem; canManage: boolean; onEdit: () => void }) {

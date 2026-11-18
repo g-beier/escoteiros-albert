@@ -5,7 +5,7 @@ import type { Condition, MovementKind, Origin, ReviewStatus, Tracking, WriteOffR
 /** Material na lista (inventory_material_rows): totais de todas as divisões. */
 export type MaterialRow = {
   id: string; name: string; consumable: boolean; minimum_quantity: number | null; active: boolean;
-  quantity: number; next_expiry: string | null; below_minimum: boolean;
+  quantity: number; estimated_value_cents: number; next_expiry: string | null; below_minimum: boolean;
 };
 
 /** Quantidade e valor de um material numa divisão (inventory_stock_by_location). */

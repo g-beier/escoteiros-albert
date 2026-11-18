@@ -16,6 +16,18 @@ export function formatCents(cents: number | string | null | undefined) {
   return money(Number(cents ?? 0) / 100);
 }
 
+/** Centavos no inventário: omite `,00` quando o valor é inteiro (`R$ 100` em vez de `R$ 100,00`). */
+export function formatInventoryCents(cents: number | string | null | undefined) {
+  const value = Number(cents ?? 0);
+  const hasCents = value % 100 !== 0;
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: hasCents ? 2 : 0,
+  }).format(value / 100);
+}
+
 /** Centavos para o formato editável do formulário (ex.: -1005 → "-10,05"; ausente → ""). */
 export function centsToInput(cents: number | null | undefined) {
   if (cents == null) return "";

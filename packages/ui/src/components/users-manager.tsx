@@ -9,7 +9,10 @@ import { Label } from "@geas/ui/components/label";
 import { OptionSelect } from "@geas/ui/components/option-controls";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
-import { ALLOWED_EMAIL_DOMAIN, GROUP_ROLE_LABELS, INVENTORY_ROLE_LABELS, type GroupRole, type GroupUser, type InventoryRole } from "@geas/ui/lib/roles";
+import {
+  ACTIVITIES_ROLE_LABELS, ALLOWED_EMAIL_DOMAIN, GROUP_ROLE_LABELS, INVENTORY_ROLE_LABELS,
+  type ActivitiesRole, type GroupRole, type GroupUser, type InventoryRole,
+} from "@geas/ui/lib/roles";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { cn } from "@geas/ui/lib/utils";
 
@@ -18,9 +21,10 @@ export type UsersActions = { invite: Action; save: Action; remove: Action };
 
 const roleOptions = Object.entries(GROUP_ROLE_LABELS).map(([value, label]) => ({ value, label }));
 const inventoryOptions = Object.entries(INVENTORY_ROLE_LABELS).map(([value, label]) => ({ value, label }));
+const activitiesOptions = Object.entries(ACTIVITIES_ROLE_LABELS).map(([value, label]) => ({ value, label }));
 const HEAD = "h-8 px-3 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase";
 const CELL = "px-3 py-1.5";
-const ADMIN_NOTE = "O administrador do grupo administra o Financeiro, o Inventário e os usuários.";
+const ADMIN_NOTE = "O administrador do grupo administra Financeiro, Inventário, Atividades e os usuários.";
 
 /** Mostra o resultado como toast antes de a tela recarregar (a linha removida some antes de um efeito rodar). */
 function withToast(action: Action): Action {
@@ -32,7 +36,7 @@ function withToast(action: Action): Action {
   };
 }
 
-/** Usuários do grupo, com o papel em cada app (Financeiro e Inventário). Só o administrador do grupo vê esta tela. */
+/** Usuários do grupo, com o papel em cada módulo. Só o administrador do grupo vê esta tela. */
 export function UsersManager({ users, currentUserId, actions }: { users: GroupUser[]; currentUserId: string; actions: UsersActions }) {
   return <>
     <SectionCard>
@@ -41,13 +45,14 @@ export function UsersManager({ users, currentUserId, actions }: { users: GroupUs
     </SectionCard>
     <SectionCard>
       <SectionHeader title="Pessoas com acesso" description={ADMIN_NOTE}><SectionCount>{users.length} {users.length === 1 ? "usuário" : "usuários"}</SectionCount></SectionHeader>
-      <div className="overflow-x-auto"><Table className="min-w-[880px]">
+      <div className="overflow-x-auto"><Table className="min-w-[1040px]">
         <TableCaption className="sr-only">Usuários com acesso ao grupo</TableCaption>
         <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
           <TableHead className={HEAD}>Usuário</TableHead>
           <TableHead className={cn(HEAD, "w-36")}>Status</TableHead>
           <TableHead className={cn(HEAD, "w-44")}>Financeiro</TableHead>
           <TableHead className={cn(HEAD, "w-40")}>Inventário</TableHead>
+          <TableHead className={cn(HEAD, "w-40")}>Atividades</TableHead>
           <TableHead className={cn(HEAD, "w-44")}><span className="sr-only">Ações</span></TableHead>
         </TableRow></TableHeader>
         <TableBody>{users.map((user) => <UserRow key={user.userId} user={user} self={user.userId === currentUserId} actions={actions} />)}</TableBody>
@@ -57,12 +62,11 @@ export function UsersManager({ users, currentUserId, actions }: { users: GroupUs
 }
 
 function InviteForm({ invite }: { invite: Action }) {
-  // `sent` conta os convites: muda a key dos campos e os limpa depois de cada sucesso.
   const [state, action, pending] = useActionState(async (previous: ActionResult & { sent: number }, formData: FormData) => {
     const result = await withToast(invite)(previous, formData);
     return { ...result, sent: previous.sent + (result.success ? 1 : 0) };
   }, { sent: 0 });
-  return <form action={action} className="grid gap-3 sm:grid-cols-[minmax(240px,1fr)_170px_170px_auto] sm:items-end">
+  return <form action={action} className="grid gap-3 sm:grid-cols-[minmax(220px,1fr)_150px_150px_150px_auto] sm:items-end">
     <InviteFields key={state.sent} />
     <Button type="submit" disabled={pending}>{pending ? "Enviando…" : "Enviar convite"}</Button>
   </form>;
@@ -71,6 +75,7 @@ function InviteForm({ invite }: { invite: Action }) {
 function InviteFields() {
   const [role, setRole] = useState<string>("viewer");
   const [inventoryRole, setInventoryRole] = useState<string>("viewer");
+  const [activitiesRole, setActivitiesRole] = useState<string>("viewer");
   return <>
     <div className="grid gap-1.5"><Label htmlFor="invite-email">E-mail institucional</Label>
       <Input id="invite-email" name="email" type="email" pattern=".+@escoteirosalbert\.com\.br" placeholder={`nome@${ALLOWED_EMAIL_DOMAIN}`} required /></div>
@@ -81,16 +86,22 @@ function InviteFields() {
         ? <p className="m-0 flex h-8 items-center text-xs text-muted-foreground" title={ADMIN_NOTE}>Administrador</p>
         : <OptionSelect id="invite-inventory-role" value={inventoryRole} onValueChange={setInventoryRole} options={inventoryOptions} />}
       <input type="hidden" name="inventoryRole" value={inventoryRole} /></div>
+    <div className="grid gap-1.5"><Label htmlFor="invite-activities-role">Papel em Atividades</Label>
+      {role === "admin"
+        ? <p className="m-0 flex h-8 items-center text-xs text-muted-foreground" title={ADMIN_NOTE}>Administrador</p>
+        : <OptionSelect id="invite-activities-role" value={activitiesRole} onValueChange={setActivitiesRole} options={activitiesOptions} />}
+      <input type="hidden" name="activitiesRole" value={activitiesRole} /></div>
   </>;
 }
 
-/** Linha: os cabeçalhos "Financeiro" e "Inventário" são os rótulos visíveis; cada seletor tem o seu rótulo sr-only. */
 function UserRow({ user, self, actions }: { user: GroupUser; self: boolean; actions: UsersActions }) {
   const [role, setRole] = useState<GroupRole>(user.role);
   const [inventoryRole, setInventoryRole] = useState<InventoryRole>(user.inventoryRole);
+  const [activitiesRole, setActivitiesRole] = useState<ActivitiesRole>(user.activitiesRole);
   const [, save, saving] = useActionState(withToast(actions.save), {});
   const [, remove, removing] = useActionState(withToast(actions.remove), {});
   const id = (name: string) => `${name}-${user.userId}`;
+  const dirty = role !== user.role || inventoryRole !== user.inventoryRole || activitiesRole !== user.activitiesRole;
   return <TableRow>
     <TableCell className={CELL}><span className="font-semibold">{user.email}</span>{self && <span className="text-muted-foreground"> (você)</span>}</TableCell>
     <TableCell className={CELL}><Badge className={user.confirmed ? "bg-success-soft text-success" : "bg-[#f5eed1] text-[#725d0d]"}>{user.confirmed ? "Ativo" : "Convite pendente"}</Badge></TableCell>
@@ -107,12 +118,20 @@ function UserRow({ user, self, actions }: { user: GroupUser; self: boolean; acti
           <OptionSelect id={id("inventory")} value={inventoryRole} onValueChange={(value) => setInventoryRole(value as InventoryRole)} options={inventoryOptions} className="w-32" /></>}
     </TableCell>
     <TableCell className={CELL}>
+      {role === "admin"
+        ? <span className="text-xs text-muted-foreground" title={ADMIN_NOTE}>Administrador</span>
+        : <><Label className="sr-only" htmlFor={id("activities")}>Papel em Atividades de {user.email}</Label>
+          <OptionSelect id={id("activities")} value={activitiesRole} onValueChange={(value) => setActivitiesRole(value as ActivitiesRole)} options={activitiesOptions} className="w-32" /></>}
+    </TableCell>
+    <TableCell className={CELL}>
       <div className="flex items-center gap-2">
         {!self && <form action={save}>
           <input type="hidden" name="userId" value={user.userId} /><input type="hidden" name="email" value={user.email} />
           <input type="hidden" name="role" value={role} /><input type="hidden" name="inventoryRole" value={inventoryRole} />
+          <input type="hidden" name="activitiesRole" value={activitiesRole} />
           <input type="hidden" name="previousRole" value={user.role} /><input type="hidden" name="previousInventoryRole" value={user.inventoryRole} />
-          <Button type="submit" variant="outline" size="sm" disabled={saving || (role === user.role && inventoryRole === user.inventoryRole)}
+          <input type="hidden" name="previousActivitiesRole" value={user.activitiesRole} />
+          <Button type="submit" variant="outline" size="sm" disabled={saving || !dirty}
             aria-label={`Salvar papéis de ${user.email}`}>Salvar</Button>
         </form>}
         {!self && <form action={remove}>

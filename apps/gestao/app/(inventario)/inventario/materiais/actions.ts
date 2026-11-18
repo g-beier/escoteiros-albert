@@ -85,11 +85,13 @@ const MAX_UNITS_ON_CREATE = 50;
 /** Primeira entrada pedida no cadastro, já validada (antes de gravar o material). */
 function firstEntry(formData: FormData, tracking: Tracking) {
   const locationId = optionalId(formData, "locationId");
-  if (!locationId) throw new InputError("Escolha a divisão da primeira entrada.");
-  const quantity = integer(formData, "quantity", "a quantidade");
+  if (!locationId) throw new InputError("Escolha a divisão.");
+  const condition = oneOf(formData, "condition", CONDITIONS);
+  if (!condition) throw new InputError("Escolha o estado.");
+  const quantity = integer(formData, "quantity", "a quantidade", false) ?? 1;
   if (quantity < 1) throw new InputError("A quantidade deve ser pelo menos 1.");
-  if (tracking === "unit" && quantity > MAX_UNITS_ON_CREATE) throw new InputError(`No cadastro, registre até ${MAX_UNITS_ON_CREATE} peças; as demais, no detalhe do material.`);
-  return { locationId, quantity, condition: oneOf(formData, "condition", CONDITIONS), expiresOn: date(formData, "expiresOn"), ...entry(formData) };
+  if (quantity > MAX_UNITS_ON_CREATE) throw new InputError(`No cadastro, a quantidade máxima é ${MAX_UNITS_ON_CREATE}.`);
+  return { locationId, quantity, condition, expiresOn: date(formData, "expiresOn"), ...entry(formData) };
 }
 
 /**
@@ -102,9 +104,11 @@ export async function saveMaterial(_previous: ActionResult, formData: FormData):
     const tracking = oneOf<Tracking>(formData, "tracking", ["unit", "lot"]);
     if (!tracking) throw new InputError("Escolha se o material é controlado por peça ou por quantidade.");
     const id = optionalId(formData, "id");
+    const familyId = optionalId(formData, "familyId");
+    if (!familyId) throw new InputError("Escolha a categoria.");
     const stock = !id && formData.get("withStock") === "on" ? firstEntry(formData, tracking) : null;
     savedId = await materials.save(db, groupId, {
-      id, familyId: optionalId(formData, "familyId"), name: text(formData, "name"), tracking,
+      id, familyId, name: text(formData, "name"), tracking,
       consumable: tracking === "lot" && formData.get("consumable") === "on",
       minimumQuantity: integer(formData, "minimum", "o estoque mínimo", false), description: optional(formData, "description"),
       active: formData.get("active") !== "off",

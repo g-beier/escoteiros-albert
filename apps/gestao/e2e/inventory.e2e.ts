@@ -66,10 +66,12 @@ test("gestor: divisões, família, material por quantidade com lote, transferên
   // material por quantidade cadastrado já com a primeira entrada: lote de 10 a R$ 1.234,56 na divisão de cima
   await page.goto("/inventario/materiais/novo");
   await page.getByLabel("Nome").fill(lotMaterial);
-  await page.getByRole("radio", { name: /^Por quantidade/ }).click();
-  await page.getByLabel("Estoque mínimo").fill("8");
-  await page.getByRole("checkbox", { name: "Registrar a primeira entrada agora" }).click();
+  await chooseOption(page, "Estado", "Bom");
+  await chooseOption(page, "Categoria", `${family} (${code})`);
   await chooseOption(page, "Divisão", root);
+  await page.getByRole("checkbox", { name: "Consumível" }).click();
+  await page.getByRole("checkbox", { name: "Registrar estoque" }).click();
+  await page.getByLabel("Estoque mínimo").fill("8");
   await page.getByLabel("Quantidade", { exact: true }).fill("10");
   await page.getByLabel("Valor estimado (unidade)").fill("1.234,56");
   await page.getByRole("button", { name: "Cadastrar material" }).click();
@@ -101,16 +103,9 @@ test("gestor: divisões, família, material por quantidade com lote, transferên
   await expect(history).toContainText("Consumo");
   await expect(page.getByLabel("Abaixo do mínimo")).toBeVisible();
 
-  // lista por local: sem divisão escolhida, a aba é "Todos" (a primeira); a divisão filtra
-  await page.goto("/inventario/materiais");
-  const tabs = page.getByRole("navigation", { name: "Locais" });
-  await expect(tabs.getByRole("link").first()).toHaveText("Todos");
-  await expect(tabs.getByRole("link", { name: "Todos" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("heading", { name: "Todos os locais" })).toBeVisible();
-  await tabs.getByRole("link", { name: root }).click();
-  await expect(page).toHaveURL(/divisao=[0-9a-f-]{36}/);
-  await expect(page.getByRole("link", { name: lotMaterial })).toBeVisible();
-  await page.goto(`/inventario/materiais?q=${encodeURIComponent(lotMaterial)}`);
+  // Início: material aparece na tabela soft com a quantidade restante
+  await page.goto("/inventario");
+  await expect(page.getByRole("heading", { name: "Estado dos Materiais" })).toBeVisible();
   const line = page.getByRole("row").filter({ has: page.getByRole("link", { name: lotMaterial }) });
   await expect(line).toContainText("6");
   await page.goto("/inventario/movimentacoes?tipo=baixa");
@@ -120,8 +115,9 @@ test("gestor: divisões, família, material por quantidade com lote, transferên
 test("gestor: material por peça com etiqueta da família", async ({ page }) => {
   await page.goto("/inventario/materiais/novo");
   await page.getByLabel("Nome").fill(unitMaterial);
-  await chooseOption(page, "Família", `${family} (${code})`);
-  await page.getByRole("radio", { name: /^Por peça/ }).click();
+  await chooseOption(page, "Estado", "Bom");
+  await chooseOption(page, "Categoria", `${family} (${code})`);
+  await chooseOption(page, "Divisão", `${root} › ${sub}`);
   await page.getByRole("button", { name: "Cadastrar material" }).click();
   await expect(page.getByRole("heading", { name: unitMaterial })).toBeVisible();
 
@@ -137,7 +133,7 @@ test("gestor: material por peça com etiqueta da família", async ({ page }) => 
 
 test("chefe: o que registra fica pendente de revisão do gestor", async ({ browser, page }) => {
   const chief = await pageAs(browser, CHIEF);
-  await chief.goto(`/inventario/materiais?q=${encodeURIComponent(lotMaterial)}`);
+  await chief.goto("/inventario");
   await chief.getByRole("link", { name: lotMaterial }).click();
   await expect(chief.getByText("O que você registrar vale na hora e fica pendente de revisão")).toBeVisible();
   await chief.getByRole("button", { name: "Adicionar lote" }).click();
@@ -155,23 +151,21 @@ test("chefe: o que registra fica pendente de revisão do gestor", async ({ brows
   await expect(chief.getByRole("button", { name: "Nova divisão" })).toHaveCount(0);
   await chief.context().close();
 
-  // o gestor vê a pendência no resumo e na lista
-  await page.goto("/inventario");
-  await page.getByRole("link", { name: /Pendentes de revisão/ }).click();
-  await expect(page).toHaveURL(/\/inventario\/movimentacoes\?revisao=pendente$/);
+  // o gestor vê a pendência na lista de movimentações
+  await page.goto("/inventario/movimentacoes?revisao=pendente");
   await expect(page.getByRole("table", { name: "Movimentações do inventário" })).toContainText(lotMaterial);
 });
 
 test("consulta: só vê, sem cadastrar nem movimentar", async ({ browser }) => {
   const viewer = await pageAs(browser, VIEWER);
-  await viewer.goto(`/inventario/materiais?q=${encodeURIComponent(lotMaterial)}`);
+  await viewer.goto("/inventario");
   await expect(viewer.getByRole("link", { name: lotMaterial })).toBeVisible();
-  await expect(viewer.getByRole("link", { name: "Novo material" })).toHaveCount(0);
+  await expect(viewer.getByRole("button", { name: "Novo material" })).toHaveCount(0);
   await viewer.getByRole("link", { name: lotMaterial }).click();
   await expect(viewer.getByRole("heading", { name: lotMaterial })).toBeVisible();
   await expect(viewer.getByRole("button", { name: "Adicionar lote" })).toHaveCount(0);
   await expect(viewer.getByRole("button", { name: /^Ações do lote/ })).toHaveCount(0);
   await viewer.goto("/inventario/materiais/novo");
-  await expect(viewer).toHaveURL(/\/inventario\/materiais$/);
+  await expect(viewer).toHaveURL(/\/inventario\/?$/);
   await viewer.context().close();
 });

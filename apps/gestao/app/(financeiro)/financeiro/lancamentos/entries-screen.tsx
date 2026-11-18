@@ -74,7 +74,7 @@ export async function EntriesScreen({ view, searchParams }: { view: EntryView; s
   // No celular (cartões) a página inteira rola; overflow-clip mantém o cabeçalho e o rodapé fixos funcionando.
   return <div className="shell flex min-h-dvh flex-col overflow-clip before:hidden after:hidden md:h-dvh md:min-h-0 md:overflow-hidden">
     <AppHeader role={membership.finance.role} email={user.email} current={`/financeiro/lancamentos/${view}`} />
-    <main className="flex flex-1 flex-col gap-2.5 px-4 pt-4 pb-3 md:min-h-0">
+    <main className="geas-page geas-page--narrow flex flex-1 flex-col !gap-2.5 !pt-4 !pb-3 md:min-h-0">
       <FilterOptionsProvider dimensions={dimensions}>
       <EntryListProvider canEdit={canEdit} returnHref={returnHref}>
         <PageHeader title="Lançamentos" crumbs={[{ label: "Lançamentos", href: "/financeiro/lancamentos" }, { label: byCategory ? "Detalhamento" : "Movimentações" }]}

@@ -3,6 +3,7 @@ import { AppHeader as SharedHeader, UserMenu } from "@geas/ui";
 import { logout } from "@/app/(gestao)/login/actions";
 import { Brand } from "@/components/shell/brand";
 
+/** Menu do financeiro só neste módulo. */
 const sections = [
   { href: "/financeiro", label: "Resumo", match: (path: string) => path === "/financeiro" },
   { href: "/financeiro/lancamentos/movimentacoes", label: "Lançamentos", match: (path: string) => path.startsWith("/financeiro/lancamentos") },
@@ -14,7 +15,7 @@ export const isSettingsPath = (path: string) => path.startsWith("/financeiro/con
 
 export function AppHeader({ role, email, current }: { role: string; email: string; current: string }) {
   const settingsHref = role === "viewer" ? "/financeiro/configuracoes/associados" : "/financeiro/configuracoes";
-  return <SharedHeader brand={<Brand module="financeiro" />} navigation={sections.map((item) => ({ href:item.href, label:item.label, active:item.match(current) }))}
+  return <SharedHeader brand={<Brand module="financeiro" />} navigation={sections.map((item) => ({ href: item.href, label: item.label, active: item.match(current) }))}
     utilities={[{ href: settingsHref, label: "Configurações", icon: <IconSettings size={18} />, active: isSettingsPath(current) }]}
     account={<UserMenu email={email} role={role} logoutAction={logout} usersHref={role === "admin" ? "/usuarios" : undefined} active={current.startsWith("/usuarios")}/>}/>
 }

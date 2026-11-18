@@ -3,10 +3,13 @@ import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 // SUPABASE_BIN: CLI already on PATH (CI); otherwise `npx supabase`.
-const [command, ...prefix] = process.env.SUPABASE_BIN ? [process.env.SUPABASE_BIN] : ["npx", "supabase"];
+// No Windows, execFileSync não acha `npx` sem a extensão `.cmd`.
+const npx = process.platform === "win32" ? "npx.cmd" : "npx";
+const [command, ...prefix] = process.env.SUPABASE_BIN ? [process.env.SUPABASE_BIN] : [npx, "supabase"];
 const output = execFileSync(command, [...prefix, "status", "--output", "env"], {
   encoding: "utf8",
   stdio: ["ignore", "pipe", "inherit"],
+  shell: process.platform === "win32",
 });
 
 const values = Object.fromEntries(

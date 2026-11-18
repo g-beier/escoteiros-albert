@@ -9,13 +9,14 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@geas/ui/components/input";
 import { Label } from "@geas/ui/components/label";
 import { OptionSelect } from "@geas/ui/components/option-controls";
-import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
+import { SectionCount } from "@geas/ui/components/section-card";
 import { DragHandle, DragHandleSpacer, DROP_CLASS, useTreeDrag, type DropPlace } from "@geas/ui/components/tree-drag";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { Textarea } from "@geas/ui/components/textarea";
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
 import { cn } from "@geas/ui/lib/utils";
 import { placeLocation, saveLocation, setLocationActive } from "@/app/(inventario)/inventario/configuracoes/divisoes/actions";
+import { SoftSectionCard, SoftSectionHeader } from "@/components/inventory/soft-section-card";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
 import { placeError, placeLocal } from "@/lib/inventory/locations";
 
@@ -43,11 +44,11 @@ export function LocationsManager({ locations: saved, canManage }: { locations: L
     }),
   });
   const active = locations.filter((location) => location.active).length;
-  return <SectionCard aria-labelledby="locations-title">
-    <SectionHeader title="Divisões" titleId="locations-title" description="Onde o material fica guardado, em árvore: Diretoria › Armário de ferro, Cozinha › Estante de canecas › 2º nível.">
+  return <SoftSectionCard aria-labelledby="locations-title">
+    <SoftSectionHeader title="Divisões" titleId="locations-title" description="Onde o material fica guardado, em árvore: Diretoria › Armário de ferro, Cozinha › Estante de canecas › 2º nível.">
       <SectionCount>{active} ativas de {locations.length}</SectionCount>
       {canManage && <Button onClick={() => setEditing({ location: null, parentId: null })}><IconPlus /> Nova divisão</Button>}
-    </SectionHeader>
+    </SoftSectionHeader>
     {locations.length === 0
       ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhuma divisão cadastrada ainda.</p>
       : <div className="overflow-x-auto"><Table className="min-w-[640px]">
@@ -71,7 +72,7 @@ export function LocationsManager({ locations: saved, canManage }: { locations: L
         {editing !== null && <LocationForm key={editing.location?.id ?? `new-${editing.parentId ?? "root"}`} editing={editing} locations={locations} onDone={() => setEditing(null)} />}
       </DialogContent>
     </Dialog>}
-  </SectionCard>;
+  </SoftSectionCard>;
 }
 
 type RowProps = {

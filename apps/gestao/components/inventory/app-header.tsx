@@ -5,10 +5,9 @@ import { Brand } from "@/components/shell/brand";
 import { SETTINGS_HOME } from "@/components/inventory/settings-tabs";
 import { ROLE_LABELS, type InventoryRole } from "@/lib/inventory/vocabulary";
 
-/** Menu = 2º segmento da rota (/inventario/<menu>); Divisões e Famílias ficam em Configurações (engrenagem). */
+/** Menu do inventário; Divisões e Famílias ficam na engrenagem. */
 const sections = [
-  { href: "/inventario", label: "Resumo", match: (path: string) => path === "/inventario" },
-  { href: "/inventario/materiais", label: "Materiais", match: (path: string) => path.startsWith("/inventario/materiais") },
+  { href: "/inventario/materiais", label: "Materiais", match: (path: string) => path === "/inventario" || path.startsWith("/inventario/materiais") },
   { href: "/inventario/movimentacoes", label: "Movimentações", match: (path: string) => path.startsWith("/inventario/movimentacoes") },
 ];
 

@@ -1,9 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import { PageBody, PageHeader } from "@geas/ui";
-import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { AppHeader } from "@/components/inventory/app-header";
 import { MaterialForm } from "@/components/inventory/materials/material-form";
 import { ReviewNotice } from "@/components/inventory/materials/review-notice";
+import { SoftSectionCard, SoftSectionHeader } from "@/components/inventory/soft-section-card";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import * as families from "@/lib/server/inventory/families";
 import * as materials from "@/lib/server/inventory/materials";
@@ -23,12 +23,12 @@ export default async function EditMaterial({ params }: { params: Promise<{ id: s
     <AppHeader current={`/inventario/materiais/${id}`} email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
     <PageBody width="narrow">
       <PageHeader title={`Editar ${material.name}`}
-        crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais", href: "/inventario/materiais" }, { label: material.name, href: `/inventario/materiais/${id}` }, { label: "Editar" }]} />
+        crumbs={[{ label: "Inventário", href: "/inventario" }, { label: material.name, href: `/inventario/materiais/${id}` }, { label: "Editar" }]} />
       {!member.inventory.canManage && <ReviewNotice />}
-      <SectionCard>
-        <SectionHeader title="Material" />
+      <SoftSectionCard>
+        <SoftSectionHeader title="Material" />
         <div className="p-4"><MaterialForm families={familyOptions} material={material} hasStock={hasStock} /></div>
-      </SectionCard>
+      </SoftSectionCard>
     </PageBody>
   </div>;
 }
