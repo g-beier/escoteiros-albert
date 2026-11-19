@@ -33,7 +33,7 @@ export async function forMaterial(db: Db, materialId: string, limit: number): Pr
     .eq("material_id", materialId).order("created_at", { ascending: false }).limit(limit)) as Movement[];
 }
 
-/** Quantos movimentos de chefes esperam a revisão do gestor. */
+/** Quantos movimentos (dos chefes e do registro rápido) esperam a revisão do gestor. */
 export async function pendingCount(db: Db, groupId: string): Promise<number> {
   const { count } = await sb(db).from("inventory_movements").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("review_status", "para_revisar");
   return count ?? 0;

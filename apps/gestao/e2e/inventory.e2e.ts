@@ -4,7 +4,8 @@ import { E2E_ADMIN_EMAIL } from "./support/env";
 import { chooseOption, uniqueName } from "./support/entries";
 import { ensureInventoryMember, pageAs } from "./support/members";
 
-// Inventário (032–037) no Gestão: o administrador E2E é gestor; um chefe registra e o movimento fica pendente; a
+// Inventário (032–045) no Gestão: o administrador E2E é gestor; um chefe registra, o movimento fica para revisar e o
+// gestor revisa; o registro rápido fica para revisar mesmo do gestor; a
 // consulta só vê. Nomes únicos; tudo apagado no fim direto no banco (movimentos, lotes, peças, materiais,
 // famílias e divisões do teste).
 test.describe.configure({ mode: "serial" });
@@ -179,6 +180,8 @@ test("consulta: só vê, sem cadastrar nem movimentar", async ({ browser }) => {
   await expect(viewer.getByRole("button", { name: "Adicionar lote" })).toHaveCount(0);
   await expect(viewer.getByRole("button", { name: /^Ações do lote/ })).toHaveCount(0);
   await viewer.goto("/inventario/materiais/novo");
+  await expect(viewer).toHaveURL(/\/inventario\/materiais$/);
+  await viewer.goto("/inventario/rapido");
   await expect(viewer).toHaveURL(/\/inventario\/materiais$/);
   await viewer.context().close();
 });

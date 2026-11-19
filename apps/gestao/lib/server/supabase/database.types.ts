@@ -1511,6 +1511,9 @@ isOneToOne: false
 "inventory_place_location":
 { Args: { "p_id": string,"p_place": string,"p_target": string }; Returns: undefined
                            },
+"inventory_quick":
+{ Args: { "p_action": string,"p_args": Json }; Returns: Json
+                           },
 "inventory_record_count":
 { Args: { "p_location_id": string,"p_material_id": string,"p_notes": string,"p_quantity": number,"p_year": number }; Returns: string
                            },

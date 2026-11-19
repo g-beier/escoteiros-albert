@@ -1,5 +1,5 @@
 -- pgTAP: Inventário (032_inventory_catalog.sql). Papéis por app, divisões em árvore, famílias, materiais,
--- lotes, peças com etiqueta, revisão, escrita só pelas funções e isolamento entre grupos.
+-- lotes, peças com etiqueta, revisão (044), registro rápido (045), escrita só pelas funções e isolamento entre grupos.
 -- Rode com `npm run test:db`.
 begin;
 select plan(149);
@@ -178,6 +178,32 @@ select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
 select public.inventory_add_lot(:'can', :'coz', 1, null, null, null, null, null, null, null, null) as lot_adm \gset
 select is((select review_status::text from public.inventory_movements where lot_id = :'lot_adm'), 'revisado', 'movimento do admin nasce revisado');
 
+-- Registro rápido (045): fica para revisar mesmo do admin/gestor; o setting não vaza para o que vem depois.
+select lives_ok(format($$select public.inventory_quick('adjust_lot', jsonb_build_object('lot_id', %L, 'quantity', 2, 'notes', 'contado no celular'))$$, :'lot_adm'), 'admin ajusta pelo registro rápido');
+select is((select review_status::text || '/' || channel || '/' || (reviewed_by is null) from public.inventory_movements where lot_id = :'lot_adm' and kind = 'ajuste'), 'para_revisar/rapido/true', 'registro rápido do admin fica para revisar');
+select public.inventory_transfer_lot(:'lot_adm', :'est', 1, null) as lot_adm_t \gset
+select is((select review_status::text || '/' || channel from public.inventory_movements where lot_id = :'lot_adm_t' and kind = 'transferencia'), 'revisado/web', 'depois do rápido, a tela normal volta a nascer revisada');
+select throws_like($$select public.inventory_quick('apagar_tudo', '{}'::jsonb)$$, 'Ação de registro rápido desconhecida%', 'ação rápida desconhecida');
+select public.inventory_quick('new_material', jsonb_build_object('group_id', :'gid_a', 'name', 'Lanterna rápida', 'tracking', 'lot', 'location_id', :'coz', 'quantity', 4, 'condition', 'bom'))->>'id' as quick_mat \gset
+select is((select string_agg(kind::text || ':' || review_status::text || ':' || channel, ',' order by id) from public.inventory_movements where material_id = :'quick_mat'), 'edicao:para_revisar:rapido,entrada:para_revisar:rapido', 'cadastro rápido: material e primeira entrada para revisar');
+
+-- Revisão pelo gestor (044) ------------------------------------------------------------------------
+select tests.login('00000000-0000-0000-0000-00000000f0a4') \gset
+select throws_like(format($$select public.inventory_review_movements(%L, array[1::bigint], null)$$, :'gid_a'), 'Apenas o gestor%', 'chefe não revisa');
+select lives_ok(format($$select public.inventory_quick('adjust_lot', jsonb_build_object('lot_id', %L, 'quantity', 3, 'notes', 'chefe no celular'))$$, :'lot_adm'), 'chefe usa o registro rápido');
+select tests.login('00000000-0000-0000-0000-00000000f0a5') \gset
+select throws_like(format($$select public.inventory_review_movements(%L, array[1::bigint], null)$$, :'gid_b'), 'Apenas o gestor%', 'gestor não revisa outro grupo');
+select is(public.inventory_review_movements(:'gid_a',
+  array(select id from public.inventory_movements where group_id = :'gid_a' and review_status = 'para_revisar') || 999999999::bigint, ' conferido com o chefe '),
+  (select count(*)::int from public.inventory_movements where group_id = :'gid_a' and review_status = 'para_revisar' and created_by is not null) +
+  (select count(*)::int from public.inventory_movements where group_id = :'gid_a' and review_status = 'para_revisar' and created_by is null),
+  'gestor revisa os do chefe e os rápidos (id inexistente ignorado)');
+select is((select count(*)::int from public.inventory_movements where group_id = :'gid_a' and review_status = 'para_revisar'), 0, 'nada mais para revisar');
+select count(*)::int as reviewed_n from public.inventory_movements where group_id = :'gid_a' and review_notes = 'conferido com o chefe' and reviewed_by = '00000000-0000-0000-0000-00000000f0a5' \gset
+select is(public.inventory_review_movements(:'gid_a', array(select id from public.inventory_movements where group_id = :'gid_a'), null), 0, 'já revisados não contam de novo');
+select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
+select is((select count(*)::int from public.audit_events where group_id = :'gid_a' and action = 'inventory.reviewed'), :reviewed_n, 'nota, revisor e um evento de auditoria por movimento');
+
 -- Sem escrita direta (só as funções) ------------------------------------------------------------
 select tests.login('00000000-0000-0000-0000-00000000f0a4') \gset
 select throws_ok(format($$insert into public.inventory_locations(group_id, name) values (%L, 'Direta')$$, :'gid_a'), '42501', null, 'sem INSERT direto em divisões');
@@ -202,7 +228,7 @@ select throws_ok(format($$insert into public.inventory_counts(group_id, year, ma
 
 -- Consulta lê, mas não altera -------------------------------------------------------------------
 select tests.login('00000000-0000-0000-0000-00000000f0a3') \gset
-select is((select count(*)::int from public.inventory_materials where group_id = :'gid_a'), 3, 'consulta lê os materiais');
+select is((select count(*)::int from public.inventory_materials where group_id = :'gid_a'), 4, 'consulta lê os materiais (com o do registro rápido)');
 select throws_like(format($$select public.inventory_add_lot(%L, %L, 1, null, null, null, null, null, null, null, null)$$, :'can', :'coz'), 'Material não encontrado ou sem permissão', 'consulta não dá entrada');
 
 -- Grupo B não vê nem altera nada de A -----------------------------------------------------------

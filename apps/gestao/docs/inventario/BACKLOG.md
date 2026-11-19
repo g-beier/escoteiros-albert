@@ -28,6 +28,11 @@ Modelo e vocabulário em `docs/modelo.md`.
 - Movimentações e histórico do material com o que mudou: condição com as pills (Bom → Em manutenção), ajuste com a contagem antes → depois e a diferença com sinal (+5 / −2), edição do material com os campos alterados (nome, mínimo, controle, consumível, ativo), divisão do lote/peça quando o movimento não grava divisão (`lib/inventory/movements.ts`).
 - Pill de estado colorida (verde → âmbar → vermelho; manutenção em azul) na lista, nos lotes e nas peças.
 
+## Concluído (2026-11-19, passo 3 — revisão e registro rápido)
+
+- Revisão com dois status, **Para revisar** e **Revisado** (044; o antigo "pendente" virou "para revisar", e a recusa saiu). O gestor revisa em Movimentações › Para revisar (seleção em lote, nota opcional) ou no histórico do material; inconsistência é corrigida por fora, com um movimento normal.
+- Registro rápido para celular (`/inventario/rapido`, 045): busca, retirar/consumir, entrada, mudar condição, transferir, ajustar contagem e cadastro de material novo. Tudo fica para revisar, mesmo do gestor ou do administrador (`channel = 'rapido'`). Atalho no cabeçalho (raio) e no Resumo.
+
 ## A verificar
 
 - Barracas B1–B11: conciliar com as linhas de barraca das seções e mover cada peça para a sua divisão (hoje em "Almoxarifado › Barracas (a conferir)").
@@ -40,7 +45,7 @@ Modelo e vocabulário em `docs/modelo.md`.
 
 ### Empréstimo e devolução
 
-- Gestor revisa os movimentos pendentes dos chefes: aprova (revisado) ou recusa (vai para o relatório "Para revisar").
+- Material que sai da sede e volta (não a retirada definitiva, que é baixa). Decidir antes de codar: quem leva (associado ou texto livre), prazo, se o emprestado continua contando na divisão (proposta: sim, com selo "emprestado"), e se material de atividade do calendário continua sem registro. Proposta: tabela `inventory_loans`, tipos de movimento `emprestimo`/`devolucao`, as duas ações no registro rápido e a lista "Emprestados".
 
 ### Passo 4 — Conferência anual
 

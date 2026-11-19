@@ -58,7 +58,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     <AppHeader current="/inventario/movimentacoes" email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
     <PageBody>
       <PageHeader title="Movimentações" crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Movimentações" }]}
-        description="Toda mudança no inventário: entradas, transferências, condição, ajustes, baixas e edições. Os movimentos dos chefes ficam pendentes até a revisão do gestor.">
+        description="Toda mudança no inventário: entradas, transferências, condição, ajustes, baixas e edições. O que os chefes registram e tudo o que vem do registro rápido fica para revisar pelo gestor; se algo estiver errado, corrija no material e marque como revisado com uma nota.">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <SectionTabs label="Revisão" tabs={[
             { href: href(filters, { revisao: undefined }), label: "Todas", active: !filters.revisao },
