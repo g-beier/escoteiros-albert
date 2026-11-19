@@ -36,6 +36,10 @@
   --yellow: #ffad25;
   --red: #9d2f2f;
   --red-soft: #f6e1df;
+  --amber-dark: #7a4a00;
+  --amber-soft: #ffecc7;
+  --blue-dark: #1f4a7a;
+  --blue-soft: #e1ebf7;
   --shadow: 5px 6px 0 rgba(37, 35, 40, .09);
   --topbar-h: 60px;
 
@@ -109,6 +113,10 @@
   --color-success: var(--green-dark);
   --color-success-soft: var(--green-soft);
   --color-destructive-soft: var(--red-soft);
+  --color-warning: var(--amber-dark);
+  --color-warning-soft: var(--amber-soft);
+  --color-info: var(--blue-dark);
+  --color-info-soft: var(--blue-soft);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
