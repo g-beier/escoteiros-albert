@@ -1,5 +1,8 @@
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
 export type Database = {
+  
   "public": {
           Tables: {
             "accounts": {
@@ -16,6 +19,106 @@ export type Database = {
                   Relationships: [
                     {
       foreignKeyName: "accounts_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"activities": {
+                  Row: {
+                    "attendance": (string)[],"authorization_doc": Json | null,"branches": (Database["public"]['Enums']["scout_branch"])[],"created_at": string,"created_by": string,"end_time": string | null,"ends_on": string | null,"group_id": string,"id": string,"kind": Database["public"]['Enums']["activity_kind"],"plan_actions": (string)[],"schedule": NonNullable<Json>,"start_time": string,"starts_on": string,"title": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attendance"?: (string)[],"authorization_doc"?: Json | null,"branches"?: (Database["public"]['Enums']["scout_branch"])[],"created_at"?: string,"created_by": string,"end_time"?: string | null,"ends_on"?: string | null,"group_id": string,"id"?: string,"kind"?: Database["public"]['Enums']["activity_kind"],"plan_actions"?: (string)[],"schedule"?: NonNullable<Json>,"start_time": string,"starts_on": string,"title"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "attendance"?: (string)[],"authorization_doc"?: Json | null,"branches"?: (Database["public"]['Enums']["scout_branch"])[],"created_at"?: string,"created_by"?: string,"end_time"?: string | null,"ends_on"?: string | null,"group_id"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["activity_kind"],"plan_actions"?: (string)[],"schedule"?: NonNullable<Json>,"start_time"?: string,"starts_on"?: string,"title"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "activities_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"activity_base": {
+                  Row: {
+                    "active": boolean,"areas": (string)[],"category": Database["public"]['Enums']["activity_base_category"] | null,"created_at": string,"description": string | null,"duration_minutes": number | null,"group_id": string,"id": string,"materials": NonNullable<Json>,"name": string,"progress": NonNullable<Json>,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active"?: boolean,"areas"?: (string)[],"category"?: Database["public"]['Enums']["activity_base_category"] | null,"created_at"?: string,"description"?: string | null,"duration_minutes"?: number | null,"group_id": string,"id"?: string,"materials"?: NonNullable<Json>,"name": string,"progress"?: NonNullable<Json>,"updated_at"?: string
+                  }
+                  Update: {
+                    "active"?: boolean,"areas"?: (string)[],"category"?: Database["public"]['Enums']["activity_base_category"] | null,"created_at"?: string,"description"?: string | null,"duration_minutes"?: number | null,"group_id"?: string,"id"?: string,"materials"?: NonNullable<Json>,"name"?: string,"progress"?: NonNullable<Json>,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "activity_base_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"activity_progress_alts": {
+                  Row: {
+                    "axis": number,"block": number,"created_at": string,"description": string,"group_id": string,"id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "axis": number,"block": number,"created_at"?: string,"description": string,"group_id": string,"id"?: string
+                  }
+                  Update: {
+                    "axis"?: number,"block"?: number,"created_at"?: string,"description"?: string,"group_id"?: string,"id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "activity_progress_alts_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"activity_venues": {
+                  Row: {
+                    "active": boolean,"address": string | null,"created_at": string,"group_id": string,"hospital": string | null,"id": string,"name": string,"notes": string | null,"owner_name": string | null,"phone": string | null,"police": string | null,"safety_items": NonNullable<Json>,"tags": (string)[],"updated_at": string,"website": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active"?: boolean,"address"?: string | null,"created_at"?: string,"group_id": string,"hospital"?: string | null,"id"?: string,"name": string,"notes"?: string | null,"owner_name"?: string | null,"phone"?: string | null,"police"?: string | null,"safety_items"?: NonNullable<Json>,"tags"?: (string)[],"updated_at"?: string,"website"?: string | null
+                  }
+                  Update: {
+                    "active"?: boolean,"address"?: string | null,"created_at"?: string,"group_id"?: string,"hospital"?: string | null,"id"?: string,"name"?: string,"notes"?: string | null,"owner_name"?: string | null,"phone"?: string | null,"police"?: string | null,"safety_items"?: NonNullable<Json>,"tags"?: (string)[],"updated_at"?: string,"website"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "activity_venues_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"activity_youth": {
+                  Row: {
+                    "active": boolean,"birth_date": string | null,"created_at": string,"group_id": string,"guardian": string | null,"id": string,"name": string,"pack": string,"progress": NonNullable<Json>,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active"?: boolean,"birth_date"?: string | null,"created_at"?: string,"group_id": string,"guardian"?: string | null,"id"?: string,"name": string,"pack": string,"progress"?: NonNullable<Json>,"updated_at"?: string
+                  }
+                  Update: {
+                    "active"?: boolean,"birth_date"?: string | null,"created_at"?: string,"group_id"?: string,"guardian"?: string | null,"id"?: string,"name"?: string,"pack"?: string,"progress"?: NonNullable<Json>,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "activity_youth_group_id_fkey"
       columns: ["group_id"]
 isOneToOne: false
       referencedRelation: "groups"
@@ -500,6 +603,7 @@ isOneToOne: false
                     "created_at"?: string,"id"?: string,"name"?: string
                   }
                   Relationships: [
+                    
                   ]
                 },"import_profiles": {
                   Row: {
@@ -767,14 +871,14 @@ isOneToOne: false
                   ]
                 },"memberships": {
                   Row: {
-                    "created_at": string,"group_id": string,"inventory_role": Database["public"]['Enums']["inventory_role"],"role": Database["public"]['Enums']["member_role"],"user_id": string
+                    "activities_role": Database["public"]['Enums']["activities_role"],"created_at": string,"group_id": string,"inventory_role": Database["public"]['Enums']["inventory_role"],"role": Database["public"]['Enums']["member_role"],"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"group_id": string,"inventory_role"?: Database["public"]['Enums']["inventory_role"],"role"?: Database["public"]['Enums']["member_role"],"user_id": string
+                    "activities_role"?: Database["public"]['Enums']["activities_role"],"created_at"?: string,"group_id": string,"inventory_role"?: Database["public"]['Enums']["inventory_role"],"role"?: Database["public"]['Enums']["member_role"],"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"group_id"?: string,"inventory_role"?: Database["public"]['Enums']["inventory_role"],"role"?: Database["public"]['Enums']["member_role"],"user_id"?: string
+                    "activities_role"?: Database["public"]['Enums']["activities_role"],"created_at"?: string,"group_id"?: string,"inventory_role"?: Database["public"]['Enums']["inventory_role"],"role"?: Database["public"]['Enums']["member_role"],"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -1114,6 +1218,7 @@ isOneToOne: false
                   }
                   ComputedFields: never
                   Relationships: [
+                    
                   ]
                 },"inventory_material_rows": {
                   Row: {
@@ -1141,6 +1246,7 @@ isOneToOne: false
                   }
                   ComputedFields: never
                   Relationships: [
+                    
                   ]
                 },"ledger_entry_rows": {
                   Row: {
@@ -1227,6 +1333,15 @@ isOneToOne: false
 "account_snapshot":
 { Args: { "p_account_id": string }; Returns: Json
                            },
+"activities_role_of":
+{ Args: { "p_group_id": string }; Returns: Database["public"]['Enums']["activities_role"]
+                           },
+"activity_delete":
+{ Args: { "p_id": string }; Returns: undefined
+                           },
+"activity_save":
+{ Args: { "p_attendance"?: (string)[],"p_authorization"?: Json,"p_branches"?: (Database["public"]['Enums']["scout_branch"])[],"p_end_time": string,"p_ends_on": string,"p_group_id": string,"p_id": string,"p_kind": Database["public"]['Enums']["activity_kind"],"p_plan_actions"?: (string)[],"p_schedule"?: Json,"p_start_time": string,"p_starts_on": string,"p_title": string }; Returns: string
+                           },
 "add_associate_movement":
 { Args: { "p_associate_id": string,"p_date": string,"p_kind": Database["public"]['Enums']["associate_movement_kind"],"p_reason": string }; Returns: string
                            },
@@ -1235,6 +1350,9 @@ isOneToOne: false
                            },
 "admin_bootstrap_group":
 { Args: { "p_admin_email": string,"p_group_name": string }; Returns: string
+                           },
+"admin_change_activities_role":
+{ Args: { "p_group_id": string,"p_role": Database["public"]['Enums']["activities_role"],"p_user_id": string }; Returns: undefined
                            },
 "admin_change_inventory_role":
 { Args: { "p_group_id": string,"p_role": Database["public"]['Enums']["inventory_role"],"p_user_id": string }; Returns: undefined
@@ -1251,10 +1369,16 @@ isOneToOne: false
 "can_delete_attachment_object":
 { Args: { "p_name": string }; Returns: boolean
                            },
+"can_edit_activities":
+{ Args: { "p_group_id": string }; Returns: boolean
+                           },
 "can_edit_group":
 { Args: { "requested_group_id": string }; Returns: boolean
                            },
 "can_edit_inventory":
+{ Args: { "p_group_id": string }; Returns: boolean
+                           },
+"can_manage_activities":
 { Args: { "p_group_id": string }; Returns: boolean
                            },
 "can_manage_inventory":
@@ -1661,15 +1785,18 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "account_kind": "corrente"|"poupanca"|"caixa"|"outro","associate_movement_kind": "entrada"|"saida","category_kind": "receita"|"despesa","fee_due_rule": "dia_fixo"|"dia_util"|"fim_do_mes","fee_status": "pago"|"atencao"|"nao_pago"|"isento","inventory_condition": "novo"|"bom"|"regular"|"ruim"|"manutencao"|"inservivel","inventory_movement_kind": "entrada"|"transferencia"|"condicao"|"ajuste"|"baixa"|"edicao","inventory_origin": "compra"|"doacao"|"fabricacao"|"nao_informada","inventory_review_status": "pendente"|"revisado"|"para_revisar","inventory_role": "manager"|"chief"|"viewer","inventory_tracking": "unit"|"lot","inventory_write_off_reason": "perda"|"extravio"|"descarte"|"doacao"|"consumo","member_role": "admin"|"treasurer"|"viewer","scout_branch": "lobinho"|"escoteiro"|"senior"|"pioneiro"|"adulto","statement_line_status": "aberta"|"conciliada"|"ignorada"
+            "account_kind": "corrente"|"poupanca"|"caixa"|"outro","activities_role": "manager"|"chief"|"viewer","activity_base_category": "cerimonia"|"cancao"|"jogo"|"atividade"|"rotina","activity_kind": "normal"|"bivaque"|"acampamento"|"museu"|"cacador","associate_movement_kind": "entrada"|"saida","category_kind": "receita"|"despesa","fee_due_rule": "dia_fixo"|"dia_util"|"fim_do_mes","fee_status": "pago"|"atencao"|"nao_pago"|"isento","inventory_condition": "novo"|"bom"|"regular"|"ruim"|"manutencao"|"inservivel","inventory_movement_kind": "entrada"|"transferencia"|"condicao"|"ajuste"|"baixa"|"edicao","inventory_origin": "compra"|"doacao"|"fabricacao"|"nao_informada","inventory_review_status": "pendente"|"revisado"|"para_revisar","inventory_role": "manager"|"chief"|"viewer","inventory_tracking": "unit"|"lot","inventory_write_off_reason": "perda"|"extravio"|"descarte"|"doacao"|"consumo","member_role": "admin"|"treasurer"|"viewer","scout_branch": "lobinho"|"escoteiro"|"senior"|"pioneiro"|"adulto","statement_line_status": "aberta"|"conciliada"|"ignorada"
           }
           CompositeTypes: {
             [_ in never]: never
           }
         }
 }
+
 type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
@@ -1694,6 +1821,7 @@ export type Tables<
     ? R
     : never
   : never
+
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
@@ -1716,6 +1844,7 @@ export type TablesInsert<
     ? I
     : never
   : never
+
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
@@ -1738,6 +1867,7 @@ export type TablesUpdate<
     ? U
     : never
   : never
+
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
@@ -1752,6 +1882,7 @@ export type Enums<
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
   ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
   : never
+
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
@@ -1766,10 +1897,11 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
   ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
   : never
+
 export const Constants = {
   "public": {
           Enums: {
-            "account_kind": ["corrente", "poupanca", "caixa", "outro"],"associate_movement_kind": ["entrada", "saida"],"category_kind": ["receita", "despesa"],"fee_due_rule": ["dia_fixo", "dia_util", "fim_do_mes"],"fee_status": ["pago", "atencao", "nao_pago", "isento"],"inventory_condition": ["novo", "bom", "regular", "ruim", "manutencao", "inservivel"],"inventory_movement_kind": ["entrada", "transferencia", "condicao", "ajuste", "baixa", "edicao"],"inventory_origin": ["compra", "doacao", "fabricacao", "nao_informada"],"inventory_review_status": ["pendente", "revisado", "para_revisar"],"inventory_role": ["manager", "chief", "viewer"],"inventory_tracking": ["unit", "lot"],"inventory_write_off_reason": ["perda", "extravio", "descarte", "doacao", "consumo"],"member_role": ["admin", "treasurer", "viewer"],"scout_branch": ["lobinho", "escoteiro", "senior", "pioneiro", "adulto"],"statement_line_status": ["aberta", "conciliada", "ignorada"]
+            "account_kind": ["corrente", "poupanca", "caixa", "outro"],"activities_role": ["manager", "chief", "viewer"],"activity_base_category": ["cerimonia", "cancao", "jogo", "atividade", "rotina"],"activity_kind": ["normal", "bivaque", "acampamento", "museu", "cacador"],"associate_movement_kind": ["entrada", "saida"],"category_kind": ["receita", "despesa"],"fee_due_rule": ["dia_fixo", "dia_util", "fim_do_mes"],"fee_status": ["pago", "atencao", "nao_pago", "isento"],"inventory_condition": ["novo", "bom", "regular", "ruim", "manutencao", "inservivel"],"inventory_movement_kind": ["entrada", "transferencia", "condicao", "ajuste", "baixa", "edicao"],"inventory_origin": ["compra", "doacao", "fabricacao", "nao_informada"],"inventory_review_status": ["pendente", "revisado", "para_revisar"],"inventory_role": ["manager", "chief", "viewer"],"inventory_tracking": ["unit", "lot"],"inventory_write_off_reason": ["perda", "extravio", "descarte", "doacao", "consumo"],"member_role": ["admin", "treasurer", "viewer"],"scout_branch": ["lobinho", "escoteiro", "senior", "pioneiro", "adulto"],"statement_line_status": ["aberta", "conciliada", "ignorada"]
           }
         }
 } as const

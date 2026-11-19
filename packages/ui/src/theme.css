@@ -71,12 +71,19 @@
   --radius: 0.625rem;
 }
 
-/* Laranja escuro: o laranja da marca não tem contraste suficiente com texto branco. */
+/* Inventário: mesmo destaque roxo do Financeiro (layout soft); laranja fica nos charts/decoração. */
 :root[data-app="inventario"] {
-  --app: var(--orange-dark);
-  --app-soft: var(--orange-soft);
-  --app-soft-foreground: #8a2c10;
-  --chart-3: var(--purple);
+  --app: var(--purple);
+  --app-soft: var(--purple-soft);
+  --app-soft-foreground: #3a2690;
+  --chart-3: var(--orange);
+}
+
+/* Atividades: mesmo destaque roxo do Financeiro / Inventário. */
+:root[data-app="atividades"] {
+  --app: var(--purple);
+  --app-soft: var(--purple-soft);
+  --app-soft-foreground: #3a2690;
 }
 
 @theme inline {
@@ -123,12 +130,12 @@
   font-feature-settings: "tnum";
 }
 
-/* Superfície dos cartões (seções, indicadores, listas, tabelas): fundo do cartão e borda suave, a mesma em todos.
-   Divisórias internas (cabeçalho, linhas) continuam com `border-b`. */
+/* Superfície dos cartões (seções, indicadores, listas, tabelas): só sombra, sem borda.
+   Divisórias internas (linhas da lista) continuam com `border-b` / `border-t`. */
 @utility surface {
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
+  border-radius: var(--radius-2xl);
   background-color: var(--card);
+  box-shadow: 0 8px 24px rgba(37, 35, 40, 0.10);
 }
 
 @layer base {

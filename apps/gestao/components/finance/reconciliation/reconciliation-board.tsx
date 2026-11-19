@@ -88,9 +88,17 @@ function Row({ checked, onToggle, label, children, actions, hint }: {
 }
 
 function Column({ title, count, empty, action, children }: { title: string; count: number; empty: string; action?: React.ReactNode; children: React.ReactNode }) {
-  return <section aria-label={title} className="min-w-0 overflow-hidden surface">
-    <h2 className="m-0 flex items-center gap-2 border-b bg-muted/60 px-3 py-2 text-sm font-semibold">{title} <span className="num text-xs font-medium text-muted-foreground">{count}</span>{action && <span className="ml-auto">{action}</span>}</h2>
-    {count ? <ul className="m-0 list-none p-0">{children}</ul> : <p className="m-0 px-3 py-4 text-muted-foreground">{empty}</p>}
+  return <section aria-label={title} className="grid min-w-0 gap-2">
+    <header className="flex flex-wrap items-end justify-between gap-x-3 gap-y-2 px-1">
+      <div className="min-w-0">
+        <h2 className="m-0 text-base font-semibold text-foreground">{title}</h2>
+        <p className="m-0 text-xs text-muted-foreground"><span className="num font-semibold text-foreground">{count}</span> {count === 1 ? "item" : "itens"}</p>
+      </div>
+      {action}
+    </header>
+    <div className="surface overflow-hidden">
+      {count ? <ul className="m-0 list-none p-0">{children}</ul> : <p className="m-0 px-3 py-4 text-xs text-muted-foreground">{empty}</p>}
+    </div>
   </section>;
 }
 
@@ -162,7 +170,7 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
   return <div className="grid gap-4">
     {data.truncated && <p className="m-0 rounded-lg bg-secondary px-3 py-2 text-xs">Período com muitas linhas: só as primeiras 5.000 de cada lado foram carregadas. Reduza o período.</p>}
 
-    {suggestionCount > 0 && <section aria-label="Sugestões" className="overflow-hidden surface border-primary/30!">
+    {suggestionCount > 0 && <section aria-label="Sugestões" className="overflow-hidden surface ring-1 ring-primary/30">
       <div className="flex flex-wrap items-center gap-2 border-b bg-primary/5 px-3 py-2">
         <h2 className="m-0 flex items-center gap-1.5 text-sm font-semibold"><IconSparkles className="size-4 text-primary" aria-hidden /> Sugestões <span className="num text-xs font-medium text-muted-foreground">({suggestionCount})</span></h2>
         <span className="text-xs text-muted-foreground">mesmo valor, no mesmo dia ou até 3 dias de diferença</span>

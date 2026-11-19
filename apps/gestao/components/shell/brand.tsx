@@ -1,9 +1,12 @@
 import { AppBrand, type GeasApp } from "@geas/ui";
 
-const MODULE_HOME: Record<GeasApp, string> = { gestao: "/", financeiro: "/financeiro", inventario: "/inventario" };
+const MODULE_HOME: Record<GeasApp, string> = {
+  gestao: "/", financeiro: "/financeiro", inventario: "/inventario", atividades: "/atividades",
+};
 
-/** Marca com o seletor de módulo do Gestão: o logo leva ao Início geral; o rótulo, ao resumo do módulo. */
+/** Marca com o seletor de módulo: logo → Início geral; módulos sempre visíveis. */
 export function Brand({ module = "gestao", light = false }: { module?: GeasApp; light?: boolean }) {
-  return <AppBrand current={module} currentHref={MODULE_HOME[module]} homeHref="/"
-    financeiroHref={MODULE_HOME.financeiro} inventarioHref={MODULE_HOME.inventario} light={light} />;
+  return <AppBrand current={module} homeHref="/"
+    financeiroHref={MODULE_HOME.financeiro} inventarioHref={MODULE_HOME.inventario}
+    atividadesHref={MODULE_HOME.atividades} light={light} />;
 }

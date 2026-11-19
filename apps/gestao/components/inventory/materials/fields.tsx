@@ -9,28 +9,41 @@ import { cn } from "@geas/ui/lib/utils";
 import { conditionOptions, originOptions } from "@/lib/inventory/vocabulary";
 import { centsToInput } from "@/lib/format";
 
-/** Campo com rótulo visível acima. */
-export function Field({ id, label, className, children }: { id: string; label: string; className?: string; children: ReactNode }) {
-  return <div className={cn("grid gap-1.5", className)}><Label htmlFor={id}>{label}</Label>{children}</div>;
+/** Campo com rótulo visível acima; `required` mostra * vermelho à direita do nome. */
+export function Field({ id, label, required = false, className, children }: {
+  id: string; label: string; required?: boolean; className?: string; children: ReactNode;
+}) {
+  return <div className={cn("grid gap-1.5", className)}>
+    <Label htmlFor={id} className="gap-0">
+      {label}
+      {required && <span className="pl-0.5 text-destructive" aria-hidden>*</span>}
+      {required && <span className="sr-only">(obrigatório)</span>}
+    </Label>
+    {children}
+  </div>;
 }
 
 /** OptionSelect que também envia o valor no formulário (campo oculto `name`). */
-export function SelectField({ id, name, label, options, defaultValue = "", emptyLabel, className }: {
-  id: string; name: string; label: string; options: Option[]; defaultValue?: string; emptyLabel?: string; className?: string;
+export function SelectField({ id, name, label, options, defaultValue = "", emptyLabel, required = false, className }: {
+  id: string; name: string; label: string; options: Option[]; defaultValue?: string; emptyLabel?: string; required?: boolean; className?: string;
 }) {
   const [value, setValue] = useState(defaultValue);
-  return <Field id={id} label={label} className={className}>
+  return <Field id={id} label={label} required={required} className={className}>
     <OptionSelect id={id} value={value} onValueChange={setValue} options={options} emptyLabel={emptyLabel} />
     <input type="hidden" name={name} value={value} />
   </Field>;
 }
 
-export function ConditionField({ id, defaultValue = "", label = "Condição" }: { id: string; defaultValue?: string; label?: string }) {
-  return <SelectField id={id} name="condition" label={label} options={conditionOptions} defaultValue={defaultValue} emptyLabel="Não informada" />;
+export function ConditionField({ id, defaultValue = "", label = "Condição", required = false }: {
+  id: string; defaultValue?: string; label?: string; required?: boolean;
+}) {
+  return <SelectField id={id} name="condition" label={label} options={conditionOptions} defaultValue={defaultValue} emptyLabel="Não informada" required={required} />;
 }
 
-export function LocationField({ id, locations, defaultValue = "", label = "Divisão" }: { id: string; locations: Option[]; defaultValue?: string; label?: string }) {
-  return <SelectField id={id} name="locationId" label={label} options={locations} defaultValue={defaultValue} className="sm:col-span-2" />;
+export function LocationField({ id, locations, defaultValue = "", label = "Divisão", emptyLabel = "Escolha a divisão", required = false, className = "sm:col-span-2" }: {
+  id: string; locations: Option[]; defaultValue?: string; label?: string; emptyLabel?: string; required?: boolean; className?: string;
+}) {
+  return <SelectField id={id} name="locationId" label={label} options={locations} defaultValue={defaultValue} emptyLabel={emptyLabel} required={required} className={className} />;
 }
 
 export type EntryDefaults = {
@@ -38,7 +51,7 @@ export type EntryDefaults = {
   supplier?: string | null; invoice?: string | null; notes?: string | null;
 };
 
-/** Dados de entrada: valor estimado, data, origem (obrigatórios no modelo) e fornecedor, nota fiscal, observação (opcionais). */
+/** Dados de entrada: valor estimado, data, origem e fornecedor, nota fiscal, observação (opcionais). */
 export function EntryFields({ prefix, defaults = {}, valueLabel = "Valor estimado (unidade)" }: { prefix: string; defaults?: EntryDefaults; valueLabel?: string }) {
   return <>
     <Field id={`${prefix}-value`} label={valueLabel}>
@@ -59,13 +72,15 @@ export function EntryFields({ prefix, defaults = {}, valueLabel = "Valor estimad
 }
 
 export function NotesField({ id, defaultValue = "", label = "Observação", required = false }: { id: string; defaultValue?: string; label?: string; required?: boolean }) {
-  return <Field id={id} label={label} className="sm:col-span-2">
+  return <Field id={id} label={label} required={required} className="sm:col-span-2">
     <Textarea id={id} name="notes" maxLength={500} rows={2} defaultValue={defaultValue} required={required} />
   </Field>;
 }
 
-export function QuantityField({ id, label = "Quantidade", max, defaultValue, min = 1 }: { id: string; label?: string; max?: number; defaultValue?: number; min?: number }) {
-  return <Field id={id} label={label}>
-    <Input id={id} name="quantity" type="number" inputMode="numeric" min={min} max={max} defaultValue={defaultValue} required className="num" />
+export function QuantityField({ id, label = "Quantidade", max, defaultValue, min = 1, required = true }: {
+  id: string; label?: string; max?: number; defaultValue?: number; min?: number; required?: boolean;
+}) {
+  return <Field id={id} label={label} required={required}>
+    <Input id={id} name="quantity" type="number" inputMode="numeric" min={min} max={max} defaultValue={defaultValue} required={required} className="num" />
   </Field>;
 }

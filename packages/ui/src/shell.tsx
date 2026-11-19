@@ -5,50 +5,49 @@ import { AppNavMenu } from "./components/app-nav-menu";
 import { SectionTabsMenu } from "./components/section-tabs-menu";
 
 /** Módulo atual; "gestao" = telas comuns (Início, Usuários), sem módulo. */
-export type GeasApp = "gestao" | "financeiro" | "inventario";
-type GeasModule = Exclude<GeasApp, "gestao">;
+export type GeasApp = "gestao" | "financeiro" | "inventario" | "atividades";
 
 type AppBrandProps = {
   current: GeasApp;
-  /** Início do módulo atual (o rótulo leva para lá). */
-  currentHref?: string;
   /** Destino do logo: o Início geral. */
   homeHref?: string;
+  /** Mantido por compatibilidade; o seletor usa financeiroHref / inventarioHref. */
+  currentHref?: string;
   financeiroHref: string;
   inventarioHref: string;
+  atividadesHref: string;
   light?: boolean;
 };
 
-const APPS: Record<GeasApp, { label: string }> = {
-  gestao: { label: "Gestão" },
-  financeiro: { label: "Financeiro" },
-  inventario: { label: "Inventário" },
-};
-
-/** Identidade comum e seletor de módulo. Ao passar o mouse, mostra os dois módulos (o atual em cima). */
+/** Identidade comum e seletor: Inicial, Financeiro, Inventário e Atividades sempre visíveis. */
 export function AppBrand({
   current,
-  currentHref = "/",
   homeHref = "/",
   financeiroHref,
   inventarioHref,
+  atividadesHref,
   light = false,
 }: AppBrandProps) {
-  const hrefs: Record<GeasModule, string> = { financeiro: financeiroHref, inventario: inventarioHref };
-  const [up, down]: GeasModule[] = current === "inventario" ? ["inventario", "financeiro"] : ["financeiro", "inventario"];
+  const modules = [
+    { id: "gestao" as const, label: "Inicial", href: homeHref },
+    { id: "financeiro" as const, label: "Financeiro", href: financeiroHref },
+    { id: "inventario" as const, label: "Inventário", href: inventarioHref },
+    { id: "atividades" as const, label: "Atividades", href: atividadesHref },
+  ];
 
   return <div className="geas-brand" data-theme={light ? "dark" : "light"}>
     <Link href={homeHref} className="geas-brand__logo" aria-label="Grupo Escoteiro Albert Schweitzer — Início">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={light ? "/images/logo-dark.svg" : "/images/logo.svg"} alt="Grupo Escoteiro Albert Schweitzer" width="210" height="60" />
     </Link>
-    <div className="geas-brand__apps" aria-label="Trocar de módulo">
-      <Link href={currentHref} className={`geas-brand__static geas-app--${current}`}>{APPS[current].label}</Link>
-      <div className="geas-brand__options">
-        {[up, down].map((app, index) => <a key={app} href={hrefs[app]} aria-current={app === current ? "page" : undefined}
-          className={`geas-brand__option geas-brand__option--${index === 0 ? "up" : "down"} geas-app--${app}`}>{APPS[app].label}</a>)}
-      </div>
-    </div>
+    <nav className="geas-brand__apps" aria-label="Módulos">
+      {modules.map((app) => <a
+        key={app.id}
+        href={app.href}
+        aria-current={app.id === current ? "page" : undefined}
+        className={cn("geas-brand__module", app.id === current && "geas-brand__module--current")}
+      >{app.label}</a>)}
+    </nav>
   </div>;
 }
 
@@ -109,26 +108,28 @@ export type AppNavItem = { href: string; label: string; active: boolean };
 export type AppUtility = AppNavItem & { icon: ReactNode };
 
 /**
- * Cabeçalho dos apps. Desktop (≥ 1024px): marca, áreas, utilitários e conta numa linha.
- * Telas menores: marca, conta e um botão de menu (AppNavMenu) com as áreas e os utilitários.
+ * Cabeçalho dos apps: marca à esquerda, conta à direita.
+ * `navigation` / `utilities` são opcionais (menu interno do módulo).
  */
-export function AppHeader({ brand, navigation, utilities = [], account }: {
+export function AppHeader({ brand, navigation = [], utilities = [], account }: {
   brand: ReactNode;
-  navigation: AppNavItem[];
+  navigation?: AppNavItem[];
   utilities?: AppUtility[];
   account: ReactNode;
 }) {
+  const hasNav = navigation.length > 0 || utilities.length > 0;
   return <header className="geas-header">
     {brand}
-    <nav className="geas-header__nav" aria-label="Navegação principal">
-      {navigation.map((item) => <Link key={item.href} href={item.href} aria-current={item.active ? "page" : undefined}>{item.label}</Link>)}
-      {utilities.length > 0 && <span className="geas-header__divider" aria-hidden />}
-      {utilities.map((item) => <Link key={item.href} href={item.href} className="geas-header__utility" aria-label={item.label} title={item.label}
-        aria-current={item.active ? "page" : undefined}>{item.icon}</Link>)}
-    </nav>
+    {/* Conta sempre por último à direita; o menu do módulo cresce para a esquerda dela. */}
     <div className="geas-header__end">
+      {hasNav && <nav className="geas-header__nav" aria-label="Navegação principal">
+        {navigation.map((item) => <Link key={item.href} href={item.href} aria-current={item.active ? "page" : undefined}>{item.label}</Link>)}
+        {utilities.length > 0 && <span className="geas-header__divider" aria-hidden />}
+        {utilities.map((item) => <Link key={item.href} href={item.href} className="geas-header__utility" aria-label={item.label} title={item.label}
+          aria-current={item.active ? "page" : undefined}>{item.icon}</Link>)}
+      </nav>}
+      {hasNav && <AppNavMenu items={navigation} utilities={utilities.map(({ href, label, active }) => ({ href, label, active }))} />}
       {account}
-      <AppNavMenu items={navigation} utilities={utilities.map(({ href, label, active }) => ({ href, label, active }))} />
     </div>
   </header>;
 }
@@ -153,17 +154,14 @@ export function UserMenu({ email, role, logoutAction, usersHref, active = false 
   </details>;
 }
 
+/** Mantido por compatibilidade nas telas que ainda passam `crumbs`; o caminho não é mais exibido. */
 export type Crumb = { label: ReactNode; href?: string };
 
-export function PageHeader({ title, description, crumbs, hideTitle, tabs, actions, children }: {
+export function PageHeader({ title, description, hideTitle, tabs, actions, children }: {
   title: ReactNode; description?: ReactNode; crumbs?: Crumb[]; hideTitle?: boolean;
   tabs?: ReactNode; actions?: ReactNode; children?: ReactNode;
 }) {
-  const path: Crumb[] = crumbs?.length ? [{ label: "Início", href: "/" }, ...crumbs] : [];
   return <div className="geas-page-header">
-    {path.length > 0 && <nav className="geas-breadcrumbs" aria-label="Caminho"><ol>{path.map((crumb, index) => <li key={index}>
-      {index > 0 && <span aria-hidden>›</span>}{crumb.href ? <Link href={crumb.href}>{crumb.label}</Link> : <strong aria-current="page">{crumb.label}</strong>}
-    </li>)}</ol></nav>}
     <div className="geas-page-header__row">
       <h1 className={hideTitle ? "geas-sr-only" : undefined}>{title}</h1>{tabs}
       {actions && <div className="geas-page-header__actions">{actions}</div>}
@@ -173,7 +171,8 @@ export function PageHeader({ title, description, crumbs, hideTitle, tabs, action
 }
 
 export type PageWidth = "full" | "narrow";
-export function PageBody({ width = "full", className = "", ...props }: React.ComponentProps<"main"> & { width?: PageWidth }) {
+/** Corpo da página: `narrow` (padrão, até 72rem) como no inventário; `full` só quando a tela precisa da largura toda. */
+export function PageBody({ width = "narrow", className = "", ...props }: React.ComponentProps<"main"> & { width?: PageWidth }) {
   return <main className={`geas-page geas-page--${width} ${className}`.trim()} {...props} />;
 }
 

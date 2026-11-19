@@ -3,11 +3,9 @@ import { PageHeader as SharedPageHeader, SectionTabs, type Crumb, type Tab } fro
 
 export { PageBody, SectionTabs } from "@geas/ui";
 
-const MODULE_CRUMB: Crumb = { label: "Financeiro", href: "/financeiro" };
-
-/** Cabeçalho das telas do Financeiro: o caminho ganha "Financeiro" logo depois de Início. */
-export function PageHeader({ crumbs, ...props }: ComponentProps<typeof SharedPageHeader>) {
-  return <SharedPageHeader {...props} crumbs={crumbs?.length ? [MODULE_CRUMB, ...crumbs] : crumbs} />;
+/** Cabeçalho das telas do Financeiro (título, abas e ações). */
+export function PageHeader(props: ComponentProps<typeof SharedPageHeader>) {
+  return <SharedPageHeader {...props} />;
 }
 export type { Crumb, PageWidth, Tab } from "@geas/ui";
 
@@ -78,17 +76,8 @@ export function SettingsTabs({ current, canEdit }: { current: SettingsTab; canEd
   return <SectionTabs label="Configurações" tabs={tabs} />;
 }
 
-/**
- * Corpo das telas: o mesmo contêiner (largura total, margens de 16px) em todas, alinhado ao header,
- * para não haver saltos de largura ao navegar. O conteúdo pode não ocupar tudo.
- */
-export const PAGE_BODY = "geas-page geas-page--full";
+/** Corpo das telas: mesma largura do inventário (`narrow`, até 72rem + margens). */
+export const PAGE_BODY = "geas-page geas-page--narrow";
 
-/**
- * Larguras do corpo: `full` (padrão, fluida) para listas largas como Lançamentos e Extrato;
- * `narrow` (centralizada, até 72rem + margens) para cadastros e telas que não ganham com mais largura.
- * O cabeçalho acompanha o corpo, então todas as abas de uma área usam a mesma largura (sem saltos).
- * Numa área larga com uma aba estreita (Extrato › Importar), o cabeçalho fica largo e só o conteúdo
- * estreita, com `NARROW_CONTENT`.
- */
+/** @deprecated Preferir `PageBody width="narrow"`; mantido onde o conteúdo ainda estreita à parte. */
 export const NARROW_CONTENT = "mx-auto w-full max-w-6xl";

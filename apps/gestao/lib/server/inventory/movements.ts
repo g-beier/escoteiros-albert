@@ -18,6 +18,28 @@ export async function list(db: Db, groupId: string, filters: MovementFilters, li
   return flatten(rowsOf(await query.order("created_at", { ascending: false }).order("id", { ascending: false }).limit(limit)) as unknown as ListRow[]);
 }
 
+/** Página do histórico: total filtrado + fatia ordenada (mais novas primeiro). */
+export async function listPage(
+  db: Db, groupId: string, filters: MovementFilters, page: number, pageSize: number,
+): Promise<{ rows: MovementListRow[]; total: number }> {
+  let countQ = sb(db).from("inventory_movements").select("id", { count: "exact", head: true }).eq("group_id", groupId);
+  let listQ = sb(db).from("inventory_movements").select(LIST_COLUMNS).eq("group_id", groupId);
+  if (filters.review) {
+    countQ = countQ.eq("review_status", filters.review);
+    listQ = listQ.eq("review_status", filters.review);
+  }
+  if (filters.kind) {
+    countQ = countQ.eq("kind", filters.kind);
+    listQ = listQ.eq("kind", filters.kind);
+  }
+  const from = Math.max(0, (page - 1) * pageSize);
+  const [{ count }, listed] = await Promise.all([
+    countQ,
+    listQ.order("created_at", { ascending: false }).order("id", { ascending: false }).range(from, from + pageSize - 1),
+  ]);
+  return { rows: flatten(rowsOf(listed) as unknown as ListRow[]), total: count ?? 0 };
+}
+
 /** Histórico de um material. */
 export async function forMaterial(db: Db, materialId: string, limit: number): Promise<Movement[]> {
   return rowsOf(await sb(db).from("inventory_movements")

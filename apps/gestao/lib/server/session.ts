@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import type { GroupRole, InventoryRole } from "@geas/ui/lib/roles";
-import { canManageEntries, inventoryRoleOf } from "@/lib/auth";
+import type { ActivitiesRole, GroupRole, InventoryRole } from "@geas/ui/lib/roles";
+import { activitiesRoleOf, canManageEntries, inventoryRoleOf } from "@/lib/auth";
 import { currentUser, type SessionUser } from "@/lib/server/auth";
 import type { Db } from "@/lib/server/db";
 import { createClient } from "@/lib/server/supabase/client";
@@ -13,7 +13,7 @@ export type Member = {
   db: Db;
   user: SessionUser;
   groupId: string;
-  /** Administrador do grupo: gestor nos dois módulos e único que gere usuários. */
+  /** Administrador do grupo: gestor nos módulos e único que gere usuários. */
   isAdmin: boolean;
   finance: {
     /** `memberships.role`: o papel do grupo, que é o do Financeiro. */
@@ -28,6 +28,11 @@ export type Member = {
     /** Gestor ou administrador: divisões, famílias, revisão; movimentos já nascem revisados. */
     canManage: boolean;
   };
+  activities: {
+    role: ActivitiesRole;
+    canEdit: boolean;
+    canManage: boolean;
+  };
 };
 
 type Session =
@@ -39,16 +44,18 @@ export const getSession = cache(async (): Promise<Session> => {
   const supabase = await createClient();
   const user = await currentUser();
   if (!user) return { user: null, member: null };
-  const [data] = rowsOf(await supabase.from("memberships").select("group_id, role, inventory_role").eq("user_id", user.id).limit(1));
+  const [data] = rowsOf(await supabase.from("memberships").select("group_id, role, inventory_role, activities_role").eq("user_id", user.id).limit(1));
   if (!data) return { user, member: null };
   const role = data.role as GroupRole;
   const inventoryRole = inventoryRoleOf(role, data.inventory_role as InventoryRole | null);
+  const activitiesRole = activitiesRoleOf(role, data.activities_role as ActivitiesRole | null);
   return {
     user,
     member: {
       db: asDb(supabase), user, groupId: data.group_id as string, isAdmin: role === "admin",
       finance: { role, canEdit: canManageEntries(role) },
       inventory: { role: inventoryRole, canEdit: inventoryRole !== "viewer", canManage: inventoryRole === "manager" },
+      activities: { role: activitiesRole, canEdit: activitiesRole !== "viewer", canManage: activitiesRole === "manager" },
     },
   };
 });
@@ -89,6 +96,10 @@ export const financeEditorOrError = (denied = "Sem permissão para esta alteraç
 export const inventoryEditorOrError = (denied = "Sem permissão para esta alteração.") => allowed((m) => m.inventory.canEdit, denied);
 /** Inventário: gestor ou administrador. */
 export const inventoryManagerOrError = (denied = "Apenas o gestor do inventário pode fazer esta alteração.") => allowed((m) => m.inventory.canManage, denied);
+/** Atividades: chefe, gestor ou administrador. */
+export const activitiesEditorOrError = (denied = "Sem permissão para editar atividades.") => allowed((m) => m.activities.canEdit, denied);
+/** Atividades: gestor ou administrador. */
+export const activitiesManagerOrError = (denied = "Apenas o gestor de atividades pode fazer esta alteração.") => allowed((m) => m.activities.canManage, denied);
 /** Administrador do grupo. */
 export const adminOrError = (denied = "Apenas administradores do grupo gerenciam usuários.") => allowed((m) => m.isAdmin, denied);
 
