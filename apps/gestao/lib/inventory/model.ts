@@ -37,6 +37,8 @@ export type Lot = {
   id: string; location_id: string; quantity: number; condition: Condition | null;
   unit_value_cents: number | null; expires_on: string | null; acquired_on: string | null; origin: Origin;
   supplier: string | null; invoice: string | null; notes: string | null;
+  /** Variação do item ("modelo antigo"): lotes com variação diferente não se juntam. */
+  variant: string | null;
 };
 export type LotRow = Lot & { path: string };
 

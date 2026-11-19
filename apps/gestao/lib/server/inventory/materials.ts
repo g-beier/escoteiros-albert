@@ -60,8 +60,15 @@ export async function getForEdit(db: Db, groupId: string, id: string): Promise<{
 /** Lotes com saldo, na ordem de entrada. */
 export async function lots(db: Db, materialId: string): Promise<Lot[]> {
   return rowsOf(await sb(db).from("inventory_lots")
-    .select("id, location_id, quantity, condition, unit_value_cents, expires_on, acquired_on, origin, supplier, invoice, notes")
+    .select("id, location_id, quantity, condition, unit_value_cents, expires_on, acquired_on, origin, supplier, invoice, notes, variant")
     .eq("material_id", materialId).gt("quantity", 0).order("created_at")) as Lot[];
+}
+
+/** Lotes com saldo do grupo (botões de saída e entrada da lista de Materiais). */
+export async function openLots(db: Db, groupId: string): Promise<(Pick<Lot, "id" | "location_id" | "quantity" | "condition" | "expires_on" | "variant"> & { material_id: string })[]> {
+  return rowsOf(await sb(db).from("inventory_lots")
+    .select("id, material_id, location_id, quantity, condition, expires_on, variant")
+    .eq("group_id", groupId).gt("quantity", 0)) as (Pick<Lot, "id" | "location_id" | "quantity" | "condition" | "expires_on" | "variant"> & { material_id: string })[];
 }
 
 /** Peças, inclusive as baixadas, pela etiqueta. */
@@ -105,10 +112,19 @@ export async function save(db: Db, groupId: string, input: MaterialInput): Promi
   });
 }
 
-export async function addLot(db: Db, input: EntryInput & { materialId: string; locationId: string | null; quantity: number; condition: Condition | null; expiresOn: string | null }) {
-  await rpc(db, "inventory_add_lot", {
-    p_material_id: input.materialId, p_location_id: input.locationId, p_quantity: input.quantity, p_condition: input.condition, p_expires_on: input.expiresOn, ...entry(input),
+/**
+ * Entrada por quantidade: soma num lote igual (mesma divisão, condição, validade e variação) ou cria um (046).
+ * Devolve se somou num lote que já tinha saldo.
+ */
+export async function addLot(db: Db, input: EntryInput & {
+  materialId: string; locationId: string | null; quantity: number; condition: Condition | null; expiresOn: string | null; variant?: string | null;
+}): Promise<{ merged: boolean }> {
+  const lotId = await rpc(db, "inventory_add_lot", {
+    p_material_id: input.materialId, p_location_id: input.locationId, p_quantity: input.quantity, p_condition: input.condition, p_expires_on: input.expiresOn,
+    p_variant: input.variant ?? null, ...entry(input),
   });
+  const lot = unwrap(await sb(db).from("inventory_lots").select("quantity").eq("id", lotId).maybeSingle());
+  return { merged: (lot?.quantity ?? 0) > input.quantity };
 }
 
 export async function addUnit(db: Db, input: EntryInput & { materialId: string; locationId: string | null; tag: string | null; legacyCode: string | null; description: string | null; condition: Condition | null }) {
@@ -147,8 +163,8 @@ export async function writeOffUnit(db: Db, unitId: string, reason: WriteOffReaso
   await rpc(db, "inventory_write_off_unit", { p_unit_id: unitId, p_reason: reason, p_notes: notes });
 }
 
-export async function updateLot(db: Db, input: EntryInput & { lotId: string; expiresOn: string | null }) {
-  await rpc(db, "inventory_update_lot", { p_lot_id: input.lotId, p_expires_on: input.expiresOn, ...entry(input) });
+export async function updateLot(db: Db, input: EntryInput & { lotId: string; expiresOn: string | null; variant: string | null }) {
+  await rpc(db, "inventory_update_lot", { p_lot_id: input.lotId, p_expires_on: input.expiresOn, p_variant: input.variant, ...entry(input) });
 }
 
 export async function updateUnit(db: Db, input: EntryInput & { unitId: string; tag: string | null; legacyCode: string | null; description: string | null }) {

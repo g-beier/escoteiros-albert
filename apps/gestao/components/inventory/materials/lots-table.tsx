@@ -66,7 +66,7 @@ export function LotsTable({ materialId, materialName, consumable, lots, location
         {canEdit && <TableHead className={cn(HEAD_CLASS, "w-36")}><span className="sr-only">Ações</span></TableHead>}
       </TableRow></TableHeader>
       <TableBody>{lots.map((row) => <TableRow key={row.id}>
-        <TableCell className={cn(CELL_CLASS, "whitespace-normal")}>{row.path}</TableCell>
+        <TableCell className={cn(CELL_CLASS, "whitespace-normal")}>{row.path}{row.variant && <span className="block text-[11px] text-muted-foreground">Variação: {row.variant}</span>}</TableCell>
         <TableCell className={cn(CELL_CLASS, "num text-right font-semibold")}>{row.quantity}</TableCell>
         <TableCell className={CELL_CLASS}><ConditionPill condition={row.condition} /></TableCell>
         <TableCell className={cn(CELL_CLASS, "num text-right")}>{row.unit_value_cents != null ? formatCents(row.unit_value_cents) : <span className="text-muted-foreground">—</span>}</TableCell>
@@ -93,7 +93,7 @@ export function LotsTable({ materialId, materialName, consumable, lots, location
     </Table></div>
 
     {lot && active.mode === "transfer" && <ActionDialog open onOpenChange={close} title="Transferir lote" action={transferLot} submitLabel="Transferir" hidden={hidden}
-      description={`De ${lot.path}. Transferir parte das unidades cria um lote novo no destino.`}>
+      description={`De ${lot.path}. No destino, soma num lote igual (mesma condição, validade e variação) ou vira um lote novo.`}>
       <LocationField id="lot-transfer-location" label="Para a divisão" locations={locations.filter((option) => option.value !== lot.location_id)} />
       <QuantityField id="lot-transfer-quantity" max={lot.quantity} defaultValue={lot.quantity} />
       <NotesField id="lot-transfer-notes" />
@@ -119,6 +119,7 @@ export function LotsTable({ materialId, materialName, consumable, lots, location
       <Field id="lot-edit-expires" label="Validade">
         <Input id="lot-edit-expires" name="expiresOn" type="date" defaultValue={lot.expires_on ?? ""} className="num" />
       </Field>
+      <VariantField id="lot-edit-variant" defaultValue={lot.variant ?? ""} />
       <EntryFields prefix="lot-edit" defaults={lot} />
     </ActionDialog>}
   </>;

@@ -135,11 +135,11 @@ export async function saveMaterial(_previous: ActionResult, formData: FormData):
 
 export async function addLot(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
-    await materials.addLot(db, {
+    const { merged } = await materials.addLot(db, {
       materialId: id(formData, "materialId"), locationId: optionalId(formData, "locationId"), quantity: integer(formData, "quantity", "a quantidade"),
-      condition: oneOf(formData, "condition", CONDITIONS), expiresOn: date(formData, "expiresOn"), ...entry(formData),
+      condition: oneOf(formData, "condition", CONDITIONS), expiresOn: date(formData, "expiresOn"), variant: optional(formData, "variant"), ...entry(formData),
     });
-    return "Lote adicionado.";
+    return merged ? "Somado ao lote igual que já existia." : "Lote adicionado.";
   });
 }
 
@@ -205,7 +205,7 @@ export async function writeOffUnit(_previous: ActionResult, formData: FormData) 
 
 export async function updateLot(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
-    await materials.updateLot(db, { lotId: id(formData, "lotId"), expiresOn: date(formData, "expiresOn"), ...entry(formData) });
+    await materials.updateLot(db, { lotId: id(formData, "lotId"), expiresOn: date(formData, "expiresOn"), variant: optional(formData, "variant"), ...entry(formData) });
     return "Dados do lote salvos.";
   });
 }

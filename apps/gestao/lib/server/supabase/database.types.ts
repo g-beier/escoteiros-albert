@@ -604,14 +604,14 @@ isOneToOne: false
                   ]
                 },"inventory_lots": {
                   Row: {
-                    "acquired_on": string | null,"condition": Database["public"]['Enums']["inventory_condition"] | null,"created_at": string,"expires_on": string | null,"group_id": string,"id": string,"invoice": string | null,"location_id": string,"material_id": string,"notes": string | null,"origin": Database["public"]['Enums']["inventory_origin"],"quantity": number,"supplier": string | null,"unit_value_cents": number | null,"updated_at": string
+                    "acquired_on": string | null,"condition": Database["public"]['Enums']["inventory_condition"] | null,"created_at": string,"expires_on": string | null,"group_id": string,"id": string,"invoice": string | null,"location_id": string,"material_id": string,"notes": string | null,"origin": Database["public"]['Enums']["inventory_origin"],"quantity": number,"supplier": string | null,"unit_value_cents": number | null,"updated_at": string,"variant": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "acquired_on"?: string | null,"condition"?: Database["public"]['Enums']["inventory_condition"] | null,"created_at"?: string,"expires_on"?: string | null,"group_id": string,"id"?: string,"invoice"?: string | null,"location_id": string,"material_id": string,"notes"?: string | null,"origin"?: Database["public"]['Enums']["inventory_origin"],"quantity": number,"supplier"?: string | null,"unit_value_cents"?: number | null,"updated_at"?: string
+                    "acquired_on"?: string | null,"condition"?: Database["public"]['Enums']["inventory_condition"] | null,"created_at"?: string,"expires_on"?: string | null,"group_id": string,"id"?: string,"invoice"?: string | null,"location_id": string,"material_id": string,"notes"?: string | null,"origin"?: Database["public"]['Enums']["inventory_origin"],"quantity": number,"supplier"?: string | null,"unit_value_cents"?: number | null,"updated_at"?: string,"variant"?: string | null
                   }
                   Update: {
-                    "acquired_on"?: string | null,"condition"?: Database["public"]['Enums']["inventory_condition"] | null,"created_at"?: string,"expires_on"?: string | null,"group_id"?: string,"id"?: string,"invoice"?: string | null,"location_id"?: string,"material_id"?: string,"notes"?: string | null,"origin"?: Database["public"]['Enums']["inventory_origin"],"quantity"?: number,"supplier"?: string | null,"unit_value_cents"?: number | null,"updated_at"?: string
+                    "acquired_on"?: string | null,"condition"?: Database["public"]['Enums']["inventory_condition"] | null,"created_at"?: string,"expires_on"?: string | null,"group_id"?: string,"id"?: string,"invoice"?: string | null,"location_id"?: string,"material_id"?: string,"notes"?: string | null,"origin"?: Database["public"]['Enums']["inventory_origin"],"quantity"?: number,"supplier"?: string | null,"unit_value_cents"?: number | null,"updated_at"?: string,"variant"?: string | null
                   }
                   Relationships: [
                     {
@@ -1464,7 +1464,8 @@ isOneToOne: false
 "quantity": number,
 "supplier": string | null,
 "unit_value_cents": number | null,
-"updated_at": string
+"updated_at": string,
+"variant": string | null
             }
                           SetofOptions: {
         from: "*"
@@ -1501,6 +1502,34 @@ isOneToOne: false
       } },
 "inventory_log":
 { Args: { "p_details": Json,"p_from_condition": Database["public"]['Enums']["inventory_condition"],"p_from_location": string,"p_group_id": string,"p_kind": Database["public"]['Enums']["inventory_movement_kind"],"p_lot_id": string,"p_material_id": string,"p_notes": string,"p_quantity": number,"p_reason": Database["public"]['Enums']["inventory_write_off_reason"],"p_to_condition": Database["public"]['Enums']["inventory_condition"],"p_to_location": string,"p_unit_id": string }; Returns: number
+                           },
+"inventory_matching_lot":
+{ Args: { "p_condition": Database["public"]['Enums']["inventory_condition"],"p_except": string,"p_expires_on": string,"p_location_id": string,"p_material_id": string,"p_variant": string }; Returns: {
+              "acquired_on": string | null,
+"condition": Database["public"]['Enums']["inventory_condition"] | null,
+"created_at": string,
+"expires_on": string | null,
+"group_id": string,
+"id": string,
+"invoice": string | null,
+"location_id": string,
+"material_id": string,
+"notes": string | null,
+"origin": Database["public"]['Enums']["inventory_origin"],
+"quantity": number,
+"supplier": string | null,
+"unit_value_cents": number | null,
+"updated_at": string,
+"variant": string | null
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "inventory_lots"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"inventory_merged_value":
+{ Args: { "p_added": number,"p_added_value": number,"p_quantity": number,"p_value": number }; Returns: number
                            },
 "inventory_next_location_position":
 { Args: { "p_group_id": string,"p_parent_id": string }; Returns: number

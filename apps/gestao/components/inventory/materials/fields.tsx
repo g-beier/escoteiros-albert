@@ -58,6 +58,15 @@ export function EntryFields({ prefix, defaults = {}, valueLabel = "Valor estimad
   </>;
 }
 
+/** Variação do lote: só quando o item difere dos outros do mesmo material (lotes iguais se juntam). */
+export function VariantField({ id, defaultValue = "", className = "sm:col-span-2" }: { id: string; defaultValue?: string; className?: string }) {
+  return <div className={cn("grid gap-1.5", className)}>
+    <Label htmlFor={id}>Variação (opcional)</Label>
+    <Input id={id} name="variant" maxLength={80} defaultValue={defaultValue} placeholder="Ex.: modelo antigo" aria-describedby={`${id}-help`} />
+    <span id={`${id}-help`} className="text-[11px] text-muted-foreground">Só quando é diferente dos outros deste material. Entrada igual (mesma divisão, condição, validade e variação) soma no lote que já existe.</span>
+  </div>;
+}
+
 export function NotesField({ id, defaultValue = "", label = "Observação", required = false }: { id: string; defaultValue?: string; label?: string; required?: boolean }) {
   return <Field id={id} label={label} className="sm:col-span-2">
     <Textarea id={id} name="notes" maxLength={500} rows={2} defaultValue={defaultValue} required={required} />

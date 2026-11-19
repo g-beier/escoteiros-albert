@@ -242,6 +242,28 @@ select throws_like(format($$select public.inventory_add_lot(%L, %L, 1, null, nul
 select throws_like(format($$select public.inventory_transfer_lot(%L, %L, null, null)$$, :'lot', :'coz'), 'Lote não encontrado ou sem permissão', 'B não move lote de A');
 select throws_like(format($$select public.inventory_save_location(%L, null, null, 'Invasora', null)$$, :'gid_a'), 'Sem permissão%', 'B não cria divisão em A');
 select throws_like(format($$select public.inventory_next_tag(%L)$$, :'fam'), 'Família não encontrada', 'B não consulta etiquetas de A');
+-- Lotes iguais se juntam (046): mesma divisão, condição, validade e variação ---------------------------
+select tests.login('00000000-0000-0000-0000-00000000f0a5') \gset
+select public.inventory_save_material(:'gid_a', null, null, 'Distintivo de Promessa', 'lot', false, null, null) as dist \gset
+select public.inventory_add_lot(:'dist', :'coz', 1, 'novo', 1000, null, null, 'compra', null, null, null) as dist_lot \gset
+select is(public.inventory_add_lot(:'dist', :'coz', 3, 'novo', 2000, null, '2026-11-01', 'compra', 'Loja Escoteira', '123', 'reposição')::text, :'dist_lot', 'comprar mais do mesmo soma no lote');
+select is((select quantity || '/' || unit_value_cents || '/' || coalesce(notes, '-') from public.inventory_lots where id = :'dist_lot'), '4/1750/-', 'soma a quantidade, valor pela média ponderada, lote mantém os dados');
+select is((select details->>'supplier' || '/' || (details->>'merged') || '/' || (details->>'from') || '→' || (details->>'to') from public.inventory_movements where lot_id = :'dist_lot' and kind = 'entrada' order by id desc limit 1),
+  'Loja Escoteira/true/1→4', 'dados da compra ficam no movimento');
+select isnt(public.inventory_add_lot(:'dist', :'coz', 2, 'novo', null, null, null, null, null, null, null, 'modelo antigo')::text, :'dist_lot', 'variação diferente é outro lote');
+select is(public.inventory_add_lot(:'dist', :'coz', 1, 'novo', null, null, null, null, null, null, null, ' modelo   antigo ')::text,
+  (select id::text from public.inventory_lots where material_id = :'dist' and variant = 'modelo antigo'), 'mesma variação (normalizada) soma');
+select isnt(public.inventory_add_lot(:'dist', :'coz', 1, 'regular', null, null, null, null, null, null, null)::text, :'dist_lot', 'condição diferente é outro lote');
+select is(public.inventory_set_lot_condition((select id from public.inventory_lots where material_id = :'dist' and condition = 'regular'), 'novo', null, null)::text,
+  :'dist_lot', 'mudar a condição para a de um lote igual soma nele');
+select is((select quantity from public.inventory_lots where id = :'dist_lot'), 5, 'lote recebeu a unidade');
+select public.inventory_transfer_lot(:'dist_lot', :'est', 2, null) as dist_est \gset
+select isnt(:'dist_est'::text, :'dist_lot'::text, 'transferência parcial separa um lote no destino');
+select is(public.inventory_transfer_lot(:'dist_lot', :'est', 3, null)::text, :'dist_est', 'transferir o resto soma no lote igual do destino');
+select is((select string_agg(location_id::text || ':' || quantity, ',' order by quantity) from public.inventory_lots where material_id = :'dist' and variant is null and quantity > 0),
+  :'est' || ':5', 'um lote só no destino');
+select tests.logout() \gset
+
 select tests.logout() \gset
 
 select is((select count(*)::int from public.audit_events where group_id = :'gid_a' and action like 'inventory.%' and details ? 'movement_id'),

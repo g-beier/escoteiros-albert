@@ -42,6 +42,10 @@ Modelo e vocabulário em `docs/modelo.md`.
 - Saída é baixa, não ajuste: no detalhe, cada lote tem o botão **Consumir** (consumível) ou **Dar baixa**, e o menu ⋯ com transferir, condição, dados e, por último, **Corrigir contagem…** (só para registro errado). Ao corrigir para menos, o diálogo mostra quantas faltam e oferece registrar a diferença como consumo/baixa.
 - Na lista de Materiais, cada linha de material por quantidade tem um botão ±: o diálogo escolhe entre **Remover** (consumir/dar baixa, escolhendo o lote; vem marcado o que vence antes; é o padrão quando há saldo) e **Incluir** (entrada naquela divisão), sem abrir o material.
 
+## Concluído (2026-11-19, lotes iguais se juntam)
+
+- Lote = material + divisão + condição + validade + **variação** (novo, opcional: "modelo antigo"). Comprar mais do mesmo soma no lote (valor pela média ponderada; dados da compra no movimento); transferência e mudança de condição somam num lote igual no destino (046). Os lotes idênticos que já existiam foram unificados. A carga da planilha dá uma variação às linhas com a mesma chave e observação ou valor diferentes, para continuarem separadas.
+
 ## A verificar
 
 - Barracas B1–B11: conciliar com as linhas de barraca das seções e mover cada peça para a sua divisão (hoje em "Almoxarifado › Barracas (a conferir)").
