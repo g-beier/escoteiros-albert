@@ -10,7 +10,7 @@ site:
 metadata:
   title:
     default: Grupo Escoteiro Albert Schweitzer
-    template: '%s — G.E. Albert Schweitzer'
+    template: '%s | G.E. Albert Schweitzer'
   description: 'Website do Grupo Escoteiro Albert Schweitzer, de Porto Alegre/RS.'
   robots:
     index: true
