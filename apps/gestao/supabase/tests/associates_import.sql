@@ -1,4 +1,4 @@
--- Importação de associados (016, seção e patrulha por nome desde 028) sem alterar o banco local: rode, a partir de apps/financeiro,
+-- Importação de associados (016, seção e patrulha por nome desde 028) sem alterar o banco local: rode, a partir de apps/gestao,
 --   cat supabase/tests/associates_import.sql \
 --     | docker exec -i supabase_db_geas-financeiro psql -U postgres -v ON_ERROR_STOP=1 -q
 -- (ou junto com os demais por `npm run test:db`). O arquivo abre e desfaz a própria transação e imprime TAP

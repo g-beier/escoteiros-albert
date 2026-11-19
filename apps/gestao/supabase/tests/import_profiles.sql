@@ -1,4 +1,4 @@
--- Perfis de leitura (026) sem alterar o banco local: rode, a partir de apps/financeiro,
+-- Perfis de leitura (026) sem alterar o banco local: rode, a partir de apps/gestao,
 --   cat supabase/tests/import_profiles.sql \
 --     | docker exec -i supabase_db_geas-financeiro psql -U postgres -v ON_ERROR_STOP=1 -q
 -- (ou junto com os demais por `npm run test:db`). O arquivo abre e desfaz a própria transação e imprime TAP

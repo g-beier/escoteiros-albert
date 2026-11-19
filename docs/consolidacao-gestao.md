@@ -1,6 +1,6 @@
 # Gestão: consolidação de financeiro e inventario e camada de dados
 
-Status: **plano aprovado, não iniciado**. Data: 2026-11-17.
+Status: **concluído** (fases 0 a 4). Plano de 2026-11-17; o estado atual está em `CLAUDE.md` e `docs/CODEBASE_MAP.md`.
 
 Objetivo: juntar `apps/financeiro` e `apps/inventario` num único app Next, **`apps/gestao`**
 (`@geas/gestao`), com rotas por módulo, e isolar o Supabase atrás de uma camada de dados para que
