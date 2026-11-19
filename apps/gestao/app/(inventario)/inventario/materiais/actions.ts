@@ -13,7 +13,7 @@ import * as materials from "@/lib/server/inventory/materials";
 import { inventoryEditorOrError } from "@/lib/server/session";
 
 // Validação dos formulários aqui; as escritas são as funções inventory_* (lib/server/inventory/materials.ts),
-// auditadas, e as do chefe ficam pendentes de revisão.
+// auditadas, e as do chefe ficam para revisar.
 
 const CONDITIONS: Condition[] = ["novo", "bom", "regular", "ruim", "manutencao", "inservivel"];
 const ORIGINS: Origin[] = ["compra", "doacao", "fabricacao", "nao_informada"];

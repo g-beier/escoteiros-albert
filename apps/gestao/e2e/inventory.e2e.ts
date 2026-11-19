@@ -142,7 +142,7 @@ test("chefe: o que registra fica pendente de revisão do gestor", async ({ brows
   const chief = await pageAs(browser, CHIEF);
   await chief.goto(`/inventario/materiais?q=${encodeURIComponent(lotMaterial)}`);
   await chief.getByRole("link", { name: lotMaterial }).click();
-  await expect(chief.getByText("O que você registrar vale na hora e fica pendente de revisão")).toBeVisible();
+  await expect(chief.getByText("O que você registrar vale na hora e fica para revisar")).toBeVisible();
   await chief.getByRole("button", { name: "Adicionar lote" }).click();
   const add = chief.getByRole("dialog");
   await chooseOption(chief, "Divisão", root, add);
@@ -150,7 +150,11 @@ test("chefe: o que registra fica pendente de revisão do gestor", async ({ brows
   await add.getByRole("button", { name: "Adicionar" }).click();
   await expect(chief.getByText("Lote adicionado.")).toBeVisible();
   const history = chief.getByRole("table", { name: "Histórico de movimentos do material" });
-  await expect(history.getByRole("row").filter({ hasText: "por você" })).toContainText("Pendente de revisão");
+  const mine = history.getByRole("row").nth(1); // mais novo primeiro
+  await expect(mine).toContainText("Para revisar");
+  await mine.getByRole("button", { name: "Detalhes da revisão" }).click();
+  await expect(chief.getByRole("dialog")).toContainText("por você");
+  await chief.keyboard.press("Escape");
 
   // o chefe não altera divisões
   await chief.goto("/inventario/configuracoes/divisoes");
@@ -158,7 +162,7 @@ test("chefe: o que registra fica pendente de revisão do gestor", async ({ brows
   await expect(chief.getByRole("button", { name: "Nova divisão" })).toHaveCount(0);
   await chief.context().close();
 
-  // o gestor vê a pendência no resumo e na lista
+  // o gestor vê o aviso em Materiais (entrada do Inventário) e revisa
   await page.goto("/inventario");
   await page.getByRole("link", { name: /Pendentes de revisão/ }).click();
   await expect(page).toHaveURL(/\/inventario\/movimentacoes\?revisao=pendente$/);

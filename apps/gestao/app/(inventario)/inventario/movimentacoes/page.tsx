@@ -7,22 +7,24 @@ import { cn } from "@geas/ui/lib/utils";
 import { AppHeader } from "@/components/inventory/app-header";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
-import {
-  CONDITION_LABELS, MOVEMENT_LABELS, REVIEW_LABELS, WRITE_OFF_LABELS, timestampBR,
-  type Condition, type MovementKind, type ReviewStatus,
-} from "@/lib/inventory/vocabulary";
+import { ConditionPill } from "@/components/inventory/condition-pill";
+import { ReviewCheck, ReviewCheckAll, ReviewSelection } from "@/components/inventory/review";
+import { ReviewDetails } from "@/components/inventory/review-details";
+import type { MovementListRow } from "@/lib/inventory/model";
+import { movementDetail, signedQuantity } from "@/lib/inventory/movements";
+import { MOVEMENT_LABELS, REVIEW_LABELS, timestampBR, type MovementKind, type ReviewStatus } from "@/lib/inventory/vocabulary";
 import * as locations from "@/lib/server/inventory/locations";
 import * as movements from "@/lib/server/inventory/movements";
 import { pageSession } from "@/lib/server/session";
+import { reviewMovements } from "./actions";
 
 const LIMIT = 200;
 const STATUSES = Object.keys(REVIEW_LABELS) as ReviewStatus[];
 const KINDS = Object.keys(MOVEMENT_LABELS) as MovementKind[];
 
 const REVIEW_BADGE: Record<ReviewStatus, string> = {
+  para_revisar: "bg-[#f5eed1] text-[#725d0d]",
   revisado: "bg-success-soft text-success",
-  pendente: "bg-[#f5eed1] text-[#725d0d]",
-  para_revisar: "bg-destructive/10 text-destructive",
 };
 
 type Filters = { revisao?: ReviewStatus; tipo?: MovementKind };
@@ -48,6 +50,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     locations.listPaths(member.db, member.groupId),
   ]);
   const pathOf = new Map(paths.map((p) => [p.id, p.path]));
+  const canReview = member.inventory.canManage;
+  const toReview = canReview ? rows.filter((m) => m.review_status === "para_revisar").map((m) => m.id) : [];
   const dash = <span className="text-muted-foreground">—</span>;
 
   return <div className="shell">
@@ -66,6 +70,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
           ]} />
         </div>
       </PageHeader>
+      <ReviewSelection key={toReview.join(",")} ids={toReview} action={reviewMovements}>
       <SectionCard>
         <SectionHeader title="Histórico">
           <SectionCount>{rows.length === LIMIT ? `últimas ${LIMIT}` : `${rows.length} ${rows.length === 1 ? "movimentação" : "movimentações"}`}</SectionCount>
@@ -75,6 +80,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
           : <div className="overflow-x-auto"><Table className="min-w-[1080px]">
             <TableCaption className="sr-only">Movimentações do inventário</TableCaption>
             <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
+              {toReview.length > 0 && <TableHead className={cn(HEAD_CLASS, "w-10")}><ReviewCheckAll /></TableHead>}
               <TableHead className={cn(HEAD_CLASS, "w-24")}>Data</TableHead>
               <TableHead className={HEAD_CLASS}>Material</TableHead>
               <TableHead className={cn(HEAD_CLASS, "w-32")}>Tipo</TableHead>
@@ -90,6 +96,7 @@ export default async function Movements({ searchParams }: { searchParams: Promis
               const to = m.to_location_id ? pathOf.get(m.to_location_id) : !from && m.item_location_id ? pathOf.get(m.item_location_id) : undefined;
               const quantity = signedQuantity(m);
               return <TableRow key={m.id}>
+                {toReview.length > 0 && <TableCell className={CELL_CLASS}>{m.review_status === "para_revisar" && <ReviewCheck id={m.id} label={`${MOVEMENT_LABELS[m.kind]} de ${m.material_name}`} />}</TableCell>}
                 <TableCell className={cn(CELL_CLASS, "num text-muted-foreground")}>{timestampBR(m.created_at)}</TableCell>
                 <TableCell className={cn(CELL_CLASS, "font-semibold")}><Link href={`/inventario/materiais/${m.material_id}`} className="hover:underline">{m.material_name}</Link></TableCell>
                 <TableCell className={CELL_CLASS}><Badge variant="outline">{MOVEMENT_LABELS[m.kind]}</Badge></TableCell>
@@ -97,11 +104,16 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                 <TableCell className={cn(CELL_CLASS, "max-w-72")}>{from && to ? <>{from} <span className="text-muted-foreground">→</span> {to}</> : from ?? to ?? dash}</TableCell>
                 <TableCell className={cn(CELL_CLASS, "max-w-96 whitespace-normal")}><Detail row={m} dash={dash} /></TableCell>
                 <TableCell className={cn(CELL_CLASS, "max-w-64 truncate")} title={m.notes ?? undefined}>{m.notes || dash}</TableCell>
-                <TableCell className={CELL_CLASS}><Badge className={REVIEW_BADGE[m.review_status]}>{REVIEW_LABELS[m.review_status]}</Badge></TableCell>
+                <TableCell className={CELL_CLASS}><span className="inline-flex items-center gap-1">
+                  <Badge className={REVIEW_BADGE[m.review_status]}>{REVIEW_LABELS[m.review_status]}</Badge>
+                  <ReviewDetails status={m.review_status} channel={m.channel} byYou={m.created_by === user.id} reviewedByYou={m.reviewed_by === user.id}
+                    reviewedAt={m.reviewed_at} notes={m.review_notes} />
+                </span></TableCell>
               </TableRow>;
             })}</TableBody>
           </Table></div>}
       </SectionCard>
+      </ReviewSelection>
     </PageBody>
   </div>;
 }

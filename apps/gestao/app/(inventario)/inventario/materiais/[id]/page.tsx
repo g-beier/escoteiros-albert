@@ -17,6 +17,9 @@ import * as materials from "@/lib/server/inventory/materials";
 import * as movementsData from "@/lib/server/inventory/movements";
 import { AddLotButton, Expiry, LotsTable } from "@/components/inventory/materials/lots-table";
 import { ReviewNotice } from "@/components/inventory/materials/review-notice";
+import { ReviewButton } from "@/components/inventory/review";
+import { ReviewDetails } from "@/components/inventory/review-details";
+import { reviewMovements } from "../../movimentacoes/actions";
 import { AddUnitButton, UnitsTable } from "@/components/inventory/materials/units-table";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
@@ -28,9 +31,8 @@ import { formatCents } from "@/lib/format";
 import { pageSession } from "@/lib/server/session";
 
 const REVIEW_TONES: Record<ReviewStatus, string> = {
+  para_revisar: "border-[#e5c45a] bg-[#f5eed1] text-[#725d0d]",
   revisado: "text-muted-foreground",
-  pendente: "border-[#e5c45a] bg-[#f5eed1] text-[#725d0d]",
-  para_revisar: "border-destructive/30 bg-destructive/10 text-destructive",
 };
 
 
@@ -61,7 +63,7 @@ export default async function MaterialDetail({ params, searchParams }: { params:
   const units = withPath(unitData);
   const unitLabel = new Map(units.map((row) => [row.id, row.tag ?? row.legacy_code ?? "peça"]));
   const locations = locationOptions(paths);
-  const pending = movements.filter((row) => row.review_status !== "revisado").length;
+  const pending = movements.filter((row) => row.review_status === "para_revisar").length;
 
   return <div className="shell">
     <AppHeader current={`/inventario/materiais/${id}`} email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
@@ -101,7 +103,7 @@ export default async function MaterialDetail({ params, searchParams }: { params:
 
       <SectionCard>
         <SectionHeader title="Histórico">
-          <SectionCount>{movements.length === 100 ? "últimos 100" : `${movements.length} ${movements.length === 1 ? "movimento" : "movimentos"}`}{pending > 0 && ` · ${pending} a revisar`}</SectionCount>
+          <SectionCount>{movements.length === 100 ? "últimos 100" : `${movements.length} ${movements.length === 1 ? "movimento" : "movimentos"}`}{pending > 0 && ` · ${pending} para revisar`}</SectionCount>
         </SectionHeader>
         {movements.length === 0
           ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhum movimento registrado.</p>
@@ -112,7 +114,7 @@ export default async function MaterialDetail({ params, searchParams }: { params:
               <TableHead className={cn(HEAD_CLASS, "w-28")}>Movimento</TableHead>
               <TableHead className={cn(HEAD_CLASS, "w-20 text-right")}>Qtd.</TableHead>
               <TableHead className={HEAD_CLASS}>Detalhe</TableHead>
-              <TableHead className={cn(HEAD_CLASS, "w-40")}>Revisão</TableHead>
+              <TableHead className={cn(HEAD_CLASS, "w-48")}>Revisão</TableHead>
             </TableRow></TableHeader>
             <TableBody>{movements.map((row) => <TableRow key={row.id}>
               <TableCell className={cn(CELL_CLASS, "num text-muted-foreground")}>{timestampBR(row.created_at)}</TableCell>
@@ -123,8 +125,12 @@ export default async function MaterialDetail({ params, searchParams }: { params:
                 {row.notes && <span className="block text-muted-foreground">{row.notes}</span>}
               </TableCell>
               <TableCell className={CELL_CLASS}>
-                <Badge variant="outline" className={REVIEW_TONES[row.review_status]}>{REVIEW_LABELS[row.review_status]}</Badge>
-                {row.created_by === user.id && <span className="ml-1 text-[11px] text-muted-foreground">por você</span>}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge variant="outline" className={REVIEW_TONES[row.review_status]}>{REVIEW_LABELS[row.review_status]}</Badge>
+                  <ReviewDetails status={row.review_status} channel={row.channel} byYou={row.created_by === user.id} reviewedByYou={row.reviewed_by === user.id}
+                    reviewedAt={row.reviewed_at} notes={row.review_notes} />
+                  {member.inventory.canManage && row.review_status === "para_revisar" && <ReviewButton id={row.id} action={reviewMovements} />}
+                </div>
               </TableCell>
             </TableRow>)}</TableBody>
           </Table></div>}

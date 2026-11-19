@@ -1,4 +1,4 @@
-import type { Condition, MovementKind, Origin, ReviewStatus, Tracking, WriteOffReason } from "./vocabulary";
+import type { Condition, MovementChannel, MovementKind, Origin, ReviewStatus, Tracking, WriteOffReason } from "./vocabulary";
 
 // Formas dos dados do Inventário que as telas recebem de lib/server/inventory (docs/inventario/modelo.md).
 
@@ -53,12 +53,20 @@ export type Movement = {
   id: number; kind: MovementKind; quantity: number | null; from_location_id: string | null; to_location_id: string | null;
   from_condition: Condition | null; to_condition: Condition | null; write_off_reason: WriteOffReason | null;
   notes: string | null; details: Record<string, unknown>; review_status: ReviewStatus; created_by: string | null; created_at: string;
+  review_notes: string | null; reviewed_by: string | null; reviewed_at: string | null; channel: MovementChannel;
   lot_id: string | null; unit_id: string | null;
 };
 
 /** Movimento nas listas (Movimentações), com o nome do material. */
 export type MovementListRow = Pick<Movement, "id" | "kind" | "quantity" | "from_location_id" | "to_location_id" | "from_condition"
-  | "to_condition" | "write_off_reason" | "notes" | "review_status" | "created_at"> & { material_id: string; material_name: string };
+  | "to_condition" | "write_off_reason" | "notes" | "review_status" | "created_at" | "details" | "lot_id" | "unit_id"
+  | "created_by" | "review_notes" | "reviewed_by" | "reviewed_at" | "channel"> & {
+  material_id: string; material_name: string;
+  /** Divisão atual do lote ou da peça (ajuste e edição não gravam divisão no movimento). */
+  item_location_id: string | null;
+  /** Etiqueta ou código antigo da peça. */
+  unit_label: string | null;
+};
 
 export type MovementFilters = { review?: ReviewStatus; kind?: MovementKind };
 

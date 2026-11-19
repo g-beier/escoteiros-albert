@@ -7,7 +7,7 @@ import type { Db } from "@/lib/server/db";
 import { rowsOf, rpc, sb, unwrap } from "@/lib/server/supabase/db";
 
 // Materiais, lotes (por quantidade) e peças (por unidade). Escritas pelas funções inventory_* (032): o chefe
-// grava na hora e o movimento fica pendente de revisão.
+// grava na hora e o movimento fica para revisar.
 
 // Leituras ---------------------------------------------------------------------------------------
 

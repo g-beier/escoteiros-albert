@@ -6,7 +6,8 @@ export type Tracking = "unit" | "lot";
 export type Origin = "compra" | "doacao" | "fabricacao" | "nao_informada";
 export type WriteOffReason = "perda" | "extravio" | "descarte" | "doacao" | "consumo";
 export type MovementKind = "entrada" | "transferencia" | "condicao" | "ajuste" | "baixa" | "edicao";
-export type ReviewStatus = "pendente" | "revisado" | "para_revisar";
+export type ReviewStatus = "para_revisar" | "revisado";
+export type MovementChannel = "web" | "rapido";
 
 export const ROLE_LABELS: Record<InventoryRole, string> = { manager: "Gestor", chief: "Chefe", viewer: "Consulta" };
 export const CONDITION_LABELS: Record<Condition, string> = {
@@ -18,7 +19,8 @@ export const WRITE_OFF_LABELS: Record<WriteOffReason, string> = { perda: "Perda"
 export const MOVEMENT_LABELS: Record<MovementKind, string> = {
   entrada: "Entrada", transferencia: "Transferência", condicao: "Condição", ajuste: "Ajuste", baixa: "Baixa", edicao: "Edição",
 };
-export const REVIEW_LABELS: Record<ReviewStatus, string> = { pendente: "Pendente de revisão", revisado: "Revisado", para_revisar: "Para revisar" };
+export const REVIEW_LABELS: Record<ReviewStatus, string> = { para_revisar: "Para revisar", revisado: "Revisado" };
+export const CHANNEL_LABELS: Record<MovementChannel, string> = { web: "Telas normais", rapido: "Registro rápido" };
 
 const options = <T extends string>(labels: Record<T, string>) => (Object.entries(labels) as [T, string][]).map(([value, label]) => ({ value, label }));
 export const conditionOptions = options(CONDITION_LABELS);

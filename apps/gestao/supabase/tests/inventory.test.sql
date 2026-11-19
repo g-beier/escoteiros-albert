@@ -80,7 +80,7 @@ select public.inventory_save_material(:'gid_a', null, null, 'Caneca', 'lot', fal
 select public.inventory_save_material(:'gid_a', null, :'fam', 'Barraca iglu', 'unit', false, null, null) as bar \gset
 select public.inventory_save_material(:'gid_a', null, :'fam_sem', 'Lampião', 'unit', false, null, null) as lamp \gset
 select throws_like(format($$select public.inventory_save_material(%L, null, null, 'caneca', 'lot', false, null, null)$$, :'gid_a'), 'Já existe o material%', 'nome de material único');
-select is((select review_status::text from public.inventory_movements where material_id = :'can' and kind = 'edicao'), 'pendente', 'cadastro do chefe nasce pendente');
+select is((select review_status::text from public.inventory_movements where material_id = :'can' and kind = 'edicao'), 'para_revisar', 'cadastro do chefe nasce para revisar');
 
 -- Lote: entrada, transferência, condição, ajuste, baixa ----------------------------------------
 select public.inventory_add_lot(:'can', :'coz', 12, 'bom', 500, null, null, null, null, null, null) as lot \gset
@@ -146,8 +146,8 @@ select lives_ok(format($$select public.inventory_save_material(%L, %L, null, 'Ca
 select is((select below_minimum from public.inventory_material_rows where id = :'can'), true, 'abaixo do mínimo alerta');
 select is((select quantity || '/' || estimated_value_cents from public.inventory_material_rows where id = :'bar'), '1/15000', 'peça baixada não conta');
 
--- Revisão: chefe pendente, gestor e admin já revisados ------------------------------------------
-select is((select count(*)::int from public.inventory_movements where created_by = '00000000-0000-0000-0000-00000000f0a4' and review_status <> 'pendente'), 0, 'todos os movimentos do chefe pendentes');
+-- Revisão: chefe para revisar, gestor e admin já revisados ---------------------------------------
+select is((select count(*)::int from public.inventory_movements where created_by = '00000000-0000-0000-0000-00000000f0a4' and review_status <> 'para_revisar'), 0, 'todos os movimentos do chefe para revisar');
 
 select tests.login('00000000-0000-0000-0000-00000000f0a5') \gset
 select public.inventory_add_lot(:'can', :'coz', 3, null, null, '2027-05-31', null, 'doacao', null, null, null) as lot_g \gset

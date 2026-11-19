@@ -41,7 +41,11 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   const { db, groupId } = member;
   const state = parseListState(params);
 
-  const [materialData, stock, paths, familyOptions] = await Promise.all([
+  // Contagens dos dois anos anteriores (conferência / planilha); cada coluna só existe se houver contagem.
+  const currentYear = Number(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).slice(0, 4));
+  const years = [currentYear - 1, currentYear - 2] as const;
+
+  const [materialData, stock, paths, familyOptions, counts, cookieStore, toReview, lotData] = await Promise.all([
     materialsData.list(db, groupId, { includeInactive: params.inativos === "1", familyId: params.familia, search: params.q }),
     materialsData.stockByLocation(db, groupId),
     locations.listPaths(db, groupId),

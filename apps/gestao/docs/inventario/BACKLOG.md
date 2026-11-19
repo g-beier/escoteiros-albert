@@ -38,7 +38,7 @@ Modelo e vocabulário em `docs/modelo.md`.
 
 - Produtos com variações (tamanho, tipo de lenço) e preço de venda; venda lançada no Financeiro (rubrica Lojinha, com os itens) gerando a saída; entrega gratuita (Acolhida, distintivos) registrada no Inventário, com o associado opcional.
 
-### Passo 3 — Revisão
+### Empréstimo e devolução
 
 - Gestor revisa os movimentos pendentes dos chefes: aprova (revisado) ou recusa (vai para o relatório "Para revisar").
 

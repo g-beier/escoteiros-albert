@@ -4,7 +4,7 @@ import { rowsOf, rpc, sb } from "@/lib/server/supabase/db";
 
 // Histórico do inventário (inventory_movements): toda mudança, com o status de revisão.
 
-const LIST_COLUMNS = "id, kind, quantity, from_location_id, to_location_id, from_condition, to_condition, write_off_reason, notes, review_status, created_at, material_id, inventory_materials(name)";
+const LIST_COLUMNS = "id, kind, quantity, from_location_id, to_location_id, from_condition, to_condition, write_off_reason, notes, review_status, review_notes, reviewed_by, reviewed_at, channel, created_by, created_at, details, lot_id, unit_id, material_id, inventory_materials(name), inventory_lots(location_id), inventory_units(location_id, tag, legacy_code)";
 
 type ListRow = Omit<MovementListRow, "material_name" | "item_location_id" | "unit_label"> & {
   inventory_materials: { name: string } | null;
@@ -29,12 +29,17 @@ export async function list(db: Db, groupId: string, filters: MovementFilters, li
 /** Histórico de um material. */
 export async function forMaterial(db: Db, materialId: string, limit: number): Promise<Movement[]> {
   return rowsOf(await sb(db).from("inventory_movements")
-    .select("id, kind, quantity, from_location_id, to_location_id, from_condition, to_condition, write_off_reason, notes, details, review_status, created_by, created_at, lot_id, unit_id")
+    .select("id, kind, quantity, from_location_id, to_location_id, from_condition, to_condition, write_off_reason, notes, details, review_status, review_notes, reviewed_by, reviewed_at, channel, created_by, created_at, lot_id, unit_id")
     .eq("material_id", materialId).order("created_at", { ascending: false }).limit(limit)) as Movement[];
 }
 
 /** Quantos movimentos de chefes esperam a revisão do gestor. */
 export async function pendingCount(db: Db, groupId: string): Promise<number> {
-  const { count } = await sb(db).from("inventory_movements").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("review_status", "pendente");
+  const { count } = await sb(db).from("inventory_movements").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("review_status", "para_revisar");
   return count ?? 0;
+}
+
+/** Marca como revisados os movimentos escolhidos (só o gestor); devolve quantos foram marcados. */
+export async function review(db: Db, groupId: string, ids: number[], notes: string | null): Promise<number> {
+  return rpc(db, "inventory_review_movements", { p_group_id: groupId, p_ids: ids, p_notes: notes });
 }
