@@ -62,17 +62,16 @@ graph TB
 ├── package.json              npm workspaces apps/* packages/*; dev runs gestao + site via concurrently
 ├── CLAUDE.md                 rules for agents (source of truth for conventions)
 ├── CONTRIBUTING.md           commits, PR, rulesets, required checks
-├── README.md                 STALE: still lists apps/financeiro, apps/inventario, dev:financeiro
+├── README.md                 overview of apps and commands
 ├── commitlint.config.mjs     scopes gestao|financeiro|inventario|ui|institucional|db|e2e|deps
 ├── .husky/commit-msg         runs commitlint
 ├── .github/workflows/        ci.yml (checks, db-e2e), commits.yml (commitlint)
 ├── docs/
 │   ├── CODEBASE_MAP.md       this file
-│   ├── consolidacao-gestao.md   merge plan for financeiro+inventario → gestao (done; header still says "não iniciado")
+│   ├── consolidacao-gestao.md   merge plan for financeiro+inventario → gestao (done)
 │   └── migracao-saida-supabase.md  plan to leave Supabase (evaluation only)
 ├── packages/ui/              @geas/ui — shared shell + primitives, TS source, no build
 │   └── src/{shell.tsx, shell.css, theme.css, components/*, lib/*}
-├── apps/inventario/          DEAD: only a tracked next-env.d.ts left over (safe to git rm)
 ├── apps/institucional/       public site
 │   ├── astro.config.mjs      integrations, aliases, sitemap filter
 │   ├── DESIGN.md             palette/fonts (says "Astro 6"; package is astro ^7.4.8)
@@ -312,11 +311,6 @@ Browser reads the file (`decodeBytes` → `readOfx` → `applyOfxProfile`) → `
 ## Gotchas
 
 **Stale / leftover**
-- `apps/inventario/next-env.d.ts` is tracked but the app is gone (moved in `36d4bbe`).
-- Root `README.md` names `apps/financeiro`, `dev:financeiro`, `dev:inventario`.
-- `CLAUDE.md` says Astro 6 and `vendor/`; reality is `astro ^7.4.8` and `src/integration/`. `DESIGN.md` also says Astro 6.
-- `docs/consolidacao-gestao.md` header says "não iniciado" (it's done). `BACKLOG.md`, `docs/contabilidade.md`, `docs/inventario/BACKLOG.md` and SQL test headers use pre-consolidation paths (`/lancamentos`, `apps/financeiro`, `lib/session.ts`).
-- `apps/institucional/src/utils/financial-reports.ts` comment points at `apps/gestao/lib/export/transparency.ts` (real: `lib/finance/export/transparency.ts`).
 - `AnnouncementBanner` in `Layout.astro` has `expireDate="2026-08-08"` (expired); `/transparencia` stats are hard-coded ("atualizados em 05.10.2026").
 - Associados is built in part (see `apps/gestao/docs/associados/plano.md`); the "Ações" module is a draft with no code. Adding a module means a new `GestaoModule`, `AppBrand.current`, theme accent, session role.
 - Untracked `default.profraw` files (LLVM) sit in several folders; `*.profraw` is gitignored.

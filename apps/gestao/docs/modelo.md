@@ -45,7 +45,7 @@ OFX → linhas do extrato (abertas) → conciliação (vincular a lançamentos e
 
 ## Regras de escrita
 
-Toda escrita passa por funções SQL `security definer` que validam o papel (`can_edit_group`) e gravam `audit_events`. Não há políticas de escrita direta em `categories`, `payment_methods`, `accounts` nem nas tabelas de extrato e conciliação. No app, a sessão e o grupo vêm de `lib/session.ts` (`pageSession`, `pageMember`, `memberOrError`, `editorOrError`, `requireEditor`, `requireAdmin`).
+Toda escrita passa por funções SQL `security definer` que validam o papel (`can_edit_group`) e gravam `audit_events`. Não há políticas de escrita direta em `categories`, `payment_methods`, `accounts` nem nas tabelas de extrato e conciliação. No app, a sessão e o grupo vêm de `lib/server/session.ts` (`pageSession`, `pageMember`, `memberOrError`, `financeEditorOrError`, `requireFinanceEditor`, `requireAdmin`).
 
 ## Histórico de alterações
 

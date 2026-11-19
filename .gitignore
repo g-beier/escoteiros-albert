@@ -22,6 +22,11 @@ pnpm-debug.log*
 .next/
 .nx/
 *.tsbuildinfo
+next-env.d.ts
+
+# test output (Playwright)
+test-results/
+playwright-report/
 
 # Supabase local state
 **/supabase/.branches/
