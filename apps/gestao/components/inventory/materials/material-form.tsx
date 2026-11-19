@@ -31,8 +31,10 @@ const MAX_UNITS_ON_CREATE = 50;
  * Cadastro e edição do material. O controle (peça/quantidade) só muda enquanto não há estoque.
  * No cadastro, a primeira entrada (lote ou peças) pode ser registrada junto.
  */
-export function MaterialForm({ families, locations = [], material, hasStock = false }: {
+export function MaterialForm({ families, locations = [], material, hasStock = false, back }: {
   families: Option[]; locations?: Option[]; material?: MaterialDefaults; hasStock?: boolean;
+  /** Lista com filtros para onde o detalhe volta depois de salvar (`voltar`). */
+  back?: string;
 }) {
   const [state, action, pending] = useActionState(saveMaterial, {} as ActionResult);
   useActionToast(state);
@@ -46,6 +48,7 @@ export function MaterialForm({ families, locations = [], material, hasStock = fa
 
   return <form action={action} className="grid gap-4">
     {material && <input type="hidden" name="id" value={material.id} />}
+    {back && <input type="hidden" name="voltar" value={back} />}
     <Field id="material-name" label="Nome">
       <Input id="material-name" name="name" required minLength={2} maxLength={120} defaultValue={material?.name} placeholder="Ex.: Barraca iglu 4 pessoas" />
     </Field>

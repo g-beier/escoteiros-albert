@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { IconDots, IconPlus } from "@tabler/icons-react";
-import { Badge } from "@geas/ui/components/badge";
+import { ConditionPill } from "@/components/inventory/condition-pill";
 import { Button } from "@geas/ui/components/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
 import { Input } from "@geas/ui/components/input";
@@ -84,7 +84,7 @@ export function UnitsTable({ materialId, units, locations, canEdit, nextTag, fam
           <TableCell className={cn(CELL_CLASS, "num font-semibold")}>{row.tag ?? <span className="font-normal text-muted-foreground">sem etiqueta</span>}</TableCell>
           <TableCell className={cn(CELL_CLASS, "num")}>{row.legacy_code ?? <span className="text-muted-foreground">—</span>}</TableCell>
           <TableCell className={cn(CELL_CLASS, "whitespace-normal")}>{row.path}</TableCell>
-          <TableCell className={CELL_CLASS}>{row.condition ? <Badge variant="outline">{CONDITION_LABELS[row.condition]}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
+          <TableCell className={CELL_CLASS}><ConditionPill condition={row.condition} /></TableCell>
           <TableCell className={cn(CELL_CLASS, "num text-right")}>{row.unit_value_cents != null ? formatCents(row.unit_value_cents) : <span className="text-muted-foreground">—</span>}</TableCell>
           <TableCell className={cn(CELL_CLASS, "max-w-80 whitespace-normal text-muted-foreground")}>
             {[row.description, row.notes, row.origin !== "nao_informada" && ORIGIN_LABELS[row.origin], row.acquired_on && dateBR(row.acquired_on)].filter(Boolean).join(" · ") || "—"}

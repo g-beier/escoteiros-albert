@@ -1,5 +1,8 @@
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
 export type Database = {
+  
   "public": {
           Tables: {
             "accounts": {
@@ -1114,10 +1117,11 @@ isOneToOne: false
                   }
                   ComputedFields: never
                   Relationships: [
+                    
                   ]
                 },"inventory_material_rows": {
                   Row: {
-                    "active": boolean,"below_minimum": boolean | null,"consumable": boolean,"description": string | null,"estimated_value_cents": number | null,"family_code": string | null,"family_id": string | null,"family_name": string | null,"group_id": string,"id": string,"lots": number | null,"minimum_quantity": number | null,"name": string,"next_expiry": string | null,"quantity": number | null,"tracking": Database["public"]['Enums']["inventory_tracking"],"updated_at": string
+                    "active": boolean,"below_minimum": boolean | null,"consumable": boolean,"description": string | null,"estimated_value_cents": number | null,"family_code": string | null,"family_id": string | null,"family_name": string | null,"group_id": string,"id": string,"lots": number | null,"minimum_quantity": number | null,"name": string,"next_expiry": string | null,"quantity": number | null,"search_text": string | null,"tracking": Database["public"]['Enums']["inventory_tracking"],"updated_at": string
                   }
                   ComputedFields: never
                   Relationships: [
@@ -1137,10 +1141,11 @@ isOneToOne: false
                   ]
                 },"inventory_stock_by_location": {
                   Row: {
-                    "group_id": string | null,"location_id": string | null,"material_id": string | null,"next_expiry": string | null,"quantity": number | null,"value_cents": number | null
+                    "conditions": Json | null,"group_id": string | null,"location_id": string | null,"material_id": string | null,"max_unit_cents": number | null,"min_unit_cents": number | null,"next_expiry": string | null,"quantity": number | null,"value_cents": number | null,"worst_condition": Database["public"]['Enums']["inventory_condition"] | null
                   }
                   ComputedFields: never
                   Relationships: [
+                    
                   ]
                 },"ledger_entry_rows": {
                   Row: {
@@ -1236,6 +1241,7 @@ isOneToOne: false
 "admin_bootstrap_group":
 { Args: { "p_admin_email": string,"p_group_name": string }; Returns: string
                            },
+
 "admin_change_inventory_role":
 { Args: { "p_group_id": string,"p_role": Database["public"]['Enums']["inventory_role"],"p_user_id": string }; Returns: undefined
                            },
@@ -1245,6 +1251,21 @@ isOneToOne: false
 "admin_remove_member":
 { Args: { "p_group_id": string,"p_user_id": string }; Returns: undefined
                            },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 "attachment_path_entry":
 { Args: { "p_name": string }; Returns: Record<string, unknown>
                            },
@@ -1257,6 +1278,7 @@ isOneToOne: false
 "can_edit_inventory":
 { Args: { "p_group_id": string }; Returns: boolean
                            },
+
 "can_manage_inventory":
 { Args: { "p_group_id": string }; Returns: boolean
                            },
@@ -1305,6 +1327,23 @@ isOneToOne: false
 "confirm_fee_suggestions":
 { Args: { "p_items": Json }; Returns: number
                            },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 "create_account":
 { Args: { "p_bank": string,"p_branch": string,"p_group_id": string,"p_kind": Database["public"]['Enums']["account_kind"],"p_ledger_code": string,"p_name": string,"p_number": string,"p_opening_balance_cents": number,"p_opening_date": string }; Returns: string
                            },
@@ -1389,7 +1428,7 @@ isOneToOne: false
 { Args: { "p_account_id": string,"p_closing_balance_cents": number,"p_file_name": string,"p_lines": Json,"p_opening_balance_cents": number,"p_period_from": string,"p_period_to": string,"p_profile_id": string,"p_profile_settings": Json }; Returns: Json
                            },
 "inventory_add_lot":
-{ Args: { "p_acquired_on": string,"p_condition": Database["public"]['Enums']["inventory_condition"],"p_expires_on": string,"p_invoice": string,"p_location_id": string,"p_material_id": string,"p_notes": string,"p_origin": Database["public"]['Enums']["inventory_origin"],"p_quantity": number,"p_supplier": string,"p_unit_value_cents": number }; Returns: string
+{ Args: { "p_acquired_on": string,"p_condition": Database["public"]['Enums']["inventory_condition"],"p_expires_on": string,"p_invoice": string,"p_location_id": string,"p_material_id": string,"p_notes": string,"p_origin": Database["public"]['Enums']["inventory_origin"],"p_quantity": number,"p_supplier": string,"p_unit_value_cents": number,"p_variant"?: string }; Returns: string
                            },
 "inventory_add_unit":
 { Args: { "p_acquired_on": string,"p_condition": Database["public"]['Enums']["inventory_condition"],"p_description": string,"p_invoice": string,"p_legacy_code": string,"p_location_id": string,"p_material_id": string,"p_notes": string,"p_origin": Database["public"]['Enums']["inventory_origin"],"p_supplier": string,"p_tag": string,"p_unit_value_cents": number }; Returns: string
@@ -1405,6 +1444,9 @@ isOneToOne: false
                            },
 "inventory_clean":
 { Args: { "p_text": string }; Returns: string
+                           },
+"inventory_condition_rank":
+{ Args: { "c": Database["public"]['Enums']["inventory_condition"] }; Returns: number
                            },
 "inventory_lock_lot":
 { Args: { "p_lot_id": string }; Returns: {
@@ -1484,6 +1526,9 @@ isOneToOne: false
 "inventory_save_material":
 { Args: { "p_active"?: boolean,"p_consumable": boolean,"p_description": string,"p_family_id": string,"p_group_id": string,"p_id": string,"p_minimum_quantity": number,"p_name": string,"p_tracking": Database["public"]['Enums']["inventory_tracking"] }; Returns: string
                            },
+"inventory_search_normalize":
+{ Args: { "p_text": string }; Returns: string
+                           },
 "inventory_set_lot_condition":
 { Args: { "p_condition": Database["public"]['Enums']["inventory_condition"],"p_lot_id": string,"p_notes": string,"p_quantity": number }; Returns: string
                            },
@@ -1500,7 +1545,7 @@ isOneToOne: false
 { Args: { "p_notes": string,"p_to_location_id": string,"p_unit_id": string }; Returns: undefined
                            },
 "inventory_update_lot":
-{ Args: { "p_acquired_on": string,"p_expires_on": string,"p_invoice": string,"p_lot_id": string,"p_notes": string,"p_origin": Database["public"]['Enums']["inventory_origin"],"p_supplier": string,"p_unit_value_cents": number }; Returns: undefined
+{ Args: { "p_acquired_on": string,"p_expires_on": string,"p_invoice": string,"p_lot_id": string,"p_notes": string,"p_origin": Database["public"]['Enums']["inventory_origin"],"p_supplier": string,"p_unit_value_cents": number,"p_variant"?: string }; Returns: undefined
                            },
 "inventory_update_unit":
 { Args: { "p_acquired_on": string,"p_description": string,"p_invoice": string,"p_legacy_code": string,"p_notes": string,"p_origin": Database["public"]['Enums']["inventory_origin"],"p_supplier": string,"p_tag": string,"p_unit_id": string,"p_unit_value_cents": number }; Returns: undefined
@@ -1551,6 +1596,16 @@ isOneToOne: false
 "reject_reconciliation_suggestion":
 { Args: { "p_ledger_entry_id": string,"p_statement_line_id": string }; Returns: undefined
                            },
+
+
+
+
+
+
+
+
+
+
 "rename_import_profile":
 { Args: { "p_name": string,"p_profile_id": string }; Returns: undefined
                            },
@@ -1668,8 +1723,11 @@ isOneToOne: false
           }
         }
 }
+
 type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
@@ -1694,6 +1752,7 @@ export type Tables<
     ? R
     : never
   : never
+
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
@@ -1716,6 +1775,7 @@ export type TablesInsert<
     ? I
     : never
   : never
+
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
@@ -1738,6 +1798,7 @@ export type TablesUpdate<
     ? U
     : never
   : never
+
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
@@ -1752,6 +1813,7 @@ export type Enums<
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
   ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
   : never
+
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
@@ -1766,6 +1828,7 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
   ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
   : never
+
 export const Constants = {
   "public": {
           Enums: {

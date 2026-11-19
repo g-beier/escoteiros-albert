@@ -1,17 +1,4 @@
-import Link from "next/link";
-import { IconAlertTriangle, IconArrowRight, IconClockExclamation, IconPlus } from "@tabler/icons-react";
-import { PageBody, PageHeader } from "@geas/ui";
-import { buttonVariants } from "@geas/ui/components/button";
-import { ListCard, StatCard } from "@geas/ui/components/stat-card";
-import { cn } from "@geas/ui/lib/utils";
-import { AppHeader } from "@/components/inventory/app-header";
-import { SetupNeeded } from "@/components/shell/setup-needed";
-import { EXPIRY_WARNING_DAYS, MOVEMENT_LABELS, REVIEW_LABELS, dateBR, daysUntil, timestampBR } from "@/lib/inventory/vocabulary";
-import { formatCents } from "@/lib/format";
-import * as locations from "@/lib/server/inventory/locations";
-import * as materialsData from "@/lib/server/inventory/materials";
-import * as movementsData from "@/lib/server/inventory/movements";
-import { pageSession } from "@/lib/server/session";
+import { redirect } from "next/navigation";
 
 const SHOWN = 8;
 

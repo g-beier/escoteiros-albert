@@ -49,7 +49,6 @@ export default async function Movements({ searchParams }: { searchParams: Promis
   ]);
   const pathOf = new Map(paths.map((p) => [p.id, p.path]));
   const dash = <span className="text-muted-foreground">—</span>;
-  const condition = (value: Condition | null) => value ? CONDITION_LABELS[value] : "sem condição";
 
   return <div className="shell">
     <AppHeader current="/inventario/movimentacoes" email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
@@ -87,17 +86,16 @@ export default async function Movements({ searchParams }: { searchParams: Promis
             </TableRow></TableHeader>
             <TableBody>{rows.map((m) => {
               const from = m.from_location_id ? pathOf.get(m.from_location_id) : undefined;
-              const to = m.to_location_id ? pathOf.get(m.to_location_id) : undefined;
-              const detail = m.kind === "condicao" ? `${condition(m.from_condition)} → ${condition(m.to_condition)}`
-                : m.kind === "baixa" && m.write_off_reason ? WRITE_OFF_LABELS[m.write_off_reason]
-                : m.kind === "entrada" && m.to_condition ? condition(m.to_condition) : "";
+              // Ajuste e edição não gravam divisão: mostra onde o lote/peça está.
+              const to = m.to_location_id ? pathOf.get(m.to_location_id) : !from && m.item_location_id ? pathOf.get(m.item_location_id) : undefined;
+              const quantity = signedQuantity(m);
               return <TableRow key={m.id}>
                 <TableCell className={cn(CELL_CLASS, "num text-muted-foreground")}>{timestampBR(m.created_at)}</TableCell>
                 <TableCell className={cn(CELL_CLASS, "font-semibold")}><Link href={`/inventario/materiais/${m.material_id}`} className="hover:underline">{m.material_name}</Link></TableCell>
                 <TableCell className={CELL_CLASS}><Badge variant="outline">{MOVEMENT_LABELS[m.kind]}</Badge></TableCell>
-                <TableCell className={cn(CELL_CLASS, "num text-right font-semibold")}>{m.quantity ?? dash}</TableCell>
+                <TableCell className={cn(CELL_CLASS, "num text-right font-semibold", quantity?.startsWith("−") && "text-destructive", quantity?.startsWith("+") && "text-success")}>{quantity ?? dash}</TableCell>
                 <TableCell className={cn(CELL_CLASS, "max-w-72")}>{from && to ? <>{from} <span className="text-muted-foreground">→</span> {to}</> : from ?? to ?? dash}</TableCell>
-                <TableCell className={CELL_CLASS}>{detail || dash}</TableCell>
+                <TableCell className={cn(CELL_CLASS, "max-w-96 whitespace-normal")}><Detail row={m} dash={dash} /></TableCell>
                 <TableCell className={cn(CELL_CLASS, "max-w-64 truncate")} title={m.notes ?? undefined}>{m.notes || dash}</TableCell>
                 <TableCell className={CELL_CLASS}><Badge className={REVIEW_BADGE[m.review_status]}>{REVIEW_LABELS[m.review_status]}</Badge></TableCell>
               </TableRow>;
@@ -106,4 +104,17 @@ export default async function Movements({ searchParams }: { searchParams: Promis
       </SectionCard>
     </PageBody>
   </div>;
+}
+
+/** O que mudou: condição com as pills (de → para), ajuste e edição com antes → depois; peça identificada pela etiqueta. */
+function Detail({ row, dash }: { row: MovementListRow; dash: React.ReactNode }) {
+  const unit = row.unit_label && <span className="num mr-1.5 text-muted-foreground">{row.unit_label}</span>;
+  if (row.kind === "condicao") {
+    return <span className="inline-flex flex-wrap items-center gap-1.5">{unit}
+      <ConditionPill condition={row.from_condition} /><span className="text-muted-foreground" aria-hidden>→</span><span className="sr-only">para</span><ConditionPill condition={row.to_condition} />
+    </span>;
+  }
+  if (row.kind === "entrada" && row.to_condition) return <span className="inline-flex items-center">{unit}<ConditionPill condition={row.to_condition} /></span>;
+  const detail = movementDetail(row);
+  return detail || unit ? <span className={cn(row.kind === "ajuste" && "num")}>{unit}{detail}</span> : dash;
 }

@@ -1,14 +1,22 @@
 import type { Movement, MovementFilters, MovementListRow } from "@/lib/inventory/model";
 import type { Db } from "@/lib/server/db";
-import { rowsOf, sb } from "@/lib/server/supabase/db";
+import { rowsOf, rpc, sb } from "@/lib/server/supabase/db";
 
 // Histórico do inventário (inventory_movements): toda mudança, com o status de revisão.
 
 const LIST_COLUMNS = "id, kind, quantity, from_location_id, to_location_id, from_condition, to_condition, write_off_reason, notes, review_status, created_at, material_id, inventory_materials(name)";
 
-type ListRow = Omit<MovementListRow, "material_name"> & { inventory_materials: { name: string } | null };
+type ListRow = Omit<MovementListRow, "material_name" | "item_location_id" | "unit_label"> & {
+  inventory_materials: { name: string } | null;
+  inventory_lots: { location_id: string } | null;
+  inventory_units: { location_id: string; tag: string | null; legacy_code: string | null } | null;
+};
 const flatten = (rows: ListRow[]): MovementListRow[] =>
-  rows.map(({ inventory_materials: material, ...row }) => ({ ...row, material_name: material?.name ?? "" }));
+  rows.map(({ inventory_materials: material, inventory_lots: lot, inventory_units: unit, ...row }) => ({
+    ...row, material_name: material?.name ?? "",
+    item_location_id: lot?.location_id ?? unit?.location_id ?? null,
+    unit_label: unit ? unit.tag ?? unit.legacy_code ?? "peça" : null,
+  }));
 
 /** Movimentações do grupo, mais novas primeiro, com os filtros de revisão e tipo. */
 export async function list(db: Db, groupId: string, filters: MovementFilters, limit: number): Promise<MovementListRow[]> {

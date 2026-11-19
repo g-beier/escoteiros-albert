@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { materialsBackHref, withBack } from "@/lib/inventory/material-list";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { InputError, runAction } from "@/lib/action";
 import { DataError } from "@/lib/server/db";
@@ -129,7 +130,7 @@ export async function saveMaterial(_previous: ActionResult, formData: FormData):
     }
   });
   if (result.error || !savedId) return result;
-  redirect(`/inventario/materiais/${savedId}`);
+  redirect(withBack(`/inventario/materiais/${savedId}`, materialsBackHref(formData.get("voltar")?.toString())));
 }
 
 export async function addLot(_previous: ActionResult, formData: FormData) {

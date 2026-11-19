@@ -92,6 +92,7 @@ test("gestor: divisões, família, material por quantidade com lote, transferên
   await page.getByRole("button", { name: `Ações do lote em ${root} › ${sub}` }).click();
   await page.getByRole("menuitem", { name: "Dar baixa" }).click();
   const writeOff = page.getByRole("dialog");
+  await expect(writeOff.getByLabel(/^Quantidade/)).toHaveValue("5");
   await chooseOption(page, "Motivo", "Consumo", writeOff);
   await writeOff.getByRole("button", { name: "Dar baixa" }).click();
   await expect(page.getByText("Baixa registrada.")).toBeVisible();
@@ -113,6 +114,8 @@ test("gestor: divisões, família, material por quantidade com lote, transferên
   await page.goto(`/inventario/materiais?q=${encodeURIComponent(lotMaterial)}`);
   const line = page.getByRole("row").filter({ has: page.getByRole("link", { name: lotMaterial }) });
   await expect(line).toContainText("6");
+  await page.goto("/inventario/movimentacoes?tipo=transferencia");
+  await expect(page.getByRole("table", { name: "Movimentações do inventário" })).toContainText(`${root} → ${root} › ${sub}`);
   await page.goto("/inventario/movimentacoes?tipo=baixa");
   await expect(page.getByRole("table", { name: "Movimentações do inventário" })).toContainText(lotMaterial);
 });
@@ -120,7 +123,7 @@ test("gestor: divisões, família, material por quantidade com lote, transferên
 test("gestor: material por peça com etiqueta da família", async ({ page }) => {
   await page.goto("/inventario/materiais/novo");
   await page.getByLabel("Nome").fill(unitMaterial);
-  await chooseOption(page, "Família", `${family} (${code})`);
+  await chooseOption(page, "Família", `${family} ${code}`);
   await page.getByRole("radio", { name: /^Por peça/ }).click();
   await page.getByRole("button", { name: "Cadastrar material" }).click();
   await expect(page.getByRole("heading", { name: unitMaterial })).toBeVisible();

@@ -19,6 +19,15 @@ Modelo e vocabulário em `docs/modelo.md`.
 - Celular: cabeçalho com botão de menu abaixo de 1024px e abas de área como botão com menu.
 - Início: validade em dois cartões ("Lotes vencidos" e "Vencendo em 60 dias"); Movimentações recentes com material, tipo, quantidade e divisão, na mesma altura das outras listas.
 
+## Concluído (2026-11-19, sugestões do PR #4)
+
+- Lista de Materiais (continua por divisão): colunas como na planilha — Estado (pior condição da divisão, com a quebra no detalhe), contagens dos dois anos anteriores, valor unitário (faixa quando os lotes diferem) e valor total; o usuário escolhe as colunas visíveis (cookie). Estado e faixa de unitário vêm de `inventory_stock_by_location` (042).
+- Ordenação por qualquer coluna, dentro de cada divisão. Estado, Quantidade, Validade e Valor unitário têm menu na coluna (como na planilha): ordenar nos dois sentidos e filtrar por valores (estado; abaixo do mínimo / no mínimo ou acima / sem mínimo; vencidos / não vencidos / sem validade) e/ou por faixa (quantidade, valor unitário); na URL. A tabela continua com cabeçalho mesmo vazia, para desfazer o filtro.
+- Detalhe, edição e cadastro voltam para a lista com aba, busca, filtros e ordem (`voltar`).
+- Busca ampliada (043): além do nome, descrição, família (nome e código), observação e fornecedor dos lotes com saldo, etiqueta, código antigo, descrição e observação das peças; sem acento e sem diferenciar maiúsculas; cada palavra precisa aparecer em algum campo. A "Categoria" da Alcateia (na observação dos lotes) entra na busca. Tags descartadas por ora.
+- Movimentações e histórico do material com o que mudou: condição com as pills (Bom → Em manutenção), ajuste com a contagem antes → depois e a diferença com sinal (+5 / −2), edição do material com os campos alterados (nome, mínimo, controle, consumível, ativo), divisão do lote/peça quando o movimento não grava divisão (`lib/inventory/movements.ts`).
+- Pill de estado colorida (verde → âmbar → vermelho; manutenção em azul) na lista, nos lotes e nas peças.
+
 ## A verificar
 
 - Barracas B1–B11: conciliar com as linhas de barraca das seções e mover cada peça para a sua divisão (hoje em "Almoxarifado › Barracas (a conferir)").

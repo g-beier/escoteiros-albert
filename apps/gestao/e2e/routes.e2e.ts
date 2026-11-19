@@ -18,7 +18,8 @@ test("raiz de cada módulo é o resumo dele e cada layout marca o módulo", asyn
   await expect(page.getByRole("navigation", { name: "Navegação principal" }).getByRole("link", { name: "Resumo" })).toHaveAttribute("aria-current", "page");
   await expect(page.locator("html")).toHaveAttribute("data-app", "financeiro");
   await page.goto("/inventario");
-  await expect(page.getByRole("heading", { name: "Resumo do inventário" })).toBeVisible();
+  await expect(page).toHaveURL(/\/inventario\/materiais$/);
+  await expect(page.getByRole("heading", { name: "Materiais" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-app", "inventario");
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-app", "gestao");

@@ -7,7 +7,6 @@ import { ROLE_LABELS, type InventoryRole } from "@/lib/inventory/vocabulary";
 
 /** Menu = 2º segmento da rota (/inventario/<menu>); Divisões e Famílias ficam em Configurações (engrenagem). */
 const sections = [
-  { href: "/inventario", label: "Resumo", match: (path: string) => path === "/inventario" },
   { href: "/inventario/materiais", label: "Materiais", match: (path: string) => path.startsWith("/inventario/materiais") },
   { href: "/inventario/movimentacoes", label: "Movimentações", match: (path: string) => path.startsWith("/inventario/movimentacoes") },
 ];

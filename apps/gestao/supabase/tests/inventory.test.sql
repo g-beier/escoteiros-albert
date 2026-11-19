@@ -2,7 +2,7 @@
 -- lotes, peças com etiqueta, revisão, escrita só pelas funções e isolamento entre grupos.
 -- Rode com `npm run test:db`.
 begin;
-select plan(117);
+select plan(149);
 \ir _fixture.psql
 
 -- Chefe (…f0a4) e gestor (…f0a5) do grupo A: no Financeiro são só consulta.
@@ -159,6 +159,20 @@ select is((select next_expiry from public.inventory_material_rows where id = :'c
 -- Estoque por divisão (033): lotes com saldo e peças não baixadas ------------------------------------
 select is((select quantity || '/' || value_cents from public.inventory_stock_by_location where material_id = :'bar' and location_id = :'coz'), '1/15000', 'peça transferida conta na divisão; baixada não');
 select is((select sum(quantity)::int from public.inventory_stock_by_location where material_id = :'can'), (select quantity from public.inventory_material_rows where id = :'can'), 'soma por divisão = total do material (lote zerado fora)');
+
+-- Estado e valor unitário por divisão (042): pior condição, quantidade por condição e faixa do unitário.
+select public.inventory_add_lot(:'can', :'coz', 2, 'ruim', 800, null, null, null, null, null, 'Categoria: Primeiros Socorros') as lot_ruim \gset
+select is((select worst_condition::text from public.inventory_stock_by_location where material_id = :'can' and location_id = :'coz'), 'ruim', 'estado da divisão = pior condição');
+select is((select conditions from public.inventory_stock_by_location where material_id = :'can' and location_id = :'coz'), '{"bom": 7, "ruim": 2}'::jsonb, 'quantidade por condição (lote sem condição fora)');
+select is((select min_unit_cents || '-' || max_unit_cents from public.inventory_stock_by_location where material_id = :'can' and location_id = :'coz'), '500-800', 'faixa do valor unitário (lote sem valor fora)');
+select is((select worst_condition::text || ' ' || conditions::text from public.inventory_stock_by_location where material_id = :'bar' and location_id = :'coz'), 'regular {"regular": 1}', 'peça conta pela sua condição');
+select is((select count(*)::int from public.inventory_stock_by_location where material_id = :'bar' and location_id = :'est'), 0, 'peça baixada não entra no estado');
+
+-- Busca ampliada (043): nome, família, observação do lote e etiqueta da peça, sem acento e em minúsculas.
+select is(public.inventory_search_normalize('Cerimônia AÇÃO'), 'cerimonia acao', 'normaliza acento e caixa');
+select ok((select search_text like '%categoria: primeiros socorros%' from public.inventory_material_rows where id = :'can'), 'busca acha a observação do lote com saldo');
+select ok((select search_text like '%geas-001-0001%' and search_text like '%barracas%' from public.inventory_material_rows where id = :'bar'), 'busca acha etiqueta e família da peça');
+select ok((select search_text not like '%b2%' from public.inventory_material_rows where id = :'bar'), 'peça baixada fora da busca');
 
 select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
 select public.inventory_add_lot(:'can', :'coz', 1, null, null, null, null, null, null, null, null) as lot_adm \gset

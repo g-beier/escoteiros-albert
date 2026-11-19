@@ -9,9 +9,9 @@ import { Input } from "@geas/ui/components/input";
 import type { Option } from "@geas/ui/components/option-controls";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { cn } from "@geas/ui/lib/utils";
-import { addLot, adjustLot, setLotCondition, transferLot, updateLot, writeOffLot } from "@/app/(inventario)/inventario/materiais/actions";
+import { adjustLot, setLotCondition, transferLot, updateLot } from "@/app/(inventario)/inventario/materiais/actions";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
-import { CONDITION_LABELS, EXPIRY_WARNING_DAYS, ORIGIN_LABELS, dateBR, daysUntil, writeOffOptions } from "@/lib/inventory/vocabulary";
+import { CONDITION_LABELS, EXPIRY_WARNING_DAYS, ORIGIN_LABELS, dateBR, daysUntil } from "@/lib/inventory/vocabulary";
 import { formatCents } from "@/lib/format";
 import { ActionDialog } from "./action-dialog";
 import { ConditionField, EntryFields, Field, LocationField, NotesField, QuantityField, SelectField } from "./fields";
@@ -34,15 +34,7 @@ export function AddLotButton({ materialId, locations }: { materialId: string; lo
   const [open, setOpen] = useState(false);
   return <>
     <Button size="sm" onClick={() => setOpen(true)}><IconPlus data-icon="inline-start" /> Adicionar lote</Button>
-    {open && <ActionDialog open onOpenChange={setOpen} title="Adicionar lote" description="Entrada de unidades deste material numa divisão." action={addLot} submitLabel="Adicionar" hidden={{ materialId }}>
-      <LocationField id="lot-new-location" locations={locations} />
-      <QuantityField id="lot-new-quantity" defaultValue={1} />
-      <ConditionField id="lot-new-condition" defaultValue="bom" />
-      <Field id="lot-new-expires" label="Validade">
-        <Input id="lot-new-expires" name="expiresOn" type="date" className="num" />
-      </Field>
-      <EntryFields prefix="lot-new" />
-    </ActionDialog>}
+    {open && <AddLotDialog materialId={materialId} locations={locations} onOpenChange={setOpen} />}
   </>;
 }
 
@@ -64,12 +56,12 @@ export function LotsTable({ materialId, lots, locations, canEdit }: { materialId
         <TableHead className={cn(HEAD_CLASS, "w-32")}>Validade</TableHead>
         <TableHead className={cn(HEAD_CLASS, "w-32")}>Origem</TableHead>
         <TableHead className={HEAD_CLASS}>Observação</TableHead>
-        {canEdit && <TableHead className={cn(HEAD_CLASS, "w-12")}><span className="sr-only">Ações</span></TableHead>}
+        {canEdit && <TableHead className={cn(HEAD_CLASS, "w-36")}><span className="sr-only">Ações</span></TableHead>}
       </TableRow></TableHeader>
       <TableBody>{lots.map((row) => <TableRow key={row.id}>
         <TableCell className={cn(CELL_CLASS, "whitespace-normal")}>{row.path}</TableCell>
         <TableCell className={cn(CELL_CLASS, "num text-right font-semibold")}>{row.quantity}</TableCell>
-        <TableCell className={CELL_CLASS}>{row.condition ? <Badge variant="outline">{CONDITION_LABELS[row.condition]}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
+        <TableCell className={CELL_CLASS}><ConditionPill condition={row.condition} /></TableCell>
         <TableCell className={cn(CELL_CLASS, "num text-right")}>{row.unit_value_cents != null ? formatCents(row.unit_value_cents) : <span className="text-muted-foreground">—</span>}</TableCell>
         <TableCell className={CELL_CLASS}><Expiry date={row.expires_on} /></TableCell>
         <TableCell className={CELL_CLASS}>{ORIGIN_LABELS[row.origin]}{row.acquired_on && <span className="num block text-[11px] text-muted-foreground">{dateBR(row.acquired_on)}</span>}</TableCell>
@@ -80,13 +72,13 @@ export function LotsTable({ materialId, lots, locations, canEdit }: { materialId
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setActive({ mode: "transfer", lot: row })}>Transferir</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setActive({ mode: "condition", lot: row })}>Mudar condição</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActive({ mode: "adjust", lot: row })}>Ajustar contagem</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setActive({ mode: "edit", lot: row })}>Editar dados de entrada</DropdownMenuItem>
+              {consumable && <DropdownMenuItem onClick={() => setActive({ mode: "writeOff", lot: row })}>Dar baixa (perda, descarte…)</DropdownMenuItem>}
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onClick={() => setActive({ mode: "writeOff", lot: row })}>Dar baixa</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </TableCell>}
+        </span></TableCell>}
       </TableRow>)}</TableBody>
     </Table></div>
 
@@ -98,7 +90,7 @@ export function LotsTable({ materialId, lots, locations, canEdit }: { materialId
     </ActionDialog>}
 
     {lot && active.mode === "condition" && <ActionDialog open onOpenChange={close} title="Mudar condição" action={setLotCondition} submitLabel="Registrar" hidden={hidden}
-      description={`Lote em ${lot.path}${lot.condition ? `, hoje ${CONDITION_LABELS[lot.condition].toLowerCase()}` : ""}. Mudar só parte das unidades cria um lote novo.`}>
+      description={`Lote em ${lot.path}${lot.condition ? `, hoje ${CONDITION_LABELS[lot.condition].toLowerCase()}` : ""}. Soma num lote igual na nova condição, se houver; mudar só parte das unidades separa um lote.`}>
       <ConditionField id="lot-condition" label="Nova condição" />
       <QuantityField id="lot-condition-quantity" max={lot.quantity} defaultValue={lot.quantity} />
       <NotesField id="lot-condition-notes" />

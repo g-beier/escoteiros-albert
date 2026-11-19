@@ -1,6 +1,7 @@
 import type {
   EntryInput, ExpiringLot, Lot, Material, MaterialDefaults, MaterialInput, MaterialRow, MaterialSummary, StockRow, Unit,
 } from "@/lib/inventory/model";
+import { searchTerms } from "@/lib/inventory/search";
 import type { Condition, WriteOffReason } from "@/lib/inventory/vocabulary";
 import type { Db } from "@/lib/server/db";
 import { rowsOf, rpc, sb, unwrap } from "@/lib/server/supabase/db";
@@ -19,19 +20,24 @@ export async function list(db: Db, groupId: string, filters: MaterialFilters): P
     .eq("group_id", groupId);
   if (!filters.includeInactive) query = query.eq("active", true);
   if (filters.familyId) query = query.eq("family_id", filters.familyId);
-  if (filters.search?.trim()) query = query.ilike("name", `%${filters.search.trim().replace(/[%_\\]/g, (c) => `\\${c}`)}%`);
+  // Busca ampliada (043): cada palavra precisa aparecer em algum campo (nome, descrição, família, lotes, peças).
+  for (const term of searchTerms(filters.search)) query = query.ilike("search_text", `%${term.replace(/[%_\\]/g, (c) => `\\${c}`)}%`);
   return rowsOf(await query) as MaterialRow[];
 }
 
 /** Quantidade, valor e validade de cada material em cada divisão. */
 export async function stockByLocation(db: Db, groupId: string): Promise<StockRow[]> {
-  return rowsOf(await sb(db).from("inventory_stock_by_location").select("material_id, location_id, quantity, value_cents, next_expiry").eq("group_id", groupId)) as StockRow[];
+  return rowsOf(await sb(db).from("inventory_stock_by_location")
+    .select("material_id, location_id, quantity, value_cents, next_expiry, worst_condition, conditions, min_unit_cents, max_unit_cents")
+    .eq("group_id", groupId)) as StockRow[];
 }
 
-/** Contagem de um ano (conferência / planilha), por `material|divisão`. */
-export async function countsOfYear(db: Db, groupId: string, year: number): Promise<Map<string, number>> {
-  const rows = rowsOf(await sb(db).from("inventory_counts").select("material_id, location_id, quantity").eq("group_id", groupId).eq("year", year));
-  return new Map(rows.map((row) => [`${row.material_id}|${row.location_id}`, row.quantity]));
+/** Contagens de alguns anos (conferência / planilha): ano → `material|divisão` → quantidade. */
+export async function countsOfYears(db: Db, groupId: string, years: number[]): Promise<Map<number, Map<string, number>>> {
+  const rows = rowsOf(await sb(db).from("inventory_counts").select("year, material_id, location_id, quantity").eq("group_id", groupId).in("year", years));
+  const byYear = new Map(years.map((year) => [year, new Map<string, number>()]));
+  for (const row of rows) byYear.get(row.year)?.set(`${row.material_id}|${row.location_id}`, row.quantity);
+  return byYear;
 }
 
 export async function get(db: Db, groupId: string, id: string): Promise<Material | null> {
