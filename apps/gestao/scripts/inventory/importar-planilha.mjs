@@ -124,9 +124,21 @@ for (const m of materials.values()) {
   sql.push(`select public.inventory_save_material('${gid}', null, ${m.family ? familyId(m.family) : "null"}, ${lit(m.name)}, 'lot', ${m.consumable}, null, null);`);
 }
 sql.push(`select public.inventory_save_material('${gid}', null, ${familyId("Barracas")}, ${lit(UNIT_MATERIAL)}, 'unit', false, null, 'Barracas conferidas em 10/01/2026 (aba BARRACAS da planilha).');`);
+// Lotes iguais (material, divisão, condição, validade e variação) se juntam (046). Linhas da planilha com a mesma chave
+// mas observação ou valor diferentes são itens diferentes (ex.: distintivo novo e antigo): ganham uma variação.
+const lotNotes = (l) => [l.observacao, l.categoria ? `Categoria: ${l.categoria}` : ""].filter(Boolean).join(" · ").slice(0, 500);
+const lotKey = (l) => [l.material, l.divisao, l.condicao, l.validade].join("|");
+const sameKey = new Map();
+for (const l of imported) sameKey.set(lotKey(l), [...(sameKey.get(lotKey(l)) ?? []), l]);
+function variantOf(l) {
+  const rows = sameKey.get(lotKey(l));
+  const distinct = new Set(rows.map((r) => `${lotNotes(r)}|${r.valor_unitario}`));
+  if (distinct.size < 2) return null;
+  const notesDiffer = new Set(rows.map(lotNotes)).size > 1;
+  return (notesDiffer ? lotNotes(l) || "sem observação" : `valor ${l.valor_unitario || "não informado"}`).slice(0, 80);
+}
 for (const l of imported) {
-  const notes = [l.observacao, l.categoria ? `Categoria: ${l.categoria}` : ""].filter(Boolean).join(" · ").slice(0, 500);
-  sql.push(`select public.inventory_add_lot(${materialId(l.material)}, ${locationId(l.divisao)}, ${Number(l.quantidade)}, ${lit(l.condicao)}, ${cents(l.valor_unitario)}, ${lit(l.validade)}, null, 'nao_informada', null, null, ${lit(notes)});`);
+  sql.push(`select public.inventory_add_lot(${materialId(l.material)}, ${locationId(l.divisao)}, ${Number(l.quantidade)}, ${lit(l.condicao)}, ${cents(l.valor_unitario)}, ${lit(l.validade)}, null, 'nao_informada', null, null, ${lit(lotNotes(l))}, ${lit(variantOf(l))});`);
 }
 for (const u of units) {
   sql.push(`select public.inventory_add_unit(${materialId(UNIT_MATERIAL)}, ${locationId(UNIT_LOCATION)}, ${lit(u.etiqueta)}, ${lit(u.codigo_antigo)}, ${lit(u.descricao)}, ${lit(u.condicao)}, null, null, 'nao_informada', null, null, ${lit(`Conferida em ${u.conferida_em.split("-").reverse().join("/")}.`)});`);

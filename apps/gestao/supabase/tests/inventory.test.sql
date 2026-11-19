@@ -1,8 +1,8 @@
 -- pgTAP: Inventário (032_inventory_catalog.sql). Papéis por app, divisões em árvore, famílias, materiais,
--- lotes, peças com etiqueta, revisão, escrita só pelas funções e isolamento entre grupos.
+-- lotes, peças com etiqueta, revisão (044), registro rápido (045), escrita só pelas funções e isolamento entre grupos.
 -- Rode com `npm run test:db`.
 begin;
-select plan(117);
+select plan(149);
 \ir _fixture.psql
 
 -- Chefe (…f0a4) e gestor (…f0a5) do grupo A: no Financeiro são só consulta.
@@ -80,7 +80,7 @@ select public.inventory_save_material(:'gid_a', null, null, 'Caneca', 'lot', fal
 select public.inventory_save_material(:'gid_a', null, :'fam', 'Barraca iglu', 'unit', false, null, null) as bar \gset
 select public.inventory_save_material(:'gid_a', null, :'fam_sem', 'Lampião', 'unit', false, null, null) as lamp \gset
 select throws_like(format($$select public.inventory_save_material(%L, null, null, 'caneca', 'lot', false, null, null)$$, :'gid_a'), 'Já existe o material%', 'nome de material único');
-select is((select review_status::text from public.inventory_movements where material_id = :'can' and kind = 'edicao'), 'pendente', 'cadastro do chefe nasce pendente');
+select is((select review_status::text from public.inventory_movements where material_id = :'can' and kind = 'edicao'), 'para_revisar', 'cadastro do chefe nasce para revisar');
 
 -- Lote: entrada, transferência, condição, ajuste, baixa ----------------------------------------
 select public.inventory_add_lot(:'can', :'coz', 12, 'bom', 500, null, null, null, null, null, null) as lot \gset
@@ -146,8 +146,8 @@ select lives_ok(format($$select public.inventory_save_material(%L, %L, null, 'Ca
 select is((select below_minimum from public.inventory_material_rows where id = :'can'), true, 'abaixo do mínimo alerta');
 select is((select quantity || '/' || estimated_value_cents from public.inventory_material_rows where id = :'bar'), '1/15000', 'peça baixada não conta');
 
--- Revisão: chefe pendente, gestor e admin já revisados ------------------------------------------
-select is((select count(*)::int from public.inventory_movements where created_by = '00000000-0000-0000-0000-00000000f0a4' and review_status <> 'pendente'), 0, 'todos os movimentos do chefe pendentes');
+-- Revisão: chefe para revisar, gestor e admin já revisados ---------------------------------------
+select is((select count(*)::int from public.inventory_movements where created_by = '00000000-0000-0000-0000-00000000f0a4' and review_status <> 'para_revisar'), 0, 'todos os movimentos do chefe para revisar');
 
 select tests.login('00000000-0000-0000-0000-00000000f0a5') \gset
 select public.inventory_add_lot(:'can', :'coz', 3, null, null, '2027-05-31', null, 'doacao', null, null, null) as lot_g \gset
@@ -160,9 +160,49 @@ select is((select next_expiry from public.inventory_material_rows where id = :'c
 select is((select quantity || '/' || value_cents from public.inventory_stock_by_location where material_id = :'bar' and location_id = :'coz'), '1/15000', 'peça transferida conta na divisão; baixada não');
 select is((select sum(quantity)::int from public.inventory_stock_by_location where material_id = :'can'), (select quantity from public.inventory_material_rows where id = :'can'), 'soma por divisão = total do material (lote zerado fora)');
 
+-- Estado e valor unitário por divisão (042): pior condição, quantidade por condição e faixa do unitário.
+select public.inventory_add_lot(:'can', :'coz', 2, 'ruim', 800, null, null, null, null, null, 'Categoria: Primeiros Socorros') as lot_ruim \gset
+select is((select worst_condition::text from public.inventory_stock_by_location where material_id = :'can' and location_id = :'coz'), 'ruim', 'estado da divisão = pior condição');
+select is((select conditions from public.inventory_stock_by_location where material_id = :'can' and location_id = :'coz'), '{"bom": 7, "ruim": 2}'::jsonb, 'quantidade por condição (lote sem condição fora)');
+select is((select min_unit_cents || '-' || max_unit_cents from public.inventory_stock_by_location where material_id = :'can' and location_id = :'coz'), '500-800', 'faixa do valor unitário (lote sem valor fora)');
+select is((select worst_condition::text || ' ' || conditions::text from public.inventory_stock_by_location where material_id = :'bar' and location_id = :'coz'), 'regular {"regular": 1}', 'peça conta pela sua condição');
+select is((select count(*)::int from public.inventory_stock_by_location where material_id = :'bar' and location_id = :'est'), 0, 'peça baixada não entra no estado');
+
+-- Busca ampliada (043): nome, família, observação do lote e etiqueta da peça, sem acento e em minúsculas.
+select is(public.inventory_search_normalize('Cerimônia AÇÃO'), 'cerimonia acao', 'normaliza acento e caixa');
+select ok((select search_text like '%categoria: primeiros socorros%' from public.inventory_material_rows where id = :'can'), 'busca acha a observação do lote com saldo');
+select ok((select search_text like '%geas-001-0001%' and search_text like '%barracas%' from public.inventory_material_rows where id = :'bar'), 'busca acha etiqueta e família da peça');
+select ok((select search_text not like '%b2%' from public.inventory_material_rows where id = :'bar'), 'peça baixada fora da busca');
+
 select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
 select public.inventory_add_lot(:'can', :'coz', 1, null, null, null, null, null, null, null, null) as lot_adm \gset
 select is((select review_status::text from public.inventory_movements where lot_id = :'lot_adm'), 'revisado', 'movimento do admin nasce revisado');
+
+-- Registro rápido (045): fica para revisar mesmo do admin/gestor; o setting não vaza para o que vem depois.
+select lives_ok(format($$select public.inventory_quick('adjust_lot', jsonb_build_object('lot_id', %L, 'quantity', 2, 'notes', 'contado no celular'))$$, :'lot_adm'), 'admin ajusta pelo registro rápido');
+select is((select review_status::text || '/' || channel || '/' || (reviewed_by is null) from public.inventory_movements where lot_id = :'lot_adm' and kind = 'ajuste'), 'para_revisar/rapido/true', 'registro rápido do admin fica para revisar');
+select public.inventory_transfer_lot(:'lot_adm', :'est', 1, null) as lot_adm_t \gset
+select is((select review_status::text || '/' || channel from public.inventory_movements where lot_id = :'lot_adm_t' and kind = 'transferencia'), 'revisado/web', 'depois do rápido, a tela normal volta a nascer revisada');
+select throws_like($$select public.inventory_quick('apagar_tudo', '{}'::jsonb)$$, 'Ação de registro rápido desconhecida%', 'ação rápida desconhecida');
+select public.inventory_quick('new_material', jsonb_build_object('group_id', :'gid_a', 'name', 'Lanterna rápida', 'tracking', 'lot', 'location_id', :'coz', 'quantity', 4, 'condition', 'bom'))->>'id' as quick_mat \gset
+select is((select string_agg(kind::text || ':' || review_status::text || ':' || channel, ',' order by id) from public.inventory_movements where material_id = :'quick_mat'), 'edicao:para_revisar:rapido,entrada:para_revisar:rapido', 'cadastro rápido: material e primeira entrada para revisar');
+
+-- Revisão pelo gestor (044) ------------------------------------------------------------------------
+select tests.login('00000000-0000-0000-0000-00000000f0a4') \gset
+select throws_like(format($$select public.inventory_review_movements(%L, array[1::bigint], null)$$, :'gid_a'), 'Apenas o gestor%', 'chefe não revisa');
+select lives_ok(format($$select public.inventory_quick('adjust_lot', jsonb_build_object('lot_id', %L, 'quantity', 3, 'notes', 'chefe no celular'))$$, :'lot_adm'), 'chefe usa o registro rápido');
+select tests.login('00000000-0000-0000-0000-00000000f0a5') \gset
+select throws_like(format($$select public.inventory_review_movements(%L, array[1::bigint], null)$$, :'gid_b'), 'Apenas o gestor%', 'gestor não revisa outro grupo');
+select is(public.inventory_review_movements(:'gid_a',
+  array(select id from public.inventory_movements where group_id = :'gid_a' and review_status = 'para_revisar') || 999999999::bigint, ' conferido com o chefe '),
+  (select count(*)::int from public.inventory_movements where group_id = :'gid_a' and review_status = 'para_revisar' and created_by is not null) +
+  (select count(*)::int from public.inventory_movements where group_id = :'gid_a' and review_status = 'para_revisar' and created_by is null),
+  'gestor revisa os do chefe e os rápidos (id inexistente ignorado)');
+select is((select count(*)::int from public.inventory_movements where group_id = :'gid_a' and review_status = 'para_revisar'), 0, 'nada mais para revisar');
+select count(*)::int as reviewed_n from public.inventory_movements where group_id = :'gid_a' and review_notes = 'conferido com o chefe' and reviewed_by = '00000000-0000-0000-0000-00000000f0a5' \gset
+select is(public.inventory_review_movements(:'gid_a', array(select id from public.inventory_movements where group_id = :'gid_a'), null), 0, 'já revisados não contam de novo');
+select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
+select is((select count(*)::int from public.audit_events where group_id = :'gid_a' and action = 'inventory.reviewed'), :reviewed_n, 'nota, revisor e um evento de auditoria por movimento');
 
 -- Sem escrita direta (só as funções) ------------------------------------------------------------
 select tests.login('00000000-0000-0000-0000-00000000f0a4') \gset
@@ -188,7 +228,7 @@ select throws_ok(format($$insert into public.inventory_counts(group_id, year, ma
 
 -- Consulta lê, mas não altera -------------------------------------------------------------------
 select tests.login('00000000-0000-0000-0000-00000000f0a3') \gset
-select is((select count(*)::int from public.inventory_materials where group_id = :'gid_a'), 3, 'consulta lê os materiais');
+select is((select count(*)::int from public.inventory_materials where group_id = :'gid_a'), 4, 'consulta lê os materiais (com o do registro rápido)');
 select throws_like(format($$select public.inventory_add_lot(%L, %L, 1, null, null, null, null, null, null, null, null)$$, :'can', :'coz'), 'Material não encontrado ou sem permissão', 'consulta não dá entrada');
 
 -- Grupo B não vê nem altera nada de A -----------------------------------------------------------
@@ -202,6 +242,28 @@ select throws_like(format($$select public.inventory_add_lot(%L, %L, 1, null, nul
 select throws_like(format($$select public.inventory_transfer_lot(%L, %L, null, null)$$, :'lot', :'coz'), 'Lote não encontrado ou sem permissão', 'B não move lote de A');
 select throws_like(format($$select public.inventory_save_location(%L, null, null, 'Invasora', null)$$, :'gid_a'), 'Sem permissão%', 'B não cria divisão em A');
 select throws_like(format($$select public.inventory_next_tag(%L)$$, :'fam'), 'Família não encontrada', 'B não consulta etiquetas de A');
+-- Lotes iguais se juntam (046): mesma divisão, condição, validade e variação ---------------------------
+select tests.login('00000000-0000-0000-0000-00000000f0a5') \gset
+select public.inventory_save_material(:'gid_a', null, null, 'Distintivo de Promessa', 'lot', false, null, null) as dist \gset
+select public.inventory_add_lot(:'dist', :'coz', 1, 'novo', 1000, null, null, 'compra', null, null, null) as dist_lot \gset
+select is(public.inventory_add_lot(:'dist', :'coz', 3, 'novo', 2000, null, '2026-11-01', 'compra', 'Loja Escoteira', '123', 'reposição')::text, :'dist_lot', 'comprar mais do mesmo soma no lote');
+select is((select quantity || '/' || unit_value_cents || '/' || coalesce(notes, '-') from public.inventory_lots where id = :'dist_lot'), '4/1750/-', 'soma a quantidade, valor pela média ponderada, lote mantém os dados');
+select is((select details->>'supplier' || '/' || (details->>'merged') || '/' || (details->>'from') || '→' || (details->>'to') from public.inventory_movements where lot_id = :'dist_lot' and kind = 'entrada' order by id desc limit 1),
+  'Loja Escoteira/true/1→4', 'dados da compra ficam no movimento');
+select isnt(public.inventory_add_lot(:'dist', :'coz', 2, 'novo', null, null, null, null, null, null, null, 'modelo antigo')::text, :'dist_lot', 'variação diferente é outro lote');
+select is(public.inventory_add_lot(:'dist', :'coz', 1, 'novo', null, null, null, null, null, null, null, ' modelo   antigo ')::text,
+  (select id::text from public.inventory_lots where material_id = :'dist' and variant = 'modelo antigo'), 'mesma variação (normalizada) soma');
+select isnt(public.inventory_add_lot(:'dist', :'coz', 1, 'regular', null, null, null, null, null, null, null)::text, :'dist_lot', 'condição diferente é outro lote');
+select is(public.inventory_set_lot_condition((select id from public.inventory_lots where material_id = :'dist' and condition = 'regular'), 'novo', null, null)::text,
+  :'dist_lot', 'mudar a condição para a de um lote igual soma nele');
+select is((select quantity from public.inventory_lots where id = :'dist_lot'), 5, 'lote recebeu a unidade');
+select public.inventory_transfer_lot(:'dist_lot', :'est', 2, null) as dist_est \gset
+select isnt(:'dist_est'::text, :'dist_lot'::text, 'transferência parcial separa um lote no destino');
+select is(public.inventory_transfer_lot(:'dist_lot', :'est', 3, null)::text, :'dist_est', 'transferir o resto soma no lote igual do destino');
+select is((select string_agg(location_id::text || ':' || quantity, ',' order by quantity) from public.inventory_lots where material_id = :'dist' and variant is null and quantity > 0),
+  :'est' || ':5', 'um lote só no destino');
+select tests.logout() \gset
+
 select tests.logout() \gset
 
 select is((select count(*)::int from public.audit_events where group_id = :'gid_a' and action like 'inventory.%' and details ? 'movement_id'),

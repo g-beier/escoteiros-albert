@@ -10,7 +10,7 @@ export async function listOptions(db: Db, groupId: string, keep?: string | null)
   const rows = rowsOf(await sb(db).from("inventory_families").select("id, name, code, active").eq("group_id", groupId).order("name"));
   return rows
     .filter((row) => row.active || row.id === keep)
-    .map((row) => ({ value: row.id, label: row.code ? `${row.name} (${row.code})` : row.name }));
+    .map((row) => ({ value: row.id, label: row.name, detail: row.code ?? undefined }));
 }
 
 /** Configurações › Famílias: com quantos materiais e peças etiquetadas. */

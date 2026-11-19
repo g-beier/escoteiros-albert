@@ -9,12 +9,17 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { cn } from "@geas/ui/lib/utils";
 import { AppHeader } from "@/components/inventory/app-header";
 import { locationOptions } from "@/lib/inventory/locations";
+import { movementDetail, signedQuantity } from "@/lib/inventory/movements";
+import { materialsBackHref, withBack } from "@/lib/inventory/material-list";
 import type { Lot, Movement, Unit } from "@/lib/inventory/model";
 import * as locationsData from "@/lib/server/inventory/locations";
 import * as materials from "@/lib/server/inventory/materials";
 import * as movementsData from "@/lib/server/inventory/movements";
 import { AddLotButton, Expiry, LotsTable } from "@/components/inventory/materials/lots-table";
 import { ReviewNotice } from "@/components/inventory/materials/review-notice";
+import { ReviewButton } from "@/components/inventory/review";
+import { ReviewDetails } from "@/components/inventory/review-details";
+import { reviewMovements } from "../../movimentacoes/actions";
 import { AddUnitButton, UnitsTable } from "@/components/inventory/materials/units-table";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
@@ -26,17 +31,14 @@ import { formatCents } from "@/lib/format";
 import { pageSession } from "@/lib/server/session";
 
 const REVIEW_TONES: Record<ReviewStatus, string> = {
+  para_revisar: "border-[#e5c45a] bg-[#f5eed1] text-[#725d0d]",
   revisado: "text-muted-foreground",
-  pendente: "border-[#e5c45a] bg-[#f5eed1] text-[#725d0d]",
-  para_revisar: "border-destructive/30 bg-destructive/10 text-destructive",
 };
 
-const EDIT_ACTIONS: Record<string, string> = {
-  material_created: "Material cadastrado", material_updated: "Material editado", lot_updated: "Dados do lote editados", unit_updated: "Dados da peça editados",
-};
 
-export default async function MaterialDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function MaterialDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ voltar?: string }> }) {
+  const [{ id }, { voltar }] = await Promise.all([params, searchParams]);
+  const back = materialsBackHref(voltar);
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
   const { db, groupId } = member;
@@ -61,14 +63,14 @@ export default async function MaterialDetail({ params }: { params: Promise<{ id:
   const units = withPath(unitData);
   const unitLabel = new Map(units.map((row) => [row.id, row.tag ?? row.legacy_code ?? "peça"]));
   const locations = locationOptions(paths);
-  const pending = movements.filter((row) => row.review_status !== "revisado").length;
+  const pending = movements.filter((row) => row.review_status === "para_revisar").length;
 
   return <div className="shell">
     <AppHeader current={`/inventario/materiais/${id}`} email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
     <PageBody width="narrow">
-      <PageHeader title={material.name} crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais", href: "/inventario/materiais" }, { label: material.name }]}
+      <PageHeader title={material.name} crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais", href: back }, { label: material.name }]}
         description={material.description ?? undefined}
-        actions={member.inventory.canEdit && <Link href={`/inventario/materiais/${id}/editar`} className={buttonVariants({ variant: "outline", size: "lg" })}><IconPencil data-icon="inline-start" /> Editar material</Link>}>
+        actions={member.inventory.canEdit && <Link href={withBack(`/inventario/materiais/${id}/editar`, back)} className={buttonVariants({ variant: "outline", size: "lg" })}><IconPencil data-icon="inline-start" /> Editar material</Link>}>
         <dl className="m-0 flex flex-wrap gap-x-6 gap-y-2 text-xs">
           <Fact label="Controle">{TRACKING_LABELS[material.tracking]}{material.consumable && " · consumível"}</Fact>
           <Fact label="Família">{material.family_name ? <>{material.family_name}{material.family_code && <span className="num text-muted-foreground"> ({material.family_code})</span>}</> : "—"}</Fact>
@@ -95,13 +97,13 @@ export default async function MaterialDetail({ params }: { params: Promise<{ id:
             : <AddUnitButton materialId={id} locations={locations} nextTag={nextTag} familyCode={material.family_code} />)}
         </SectionHeader>
         {isLot
-          ? <LotsTable materialId={id} lots={lots} locations={locations} canEdit={member.inventory.canEdit} />
+          ? <LotsTable materialId={id} materialName={material.name} consumable={material.consumable} lots={lots} locations={locations} canEdit={member.inventory.canEdit} />
           : <UnitsTable materialId={id} units={units} locations={locations} canEdit={member.inventory.canEdit} nextTag={nextTag} familyCode={material.family_code} />}
       </SectionCard>
 
       <SectionCard>
         <SectionHeader title="Histórico">
-          <SectionCount>{movements.length === 100 ? "últimos 100" : `${movements.length} ${movements.length === 1 ? "movimento" : "movimentos"}`}{pending > 0 && ` · ${pending} a revisar`}</SectionCount>
+          <SectionCount>{movements.length === 100 ? "últimos 100" : `${movements.length} ${movements.length === 1 ? "movimento" : "movimentos"}`}{pending > 0 && ` · ${pending} para revisar`}</SectionCount>
         </SectionHeader>
         {movements.length === 0
           ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhum movimento registrado.</p>
@@ -112,19 +114,23 @@ export default async function MaterialDetail({ params }: { params: Promise<{ id:
               <TableHead className={cn(HEAD_CLASS, "w-28")}>Movimento</TableHead>
               <TableHead className={cn(HEAD_CLASS, "w-20 text-right")}>Qtd.</TableHead>
               <TableHead className={HEAD_CLASS}>Detalhe</TableHead>
-              <TableHead className={cn(HEAD_CLASS, "w-40")}>Revisão</TableHead>
+              <TableHead className={cn(HEAD_CLASS, "w-48")}>Revisão</TableHead>
             </TableRow></TableHeader>
             <TableBody>{movements.map((row) => <TableRow key={row.id}>
               <TableCell className={cn(CELL_CLASS, "num text-muted-foreground")}>{timestampBR(row.created_at)}</TableCell>
               <TableCell className={cn(CELL_CLASS, "font-semibold")}>{MOVEMENT_LABELS[row.kind]}</TableCell>
-              <TableCell className={cn(CELL_CLASS, "num text-right")}>{row.quantity ?? "—"}</TableCell>
+              <TableCell className={cn(CELL_CLASS, "num text-right")}>{signedQuantity(row) ?? "—"}</TableCell>
               <TableCell className={cn(CELL_CLASS, "whitespace-normal")}>
                 {describe(row, pathOf, unitLabel)}
                 {row.notes && <span className="block text-muted-foreground">{row.notes}</span>}
               </TableCell>
               <TableCell className={CELL_CLASS}>
-                <Badge variant="outline" className={REVIEW_TONES[row.review_status]}>{REVIEW_LABELS[row.review_status]}</Badge>
-                {row.created_by === user.id && <span className="ml-1 text-[11px] text-muted-foreground">por você</span>}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge variant="outline" className={REVIEW_TONES[row.review_status]}>{REVIEW_LABELS[row.review_status]}</Badge>
+                  <ReviewDetails status={row.review_status} channel={row.channel} byYou={row.created_by === user.id} reviewedByYou={row.reviewed_by === user.id}
+                    reviewedAt={row.reviewed_at} notes={row.review_notes} />
+                  {member.inventory.canManage && row.review_status === "para_revisar" && <ReviewButton id={row.id} action={reviewMovements} />}
+                </div>
               </TableCell>
             </TableRow>)}</TableBody>
           </Table></div>}
@@ -147,8 +153,8 @@ function describe(row: Movement, pathOf: Map<string, string>, unitLabel: Map<str
     case "entrada": return `${prefix}em ${where(row.to_location_id)}${row.to_condition ? `, ${condition(row.to_condition)}` : ""}`;
     case "transferencia": return `${prefix}${where(row.from_location_id)} → ${where(row.to_location_id)}`;
     case "condicao": return `${prefix}${condition(row.from_condition)} → ${condition(row.to_condition)}`;
-    case "ajuste": return `Contagem ${row.details.from ?? "?"} → ${row.details.to ?? "?"}`;
+    case "ajuste": return `${prefix}Quantidade ${movementDetail(row) || "ajustada"}`;
     case "baixa": return `${prefix}${row.write_off_reason ? WRITE_OFF_LABELS[row.write_off_reason] : "Baixa"}${row.from_location_id ? ` em ${where(row.from_location_id)}` : ""}`;
-    case "edicao": return `${prefix}${EDIT_ACTIONS[String(row.details.action)] ?? "Edição"}`;
+    case "edicao": return `${prefix}${movementDetail(row)}`;
   }
 }

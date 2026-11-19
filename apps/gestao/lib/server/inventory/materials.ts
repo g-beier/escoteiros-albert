@@ -1,12 +1,13 @@
 import type {
   EntryInput, ExpiringLot, Lot, Material, MaterialDefaults, MaterialInput, MaterialRow, MaterialSummary, StockRow, Unit,
 } from "@/lib/inventory/model";
+import { searchTerms } from "@/lib/inventory/search";
 import type { Condition, WriteOffReason } from "@/lib/inventory/vocabulary";
 import type { Db } from "@/lib/server/db";
 import { rowsOf, rpc, sb, unwrap } from "@/lib/server/supabase/db";
 
 // Materiais, lotes (por quantidade) e peças (por unidade). Escritas pelas funções inventory_* (032): o chefe
-// grava na hora e o movimento fica pendente de revisão.
+// grava na hora e o movimento fica para revisar.
 
 // Leituras ---------------------------------------------------------------------------------------
 
@@ -15,23 +16,28 @@ export type MaterialFilters = { includeInactive: boolean; familyId?: string; sea
 /** Materiais com os totais de todas as divisões. */
 export async function list(db: Db, groupId: string, filters: MaterialFilters): Promise<MaterialRow[]> {
   let query = sb(db).from("inventory_material_rows")
-    .select("id, name, consumable, minimum_quantity, active, quantity, next_expiry, below_minimum")
+    .select("id, name, tracking, consumable, minimum_quantity, active, quantity, next_expiry, below_minimum")
     .eq("group_id", groupId);
   if (!filters.includeInactive) query = query.eq("active", true);
   if (filters.familyId) query = query.eq("family_id", filters.familyId);
-  if (filters.search?.trim()) query = query.ilike("name", `%${filters.search.trim().replace(/[%_\\]/g, (c) => `\\${c}`)}%`);
+  // Busca ampliada (043): cada palavra precisa aparecer em algum campo (nome, descrição, família, lotes, peças).
+  for (const term of searchTerms(filters.search)) query = query.ilike("search_text", `%${term.replace(/[%_\\]/g, (c) => `\\${c}`)}%`);
   return rowsOf(await query) as MaterialRow[];
 }
 
 /** Quantidade, valor e validade de cada material em cada divisão. */
 export async function stockByLocation(db: Db, groupId: string): Promise<StockRow[]> {
-  return rowsOf(await sb(db).from("inventory_stock_by_location").select("material_id, location_id, quantity, value_cents, next_expiry").eq("group_id", groupId)) as StockRow[];
+  return rowsOf(await sb(db).from("inventory_stock_by_location")
+    .select("material_id, location_id, quantity, value_cents, next_expiry, worst_condition, conditions, min_unit_cents, max_unit_cents")
+    .eq("group_id", groupId)) as StockRow[];
 }
 
-/** Contagem de um ano (conferência / planilha), por `material|divisão`. */
-export async function countsOfYear(db: Db, groupId: string, year: number): Promise<Map<string, number>> {
-  const rows = rowsOf(await sb(db).from("inventory_counts").select("material_id, location_id, quantity").eq("group_id", groupId).eq("year", year));
-  return new Map(rows.map((row) => [`${row.material_id}|${row.location_id}`, row.quantity]));
+/** Contagens de alguns anos (conferência / planilha): ano → `material|divisão` → quantidade. */
+export async function countsOfYears(db: Db, groupId: string, years: number[]): Promise<Map<number, Map<string, number>>> {
+  const rows = rowsOf(await sb(db).from("inventory_counts").select("year, material_id, location_id, quantity").eq("group_id", groupId).in("year", years));
+  const byYear = new Map(years.map((year) => [year, new Map<string, number>()]));
+  for (const row of rows) byYear.get(row.year)?.set(`${row.material_id}|${row.location_id}`, row.quantity);
+  return byYear;
 }
 
 export async function get(db: Db, groupId: string, id: string): Promise<Material | null> {
@@ -54,8 +60,15 @@ export async function getForEdit(db: Db, groupId: string, id: string): Promise<{
 /** Lotes com saldo, na ordem de entrada. */
 export async function lots(db: Db, materialId: string): Promise<Lot[]> {
   return rowsOf(await sb(db).from("inventory_lots")
-    .select("id, location_id, quantity, condition, unit_value_cents, expires_on, acquired_on, origin, supplier, invoice, notes")
+    .select("id, location_id, quantity, condition, unit_value_cents, expires_on, acquired_on, origin, supplier, invoice, notes, variant")
     .eq("material_id", materialId).gt("quantity", 0).order("created_at")) as Lot[];
+}
+
+/** Lotes com saldo do grupo (botões de saída e entrada da lista de Materiais). */
+export async function openLots(db: Db, groupId: string): Promise<(Pick<Lot, "id" | "location_id" | "quantity" | "condition" | "expires_on" | "variant"> & { material_id: string })[]> {
+  return rowsOf(await sb(db).from("inventory_lots")
+    .select("id, material_id, location_id, quantity, condition, expires_on, variant")
+    .eq("group_id", groupId).gt("quantity", 0)) as (Pick<Lot, "id" | "location_id" | "quantity" | "condition" | "expires_on" | "variant"> & { material_id: string })[];
 }
 
 /** Peças, inclusive as baixadas, pela etiqueta. */
@@ -99,10 +112,19 @@ export async function save(db: Db, groupId: string, input: MaterialInput): Promi
   });
 }
 
-export async function addLot(db: Db, input: EntryInput & { materialId: string; locationId: string | null; quantity: number; condition: Condition | null; expiresOn: string | null }) {
-  await rpc(db, "inventory_add_lot", {
-    p_material_id: input.materialId, p_location_id: input.locationId, p_quantity: input.quantity, p_condition: input.condition, p_expires_on: input.expiresOn, ...entry(input),
+/**
+ * Entrada por quantidade: soma num lote igual (mesma divisão, condição, validade e variação) ou cria um (046).
+ * Devolve se somou num lote que já tinha saldo.
+ */
+export async function addLot(db: Db, input: EntryInput & {
+  materialId: string; locationId: string | null; quantity: number; condition: Condition | null; expiresOn: string | null; variant?: string | null;
+}): Promise<{ merged: boolean }> {
+  const lotId = await rpc(db, "inventory_add_lot", {
+    p_material_id: input.materialId, p_location_id: input.locationId, p_quantity: input.quantity, p_condition: input.condition, p_expires_on: input.expiresOn,
+    p_variant: input.variant ?? null, ...entry(input),
   });
+  const lot = unwrap(await sb(db).from("inventory_lots").select("quantity").eq("id", lotId).maybeSingle());
+  return { merged: (lot?.quantity ?? 0) > input.quantity };
 }
 
 export async function addUnit(db: Db, input: EntryInput & { materialId: string; locationId: string | null; tag: string | null; legacyCode: string | null; description: string | null; condition: Condition | null }) {
@@ -141,8 +163,8 @@ export async function writeOffUnit(db: Db, unitId: string, reason: WriteOffReaso
   await rpc(db, "inventory_write_off_unit", { p_unit_id: unitId, p_reason: reason, p_notes: notes });
 }
 
-export async function updateLot(db: Db, input: EntryInput & { lotId: string; expiresOn: string | null }) {
-  await rpc(db, "inventory_update_lot", { p_lot_id: input.lotId, p_expires_on: input.expiresOn, ...entry(input) });
+export async function updateLot(db: Db, input: EntryInput & { lotId: string; expiresOn: string | null; variant: string | null }) {
+  await rpc(db, "inventory_update_lot", { p_lot_id: input.lotId, p_expires_on: input.expiresOn, p_variant: input.variant, ...entry(input) });
 }
 
 export async function updateUnit(db: Db, input: EntryInput & { unitId: string; tag: string | null; legacyCode: string | null; description: string | null }) {
