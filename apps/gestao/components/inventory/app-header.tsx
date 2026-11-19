@@ -5,7 +5,10 @@ import { Brand } from "@/components/shell/brand";
 import { SETTINGS_HOME } from "@/components/inventory/settings-tabs";
 import { ROLE_LABELS, type InventoryRole } from "@/lib/inventory/vocabulary";
 
-/** Menu = 2º segmento da rota (/inventario/<menu>); Divisões e Famílias ficam em Configurações (engrenagem). */
+/**
+ * Menu = 2º segmento da rota (/inventario/<menu>); a raiz /inventario abre Materiais; Divisões e Famílias ficam em Configurações (engrenagem).
+ * Registro rápido (raio, telas de celular) só para quem registra (chefe, gestor).
+ */
 const sections = [
   { href: "/inventario/materiais", label: "Materiais", match: (path: string) => path.startsWith("/inventario/materiais") },
   { href: "/inventario/movimentacoes", label: "Movimentações", match: (path: string) => path.startsWith("/inventario/movimentacoes") },

@@ -53,8 +53,8 @@ export default async function Home() {
       href: "/inventario/movimentacoes?revisao=para_revisar" },
     { module: "inventario", count: inventory.belowMinimum, label: plural(inventory.belowMinimum, "material abaixo do mínimo", "materiais abaixo do mínimo"),
       href: "/inventario/materiais?alerta=1" },
-    { module: "inventario", count: inventory.expired, label: plural(inventory.expired, "lote vencido", "lotes vencidos"), href: "/inventario" },
-    { module: "inventario", count: inventory.expiringSoon, label: plural(inventory.expiringSoon, `lote vencendo em ${EXPIRY_WARNING_DAYS} dias`, `lotes vencendo em ${EXPIRY_WARNING_DAYS} dias`), href: "/inventario" },
+    { module: "inventario", count: inventory.expired, label: plural(inventory.expired, "lote vencido", "lotes vencidos"), href: "/inventario/materiais?validade=vencido" },
+    { module: "inventario", count: inventory.expiringSoon, label: plural(inventory.expiringSoon, `lote vencendo em ${EXPIRY_WARNING_DAYS} dias`, `lotes vencendo em ${EXPIRY_WARNING_DAYS} dias`), href: "/inventario/materiais?validade=valido&ordem=validade" },
   ] satisfies Alert[]).filter((alert) => alert.count > 0);
 
   return <div className="shell">
@@ -83,11 +83,11 @@ export default async function Home() {
           <StatCard label={`Receitas em ${year}`} value={formatCents(income)} tone="success" />
           <StatCard label={`Despesas em ${year}`} value={formatCents(expense)} tone="destructive" />
         </ModuleCard>
-        <ModuleCard module="inventario" href="/inventario" linkLabel="Resumo do inventário">
+        <ModuleCard module="inventario" href="/inventario/materiais" linkLabel="Materiais do inventário">
           <StatCard label="Materiais" value={inventory.materials} href="/inventario/materiais" />
           <StatCard label="Valor estimado" value={formatCents(inventory.estimatedValueCents)} />
           <StatCard label="Abaixo do mínimo" value={inventory.belowMinimum} tone={inventory.belowMinimum > 0 ? "warning" : "neutral"} />
-          <StatCard label="Lotes vencidos" value={inventory.expired} tone={inventory.expired > 0 ? "destructive" : "neutral"} />
+          <StatCard label="Lotes vencidos" value={inventory.expired} tone={inventory.expired > 0 ? "destructive" : "neutral"} href={inventory.expired > 0 ? "/inventario/materiais?validade=vencido" : undefined} />
         </ModuleCard>
       </div>
     </PageBody>

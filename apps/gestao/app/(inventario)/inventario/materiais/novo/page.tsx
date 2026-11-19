@@ -15,7 +15,7 @@ export default async function NewMaterial({ searchParams }: { searchParams: Prom
   const back = materialsBackHref((await searchParams).voltar);
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
-  if (!member.inventory.canEdit) redirect("/inventario/materiais");
+  if (!member.inventory.canEdit) redirect(back);
   const [familyOptions, paths] = await Promise.all([families.listOptions(member.db, member.groupId), locations.listPaths(member.db, member.groupId)]);
   return <div className="shell">
     <AppHeader current="/inventario/materiais/novo" email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />

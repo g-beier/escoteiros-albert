@@ -33,6 +33,10 @@ Modelo e vocabulário em `docs/modelo.md`.
 - Revisão com dois status, **Para revisar** e **Revisado** (044; o antigo "pendente" virou "para revisar", e a recusa saiu). O gestor revisa em Movimentações › Para revisar (seleção em lote, nota opcional) ou no histórico do material; inconsistência é corrigida por fora, com um movimento normal.
 - Registro rápido para celular (`/inventario/rapido`, 045): busca, retirar/consumir, entrada, mudar condição, transferir, ajustar contagem e cadastro de material novo. Tudo fica para revisar, mesmo do gestor ou do administrador (`channel = 'rapido'`). Atalho no cabeçalho (raio) e no Resumo.
 
+## Concluído (2026-11-19, entrada pelo Materiais)
+
+- O Resumo do Inventário saiu: `/inventario` abre Materiais, e o menu começa por Materiais. O que pede atenção (para revisar, abaixo do mínimo, vencidos e vencendo) fica no Início do Gestão, com links para a lista já filtrada. Em Materiais, o gestor vê o aviso "N para revisar" e todos os editores têm o botão Registro rápido.
+
 ## A verificar
 
 - Barracas B1–B11: conciliar com as linhas de barraca das seções e mover cada peça para a sua divisão (hoje em "Almoxarifado › Barracas (a conferir)").

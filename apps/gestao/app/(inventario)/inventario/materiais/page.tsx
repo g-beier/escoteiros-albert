@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { Fragment } from "react";
-import { IconAlertTriangle, IconPlus } from "@tabler/icons-react";
+import { IconAlertTriangle, IconArrowsSort, IconBolt, IconClipboardCheck, IconPlus } from "@tabler/icons-react";
 import { PageBody, PageHeader, SectionTabs } from "@geas/ui";
 import { Badge } from "@geas/ui/components/badge";
 import { buttonVariants } from "@geas/ui/components/button";
@@ -128,7 +128,12 @@ export default async function Materials({ searchParams }: { searchParams: Promis
     <PageBody width="narrow">
       <PageHeader title="Materiais" crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais" }]}
         description="Tudo o que o grupo tem, por local: um material em várias divisões aparece em cada uma, com a quantidade de lá."
-        actions={member.inventory.canEdit && <Link href="/inventario/materiais/novo" className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}>
+        actions={<>
+          {toReview > 0 && <Link href="/inventario/movimentacoes?revisao=para_revisar" className="inline-flex items-center gap-1.5 rounded-full bg-[#f5eed1] px-3 py-1 text-xs font-semibold text-[#725d0d] hover:ring-1 hover:ring-current">
+            <IconClipboardCheck className="size-4" aria-hidden /> {toReview} para revisar</Link>}
+          {member.inventory.canEdit && <Link href="/inventario/rapido" className={buttonVariants({ variant: "outline", size: "lg" })}><IconBolt data-icon="inline-start" /> Registro rápido</Link>}
+          {member.inventory.canEdit && <Link href={withBack("/inventario/materiais/novo", here)} className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}
+        </>}>
         <SectionTabs label="Locais" tabs={tabs} />
         <MaterialFilters families={familyOptions} columns={available} hidden={[...hidden]} />
       </PageHeader>
