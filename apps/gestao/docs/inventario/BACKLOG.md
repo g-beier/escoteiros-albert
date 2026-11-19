@@ -37,6 +37,11 @@ Modelo e vocabulário em `docs/modelo.md`.
 
 - O Resumo do Inventário saiu: `/inventario` abre Materiais, e o menu começa por Materiais. O que pede atenção (para revisar, abaixo do mínimo, vencidos e vencendo) fica no Início do Gestão, com links para a lista já filtrada. Em Materiais, o gestor vê o aviso "N para revisar" e todos os editores têm o botão Registro rápido.
 
+## Concluído (2026-11-19, saída como baixa)
+
+- Saída é baixa, não ajuste: no detalhe, cada lote tem o botão **Consumir** (consumível) ou **Dar baixa**, e o menu ⋯ com transferir, condição, dados e, por último, **Corrigir contagem…** (só para registro errado). Ao corrigir para menos, o diálogo mostra quantas faltam e oferece registrar a diferença como consumo/baixa.
+- Na lista de Materiais, cada linha de material por quantidade tem um botão ±: o diálogo escolhe entre **Remover** (consumir/dar baixa, escolhendo o lote; vem marcado o que vence antes; é o padrão quando há saldo) e **Incluir** (entrada naquela divisão), sem abrir o material.
+
 ## A verificar
 
 - Barracas B1–B11: conciliar com as linhas de barraca das seções e mover cada peça para a sua divisão (hoje em "Almoxarifado › Barracas (a conferir)").

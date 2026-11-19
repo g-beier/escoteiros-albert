@@ -4,7 +4,7 @@ import type { Condition, MovementChannel, MovementKind, Origin, ReviewStatus, Tr
 
 /** Material na lista (inventory_material_rows): totais de todas as divisões. */
 export type MaterialRow = {
-  id: string; name: string; consumable: boolean; minimum_quantity: number | null; active: boolean;
+  id: string; name: string; tracking: Tracking; consumable: boolean; minimum_quantity: number | null; active: boolean;
   quantity: number; next_expiry: string | null; below_minimum: boolean;
 };
 

@@ -24,6 +24,7 @@ import * as materialsData from "@/lib/server/inventory/materials";
 import * as movementsData from "@/lib/server/inventory/movements";
 import { Expiry } from "@/components/inventory/materials/lots-table";
 import { MaterialFilters } from "@/components/inventory/materials/material-filters";
+import { RowStockButton, type WithdrawLot } from "@/components/inventory/materials/withdraw";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
 import { CONDITION_LABELS, EXPIRY_WARNING_DAYS, daysUntil, type Condition } from "@/lib/inventory/vocabulary";
@@ -50,6 +51,10 @@ export default async function Materials({ searchParams }: { searchParams: Promis
     materialsData.stockByLocation(db, groupId),
     locations.listPaths(db, groupId),
     families.listOptions(db, groupId),
+    materialsData.countsOfYears(db, groupId, [...years]),
+    cookies(),
+    member.inventory.canManage ? movementsData.pendingCount(db, groupId) : Promise.resolve(0),
+    member.inventory.canEdit ? materialsData.openLots(db, groupId) : Promise.resolve([]),
   ]);
 
   // Colunas: as que existem (anos com contagem) menos as que o usuário ocultou.
@@ -122,6 +127,16 @@ export default async function Materials({ searchParams }: { searchParams: Promis
     ...roots.map((row) => ({ href: hrefFor(row.id), label: row.name, active: root?.id === row.id })),
   ];
   const heading = showAll ? "Todos os locais" : selected && selected.depth > 0 ? selected.path : root?.name ?? "Materiais";
+  const canEdit = member.inventory.canEdit;
+  const span = columns.length + 1 + (canEdit ? 1 : 0);
+  // Botões − e + das linhas (material por quantidade): lotes de cada material em cada divisão.
+  const pathOf = new Map(paths.map((row) => [row.id, row.path]));
+  const lotsAt = new Map<string, WithdrawLot[]>();
+  for (const lot of lotData) {
+    const key = `${lot.material_id}|${lot.location_id}`;
+    lotsAt.set(key, [...(lotsAt.get(key) ?? []), { ...lot, path: pathOf.get(lot.location_id) ?? "—" }]);
+  }
+  const stockActions: StockActions | null = canEdit ? { lotsAt, pathOf } : null;
 
   return <div className="shell">
     <AppHeader current="/inventario/materiais" email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
@@ -146,27 +161,28 @@ export default async function Materials({ searchParams }: { searchParams: Promis
         <div className="overflow-x-auto"><Table className="min-w-[760px]">
             <TableCaption className="sr-only">Materiais por divisão; a ordem escolhida vale dentro de cada divisão</TableCaption>
             <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
-              <TableHead className={HEAD_CLASS}>Material</TableHead>
-              <TableHead className={cn(HEAD_CLASS, "w-28 text-center")}>Quantidade</TableHead>
-              {showPrevious && <TableHead className={cn(HEAD_CLASS, "w-20 text-center")} title={`Contagem de ${previousYear}`}>{previousYear}</TableHead>}
-              <TableHead className={cn(HEAD_CLASS, "w-36")}>Validade</TableHead>
-              <TableHead className={cn(HEAD_CLASS, "w-32 text-right")}>Valor estimado</TableHead>
+              <SortHead label="Material" {...sortProps("material")} />
+              {columns.map((id) => COLUMN_FILTERS[id]
+                ? <TableHead key={id} className={cn(HEAD_CLASS, HEADS[id].className)} aria-sort={state.sort === id ? (state.dir === "asc" ? "ascending" : "descending") : undefined}>
+                  <ColumnMenu label={HEADS[id].label} sortKey={id} filter={COLUMN_FILTERS[id]} sortLabels={SORT_LABELS[id] ?? ["Crescente", "Decrescente"]} align={HEADS[id].className.includes("text-right") ? "end" : "start"} />
+                </TableHead>
+                : <SortHead key={id} {...sortProps(id)} {...HEADS[id]}
+                  label={yearOf[id] ? String(yearOf[id]) : HEADS[id].label} title={yearOf[id] ? `Contagem de ${yearOf[id]}` : undefined} />)}
+              {canEdit && <TableHead className={cn(HEAD_CLASS, "w-10")}><span className="sr-only">Incluir ou remover</span></TableHead>}
             </TableRow></TableHeader>
             <TableBody>
               {groups.map(({ location, lines: groupLines }) => <Fragment key={location.id}>
                 {location.depth === 0
-                  ? showAll && <GroupRow level="root" columns={columns}>{location.name}</GroupRow>
-                  : <GroupRow level="sub" depth={location.depth} columns={columns} href={hrefFor({ divisao: location.id })}>{location.name}</GroupRow>}
-                {groupLines.map((line) => <MaterialLine key={`${line.location_id}-${line.material_id}`} line={line} depth={location.depth}
-                  previous={showPrevious ? previous.get(`${line.material_id}|${line.location_id}`) ?? null : undefined} />)}
+                  ? showAll && <GroupRow level="root" columns={span}>{location.name}</GroupRow>
+                  : <GroupRow level="sub" depth={location.depth} columns={span} href={hrefFor(location.id)}>{location.name}</GroupRow>}
+                {groupLines.map((line) => <MaterialLine key={`${line.location_id}-${line.material_id}`} line={line} depth={location.depth} columns={columns} back={here} actions={stockActions} />)}
               </Fragment>)}
               {groups.length === 0 && noStock.length === 0 && <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={span} className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhum material encontrado.</TableCell>
               </TableRow>}
               {noStock.length > 0 && <>
-                <GroupRow level="root" columns={columns}>Sem estoque</GroupRow>
-                {noStock.map((material) => <MaterialLine key={material.id} depth={0} previous={showPrevious ? null : undefined}
-                  line={{ material_id: material.id, location_id: "", quantity: 0, value_cents: 0, next_expiry: null, material }} />)}
+                <GroupRow level="root" columns={span}>Sem estoque</GroupRow>
+                {noStock.map((line) => <MaterialLine key={line.material_id} depth={0} line={line} columns={columns} back={here} actions={stockActions} />)}
               </>}
             </TableBody>
           </Table></div>
@@ -230,8 +246,20 @@ function GroupRow({ level, depth = 0, columns, href, children }: { level: "root"
   </TableRow>;
 }
 
-/** Material numa divisão: quantidade, contagem do ano anterior (se a coluna existir), validade e valor daquela divisão. */
-function MaterialLine({ line, depth, previous }: { line: Line; depth: number; previous?: number | null }) {
+const empty = <span className="text-muted-foreground">—</span>;
+
+/** Faixa do valor unitário: um valor quando todos os lotes/peças têm o mesmo. */
+function unitValue(line: Line) {
+  if (line.min_unit_cents == null) return empty;
+  const min = Number(line.min_unit_cents);
+  const max = Number(line.max_unit_cents ?? min);
+  return min === max ? formatCents(min) : <span title="Lotes ou peças com valores diferentes">{formatCents(min)} – {formatCents(max)}</span>;
+}
+
+type StockActions = { lotsAt: Map<string, WithdrawLot[]>; pathOf: Map<string, string> };
+
+/** Material numa divisão: as colunas visíveis, com os valores daquela divisão; para quem edita, o botão ± no fim. */
+function MaterialLine({ line, depth, columns, back, actions }: { line: Line; depth: number; columns: ColumnId[]; back: string; actions: StockActions | null }) {
   const { material } = line;
   const kinds = Object.values(line.conditions).filter((quantity) => (quantity ?? 0) > 0).length;
   const cells: Record<ColumnId, () => React.ReactNode> = {
@@ -259,15 +287,10 @@ function MaterialLine({ line, depth, previous }: { line: Line; depth: number; pr
         {!material.active && <Badge variant="outline">Inativo</Badge>}
       </span>
     </TableCell>
-    <TableCell className={cn(CELL_CLASS, "num text-center font-semibold")}>
-      <span className={cn("inline-flex items-center gap-1", material.below_minimum && "text-destructive")}
-        title={material.below_minimum ? `Abaixo do mínimo: ${material.quantity} de ${material.minimum_quantity} no total` : undefined}>
-        {material.below_minimum && <IconAlertTriangle className="size-3.5" aria-label="Abaixo do mínimo" />}{line.quantity}
-      </span>
-      {material.minimum_quantity != null && <span className="block text-[11px] font-normal text-muted-foreground">total {material.quantity} · mín. {material.minimum_quantity}</span>}
-    </TableCell>
-    {previous !== undefined && <TableCell className={cn(CELL_CLASS, "num text-center text-muted-foreground")}>{previous ?? "—"}</TableCell>}
-    <TableCell className={CELL_CLASS}>{line.next_expiry ? <Expiry date={line.next_expiry} /> : <span className="text-muted-foreground">—</span>}</TableCell>
-    <TableCell className={cn(CELL_CLASS, "num text-right")}>{Number(line.value_cents) > 0 ? formatCents(Number(line.value_cents)) : <span className="text-muted-foreground">—</span>}</TableCell>
+    {columns.map((id) => <Fragment key={id}>{cells[id]()}</Fragment>)}
+    {actions && <TableCell className={cn(CELL_CLASS, "px-1 text-center")}>
+      {material.tracking === "lot" && material.active && line.location_id && <RowStockButton materialId={material.id} materialName={material.name} consumable={material.consumable}
+        lots={actions.lotsAt.get(`${material.id}|${line.location_id}`) ?? []} locationId={line.location_id} locationPath={actions.pathOf.get(line.location_id) ?? ""} />}
+    </TableCell>}
   </TableRow>;
 }

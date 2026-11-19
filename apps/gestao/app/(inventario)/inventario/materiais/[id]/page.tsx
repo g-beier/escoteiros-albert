@@ -97,7 +97,7 @@ export default async function MaterialDetail({ params, searchParams }: { params:
             : <AddUnitButton materialId={id} locations={locations} nextTag={nextTag} familyCode={material.family_code} />)}
         </SectionHeader>
         {isLot
-          ? <LotsTable materialId={id} lots={lots} locations={locations} canEdit={member.inventory.canEdit} />
+          ? <LotsTable materialId={id} materialName={material.name} consumable={material.consumable} lots={lots} locations={locations} canEdit={member.inventory.canEdit} />
           : <UnitsTable materialId={id} units={units} locations={locations} canEdit={member.inventory.canEdit} nextTag={nextTag} familyCode={material.family_code} />}
       </SectionCard>
 

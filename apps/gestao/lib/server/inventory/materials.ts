@@ -16,7 +16,7 @@ export type MaterialFilters = { includeInactive: boolean; familyId?: string; sea
 /** Materiais com os totais de todas as divisões. */
 export async function list(db: Db, groupId: string, filters: MaterialFilters): Promise<MaterialRow[]> {
   let query = sb(db).from("inventory_material_rows")
-    .select("id, name, consumable, minimum_quantity, active, quantity, next_expiry, below_minimum")
+    .select("id, name, tracking, consumable, minimum_quantity, active, quantity, next_expiry, below_minimum")
     .eq("group_id", groupId);
   if (!filters.includeInactive) query = query.eq("active", true);
   if (filters.familyId) query = query.eq("family_id", filters.familyId);
