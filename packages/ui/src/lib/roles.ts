@@ -1,6 +1,7 @@
 // Papéis dos apps internos (sem dependências: usado na tela e no servidor).
 // O papel do grupo (memberships.role) é o do Financeiro; "admin" administra os dois apps e os usuários.
-// O papel do Inventário (memberships.inventory_role) vale para quem não é administrador.
+// Os papéis do Inventário (memberships.inventory_role) e do Associados (memberships.associates_role) valem para quem
+// não é administrador.
 
 export const ALLOWED_EMAIL_DOMAIN = "escoteirosalbert.com.br";
 
@@ -17,5 +18,11 @@ export const INVENTORY_ROLES = ["manager", "chief", "viewer"] as const;
 export type InventoryRole = (typeof INVENTORY_ROLES)[number];
 export const INVENTORY_ROLE_LABELS: Record<InventoryRole, string> = { manager: "Gestor", chief: "Chefe", viewer: "Consulta" };
 
+export const ASSOCIATES_ROLES = ["manager", "viewer"] as const;
+export type AssociatesRole = (typeof ASSOCIATES_ROLES)[number];
+export const ASSOCIATES_ROLE_LABELS: Record<AssociatesRole, string> = { manager: "Secretaria", viewer: "Consulta" };
+
 /** Pessoa com acesso ao grupo, como a tela de Usuários mostra. */
-export type GroupUser = { userId: string; email: string; confirmed: boolean; role: GroupRole; inventoryRole: InventoryRole };
+export type GroupUser = {
+  userId: string; email: string; confirmed: boolean; role: GroupRole; inventoryRole: InventoryRole; associatesRole: AssociatesRole;
+};

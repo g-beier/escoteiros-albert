@@ -6,6 +6,7 @@ const sections = [
   { href: "/", label: "Início", match: (path: string) => path === "/" },
   { href: "/financeiro", label: "Financeiro", match: () => false },
   { href: "/inventario", label: "Inventário", match: () => false },
+  { href: "/associados", label: "Associados", match: () => false },
 ];
 
 /** Cabeçalho das telas comuns (Início, Usuários): os módulos no menu; o papel mostrado é o do grupo. */

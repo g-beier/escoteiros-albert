@@ -6,7 +6,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { cn } from "@geas/ui/lib/utils";
 import { AppHeader } from "@/components/inventory/app-header";
 import { SetupNeeded } from "@/components/shell/setup-needed";
-import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
+import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import { ConditionPill } from "@/components/inventory/condition-pill";
 import { ReviewCheck, ReviewCheckAll, ReviewSelection } from "@/components/inventory/review";
 import { ReviewDetails } from "@/components/inventory/review-details";

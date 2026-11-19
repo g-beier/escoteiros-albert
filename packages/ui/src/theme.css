@@ -1,7 +1,7 @@
 /*
  * Tema dos apps internos do GEAS (Tailwind v4 + shadcn/ui).
  * Cada app importa este arquivo no topo do seu globals.css, no lugar de `@import "tailwindcss"`,
- * e marca o <html> com `data-app="gestao" | "financeiro" | "inventario"` para a cor de destaque
+ * e marca o <html> com `data-app="gestao" | "financeiro" | "inventario" | "associados"` para a cor de destaque
  * (no Gestão, um layout raiz por módulo; "gestao" e "financeiro" usam o roxo padrão).
  * Estilos anteriores ao shadcn ficam em `@layer legacy`, abaixo de components/utilities.
  */
@@ -29,6 +29,7 @@
   --purple-soft: #ece6ff;
   --green: #1dd98a;
   --green-dark: #075c3b;
+  --green-app: #0b7a4b;
   --green-soft: #bdf4d8;
   --orange: #f15b2a;
   --orange-dark: #c64018;
@@ -43,7 +44,7 @@
   --shadow: 5px 6px 0 rgba(37, 35, 40, .09);
   --topbar-h: 60px;
 
-  /* Cor de destaque do app (Financeiro: roxo; Inventário: laranja, ver abaixo). */
+  /* Cor de destaque do app (Financeiro: roxo; Inventário: laranja; Associados: verde, ver abaixo). */
   --app: var(--purple);
   --app-soft: var(--purple-soft);
   --app-soft-foreground: #3a2690;
@@ -81,6 +82,15 @@
   --app-soft: var(--orange-soft);
   --app-soft-foreground: #8a2c10;
   --chart-3: var(--purple);
+}
+
+/* Verde escoteiro escurecido: o verde da marca não tem contraste com texto branco (#0b7a4b: 5,4:1 com branco,
+ * 5,1:1 sobre o papel; texto #075c3b sobre o fundo suave: 7,2:1). */
+:root[data-app="associados"] {
+  --app: var(--green-app);
+  --app-soft: #e3f6ec;
+  --app-soft-foreground: var(--green-dark);
+  --chart-2: var(--purple);
 }
 
 @theme inline {

@@ -1,6 +1,6 @@
 import { readCsv, sniffCsvLayout } from "@/lib/finance/csv-reader";
 import { normalizeText } from "@/lib/finance/statement-import";
-import { SCOUT_BRANCHES, branchLabels, type PatrolItem, type ScoutBranch, type SectionItem } from "@/lib/finance/associates";
+import { SCOUT_BRANCHES, branchLabels, type PatrolItem, type ScoutBranch, type SectionItem } from "@/lib/associates/model";
 
 /**
  * Importação de associados em massa por CSV com as colunas nome, ramo, seção, patrulha e status

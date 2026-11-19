@@ -25,6 +25,50 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"associate_functions": {
+                  Row: {
+                    "associate_id": string,"created_at": string,"created_by": string | null,"ended_on": string | null,"group_id": string,"id": string,"kind": Database["public"]['Enums']["associate_function_kind"],"started_on": string | null,"title": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "associate_id": string,"created_at"?: string,"created_by"?: string | null,"ended_on"?: string | null,"group_id": string,"id"?: string,"kind": Database["public"]['Enums']["associate_function_kind"],"started_on"?: string | null,"title"?: string | null
+                  }
+                  Update: {
+                    "associate_id"?: string,"created_at"?: string,"created_by"?: string | null,"ended_on"?: string | null,"group_id"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["associate_function_kind"],"started_on"?: string | null,"title"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "associate_functions_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "associate_functions_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_functions_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_functions_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associates"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_functions_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"associate_movements": {
                   Row: {
                     "associate_id": string,"created_at": string,"created_by": string | null,"group_id": string,"id": string,"kind": Database["public"]['Enums']["associate_movement_kind"],"movement_date": string,"reason": string | null
@@ -38,6 +82,18 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "associate_movements_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "associate_movements_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "associate_movements_associate_id_fkey"
       columns: ["associate_id"]
 isOneToOne: false
@@ -57,16 +113,78 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"associates": {
+                },"associate_moves": {
                   Row: {
-                    "active": boolean,"branch": Database["public"]['Enums']["scout_branch"],"created_at": string,"group_id": string,"id": string,"name": string,"patrol_id": string | null,"section_id": string | null,"updated_at": string
+                    "associate_id": string,"created_at": string,"created_by": string | null,"from_branch": Database["public"]['Enums']["scout_branch"],"from_section_id": string | null,"group_id": string,"id": string,"move_date": string,"to_branch": Database["public"]['Enums']["scout_branch"],"to_patrol_id": string | null,"to_section_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "active"?: boolean,"branch": Database["public"]['Enums']["scout_branch"],"created_at"?: string,"group_id": string,"id"?: string,"name": string,"patrol_id"?: string | null,"section_id"?: string | null,"updated_at"?: string
+                    "associate_id": string,"created_at"?: string,"created_by"?: string | null,"from_branch": Database["public"]['Enums']["scout_branch"],"from_section_id"?: string | null,"group_id": string,"id"?: string,"move_date": string,"to_branch": Database["public"]['Enums']["scout_branch"],"to_patrol_id"?: string | null,"to_section_id"?: string | null
                   }
                   Update: {
-                    "active"?: boolean,"branch"?: Database["public"]['Enums']["scout_branch"],"created_at"?: string,"group_id"?: string,"id"?: string,"name"?: string,"patrol_id"?: string | null,"section_id"?: string | null,"updated_at"?: string
+                    "associate_id"?: string,"created_at"?: string,"created_by"?: string | null,"from_branch"?: Database["public"]['Enums']["scout_branch"],"from_section_id"?: string | null,"group_id"?: string,"id"?: string,"move_date"?: string,"to_branch"?: Database["public"]['Enums']["scout_branch"],"to_patrol_id"?: string | null,"to_section_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "associate_moves_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "associate_moves_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_moves_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_moves_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associates"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_moves_from_section_id_fkey"
+      columns: ["from_section_id"]
+isOneToOne: false
+      referencedRelation: "sections"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_moves_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_moves_to_patrol_id_fkey"
+      columns: ["to_patrol_id"]
+isOneToOne: false
+      referencedRelation: "patrols"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_moves_to_section_id_fkey"
+      columns: ["to_section_id"]
+isOneToOne: false
+      referencedRelation: "sections"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"associates": {
+                  Row: {
+                    "active": boolean,"birth_date": string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at": string,"group_id": string,"id": string,"joined_on": string | null,"name": string,"notes": string | null,"patrol_id": string | null,"promise_date": string | null,"section_id": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active"?: boolean,"birth_date"?: string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at"?: string,"group_id": string,"id"?: string,"joined_on"?: string | null,"name": string,"notes"?: string | null,"patrol_id"?: string | null,"promise_date"?: string | null,"section_id"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "active"?: boolean,"birth_date"?: string | null,"branch"?: Database["public"]['Enums']["scout_branch"],"created_at"?: string,"group_id"?: string,"id"?: string,"joined_on"?: string | null,"name"?: string,"notes"?: string | null,"patrol_id"?: string | null,"promise_date"?: string | null,"section_id"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -135,6 +253,108 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"control_item_audiences": {
+                  Row: {
+                    "audience": Database["public"]['Enums']["control_audience"],"group_id": string,"initial_status": Database["public"]['Enums']["control_status"] | null,"item_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "audience": Database["public"]['Enums']["control_audience"],"group_id": string,"initial_status"?: Database["public"]['Enums']["control_status"] | null,"item_id": string
+                  }
+                  Update: {
+                    "audience"?: Database["public"]['Enums']["control_audience"],"group_id"?: string,"initial_status"?: Database["public"]['Enums']["control_status"] | null,"item_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "control_item_audiences_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "control_item_audiences_item_id_fkey"
+      columns: ["item_id"]
+isOneToOne: false
+      referencedRelation: "control_items"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"control_items": {
+                  Row: {
+                    "active": boolean,"created_at": string,"directorate": Database["public"]['Enums']["directorate"],"group_id": string,"id": string,"kind": Database["public"]['Enums']["control_item_kind"],"name": string,"position": number,"remove_on_leave": boolean,"updated_at": string,"validity_months": number | null,"value_kind": Database["public"]['Enums']["control_value_kind"]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "active"?: boolean,"created_at"?: string,"directorate": Database["public"]['Enums']["directorate"],"group_id": string,"id"?: string,"kind": Database["public"]['Enums']["control_item_kind"],"name": string,"position"?: number,"remove_on_leave"?: boolean,"updated_at"?: string,"validity_months"?: number | null,"value_kind"?: Database["public"]['Enums']["control_value_kind"]
+                  }
+                  Update: {
+                    "active"?: boolean,"created_at"?: string,"directorate"?: Database["public"]['Enums']["directorate"],"group_id"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["control_item_kind"],"name"?: string,"position"?: number,"remove_on_leave"?: boolean,"updated_at"?: string,"validity_months"?: number | null,"value_kind"?: Database["public"]['Enums']["control_value_kind"]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "control_items_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"control_statuses": {
+                  Row: {
+                    "associate_id": string | null,"group_id": string,"id": string,"item_id": string,"note": string | null,"relative_id": string | null,"status": Database["public"]['Enums']["control_status"],"status_date": string | null,"updated_at": string,"updated_by": string | null,"valid_until": string | null,"value_year": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "associate_id"?: string | null,"group_id": string,"id"?: string,"item_id": string,"note"?: string | null,"relative_id"?: string | null,"status": Database["public"]['Enums']["control_status"],"status_date"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"valid_until"?: string | null,"value_year"?: number | null
+                  }
+                  Update: {
+                    "associate_id"?: string | null,"group_id"?: string,"id"?: string,"item_id"?: string,"note"?: string | null,"relative_id"?: string | null,"status"?: Database["public"]['Enums']["control_status"],"status_date"?: string | null,"updated_at"?: string,"updated_by"?: string | null,"valid_until"?: string | null,"value_year"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "control_statuses_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "control_statuses_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "control_statuses_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "control_statuses_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associates"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "control_statuses_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "control_statuses_item_id_fkey"
+      columns: ["item_id"]
+isOneToOne: false
+      referencedRelation: "control_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "control_statuses_relative_id_fkey"
+      columns: ["relative_id"]
+isOneToOne: false
+      referencedRelation: "relatives"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"debt_payments": {
                   Row: {
                     "amount_cents": number,"debt_id": string,"entry_id": string
@@ -192,6 +412,18 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "debts_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "debts_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "debts_associate_id_fkey"
       columns: ["associate_id"]
 isOneToOne: false
@@ -271,6 +503,18 @@ isOneToOne: false
       foreignKeyName: "entry_splits_associate_id_fkey"
       columns: ["associate_id"]
 isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "entry_splits_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "entry_splits_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
       referencedRelation: "associate_rows"
       referencedColumns: ["id"]
     },{
@@ -327,6 +571,18 @@ isOneToOne: false
       foreignKeyName: "fee_associate_prices_associate_id_fkey"
       columns: ["associate_id"]
 isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "fee_associate_prices_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "fee_associate_prices_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
       referencedRelation: "associate_rows"
       referencedColumns: ["id"]
     },{
@@ -356,6 +612,18 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "fee_exemptions_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "fee_exemptions_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "fee_exemptions_associate_id_fkey"
       columns: ["associate_id"]
 isOneToOne: false
@@ -426,6 +694,18 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "fee_records_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "fee_records_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "fee_records_associate_id_fkey"
       columns: ["associate_id"]
 isOneToOne: false
@@ -503,6 +783,7 @@ isOneToOne: false
                     "created_at"?: string,"id"?: string,"name"?: string
                   }
                   Relationships: [
+                    
                   ]
                 },"import_profiles": {
                   Row: {
@@ -770,14 +1051,14 @@ isOneToOne: false
                   ]
                 },"memberships": {
                   Row: {
-                    "created_at": string,"group_id": string,"inventory_role": Database["public"]['Enums']["inventory_role"],"role": Database["public"]['Enums']["member_role"],"user_id": string
+                    "activities_role": string | null,"associates_role": Database["public"]['Enums']["associates_role"],"created_at": string,"group_id": string,"inventory_role": Database["public"]['Enums']["inventory_role"],"role": Database["public"]['Enums']["member_role"],"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"group_id": string,"inventory_role"?: Database["public"]['Enums']["inventory_role"],"role"?: Database["public"]['Enums']["member_role"],"user_id": string
+                    "activities_role"?: string | null,"associates_role"?: Database["public"]['Enums']["associates_role"],"created_at"?: string,"group_id": string,"inventory_role"?: Database["public"]['Enums']["inventory_role"],"role"?: Database["public"]['Enums']["member_role"],"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"group_id"?: string,"inventory_role"?: Database["public"]['Enums']["inventory_role"],"role"?: Database["public"]['Enums']["member_role"],"user_id"?: string
+                    "activities_role"?: string | null,"associates_role"?: Database["public"]['Enums']["associates_role"],"created_at"?: string,"group_id"?: string,"inventory_role"?: Database["public"]['Enums']["inventory_role"],"role"?: Database["public"]['Enums']["member_role"],"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -928,6 +1209,100 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"relative_links": {
+                  Row: {
+                    "associate_id": string,"created_at": string,"financial": boolean,"group_id": string,"id": string,"kinship": Database["public"]['Enums']["relative_kinship"],"kinship_note": string | null,"legal": boolean,"position": number,"relative_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "associate_id": string,"created_at"?: string,"financial"?: boolean,"group_id": string,"id"?: string,"kinship": Database["public"]['Enums']["relative_kinship"],"kinship_note"?: string | null,"legal"?: boolean,"position"?: number,"relative_id": string
+                  }
+                  Update: {
+                    "associate_id"?: string,"created_at"?: string,"financial"?: boolean,"group_id"?: string,"id"?: string,"kinship"?: Database["public"]['Enums']["relative_kinship"],"kinship_note"?: string | null,"legal"?: boolean,"position"?: number,"relative_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "relative_links_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "relative_links_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relative_links_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relative_links_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associates"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relative_links_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relative_links_relative_id_fkey"
+      columns: ["relative_id"]
+isOneToOne: false
+      referencedRelation: "relatives"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"relatives": {
+                  Row: {
+                    "associate_id": string | null,"created_at": string,"group_id": string,"id": string,"name": string,"notes": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "associate_id"?: string | null,"created_at"?: string,"group_id": string,"id"?: string,"name": string,"notes"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "associate_id"?: string | null,"created_at"?: string,"group_id"?: string,"id"?: string,"name"?: string,"notes"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "relatives_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "relatives_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relatives_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relatives_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associates"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relatives_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"sections": {
                   Row: {
                     "active": boolean,"branch": Database["public"]['Enums']["scout_branch"],"created_at": string,"group_id": string,"id": string,"name": string,"updated_at": string
@@ -1015,7 +1390,91 @@ isOneToOne: false
                 }
           }
           Views: {
-            "associate_rows": {
+            "associate_audiences": {
+                  Row: {
+                    "associate_id": string,"audience": Database["public"]['Enums']["control_audience"] | null,"group_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "associate_id"?: string | null,"audience"?: never,"group_id"?: string | null
+                         }
+                        Update: {
+                           "associate_id"?: string | null,"audience"?: never,"group_id"?: string | null
+                         }
+                        Relationships: [
+                    {
+      foreignKeyName: "associates_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"associate_function_rows": {
+                  Row: {
+                    "active": boolean | null,"associate_id": string,"associate_name": string,"created_at": string,"ended_on": string | null,"group_id": string,"id": string,"kind": Database["public"]['Enums']["associate_function_kind"],"started_on": string | null,"title": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "associate_functions_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "associate_functions_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_functions_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_functions_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associates"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_functions_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"associate_profile_rows": {
+                  Row: {
+                    "active": boolean,"birth_date": string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at": string,"group_id": string,"id": string,"joined_on": string | null,"left_on": string | null,"name": string,"notes": string | null,"patrol": string | null,"patrol_id": string | null,"promise_date": string | null,"section": string | null,"section_id": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "associates_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associates_patrol_fkey"
+      columns: ["patrol_id","section_id"]
+isOneToOne: false
+      referencedRelation: "patrols"
+      referencedColumns: ["id","section_id"]
+    },{
+      foreignKeyName: "associates_section_fkey"
+      columns: ["section_id","group_id","branch"]
+isOneToOne: false
+      referencedRelation: "sections"
+      referencedColumns: ["id","group_id","branch"]
+    }
+                  ]
+                },"associate_rows": {
                   Row: {
                     "active": boolean,"branch": Database["public"]['Enums']["scout_branch"],"created_at": string,"group_id": string,"id": string,"name": string,"patrol": string | null,"patrol_id": string | null,"section": string | null,"section_id": string | null,"updated_at": string
                   }
@@ -1041,6 +1500,62 @@ isOneToOne: false
       referencedColumns: ["id","group_id","branch"]
     }
                   ]
+                },"control_status_rows": {
+                  Row: {
+                    "associate_id": string | null,"effective_status": Database["public"]['Enums']["control_status"] | null,"group_id": string,"id": string,"item_id": string,"note": string | null,"relative_id": string | null,"status": Database["public"]['Enums']["control_status"],"status_date": string | null,"updated_at": string,"updated_by": string | null,"valid_until": string | null,"value_year": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "associate_id"?: string | null,"effective_status"?: never,"group_id"?: string | null,"id"?: string | null,"item_id"?: string | null,"note"?: string | null,"relative_id"?: string | null,"status"?: Database["public"]['Enums']["control_status"] | null,"status_date"?: string | null,"updated_at"?: string | null,"updated_by"?: string | null,"valid_until"?: string | null,"value_year"?: number | null
+                         }
+                        Update: {
+                           "associate_id"?: string | null,"effective_status"?: never,"group_id"?: string | null,"id"?: string | null,"item_id"?: string | null,"note"?: string | null,"relative_id"?: string | null,"status"?: Database["public"]['Enums']["control_status"] | null,"status_date"?: string | null,"updated_at"?: string | null,"updated_by"?: string | null,"valid_until"?: string | null,"value_year"?: number | null
+                         }
+                        Relationships: [
+                    {
+      foreignKeyName: "control_statuses_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "control_statuses_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "control_statuses_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "control_statuses_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associates"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "control_statuses_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "control_statuses_item_id_fkey"
+      columns: ["item_id"]
+isOneToOne: false
+      referencedRelation: "control_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "control_statuses_relative_id_fkey"
+      columns: ["relative_id"]
+isOneToOne: false
+      referencedRelation: "relatives"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"entry_split_rows": {
                   Row: {
                     "account_id": string,"account_ledger_code": string | null,"account_name": string,"amount_cents": number,"associate_id": string | null,"associate_name": string | null,"category_code": string | null,"category_id": string,"category_kind": Database["public"]['Enums']["category_kind"] | null,"category_ledger_code": string | null,"category_name": string,"description": string,"document": string | null,"document_filed": boolean,"entry_date": string,"entry_id": string,"entry_name": string,"entry_total_cents": number,"external_ids": (string)[] | null,"group_id": string,"outside_statement": boolean,"payment_method_id": string,"payment_method_name": string,"reconciled": boolean | null,"search_text": string | null,"split_id": string
@@ -1048,6 +1563,18 @@ isOneToOne: false
                   ComputedFields: never
                   Relationships: [
                     {
+      foreignKeyName: "entry_splits_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "entry_splits_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "entry_splits_associate_id_fkey"
       columns: ["associate_id"]
 isOneToOne: false
@@ -1092,6 +1619,18 @@ isOneToOne: false
                   ComputedFields: never
                   Relationships: [
                     {
+      foreignKeyName: "entry_splits_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "entry_splits_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "entry_splits_associate_id_fkey"
       columns: ["associate_id"]
 isOneToOne: false
@@ -1223,6 +1762,74 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"relative_link_rows": {
+                  Row: {
+                    "associate_id": string,"financial": boolean,"group_id": string,"id": string,"kinship": Database["public"]['Enums']["relative_kinship"],"kinship_note": string | null,"legal": boolean,"position": number,"relative_associate_id": string | null,"relative_id": string,"relative_name": string,"sibling_count": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "relative_links_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "relative_links_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relative_links_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relative_links_associate_id_fkey"
+      columns: ["associate_id"]
+isOneToOne: false
+      referencedRelation: "associates"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relative_links_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relative_links_relative_id_fkey"
+      columns: ["relative_id"]
+isOneToOne: false
+      referencedRelation: "relatives"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relatives_associate_id_fkey"
+      columns: ["relative_associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_audiences"
+      referencedColumns: ["associate_id"]
+    },{
+      foreignKeyName: "relatives_associate_id_fkey"
+      columns: ["relative_associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_profile_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relatives_associate_id_fkey"
+      columns: ["relative_associate_id"]
+isOneToOne: false
+      referencedRelation: "associate_rows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "relatives_associate_id_fkey"
+      columns: ["relative_associate_id"]
+isOneToOne: false
+      referencedRelation: "associates"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Functions: {
@@ -1241,7 +1848,9 @@ isOneToOne: false
 "admin_bootstrap_group":
 { Args: { "p_admin_email": string,"p_group_name": string }; Returns: string
                            },
-
+"admin_change_associates_role":
+{ Args: { "p_group_id": string,"p_role": Database["public"]['Enums']["associates_role"],"p_user_id": string }; Returns: undefined
+                           },
 "admin_change_inventory_role":
 { Args: { "p_group_id": string,"p_role": Database["public"]['Enums']["inventory_role"],"p_user_id": string }; Returns: undefined
                            },
@@ -1251,21 +1860,51 @@ isOneToOne: false
 "admin_remove_member":
 { Args: { "p_group_id": string,"p_user_id": string }; Returns: undefined
                            },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+"associate_audience_of":
+{ Args: { "p_associate_id": string }; Returns: Database["public"]['Enums']["control_audience"]
+                           },
+"associate_function_snapshot":
+{ Args: { "p_function_id": string }; Returns: Json
+                           },
+"associate_snapshot":
+{ Args: { "p_associate_id": string }; Returns: Json
+                           },
+"associates_add_function":
+{ Args: { "p_associate_id": string,"p_kind": Database["public"]['Enums']["associate_function_kind"],"p_started_on": string,"p_title": string }; Returns: string
+                           },
+"associates_check_details":
+{ Args: { "p_birth_date": string,"p_joined_on": string,"p_name": string,"p_notes": string,"p_promise_date": string }; Returns: string
+                           },
+"associates_check_placement":
+{ Args: { "p_branch": Database["public"]['Enums']["scout_branch"],"p_group_id": string,"p_patrol_id": string,"p_section_id": string }; Returns: undefined
+                           },
+"associates_create":
+{ Args: { "p_birth_date": string,"p_branch": Database["public"]['Enums']["scout_branch"],"p_group_id": string,"p_joined_on": string,"p_name": string,"p_notes": string,"p_patrol_id": string,"p_promise_date": string,"p_section_id": string }; Returns: string
+                           },
+"associates_delete_function":
+{ Args: { "p_function_id": string }; Returns: undefined
+                           },
+"associates_end_function":
+{ Args: { "p_ended_on": string,"p_function_id": string }; Returns: undefined
+                           },
+"associates_leave":
+{ Args: { "p_associate_id": string,"p_date": string,"p_reason": string }; Returns: undefined
+                           },
+"associates_move":
+{ Args: { "p_associate_id": string,"p_branch": Database["public"]['Enums']["scout_branch"],"p_date": string,"p_patrol_id": string,"p_section_id": string }; Returns: string
+                           },
+"associates_rejoin":
+{ Args: { "p_associate_id": string,"p_date": string,"p_reason": string }; Returns: undefined
+                           },
+"associates_role_of":
+{ Args: { "p_group_id": string }; Returns: Database["public"]['Enums']["associates_role"]
+                           },
+"associates_seed_control_items":
+{ Args: { "p_group_id": string }; Returns: number
+                           },
+"associates_update":
+{ Args: { "p_associate_id": string,"p_birth_date": string,"p_joined_on": string,"p_name": string,"p_notes": string,"p_promise_date": string }; Returns: undefined
+                           },
 "attachment_path_entry":
 { Args: { "p_name": string }; Returns: Record<string, unknown>
                            },
@@ -1278,7 +1917,9 @@ isOneToOne: false
 "can_edit_inventory":
 { Args: { "p_group_id": string }; Returns: boolean
                            },
-
+"can_manage_associates":
+{ Args: { "p_group_id": string }; Returns: boolean
+                           },
 "can_manage_inventory":
 { Args: { "p_group_id": string }; Returns: boolean
                            },
@@ -1327,23 +1968,57 @@ isOneToOne: false
 "confirm_fee_suggestions":
 { Args: { "p_items": Json }; Returns: number
                            },
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+"control_item_applies":
+{ Args: { "p_audience": Database["public"]['Enums']["control_audience"],"p_item_id": string }; Returns: boolean
+                           },
+"control_item_check":
+{ Args: { "p_audiences": Json,"p_directorate": Database["public"]['Enums']["directorate"],"p_group_id": string,"p_item_id": string,"p_kind": Database["public"]['Enums']["control_item_kind"],"p_name": string,"p_validity_months": number }; Returns: string
+                           },
+"control_item_create":
+{ Args: { "p_audiences": Json,"p_directorate": Database["public"]['Enums']["directorate"],"p_group_id": string,"p_kind": Database["public"]['Enums']["control_item_kind"],"p_name": string,"p_remove_on_leave": boolean,"p_validity_months": number,"p_value_kind"?: Database["public"]['Enums']["control_value_kind"] }; Returns: string
+                           },
+"control_item_place":
+{ Args: { "p_item_id": string,"p_position": number }; Returns: undefined
+                           },
+"control_item_save_audiences":
+{ Args: { "p_audiences": Json,"p_group_id": string,"p_item_id": string }; Returns: undefined
+                           },
+"control_item_snapshot":
+{ Args: { "p_item_id": string }; Returns: Json
+                           },
+"control_item_update":
+{ Args: { "p_active": boolean,"p_audiences": Json,"p_directorate": Database["public"]['Enums']["directorate"],"p_item_id": string,"p_kind": Database["public"]['Enums']["control_item_kind"],"p_name": string,"p_remove_on_leave": boolean,"p_validity_months": number,"p_value_kind"?: Database["public"]['Enums']["control_value_kind"] }; Returns: undefined
+                           },
+"control_items_renumber":
+{ Args: { "p_directorate": Database["public"]['Enums']["directorate"],"p_group_id": string }; Returns: undefined
+                           },
+"control_items_seed":
+{ Args: { "p_group_id": string }; Returns: number
+                           },
+"control_status_check":
+{ Args: { "p_audience": Database["public"]['Enums']["control_audience"],"p_group_id": string,"p_item_id": string,"p_note": string,"p_status": Database["public"]['Enums']["control_status"],"p_status_date": string,"p_valid_until": string,"p_value_year": number,"p_who": string }; Returns: Record<string, unknown>
+                           },
+"control_status_clear":
+{ Args: { "p_associate_id": string,"p_item_id": string }; Returns: undefined
+                           },
+"control_status_clear_relative":
+{ Args: { "p_item_id": string,"p_relative_id": string }; Returns: undefined
+                           },
+"control_status_set":
+{ Args: { "p_associate_id": string,"p_item_id": string,"p_note": string,"p_status": Database["public"]['Enums']["control_status"],"p_status_date": string,"p_valid_until": string,"p_value_year"?: number }; Returns: undefined
+                           },
+"control_status_set_relative":
+{ Args: { "p_item_id": string,"p_note": string,"p_relative_id": string,"p_status": Database["public"]['Enums']["control_status"],"p_status_date": string,"p_valid_until": string,"p_value_year"?: number }; Returns: undefined
+                           },
+"control_status_snapshot":
+{ Args: { "p_associate_id": string,"p_item_id": string }; Returns: Json
+                           },
+"control_status_snapshot_relative":
+{ Args: { "p_item_id": string,"p_relative_id": string }; Returns: Json
+                           },
+"control_statuses_init":
+{ Args: { "p_associate_id": string,"p_audience": Database["public"]['Enums']["control_audience"],"p_group_id": string,"p_relative_id": string }; Returns: number
+                           },
 "create_account":
 { Args: { "p_bank": string,"p_branch": string,"p_group_id": string,"p_kind": Database["public"]['Enums']["account_kind"],"p_ledger_code": string,"p_name": string,"p_number": string,"p_opening_balance_cents": number,"p_opening_date": string }; Returns: string
                            },
@@ -1631,16 +2306,36 @@ isOneToOne: false
 "reject_reconciliation_suggestion":
 { Args: { "p_ledger_entry_id": string,"p_statement_line_id": string }; Returns: undefined
                            },
-
-
-
-
-
-
-
-
-
-
+"relative_link_snapshot":
+{ Args: { "p_link_id": string }; Returns: Json
+                           },
+"relatives_check_associate":
+{ Args: { "p_associate_id": string }; Returns: string
+                           },
+"relatives_check_details":
+{ Args: { "p_group_id": string,"p_name": string,"p_notes": string,"p_relative_associate_id": string }; Returns: string
+                           },
+"relatives_check_kinship":
+{ Args: { "p_kinship": Database["public"]['Enums']["relative_kinship"],"p_kinship_note": string }; Returns: string
+                           },
+"relatives_create":
+{ Args: { "p_associate_id": string,"p_financial": boolean,"p_kinship": Database["public"]['Enums']["relative_kinship"],"p_kinship_note": string,"p_legal": boolean,"p_name": string,"p_relative_associate_id": string }; Returns: string
+                           },
+"relatives_insert_link":
+{ Args: { "p_associate_id": string,"p_financial": boolean,"p_group_id": string,"p_kinship": Database["public"]['Enums']["relative_kinship"],"p_kinship_note": string,"p_legal": boolean,"p_relative_id": string }; Returns: string
+                           },
+"relatives_link":
+{ Args: { "p_associate_id": string,"p_financial": boolean,"p_kinship": Database["public"]['Enums']["relative_kinship"],"p_kinship_note": string,"p_legal": boolean,"p_relative_id": string }; Returns: string
+                           },
+"relatives_rename":
+{ Args: { "p_name": string,"p_notes": string,"p_relative_associate_id": string,"p_relative_id": string }; Returns: undefined
+                           },
+"relatives_unlink":
+{ Args: { "p_link_id": string }; Returns: undefined
+                           },
+"relatives_update_link":
+{ Args: { "p_financial": boolean,"p_kinship": Database["public"]['Enums']["relative_kinship"],"p_kinship_note": string,"p_legal": boolean,"p_link_id": string }; Returns: undefined
+                           },
 "rename_import_profile":
 { Args: { "p_name": string,"p_profile_id": string }; Returns: undefined
                            },
@@ -1751,7 +2446,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "account_kind": "corrente"|"poupanca"|"caixa"|"outro","associate_movement_kind": "entrada"|"saida","category_kind": "receita"|"despesa","fee_due_rule": "dia_fixo"|"dia_util"|"fim_do_mes","fee_status": "pago"|"atencao"|"nao_pago"|"isento","inventory_condition": "novo"|"bom"|"regular"|"ruim"|"manutencao"|"inservivel","inventory_movement_kind": "entrada"|"transferencia"|"condicao"|"ajuste"|"baixa"|"edicao","inventory_origin": "compra"|"doacao"|"fabricacao"|"nao_informada","inventory_review_status": "para_revisar"|"revisado","inventory_role": "manager"|"chief"|"viewer","inventory_tracking": "unit"|"lot","inventory_write_off_reason": "perda"|"extravio"|"descarte"|"doacao"|"consumo","member_role": "admin"|"treasurer"|"viewer","scout_branch": "lobinho"|"escoteiro"|"senior"|"pioneiro"|"adulto","statement_line_status": "aberta"|"conciliada"|"ignorada"
+            "account_kind": "corrente"|"poupanca"|"caixa"|"outro","associate_function_kind": "escotista"|"dirigente","associate_movement_kind": "entrada"|"saida","associates_role": "manager"|"viewer","category_kind": "receita"|"despesa","control_audience": "jovem"|"adulto"|"responsavel","control_item_kind": "documento"|"sistema"|"canal"|"etapa","control_status": "ok"|"pendente"|"desatualizado"|"a_verificar"|"convidado"|"nao_se_aplica"|"a_remover"|"removido","control_value_kind": "situacao"|"ano"|"data","directorate": "metodos_educativos"|"administrativa"|"financeira"|"comunicacao","fee_due_rule": "dia_fixo"|"dia_util"|"fim_do_mes","fee_status": "pago"|"atencao"|"nao_pago"|"isento","inventory_condition": "novo"|"bom"|"regular"|"ruim"|"manutencao"|"inservivel","inventory_movement_kind": "entrada"|"transferencia"|"condicao"|"ajuste"|"baixa"|"edicao","inventory_origin": "compra"|"doacao"|"fabricacao"|"nao_informada","inventory_review_status": "para_revisar"|"revisado","inventory_role": "manager"|"chief"|"viewer","inventory_tracking": "unit"|"lot","inventory_write_off_reason": "perda"|"extravio"|"descarte"|"doacao"|"consumo","member_role": "admin"|"treasurer"|"viewer","relative_kinship": "mae"|"pai"|"outro","scout_branch": "lobinho"|"escoteiro"|"senior"|"pioneiro"|"adulto","statement_line_status": "aberta"|"conciliada"|"ignorada"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1867,7 +2562,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "account_kind": ["corrente", "poupanca", "caixa", "outro"],"associate_movement_kind": ["entrada", "saida"],"category_kind": ["receita", "despesa"],"fee_due_rule": ["dia_fixo", "dia_util", "fim_do_mes"],"fee_status": ["pago", "atencao", "nao_pago", "isento"],"inventory_condition": ["novo", "bom", "regular", "ruim", "manutencao", "inservivel"],"inventory_movement_kind": ["entrada", "transferencia", "condicao", "ajuste", "baixa", "edicao"],"inventory_origin": ["compra", "doacao", "fabricacao", "nao_informada"],"inventory_review_status": ["para_revisar", "revisado"],"inventory_role": ["manager", "chief", "viewer"],"inventory_tracking": ["unit", "lot"],"inventory_write_off_reason": ["perda", "extravio", "descarte", "doacao", "consumo"],"member_role": ["admin", "treasurer", "viewer"],"scout_branch": ["lobinho", "escoteiro", "senior", "pioneiro", "adulto"],"statement_line_status": ["aberta", "conciliada", "ignorada"]
+            "account_kind": ["corrente", "poupanca", "caixa", "outro"],"associate_function_kind": ["escotista", "dirigente"],"associate_movement_kind": ["entrada", "saida"],"associates_role": ["manager", "viewer"],"category_kind": ["receita", "despesa"],"control_audience": ["jovem", "adulto", "responsavel"],"control_item_kind": ["documento", "sistema", "canal", "etapa"],"control_status": ["ok", "pendente", "desatualizado", "a_verificar", "convidado", "nao_se_aplica", "a_remover", "removido"],"control_value_kind": ["situacao", "ano", "data"],"directorate": ["metodos_educativos", "administrativa", "financeira", "comunicacao"],"fee_due_rule": ["dia_fixo", "dia_util", "fim_do_mes"],"fee_status": ["pago", "atencao", "nao_pago", "isento"],"inventory_condition": ["novo", "bom", "regular", "ruim", "manutencao", "inservivel"],"inventory_movement_kind": ["entrada", "transferencia", "condicao", "ajuste", "baixa", "edicao"],"inventory_origin": ["compra", "doacao", "fabricacao", "nao_informada"],"inventory_review_status": ["para_revisar", "revisado"],"inventory_role": ["manager", "chief", "viewer"],"inventory_tracking": ["unit", "lot"],"inventory_write_off_reason": ["perda", "extravio", "descarte", "doacao", "consumo"],"member_role": ["admin", "treasurer", "viewer"],"relative_kinship": ["mae", "pai", "outro"],"scout_branch": ["lobinho", "escoteiro", "senior", "pioneiro", "adulto"],"statement_line_status": ["aberta", "conciliada", "ignorada"]
           }
         }
 } as const

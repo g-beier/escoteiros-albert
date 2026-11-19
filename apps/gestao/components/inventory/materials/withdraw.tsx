@@ -17,7 +17,7 @@ import { cn } from '@geas/ui/lib/utils';
 import { addLot, writeOffLot } from '@/app/(inventario)/inventario/materiais/actions';
 import { ConditionPill } from '@/components/inventory/condition-pill';
 import { dateBR, writeOffOptions, type Condition } from '@/lib/inventory/vocabulary';
-import { ActionDialog, type FormAction } from './action-dialog';
+import { ActionDialog, type FormAction } from '@/components/shell/action-dialog';
 import { ConditionField, EntryFields, Field, LocationField, NotesField, QuantityField, SelectField, VariantField } from './fields';
 
 // Saída do estoque como baixa (consumo, perda, descarte…), o caminho normal quando unidades saem. "Corrigir

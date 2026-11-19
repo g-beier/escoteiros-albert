@@ -1,81 +1,75 @@
 # Modelo e vocabulário do Associados
 
-Rascunho de 2026-11-19, antes da implementação. Termos usados na interface, no código e na documentação. Tabelas marcadas com *(proposto)* ainda não existem. Plano de histórias e fases em `plano.md`.
+Termos usados na interface, no código e na documentação. Atualizado em 2026-11-19, com a primeira entrega na branch
+`feat/associados-base` (migrations 040 e 041). Tabelas marcadas com *(proposto)* ainda não existem. Fases e o que
+falta em `plano.md`.
 
-O módulo **Associados** (`/associados`) passa a ser o dono do cadastro de pessoas do grupo, que hoje está espalhado em planilhas:
+O módulo **Associados** (`/associados`) é o dono do cadastro de pessoas do grupo, que antes estava em planilhas:
 
 | Fonte | O que tem | Vira |
 |---|---|---|
-| Doc 10 – Lista simples de efetivo | Adultos e jovens por seção, com contagem; jovens com pais, responsáveis e familiares (`*` = outro parentesco; "Ver X" = irmão já listado) | Associados, seção/equipe, familiares, efetivo calculado |
-| Doc 13 – Controle de idade dos jovens | Nascimento, idade, período de transição de ramo | Nascimento; idade e transição calculadas |
-| Doc 14 – Datas de promessa | Data da promessa, por mês, de jovens e adultos | Data da promessa; aniversários calculados |
-| Doc 22 – Controle de fluxo de dados pessoais | Checklist pessoa × onde o dado está, por diretoria (Escotistas, Dirigentes, Jovens e familiares, Integrações) | Itens de controle e situações |
+| Doc 10 – Lista simples de efetivo | Adultos e jovens por seção, com contagem; jovens com pais, responsáveis e familiares (`*` = outro parentesco; "Ver X" = irmão já listado) | Associados por ramo; responsáveis compartilhados entre irmãos |
+| Doc 13 – Controle de idade dos jovens | Nascimento, idade, período de transição de ramo | Nascimento; idade calculada (transição: Fase 2) |
+| Doc 14 – Datas de promessa | Data da promessa, por mês, de jovens e adultos | Data da promessa (aniversários: Fase 2) |
+| Doc 22 – Controle de fluxo de dados pessoais | Por pessoa × coluna: onde o dado está e em que situação, com colunas agrupadas por diretoria; abas Escotistas, Dirigentes, Jovens e seus familiares, Integrações | Itens de controle, situações e a matriz `/associados/controle` |
 
-O dado pessoal completo (documentos, CPF, endereço, telefone, e-mail, saúde) fica **só no Paxtu** (sistema da UEB), e continua lá: o app guarda nomes, datas, vínculos e o controle de onde cada dado está, nunca o dado em si. O Paxtu exporta, mas mal; a importação fica para depois.
+O dado pessoal completo (documentos, CPF, endereço, telefone, e-mail, saúde) fica **só no Paxtu** (sistema da UEB). O
+app guarda nomes, datas, vínculos e o controle de onde cada dado está, nunca o dado em si. O Paxtu exporta mal; a
+importação dele fica para depois.
 
 ## Termos
 
 | Termo | O que é | No banco |
 |---|---|---|
-| **Associado** | Pessoa registrada no grupo: jovem (Lobinho, Escoteiro, Sênior, Pioneiro) ou adulto. É a mesma linha que o Financeiro já usa em mensalidades, isenções, rateios e devedores; o cadastro passa a ser feito aqui, e o Financeiro só lê. | `associates` (ampliar) |
-| **Jovem** / **Adulto** | Tipo do associado, dado pelo ramo (`adulto` = adulto). Jovem fica numa seção (e opcionalmente numa equipe); adulto não tem seção, e sim **funções**. | `associates.branch` |
-| **Seção** / **Equipe** | Como já existem no Financeiro (`sections`, `patrols`); a configuração muda para cá. | `sections`, `patrols` |
-| **Nascimento** | Data de nascimento. Base da idade, da transição de ramo e dos aniversários. | `associates.birth_date` *(proposto)* |
-| **Promessa** | Data da promessa escoteira (jovem) ou da promessa de adulto. Base do aniversário de promessa. Adulto pode ter a promessa "formal" (feita em outro grupo, sem data conhecida). | `associates.promise_date` *(proposto)* |
-| **Entrada** / **Desligamento** | Data em que entrou no grupo e em que saiu. Tempo de atividade = entrada até hoje (ou até o desligamento). Associado desligado sai do efetivo, das mensalidades seguintes e abre as pendências de remoção (ver **Itens de controle**). Reingresso abre um novo período. | `associate_periods` *(proposto)*; `associates.active` passa a ser calculado |
-| **Efetivo** | Associados ativos numa data, por seção (jovens) e por função (adultos), com contagem. Substitui o Doc 10. Calculado, nunca digitado. | visão *(proposto)* |
-| **Registro (UEB)** | Registro anual na União dos Escoteiros do Brasil: número no Paxtu, **ano-base** e **validade** (varia por pessoa, conforme o mês do pagamento). Base da taxa de registro. | `associate_registrations` *(proposto)*: um por associado e ano-base |
-| **Idade** | Anos e meses na data de hoje, calculada do nascimento. | calculado |
-| **Faixa do ramo** | Idade de cada ramo, pelo POR: **Lobinho** de 6 anos e meio a 10; **Escoteiro** de 10 a 14; **Sênior** de 14 a 18; **Pioneiro** de 18 até completar 22. Configurável (idade de passagem e duração da janela, em meses), com estes valores de partida. | `branch_age_ranges` *(proposto)* |
-| **Transição** | Janela em que o jovem pode estar em qualquer dos dois ramos: Lobinho → Escoteiro dos 10 aos 11 anos; Escoteiro → Sênior dos 14 aos 15. Sênior → Pioneiro não tem janela: a passagem é no aniversário de 18 anos (o Doc 13 mostra 17–18 como aviso antecipado; o app avisa a partir dos 17). Pioneiro sai do ramo ao completar 22 (desligamento ou passagem a adulto). O app avisa quem está na janela, quem está perto da passagem sem janela e quem passou do prazo. | calculado |
-| **Familiar** | Pai, mãe, responsável ou outro parente de um jovem, que não é necessariamente associado. Só o nome: contatos ficam no Paxtu (os chefes de seção podem consultá-los lá). Se o familiar também é associado (ex.: mãe escotista), aponta para o associado em vez de repetir o cadastro. | `relatives` *(proposto)*, `relatives.associate_id` opcional |
-| **Vínculo familiar** | Jovem × familiar, com **parentesco** (pai, mãe, outro + descrição: tio, avó, padrasto…), se é **responsável legal** e se é **responsável financeiro**. Irmãos compartilham os mesmos familiares. | `relative_links` *(proposto)* |
-| **Família** | Conjunto de associados ligados pelos mesmos familiares, incluindo o familiar que também é associado (mãe escotista e dois filhos = três membros). Calculada (componentes ligados), nunca cadastrada. Usada para irmãos, cobrança e contagem. (O desconto de registro por família considera também os responsáveis, mas é contado no Paxtu, não aqui.) | calculado |
-| **Responsável financeiro** | Familiar (ou o próprio associado adulto) que paga. Pode haver mais de um por jovem; um é o principal. Base das integrações com mensalidades, taxa de registro e devedores. | `relative_links.financial` *(proposto)* |
-| **Função** | O que o adulto faz no grupo, com início e fim: **escotista** (de uma seção, com cargo: chefe de seção, assistente) ou **dirigente** (cargo na diretoria: presidente, diretor de métodos educativos…). Um adulto pode ter várias funções ao mesmo tempo, inclusive escotista e dirigente. Jovens não têm função (regra do grupo: pioneiro não é escotista). | `associate_functions` *(proposto)* |
-| **Gestão** | Mandato da diretoria, normalmente de dois anos (ex.: 2025–2027), com início e fim. Base da validade do ATV "até o fim da gestão" e dos cargos de dirigente. | `board_terms` *(proposto)* |
-| **ATV** | Acordo de Trabalho Voluntário do adulto. Validade de três tipos: **experiência** (1 a 4 meses), **até o fim da gestão** ou **prazo definido** (data informada). O app avisa quem está vencendo ou sem ATV válido. | documento (ver **Itens de controle**) |
-| **PPF** | Plano Pessoal de Formação do adulto. Revisto uma ou duas vezes por ano e sempre que a função muda: mudar a função marca o PPF como "a revisar". | documento |
-| **Diretoria** | Área do grupo responsável por um conjunto de controles: **Métodos Educativos**, **Administrativa**, **Financeira** e **Comunicação**, as quatro separadas (no Doc 22 a aba de jovens junta Administrativa e Financeira; na carga, cada item vai para a sua). Cada item de controle tem uma diretoria dona. | `directorates` *(proposto, fixo)* |
-| **Item de controle** | Coisa que se acompanha por pessoa, configurável pela diretoria dona: um **documento** (ficha de associação, ficha médica, ficha de aptidão, termo de consentimento, autorização de viagem, certificado de nomeação, ATV, PPF, curso de brigadista), um **sistema** onde o dado foi cadastrado (Paxtu: dados, login, seções/equipes; Google Drive; calendário) ou um **canal** (e-mail do GEAS, listas, Instagram, WhatsApp, site), ou uma **etapa de entrada** (integração, início do estágio, promessa de adulto, palestra Vamos Falar de Escotismo). Diz a quem se aplica (jovem, escotista, dirigente, familiar), se tem validade e como ela é calculada (ficha médica: 1 ano; curso de brigadista: 2 anos; ficha de aptidão e termo de consentimento: não vencem; ATV e PPF: regras próprias, acima), e se precisa ser **removido no desligamento**. Os canais mudam com o tempo (o Twitter, por exemplo): itens se desativam, nunca se apagam. | `control_items` *(proposto)* |
-| **Situação** | Estado de um item para uma pessoa: **ok**, **pendente** (planilha: NÃO), **desatualizado** (ANTIGA), **a verificar** (VER, TEM?), **convidado** (CONV.), **não se aplica** (XXX), **a remover** (aberto pelo desligamento) e **removido** (DESAT.). Com data, validade (quando o item tem) e observação ("sem foto", "não necessário à função"). Vencida a validade, o ok vira desatualizado no cálculo. | `control_statuses` *(proposto)* |
-| **Pendência** | Situação que pede ação: pendente, desatualizado, a verificar, a remover, validade vencendo. Cada diretoria vê as suas. | calculado |
-| **Taxa de registro** | Valor pago à UEB pelo registro anual. Entra e sai do caixa do grupo, **por associado**: o recebimento é um rateio na **rubrica de registro** com o associado, e o repasse à UEB, um rateio na **rubrica de repasse** com o mesmo associado. As duas rubricas são configuráveis, como a de mensalidades. Descontos (percentual a partir do terceiro membro da família) e isenções são contados no Paxtu: o app não calcula valor previsto nem desconto, só olha se houve o rateio. | `registration_settings` *(proposto)* |
-| **Situação do registro** | Por associado e ano-base, calculada dos rateios: **pago** (há rateio na rubrica de registro), **repassado** (há rateio na rubrica de repasse) ou **sem registro**. Ao aparecer o pagamento, a validade fica **a verificar**, com uma sugestão (12 meses depois do pagamento); alguém confere no Paxtu e confirma ou corrige. | `associate_registrations` (validade confirmada) + cálculo |
-| **Passagem** | Mudança de seção ou de ramo, com data: Lobinho → Escoteiro etc., e Pioneiro → adulto. Ao completar 22, o pioneiro **pode** virar adulto (mesmo associado, promessa e tempo de atividade mantidos, período contínuo) ou ser desligado; o app avisa e a secretaria escolhe. O histórico de passagens mostra quando cada um passou e alimenta o aviso de transição. | `associate_moves` *(proposto)* |
+| **Associado** | Pessoa registrada no grupo: jovem (Lobinho, Escoteiro, Sênior, Pioneiro) ou adulto. É a mesma linha que o Financeiro usa em mensalidades, isenções, rateios e devedores; o cadastro é feito aqui, e o Financeiro só lê. | `associates` (+ `birth_date`, `promise_date`, `joined_on`, `notes`); visão `associate_profile_rows` |
+| **Jovem** / **Adulto** | Tipo do associado, dado pelo ramo (`adulto` = adulto). A lista divide os associados só por ramo; os adultos se subdividem por **função**. | `associates.branch` |
+| **Seção** / **Equipe** | Continuam existindo (o Financeiro filtra mensalidades por seção) e se configuram aqui, mas a lista não agrupa por elas. | `sections`, `patrols` |
+| **Nascimento**, **Promessa**, **Entrada** | Datas do cadastro. Nenhuma pode ser futura; promessa e entrada não podem ser antes do nascimento. A promessa "formal" de adulto (feita em outro grupo) fica sem data. | `associates.birth_date`, `promise_date`, `joined_on` |
+| **Período** / **Desligamento** / **Reingresso** | Entradas e saídas com data. `active` é derivado da última movimentação (trigger), seja ela lançada aqui, pela grade de mensalidades ou pela importação CSV. | `associate_movements` (de 022) |
+| **Passagem** | Mudança de ramo, seção ou equipe com data, inclusive pioneiro → adulto (zera seção e equipe; promessa e tempo de atividade mantidos). Não vale para desligado nem quando nada muda. | `associate_moves` |
+| **Efetivo** | Associados ativos hoje, contados por ramo e, nos adultos, por função. Calculado. | lista `/associados` |
+| **Idade** | Anos completos, calculada do nascimento. | calculado |
+| **Faixa do ramo** / **Transição** | Idades do POR (Lobinho 6½–10, Escoteiro 10–14, Sênior 14–18, Pioneiro 18–22) e janelas de transição (10–11, 14–15; aviso a partir dos 17; pioneiro aos 22 vira adulto ou sai). | *(proposto, Fase 2)* `branch_age_ranges` |
+| **Função** | O que o adulto faz: **escotista** ou **dirigente**, com cargo opcional (ex.: chefe de seção, presidente), início e fim. Pode ter as duas ao mesmo tempo. Só adulto ativo recebe função; o desligamento não encerra funções. Na lista, adultos ficam em Escotistas, Dirigentes (quem tem as duas aparece nas duas) ou Sem função. | `associate_functions`, visão `associate_function_rows` |
+| **Responsável** | Pai, mãe ou outro familiar de um jovem (ex.: irmã que acompanha o grupo), que não é necessariamente associado. Só o nome: contatos ficam no Paxtu. Irmãos compartilham o mesmo cadastro. Se também é associado, aponta para ele (`associate_id`). | `relatives` |
+| **Vínculo** | Jovem × responsável, com **parentesco** (mãe, pai, outro + descrição obrigatória), **responsável legal** e **responsável financeiro**. Só jovem tem responsável. Desvincular apaga o responsável só se ele ficar sem jovem e com as situações ainda no valor inicial. | `relative_links`, visão `relative_link_rows` (com `sibling_count`) |
+| **Família** | Associados ligados pelos mesmos responsáveis (irmãos). Hoje aparece como "compartilhado com N irmão(s)"; o uso em cobrança é da Fase 7. | calculado |
+| **Diretoria** | Área dona de um conjunto de itens: **Métodos Educativos**, **Administrativa**, **Financeira**, **Comunicação** (nesta ordem na matriz). Fixas. | enum `directorate` |
+| **Público** | A quem um item se aplica: **Jovem** e **Adulto** (pelo ramo, independente de função) e **Responsável**. A matriz tem abas Jovens (jovens com os responsáveis abaixo) e Adultos. | enum `control_audience` |
+| **Item de controle** | Uma coluna do Doc 22: **documento**, **sistema**, **canal** ou **etapa**, de uma diretoria, com posição (arrastar), validade em meses (opcional), **remover no desligamento**, e por público: se se aplica e o **valor inicial**. Mostra na célula a **situação**, um **ano** (ex.: Ano-base do registro) ou uma **data** (ex.: Validade do registro). Itens se desativam, nunca se apagam. | `control_items` (+ `value_kind`), `control_item_audiences` (`initial_status`) |
+| **Valor inicial** | Situação gravada ao cadastrar um associado (tela ou importação) ou um responsável, para cada item ativo do público, com a data do dia. Mudar o valor inicial não altera o que já foi gravado. Responsável que já é associado ativo não ganha valor inicial. | `control_statuses_init` |
+| **Situação** | Estado de um item para uma pessoa: **ok**, **pendente** (planilha: NÃO), **desatualizado** (DESAT./ANTIGA), **a verificar** (VER, TEM?), **convidado** (CONV.), **não se aplica** (XXX, selo N/A), **a remover** e **removido** (DESAT. de canal). Com data, validade, ano (itens de ano) e observação. Efetiva: ok vencido (validade passada ou ano anterior ao atual) vira desatualizado. Sem linha = **sem registro** (conta como pendência). | `control_statuses` (de associado **ou** de responsável), visão `control_status_rows` |
+| **Pendência** | Sem registro, pendente, desatualizado, a verificar ou a remover, num item que se aplica. "Só pendências" filtra a matriz; o bloco do jovem conta também os responsáveis dele. | calculado |
+| **A remover** | Aberto por toda saída que deixa o associado inativo, nos itens removíveis com situação ok/desatualizado/a verificar/convidado. Vale também para os responsáveis do jovem que não estejam ligados a outro jovem ativo nem sejam associados ativos. A diretoria fecha como removido. | trigger em `associate_movements` |
+| **Registro (UEB)** | Número no Paxtu, ano-base e validade. Hoje: os itens Ano-base e Validade do registro, preenchidos à mão. Depois: calculados dos rateios (Fase 6). | *(proposto)* `associate_registrations` |
+| **Gestão**, **ATV**, **PPF** | Mandato da diretoria; acordo de trabalho voluntário (experiência 1–4 meses, até o fim da gestão ou prazo); plano pessoal de formação (revisão 1–2×/ano e ao mudar a função). Hoje ATV e PPF são itens de controle comuns (PPF com validade de 12 meses). | *(proposto, Fase 4)* `board_terms` |
 
 ## Papéis
 
-Segue o padrão do Inventário: administrador do grupo vale em todos os módulos; os demais papéis são por módulo (`memberships.associates_role` *(proposto)*). Além do papel, cada usuário pode pertencer a uma ou mais **diretorias** (`memberships.directorates` *(proposto)*), que dizem quais itens de controle ele edita.
+Administrador do grupo vale em todos os módulos. Papel por módulo em `memberships.associates_role`:
 
-| Papel no Associados | Pode |
+| Papel | Pode |
 |---|---|
-| **Administrador** (do grupo) | Tudo, mais usuários e configurações. |
-| **Secretaria** (gestor) | Cadastra e edita associados, familiares, funções, registros e gestões; edita todos os itens de controle; configura itens, faixas de ramo e seções. |
-| **Diretoria** | Vê o cadastro básico; edita as situações dos itens das suas diretorias. |
-| **Chefe** | Vê os jovens (cadastro básico, datas, familiares) e as pendências da sua seção. Não edita. |
-| **Consulta** | Vê nomes, seções, funções e datas (efetivo e aniversários). |
+| **Administrador** (do grupo) | Tudo, mais usuários. |
+| **Secretaria** (`manager`) | Cadastra e edita associados, passagens, funções, responsáveis, seções, itens e todas as situações. |
+| **Tesouraria** (papel do Financeiro) | O mesmo que a Secretaria, durante a transição (`can_manage_associates` = secretaria ou `can_edit_group`). |
+| **Consulta** (`viewer`) | Vê tudo, sem editar. |
+| **Diretoria**, **Chefe** | *(proposto)* Diretoria edita só as colunas das suas diretorias (`memberships.directorates`); Chefe vê a sua seção. |
 
-LGPD: como o app não guarda documentos, contatos nem saúde, o que ele tem de pessoal são nomes, datas de nascimento (de menores) e vínculos familiares; mesmo assim, familiares e situações só para quem precisa. Consequência: o app não emite recibo nem cobrança com dados do responsável (CPF, e-mail); a cobrança continua fora dele.
+LGPD: o app não guarda documentos, contatos nem saúde; o que tem de pessoal são nomes, datas de nascimento (de menores) e
+vínculos familiares. Consequência: o app não emite recibo nem cobrança com dados do responsável.
 
 ## Integrações com o Financeiro
 
-1. **Cadastro único**: `associates` é editado aqui; o Financeiro deixa de ter tela própria de associados e seções (`/financeiro/configuracoes/associados` passa a apontar para `/associados`).
-2. **Efetivo → Mensalidades**: a grade de mensalidades do ano mostra quem esteve ativo no ano (pelos períodos), sem ligar e desligar à mão. Meses depois do desligamento não são cobrados.
-3. **Taxa de registro**: rateio na rubrica de registro com o associado = registro pago no ano-base; rateio na rubrica de repasse com o associado = repassado à UEB. A lista do ano mostra quem pagou, quem falta repassar e quem não tem registro, e a validade sugerida fica a verificar até alguém confirmar. Sem valor previsto nem cálculo de desconto (fica no Paxtu).
-4. **Responsável financeiro**: em mensalidades e devedores, mostrar o responsável financeiro e agrupar irmãos. Um lançamento de um responsável pagando dois filhos sugere o rateio entre os associados da família.
-5. **Desligamento**: avisa se há mensalidade em aberto, dívida ou registro pendente antes de concluir.
+1. **Cadastro único** (feito): associados, seções e importação CSV saíram do Financeiro;
+   `/financeiro/configuracoes/associados` redireciona para `/associados`.
+2. **Períodos → Mensalidades** (feito em parte): `active` vem das movimentações; a grade já não cobra meses fora do grupo.
+3. **Taxa de registro** *(Fase 6)*: rateio na rubrica de registro com o associado = pago no ano-base; na rubrica de
+   repasse = repassado à UEB; validade sugerida (12 meses) e conferida à mão. Sem valor previsto nem desconto (Paxtu).
+4. **Responsável financeiro** *(Fase 7)*: mostrar em mensalidades e devedores, agrupar irmãos, sugerir rateio.
+5. **Desligamento** *(Fase 7)*: avisar de mensalidade em aberto, dívida ou registro pendente.
 
 ## Fora do escopo por enquanto
 
-- **Importação do Paxtu**: possível depois, se a exportação for usável.
-- **Dados pessoais** (contatos, documentos, endereço, saúde): ficam no Paxtu; o app só controla se existem e estão em dia.
-- **Recibos e cobrança** com dados do responsável.
-- **Progressão e especialidades** dos jovens.
-- **Eventos e inscrições** (acampamentos, cobranças por evento): candidato a módulo próprio ou ao módulo Ações.
-
-## Perguntas em aberto
-
-Respondidas em 2026-11-19: dados pessoais só no Paxtu; faixas do POR; validade das fichas; diretorias separadas; contatos para os chefes ficam no Paxtu; registro pelo rateio com o associado, sem controle de desconto; validade sugerida e conferida; repasse por associado; pioneiro pode virar adulto.
-
-Nenhuma pendente que bloqueie as Fases 0 e 1.
+- Importação do Paxtu; dados pessoais; recibos e cobrança com dados do responsável; progressão e especialidades;
+  eventos e inscrições (candidato ao módulo Ações).

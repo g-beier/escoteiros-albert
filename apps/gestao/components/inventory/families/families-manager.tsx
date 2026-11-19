@@ -12,7 +12,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
 import { cn } from "@geas/ui/lib/utils";
 import { saveFamily, setFamilyActive } from "@/app/(inventario)/inventario/configuracoes/familias/actions";
-import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
+import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 
 import type { FamilyItem } from "@/lib/inventory/model";
 

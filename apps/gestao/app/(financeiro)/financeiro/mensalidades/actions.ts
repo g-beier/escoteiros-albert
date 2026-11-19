@@ -134,7 +134,7 @@ export async function addAssociateMovement(associateId: unknown, date: unknown, 
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   const error = await write(MOVEMENTS, (db) => fees.addMovement(db, parsed.data.associateId, parsed.data.date, parsed.data.kind, parsed.data.reason || null));
   if (error) return { error };
-  revalidatePath("/financeiro/configuracoes/associados");
+  revalidatePath("/associados", "layout");
   return done(parsed.data.kind === "saida" ? "Saída registrada." : "Entrada registrada.");
 }
 
@@ -143,7 +143,7 @@ export async function deleteAssociateMovement(movementId: unknown): Promise<FeeR
   if (!id.success) return { error: "Movimentação inválida." };
   const error = await write(MOVEMENTS, (db) => fees.deleteMovement(db, id.data));
   if (error) return { error };
-  revalidatePath("/financeiro/configuracoes/associados");
+  revalidatePath("/associados", "layout");
   return done("Movimentação removida.");
 }
 

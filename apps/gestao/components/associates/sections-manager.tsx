@@ -2,27 +2,31 @@
 
 import { Fragment, useActionState, useState } from "react";
 import { IconCheck, IconPlus } from "@tabler/icons-react";
-import { createPatrol, createSection, updateSectionOrPatrol, type AssociateFormState } from "@/app/(financeiro)/financeiro/configuracoes/associados/actions";
+import { createPatrol, createSection, updateSectionOrPatrol } from "@/app/(associados)/associados/configuracoes/secoes/actions";
 import { OptionSelect } from "@geas/ui/components/option-controls";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
 import { Button } from "@geas/ui/components/button";
 import { Input } from "@geas/ui/components/input";
 import { Label } from "@geas/ui/components/label";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
-import { branchLabels, hasPatrols, SCOUT_BRANCHES, SECTION_BRANCHES, type PatrolItem, type SectionItem } from "@/lib/finance/associates";
-import { useActionToast } from "@geas/ui/lib/use-action-toast";
+import { branchLabels, hasPatrols, SCOUT_BRANCHES, SECTION_BRANCHES, type PatrolItem, type SectionItem } from "@/lib/associates/model";
+import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
 import { cn } from "@geas/ui/lib/utils";
 
-const initial: AssociateFormState = {};
+const initial: ActionResult = {};
 // Adulto não tem seção: só os ramos com seções entram aqui
 const branchOptions = SECTION_BRANCHES.map((value) => ({ value, label: branchLabels[value] }));
 const headClass = "h-8 px-3 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase";
 
-/** Cadastro Ramo › Seção › Equipe: seções por ramo; equipes (patrulhas, matilhas) só nos ramos que se dividem. */
-export function SectionsManager({ sections, patrols, counts }: {
+/**
+ * Cadastro Ramo › Seção › Equipe: seções por ramo; equipes (patrulhas, matilhas) só nos ramos que se dividem.
+ * Sem `canEdit` (consulta), só a lista.
+ */
+export function SectionsManager({ sections, patrols, counts, canEdit }: {
   sections: SectionItem[]; patrols: PatrolItem[];
-  /** Associados por seção e por patrulha (id → quantidade). */
+  /** Associados ativos por seção e por patrulha (id → quantidade). */
   counts: Record<string, number>;
+  canEdit: boolean;
 }) {
   const [state, action, pending] = useActionState(createSection, initial);
   const [branch, setBranch] = useState("");
@@ -34,38 +38,50 @@ export function SectionsManager({ sections, patrols, counts }: {
     <SectionHeader title="Seções e equipes" titleId="sections-title">
       <SectionCount>{sections.filter((s) => s.active).length} {sections.filter((s) => s.active).length === 1 ? "seção ativa" : "seções ativas"}</SectionCount>
     </SectionHeader>
-    <form action={action} className="grid gap-3 border-b p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] sm:items-end">
+    {canEdit && <form action={action} className="grid gap-3 border-b p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] sm:items-end">
       <div className="grid gap-1.5"><Label htmlFor="section-branch">Ramo</Label>
         <OptionSelect id="section-branch" value={branch} onValueChange={setBranch} options={branchOptions} /><input type="hidden" name="branch" value={branch} /></div>
       <div className="grid gap-1.5"><Label htmlFor="section-name">Nova seção</Label>
         <Input id="section-name" name="name" maxLength={60} required minLength={2} placeholder="Ex.: Alcateia Seeonee" /></div>
       <Button type="submit" disabled={pending || !branch}><IconPlus /> Adicionar seção</Button>
-    </form>
+    </form>}
     {branches.length === 0
       ? <p className="m-0 px-4 py-4 text-center text-xs text-muted-foreground">Nenhuma seção cadastrada. Comece pelo ramo e o nome da seção.</p>
       : <div className="overflow-x-auto"><Table className="min-w-[560px]">
         <TableCaption className="sr-only">Seções e equipes por ramo</TableCaption>
         <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
           <TableHead className={headClass}>Nome</TableHead>
-          <TableHead className={cn(headClass, "w-28 text-right")}>Associados</TableHead>
+          <TableHead className={cn(headClass, "w-28 text-right")}>Ativos</TableHead>
           <TableHead className={cn(headClass, "w-24")}>Status</TableHead>
-          <TableHead className={cn(headClass, "w-36")}><span className="sr-only">Ações</span></TableHead>
+          {canEdit && <TableHead className={cn(headClass, "w-36")}><span className="sr-only">Ações</span></TableHead>}
         </TableRow></TableHeader>
         <TableBody>{branches.map((group) => <Fragment key={group.branch}>
-          <TableRow className="bg-muted/50 hover:bg-muted/50"><TableHead scope="colgroup" colSpan={4} className="h-7 px-3 text-xs font-semibold">{branchLabels[group.branch]}</TableHead></TableRow>
+          <TableRow className="bg-muted/50 hover:bg-muted/50"><TableHead scope="colgroup" colSpan={canEdit ? 4 : 3} className="h-7 px-3 text-xs font-semibold">{branchLabels[group.branch]}</TableHead></TableRow>
           {group.sections.map((section) => <Fragment key={section.id}>
-            <NameRow kind="section" item={section} count={counts[section.id] ?? 0} />
+            <NameRow kind="section" item={section} count={counts[section.id] ?? 0} canEdit={canEdit} />
             {patrols.filter((p) => p.sectionId === section.id).sort(byName).map((patrol) =>
-              <NameRow key={patrol.id} kind="patrol" item={patrol} count={counts[patrol.id] ?? 0} sectionName={section.name} />)}
-            {section.active && hasPatrols(section.branch) && <NewPatrolRow section={section} />}
+              <NameRow key={patrol.id} kind="patrol" item={patrol} count={counts[patrol.id] ?? 0} sectionName={section.name} canEdit={canEdit} />)}
+            {canEdit && section.active && hasPatrols(section.branch) && <NewPatrolRow section={section} />}
           </Fragment>)}
         </Fragment>)}</TableBody>
       </Table></div>}
   </SectionCard>;
 }
 
-/** Linha editável de seção ou equipe: renomear (✓) e inativar/reativar. A coluna "Nome" é o rótulo visível. */
-function NameRow({ kind, item, count, sectionName }: { kind: "section" | "patrol"; item: { id: string; name: string; active: boolean }; count: number; sectionName?: string }) {
+/** Linha de seção ou equipe; quem edita renomeia (✓) e inativa/reativa. A coluna "Nome" é o rótulo visível. */
+function NameRow({ kind, item, count, sectionName, canEdit }: { kind: "section" | "patrol"; item: { id: string; name: string; active: boolean }; count: number; sectionName?: string; canEdit: boolean }) {
+  if (!canEdit) return <TableRow className={cn(!item.active && "text-muted-foreground")}>
+    <TableCell className={cn("px-3 py-1.5", kind === "patrol" ? "pl-10" : "font-medium")}>{kind === "patrol" && <span aria-hidden className="mr-2 text-muted-foreground">›</span>}{item.name}</TableCell>
+    <TableCell className="num px-3 py-1.5 text-right">{count}</TableCell>
+    <TableCell className="px-3 py-1.5"><StatusPill active={item.active} /></TableCell>
+  </TableRow>;
+  return <EditableNameRow kind={kind} item={item} count={count} sectionName={sectionName} />;
+}
+
+const StatusPill = ({ active }: { active: boolean }) =>
+  <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{active ? "Ativa" : "Inativa"}</span>;
+
+function EditableNameRow({ kind, item, count, sectionName }: { kind: "section" | "patrol"; item: { id: string; name: string; active: boolean }; count: number; sectionName?: string }) {
   const [state, save, saving] = useActionState(updateSectionOrPatrol, initial);
   const [toggleState, toggle, toggling] = useActionState(updateSectionOrPatrol, initial);
   useActionToast(state);
@@ -82,7 +98,7 @@ function NameRow({ kind, item, count, sectionName }: { kind: "section" | "patrol
       </div>
     </TableCell>
     <TableCell className="num px-3 py-1 text-right">{count}</TableCell>
-    <TableCell className="px-3 py-1"><span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", item.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{item.active ? "Ativa" : "Inativa"}</span></TableCell>
+    <TableCell className="px-3 py-1"><StatusPill active={item.active} /></TableCell>
     <TableCell className="px-3 py-1">
       <div className="flex items-center gap-1.5">
         <Button form={formId} type="submit" variant="ghost" size="icon-sm" aria-label={`Salvar ${item.name}`} disabled={saving}><IconCheck /></Button>

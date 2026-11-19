@@ -15,7 +15,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from "@geas/ui/components/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@geas/ui/components/tooltip";
 import { Label } from "@geas/ui/components/label";
-import { branchLabels, isScoutBranch, NO_SECTION } from "@/lib/finance/associates";
+import { branchLabels, isScoutBranch } from "@/lib/associates/model";
+import { NO_SECTION } from "@/lib/finance/associates";
 import { feeAmounts, feeBalance, priceForAssociate, todayInSaoPaulo, FEE_MONTH_LABELS, FEE_MONTH_NAMES, FEE_MONTHS, monthSummary, type AssociateMovement, type MonthSummary, type CellState, type MovementKind, type FeePrice, type FeeRow, type FeeSplit, type FeeSuggestion } from "@/lib/finance/fees";
 import { normalizeText } from "@/lib/finance/statement-import";
 import { dateBR, money } from "@/lib/format";

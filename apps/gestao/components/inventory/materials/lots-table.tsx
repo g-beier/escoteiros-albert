@@ -10,10 +10,10 @@ import type { Option } from "@geas/ui/components/option-controls";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { cn } from "@geas/ui/lib/utils";
 import { adjustLot, setLotCondition, transferLot, updateLot } from "@/app/(inventario)/inventario/materiais/actions";
-import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
+import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import { CONDITION_LABELS, EXPIRY_WARNING_DAYS, ORIGIN_LABELS, dateBR, daysUntil } from "@/lib/inventory/vocabulary";
 import { formatCents } from "@/lib/format";
-import { ActionDialog } from "./action-dialog";
+import { ActionDialog } from "@/components/shell/action-dialog";
 import { ConditionField, EntryFields, Field, LocationField, NotesField, QuantityField, VariantField } from "./fields";
 import { AddLotDialog, WithdrawDialog, withdrawLabel } from "./withdraw";
 

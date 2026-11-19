@@ -1,11 +1,11 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { cn } from "./lib/utils";
 import { AppNavMenu } from "./components/app-nav-menu";
 import { SectionTabsMenu } from "./components/section-tabs-menu";
 
 /** Módulo atual; "gestao" = telas comuns (Início, Usuários), sem módulo. */
-export type GeasApp = "gestao" | "financeiro" | "inventario";
+export type GeasApp = "gestao" | "financeiro" | "inventario" | "associados";
 type GeasModule = Exclude<GeasApp, "gestao">;
 
 type AppBrandProps = {
@@ -16,6 +16,7 @@ type AppBrandProps = {
   homeHref?: string;
   financeiroHref: string;
   inventarioHref: string;
+  associadosHref: string;
   light?: boolean;
 };
 
@@ -23,19 +24,27 @@ const APPS: Record<GeasApp, { label: string }> = {
   gestao: { label: "Gestão" },
   financeiro: { label: "Financeiro" },
   inventario: { label: "Inventário" },
+  associados: { label: "Associados" },
 };
 
-/** Identidade comum e seletor de módulo. Ao passar o mouse, mostra os dois módulos (o atual em cima). */
+/** Ordem dos módulos no seletor (o atual sobe para o topo). */
+const MODULES: GeasModule[] = ["financeiro", "inventario", "associados"];
+/** Distância vertical entre as opções do seletor, em px. */
+const OPTION_STEP = 18;
+
+/** Identidade comum e seletor de módulo. Ao passar o mouse, mostra os módulos empilhados (o atual em cima). */
 export function AppBrand({
   current,
   currentHref = "/",
   homeHref = "/",
   financeiroHref,
   inventarioHref,
+  associadosHref,
   light = false,
 }: AppBrandProps) {
-  const hrefs: Record<GeasModule, string> = { financeiro: financeiroHref, inventario: inventarioHref };
-  const [up, down]: GeasModule[] = current === "inventario" ? ["inventario", "financeiro"] : ["financeiro", "inventario"];
+  const hrefs: Record<GeasModule, string> = { financeiro: financeiroHref, inventario: inventarioHref, associados: associadosHref };
+  const options = current === "gestao" ? MODULES : [current, ...MODULES.filter((app) => app !== current)];
+  const middle = (options.length - 1) / 2;
 
   return <div className="geas-brand" data-theme={light ? "dark" : "light"}>
     <Link href={homeHref} className="geas-brand__logo" aria-label="Grupo Escoteiro Albert Schweitzer — Início">
@@ -45,8 +54,9 @@ export function AppBrand({
     <div className="geas-brand__apps" aria-label="Trocar de módulo">
       <Link href={currentHref} className={`geas-brand__static geas-app--${current}`}>{APPS[current].label}</Link>
       <div className="geas-brand__options">
-        {[up, down].map((app, index) => <a key={app} href={hrefs[app]} aria-current={app === current ? "page" : undefined}
-          className={`geas-brand__option geas-brand__option--${index === 0 ? "up" : "down"} geas-app--${app}`}>{APPS[app].label}</a>)}
+        {options.map((app, index) => <a key={app} href={hrefs[app]} aria-current={app === current ? "page" : undefined}
+          style={{ "--geas-brand-shift": `${(index - middle) * OPTION_STEP}px` } as CSSProperties}
+          className={`geas-brand__option geas-app--${app}`}>{APPS[app].label}</a>)}
       </div>
     </div>
   </div>;

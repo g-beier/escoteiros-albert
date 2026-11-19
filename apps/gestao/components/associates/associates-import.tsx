@@ -4,13 +4,12 @@ import { useMemo, useState, useTransition, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconDownload, IconFileUpload, IconUpload } from "@tabler/icons-react";
-import { importAssociates } from "@/app/(financeiro)/financeiro/configuracoes/associados/actions";
+import { importAssociates } from "@/app/(associados)/associados/configuracoes/importar/actions";
 import { Button } from "@geas/ui/components/button";
 import { Checkbox } from "@geas/ui/components/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
 import { Label } from "@geas/ui/components/label";
-import { branchLabels, type PatrolItem, type SectionItem } from "@/lib/finance/associates";
-import { ASSOCIATE_CSV_TEMPLATE, parseAssociatesCsv, planAssociatesImport, type ExistingAssociate, type PlannedAssociate } from "@/lib/finance/associates-import";
+import { branchLabels, type PatrolItem, type SectionItem } from "@/lib/associates/model";
+import { ASSOCIATE_CSV_TEMPLATE, parseAssociatesCsv, planAssociatesImport, type ExistingAssociate, type PlannedAssociate } from "@/lib/associates/import";
 import { decodeBytes } from "@/lib/finance/statement-import";
 import { cn } from "@geas/ui/lib/utils";
 
@@ -20,21 +19,8 @@ const ACTION_LABEL: Record<PlannedAssociate["action"], string> = { nova: "Novo",
 const ORDER: Record<PlannedAssociate["action"], number> = { erro: 0, atualiza: 1, nova: 2, igual: 3 };
 const TEMPLATE_HREF = `data:text/csv;charset=utf-8,${encodeURIComponent(`﻿${ASSOCIATE_CSV_TEMPLATE}`)}`;
 
-/** Botão "Importar CSV" (no cartão Novo associado) que abre a importação num diálogo. */
-export function AssociatesImport(props: { existing: ExistingAssociate[]; sections: SectionItem[]; patrols: PatrolItem[] }) {
-  const [open, setOpen] = useState(false);
-  return <>
-    <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}><IconUpload /> Importar CSV</Button>
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="w-[min(56rem,calc(100%-2rem))] lg:max-w-none">
-        {open && <ImportForm {...props} onDone={() => setOpen(false)} />}
-      </DialogContent>
-    </Dialog>
-  </>;
-}
-
 /** Importação de associados por CSV (nome, ramo, seção, patrulha, status), com conferência antes de gravar. */
-function ImportForm({ existing, sections, patrols, onDone }: { existing: ExistingAssociate[]; sections: SectionItem[]; patrols: PatrolItem[]; onDone: () => void }) {
+export function AssociatesImport({ existing, sections, patrols }: { existing: ExistingAssociate[]; sections: SectionItem[]; patrols: PatrolItem[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [file, setFile] = useState<{ name: string; text: string } | null>(null);
@@ -63,15 +49,11 @@ function ImportForm({ existing, sections, patrols, onDone }: { existing: Existin
       toast.success(result.success);
       setFile(null);
       router.refresh();
-      onDone();
     });
   }
 
-  return <div className="grid min-w-0 gap-3">
-    <DialogHeader>
-      <DialogTitle>Importar associados (CSV)</DialogTitle>
-      <DialogDescription>Colunas: nome, ramo, seção, patrulha (equipe), status. Ramo: Lobinho, Escoteiro, Sênior, Pioneiro ou Adulto. Seção e equipe (opcionais) precisam estar cadastradas em Seções e equipes. Status: ativo ou inativo (vazio = ativo). Quem já está cadastrado com o mesmo nome é atualizado.</DialogDescription>
-    </DialogHeader>
+  return <div className="grid min-w-0 gap-3 p-4">
+    <p className="m-0 text-xs text-muted-foreground">Colunas: nome, ramo, seção, patrulha (equipe), status. Ramo: Lobinho, Escoteiro, Sênior, Pioneiro ou Adulto. Seção e equipe (opcionais) precisam estar cadastradas em Seções e equipes. Status: ativo ou inativo (vazio = ativo). Quem já está cadastrado com o mesmo nome é atualizado.</p>
     <a href={TEMPLATE_HREF} download="modelo-associados.csv" className="inline-flex w-fit items-center gap-1 text-xs font-semibold text-primary no-underline hover:underline"><IconDownload className="size-4" aria-hidden /> Baixar modelo</a>
     <div className="grid gap-3">
       <div className="grid max-w-md gap-1.5">

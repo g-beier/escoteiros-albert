@@ -26,7 +26,7 @@ import { Expiry } from "@/components/inventory/materials/lots-table";
 import { MaterialFilters } from "@/components/inventory/materials/material-filters";
 import { RowStockButton, type WithdrawLot } from "@/components/inventory/materials/withdraw";
 import { SetupNeeded } from "@/components/shell/setup-needed";
-import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
+import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import { CONDITION_LABELS, EXPIRY_WARNING_DAYS, daysUntil, type Condition } from "@/lib/inventory/vocabulary";
 import { formatCents } from "@/lib/format";
 import { pageSession } from "@/lib/server/session";

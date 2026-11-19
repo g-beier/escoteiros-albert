@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ASSOCIATE_CSV_TEMPLATE, parseAssociatesCsv, parseBranch, parseStatus, planAssociatesImport } from "./associates-import";
+import { ASSOCIATE_CSV_TEMPLATE, parseAssociatesCsv, parseBranch, parseStatus, planAssociatesImport } from "./import";
 
 describe("parseAssociatesCsv", () => {
   it("lê o modelo", () => {

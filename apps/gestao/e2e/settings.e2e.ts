@@ -3,11 +3,10 @@ import { psql } from "./support/db";
 import { E2E_ADMIN_EMAIL } from "./support/env";
 import { chooseOption, uniqueName } from "./support/entries";
 
-// Configurações: cadastros que as outras telas leem (contas, formas de pagamento, associados por CSV).
+// Configurações: cadastros que as outras telas leem (contas, formas de pagamento). Associados: e2e/associates.e2e.ts.
 // Tudo com nomes únicos, removido no fim direto no banco (nada disso tem lançamento).
 const account = uniqueName("Conta");
 const method = uniqueName("Forma");
-const csvNames = [uniqueName("Associado CSV um"), uniqueName("Associado CSV dois")];
 const literal = (value: string) => `'${value.replaceAll("'", "''")}'`;
 const group = `(select m.group_id from public.memberships m join auth.users u on u.id = m.user_id where u.email = ${literal(E2E_ADMIN_EMAIL)})`;
 
@@ -15,7 +14,6 @@ test.afterAll(() => {
   psql(`
     delete from public.payment_methods where group_id = ${group} and name like ${literal(`${method}%`)};
     delete from public.accounts where group_id = ${group} and name like ${literal(`${account}%`)};
-    delete from public.associates where group_id = ${group} and name in (${csvNames.map(literal).join(", ")});
   `);
 });
 
@@ -68,25 +66,4 @@ test("formas de pagamento: cadastrar, conta padrão, renomear e inativar", async
   await renamedRow.getByRole("button", { name: "Inativar" }).click();
   await expect(page.getByText("Forma de pagamento inativada.")).toBeVisible();
   await expect(renamedRow).toContainText("Inativa");
-});
-
-test("associados: importar CSV com conferência antes de gravar", async ({ page }) => {
-  await page.goto("/financeiro/configuracoes/associados");
-  await page.getByRole("button", { name: "Importar CSV" }).click();
-  const dialog = page.getByRole("dialog");
-  const csv = `nome;ramo;seção;patrulha;status\r\n${csvNames[0]};Lobinho;;;ativo\r\n${csvNames[1]};Escoteiro;;;inativo\r\nSem Ramo E2E;Astronauta;;;ativo\r\n`;
-  await dialog.getByLabel("Arquivo CSV").setInputFiles({ name: "associados.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") });
-
-  // a linha com ramo desconhecido aparece como erro e não entra
-  await expect(dialog).toContainText("2 novos");
-  await expect(dialog).toContainText("1 com erro");
-  await expect(dialog.getByRole("row").filter({ hasText: "Sem Ramo E2E" })).toContainText("Erro");
-  await dialog.getByRole("button", { name: "Importar 2 associados" }).click();
-  await expect(page.getByText(/^Associados importados: /)).toBeVisible();
-  await expect(dialog).toHaveCount(0);
-
-  // linhas editáveis: o nome está no campo, então a linha é achada pelo valor dele
-  const row = (name: string) => page.getByRole("row").filter({ has: page.locator(`input[value="${name}"]`) });
-  await expect(row(csvNames[0])).toContainText("Ativo");
-  await expect(row(csvNames[1])).toContainText("Inativo");
 });

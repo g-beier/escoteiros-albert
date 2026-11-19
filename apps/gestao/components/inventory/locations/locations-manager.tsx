@@ -16,7 +16,7 @@ import { Textarea } from "@geas/ui/components/textarea";
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
 import { cn } from "@geas/ui/lib/utils";
 import { placeLocation, saveLocation, setLocationActive } from "@/app/(inventario)/inventario/configuracoes/divisoes/actions";
-import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
+import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import { placeError, placeLocal } from "@/lib/inventory/locations";
 
 import type { LocationItem } from "@/lib/inventory/model";

@@ -1,6 +1,8 @@
 .geas-brand {
   --geas-purple: #6847d9;
   --geas-orange: #f15b2a;
+  --geas-green: #1dd98a;
+  --geas-green-dark: #0b7a4b;
   --geas-brand-line: #d8d3cc;
   display: inline-flex;
   flex-shrink: 0;
@@ -10,7 +12,7 @@
 :root {
   --geas-ink: #252328; --geas-ink-muted: #5d5962; --geas-paper: #faf9f5; --geas-surface: #fffefa;
   --geas-line: #d8d3cc; --geas-purple: #6847d9; --geas-purple-dark: #5031ba;
-  --geas-orange: #f15b2a; --geas-orange-dark: #c64018; --geas-green: #1dd98a; --geas-yellow: #ffad25;
+  --geas-orange: #f15b2a; --geas-orange-dark: #c64018; --geas-green: #1dd98a; --geas-green-dark: #0b7a4b; --geas-yellow: #ffad25;
   --geas-font: Outfit, "Avenir Next", Avenir, Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -52,6 +54,8 @@
 
 .geas-app--financeiro { color: var(--geas-purple); }
 .geas-app--inventario { color: var(--geas-orange); }
+.geas-app--associados { color: var(--geas-green-dark); }
+.geas-brand[data-theme="dark"] .geas-app--associados { color: var(--geas-green); }
 .geas-app--gestao { color: var(--geas-ink); }
 
 .geas-brand__static {
@@ -76,10 +80,8 @@
 
 .geas-brand__apps:hover .geas-brand__option,
 .geas-brand__apps:focus-within .geas-brand__option { opacity: 1; filter: blur(0); }
-.geas-brand__apps:hover .geas-brand__option--up,
-.geas-brand__apps:focus-within .geas-brand__option--up { transform: translateY(calc(-50% - 12px)); }
-.geas-brand__apps:hover .geas-brand__option--down,
-.geas-brand__apps:focus-within .geas-brand__option--down { transform: translateY(calc(-50% + 12px)); }
+.geas-brand__apps:hover .geas-brand__option,
+.geas-brand__apps:focus-within .geas-brand__option { transform: translateY(calc(-50% + var(--geas-brand-shift, 0px))); }
 
 @media (prefers-reduced-motion: reduce) {
   .geas-brand__static, .geas-brand__option { transition: none; }
@@ -93,6 +95,7 @@
 
 .geas-login { --geas-app-color:var(--geas-purple); --geas-app-color-dark:var(--geas-purple-dark); display:grid; min-height:100vh; grid-template-columns:minmax(0,1.15fr) minmax(420px,.85fr); font-family:var(--geas-font); background:var(--geas-paper); color:var(--geas-ink); }
 .geas-login--inventario { --geas-app-color:var(--geas-orange); --geas-app-color-dark:var(--geas-orange-dark); }
+.geas-login--associados { --geas-app-color:var(--geas-green-dark); --geas-app-color-dark:#075c3b; }
 .geas-login__story { position:relative; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden; padding:56px; }
 .geas-login__story::before { content:""; position:absolute; top:20%; right:-44px; width:88px; height:88px; background:var(--geas-app-color); }
 .geas-login--inventario .geas-login__story::before { top:calc(20% + 104px); }

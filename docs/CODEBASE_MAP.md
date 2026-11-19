@@ -93,13 +93,13 @@ graph TB
     ├── next.config.ts        legacy redirects, globalNotFound, security headers
     ├── eslint.config.mjs     bans @supabase/* outside lib/server, e2e, scripts
     ├── app/                  routes (see Route table)
-    ├── components/           shell/, finance/, inventory/
-    ├── lib/                  shared root files + finance/ + inventory/ + server/
+    ├── components/           shell/, finance/, inventory/, associates/
+    ├── lib/                  shared root files + finance/ + inventory/ + associates/ + server/
     ├── scripts/              export-transparency.ts, write-local-env.mjs, inventory/*.mjs
-    ├── supabase/             config.toml, migrations 001–039, tests/, templates/magic_link.html
+    ├── supabase/             config.toml, migrations 001–041, tests/, templates/magic_link.html
     ├── e2e/                  Playwright specs + support/
     ├── docs/                 modelo.md, contabilidade.md, mensalidades.md, importacao-conciliacao.md,
-    │                         inventario/, associados/ (draft, not built)
+    │                         inventario/, associados/ (modelo.md, plano.md)
     ├── BACKLOG.md            dated rounds; uses some pre-consolidation paths
     └── AGENTS.md             Next-generated: read node_modules/next/dist/docs/ before coding
 ```
@@ -143,16 +143,18 @@ No `app/layout.tsx`. Three root layouts, each `RootHtml module=...` (`components
 | `/financeiro/extrato/{conciliar,importar}` | `fin/extrato/*` | `pageSession` | reconciliation board; OFX import |
 | `/financeiro/mensalidades/{controle,devedores}` | `fin/mensalidades/*` | `pageSession` | fee grid; debts |
 | `/financeiro/configuracoes/[aba]` | contas, rubricas, formas, perfis, mensalidades | `pageMember`, `notFound()` if not editor | |
-| `/financeiro/configuracoes/associados` | static sibling of `[aba]` | `pageMember` | only settings tab for viewers |
 | `/financeiro/exportar/{fluxo,realizado,contabil,transparencia}` | route.ts | `exportContext()` = any member | XLSX/CSV/JSON; contábil 422 without `ledger_code` |
 | `/inventario` | `inv/page.tsx` | `pageSession` | Resumo |
 | `/inventario/materiais` (+ `/novo`, `/[id]`, `/[id]/editar`) | `inv/materiais/*` | `pageSession`; non-editors **redirected** (not 404) | tabs per root division |
 | `/inventario/movimentacoes` | `inv/movimentacoes/page.tsx` | `pageSession` | `?revisao=`, `?tipo=` |
 | `/inventario/configuracoes/{divisoes,familias}` | `inv/configuracoes/*` | actions `inventoryManagerOrError` | drag-ordered tree |
+| `/associados` (+ `/novo`, `/[id]`, `/[id]/editar`) | `asc/*` | `pageSession`; edits `associatesEditorOrError` | list by branch; adults by function |
+| `/associados/controle` | `asc/controle/page.tsx` | `pageSession` | Doc 22 matrix; `?publico=`, `?ocultar=`; `/controle/[diretoria]` redirects |
+| `/associados/configuracoes/{secoes,itens,importar}` | `asc/configuracoes/*` | `pageSession`; edits `associatesEditorOrError` | sections, control items (drag), CSV import |
 
-Redirects: area roots → first tab; `next.config.ts` 308s `/(lancamentos|extrato|mensalidades|configuracoes|exportar)/*` → `/financeiro/...` keeping the query.
+Redirects: area roots → first tab; `/financeiro/configuracoes/associados` → `/associados`; `next.config.ts` 308s `/(lancamentos|extrato|mensalidades|configuracoes|exportar)/*` → `/financeiro/...` keeping the query.
 
-**Action files**: `app/actions.ts` (entries, `withMember`, guard `memberOrError` — authorization lives in SQL), `fin/lancamentos/actions.ts` (attachments), `fin/configuracoes/actions.ts`, `fin/configuracoes/associados/actions.ts`, `fin/extrato/{conciliar,importar}/actions.ts`, `fin/mensalidades/actions.ts`, `inv/materiais/actions.ts`, `inv/configuracoes/{divisoes,familias}/actions.ts`, `gst/{login,usuarios}/actions.ts`.
+**Action files**: `app/actions.ts` (entries, `withMember`, guard `memberOrError` — authorization lives in SQL), `fin/lancamentos/actions.ts` (attachments), `fin/configuracoes/actions.ts`, `fin/extrato/{conciliar,importar}/actions.ts`, `fin/mensalidades/actions.ts`, `inv/materiais/actions.ts`, `inv/configuracoes/{divisoes,familias}/actions.ts`, `asc/actions.ts` (associates, moves, functions, relatives), `asc/controle/actions.ts`, `asc/configuracoes/{secoes,itens,importar}/actions.ts` (form parsing in `asc/form-data.ts`), `gst/{login,usuarios}/actions.ts`. (`asc` = `app/(associados)/associados`.)
 
 ### apps/gestao — components
 
@@ -166,7 +168,7 @@ Redirects: area roots → first tab; `next.config.ts` 308s `/(lancamentos|extrat
 | reconciliation / import | `reconciliation/reconciliation-board.tsx` (batched bulk create), `import/statement-importer.tsx` (client-side OFX parse, preview, profiles) |
 | settings | `accounts-manager.tsx`, `catalog-manager.tsx`, `categories-manager.tsx` (Rubricas: client draft, one `saveCategoryTree`), `ledger-code-input.tsx`, `export/export-menu.tsx`, `realized/realized-table.tsx` |
 | fees / debts | `fees/fee-grid.tsx` (`useOptimistic` per cell), `fees/fee-cell.tsx`, `fees/fee-settings-form.tsx`, `debts/debts-manager.tsx` |
-| associates | `new-associate.tsx`, `sections-manager.tsx`, `associates-import.tsx` |
+| associates | `associates/app-header.tsx`, `settings-tabs.tsx`, `associate-{form,actions,filters,functions,relatives,controls}.tsx`, `placement-select.tsx`, `sections-manager.tsx`, `associates-import.tsx`, `control-matrix.tsx` (grid drawn with inset box-shadows, resets legacy `td` border), `control-{badge,filters,status-dialog,items-manager}.tsx` |
 | inventory | `locations/locations-manager.tsx` (drag writes immediately, `useOptimistic`), `families/families-manager.tsx`, `materials/{material-form,fields,action-dialog,lots-table,units-table,material-filters,review-notice}.tsx`, `settings-tabs.tsx`, `table-head.ts` |
 
 ### apps/gestao — lib
@@ -180,7 +182,9 @@ Redirects: area roots → first tab; `next.config.ts` 308s `/(lancamentos|extrat
 | `lib/finance/entries.ts`, `entry-rows.ts`, `entry-schema.ts`, `entry-history.ts`, `filters.ts` | list paths/queries (`listHref` blocks open redirect), `PAGE_SIZE=100`, zod entry schema, audit → history, URL filters (`de=tudo`) |
 | `lib/finance/categories.ts`, `category-draft.ts` | code ordering, compact selection encoding; immutable Rubricas draft (`MAX_DEPTH=4`, `draftPayload`) |
 | `lib/finance/accounts.ts`, `ledger-code.ts`, `catalogs.ts` | account form, default-account logic, "A definir"; mask `0.0.0.0.0000` |
-| `lib/finance/associates.ts`, `associates-import.ts`, `csv-reader.ts` | branch/section/patrol placement; CSV import plan; generic CSV reader |
+| `lib/finance/associates.ts`, `csv-reader.ts` | branch/section/patrol labels used by fees/debts; generic CSV reader |
+| `lib/associates/model.ts`, `list.ts`, `import.ts` | types, branches, `ageInYears`, `activityPeriods`; list grouping by branch and adult function; CSV import plan |
+| `lib/associates/controls.ts`, `relatives.ts` | directorates, audiences, statuses (effective, pending, short labels), matrix cells/groups, `?ocultar`; kinship labels, matrix rows of relatives |
 | `lib/finance/fees.ts`, `debts.ts`, `dashboard.ts` | fee due dates (BR holidays), cell states, suggestions; debt allocation; Resumo math |
 | `lib/finance/reconciliation.ts` | exact / near (±3 days) suggestions, `closingCheck`, `reconciliationHref` |
 | `lib/finance/statement-import/` | OFX reader (SGML + XML), profiles, `decodeBytes`, fixtures `itau.ofx`, `nubank.ofx` |
@@ -192,8 +196,9 @@ Redirects: area roots → first tab; `next.config.ts` 308s `/(lancamentos|extrat
 | `lib/server/supabase/` | `db.ts` (`sb`, `untyped`, `rpc`, `unwrap`, `rowsOf`), `client.ts`, `service.ts` (`serviceDb`), `paged.ts` (`fetchPaged`, 1000/page), `proxy.ts`, `env.ts`, `database.types.ts` (generated) |
 | `lib/server/session.ts` | `Member`, `getSession` (React `cache`), all guards; only reader of `memberships` |
 | `lib/server/auth.ts`, `files.ts`, `users.ts` | OTP/link/sign-out; signed URLs; invite/roles/remove (service client) |
-| `lib/server/finance/*.ts` | `registry`, `associates`, `entries`, `attachments`, `reconciliation`, `statements`, `fees`, `debts`, `reports`, `home` |
+| `lib/server/finance/*.ts` | `registry`, `associates` (picker only), `entries`, `attachments`, `reconciliation`, `statements`, `fees`, `debts`, `reports`, `home` |
 | `lib/server/inventory/*.ts` | `locations`, `families`, `materials`, `movements`, `overview` (typed `sb()`) |
+| `lib/server/associates/*.ts` | `associates` (list, profile, create/update/move/leave/rejoin, import), `sections`, `functions`, `relatives`, `controls` (items, audiences, statuses of associates and relatives) (typed `sb()`) |
 
 ### apps/gestao — database (`supabase/`)
 
@@ -313,7 +318,7 @@ Browser reads the file (`decodeBytes` → `readOfx` → `applyOfxProfile`) → `
 - `docs/consolidacao-gestao.md` header says "não iniciado" (it's done). `BACKLOG.md`, `docs/contabilidade.md`, `docs/inventario/BACKLOG.md` and SQL test headers use pre-consolidation paths (`/lancamentos`, `apps/financeiro`, `lib/session.ts`).
 - `apps/institucional/src/utils/financial-reports.ts` comment points at `apps/gestao/lib/export/transparency.ts` (real: `lib/finance/export/transparency.ts`).
 - `AnnouncementBanner` in `Layout.astro` has `expireDate="2026-08-08"` (expired); `/transparencia` stats are hard-coded ("atualizados em 05.10.2026").
-- `apps/gestao/docs/associados/` and the "Ações" module are drafts; no code exists. Adding a module means a new `GestaoModule`, `AppBrand.current`, theme accent, session role.
+- Associados is built in part (see `apps/gestao/docs/associados/plano.md`); the "Ações" module is a draft with no code. Adding a module means a new `GestaoModule`, `AppBrand.current`, theme accent, session role.
 - Untracked `default.profraw` files (LLVM) sit in several folders; `*.profraw` is gitignored.
 
 **Database**

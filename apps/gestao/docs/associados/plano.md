@@ -1,115 +1,75 @@
 # Plano do Associados
 
-Histórias e fases do módulo Associados (`/associados`). Modelo e vocabulário em `modelo.md`. Cada fase é um PR (ou poucos), entregue e usável sozinha; a ordem segue o que tira mais planilhas de uso mais cedo.
+Fases do módulo Associados (`/associados`). Modelo e vocabulário em `modelo.md`. Revisto em 2026-11-19, depois da
+primeira entrega (branch `feat/associados-base`, migrations 040 e 041).
 
-Papéis nas histórias: **secretaria** (gestor do módulo), **diretoria** (Métodos Educativos, Administrativa, Financeira, Comunicação), **chefe**, **tesouraria** (papel no Financeiro), **administrador**.
+Prioridade do grupo: o **controle de dados pessoais (Doc 22)** vem antes de datas, adultos e registro. A lista divide os
+associados só por ramo (seção e equipe não agrupam), com os adultos em Escotistas / Dirigentes / Sem função.
 
-## Fase 0 — Base do módulo
+## Feito
 
-Sem tela nova para o usuário final; prepara o terreno.
+| Fase | O que entrou | O que ficou de fora |
+|---|---|---|
+| **0 — Base** | Route group `app/(associados)`, tema verde (`data-app="associados"`), `AppBrand` com três módulos, papel `associates_role` (Secretaria/Consulta) em `/usuarios`, `Member.associates`, guards `associatesEditorOrError`/`requireAssociatesEditor`, camada `lib/server/associates/*`. | Diretorias por usuário; papel Chefe. |
+| **1 — Cadastro** | Lista por ramo com efetivo; novo, detalhe, editar; passagem (inclui pioneiro → adulto); desligar e reingressar; `active` derivado das movimentações; Configurações › Seções e Importar (saíram do Financeiro). | Carga das planilhas; equipe de origem na passagem. |
+| **3 — Responsáveis** (parte) | Responsáveis com parentesco, legal e financeiro; compartilhados entre irmãos; ligação com associado; seção Responsáveis no detalhe do jovem. | Uso em mensalidades e devedores (Fase 7). |
+| **4 — Adultos** (parte) | Funções escotista/dirigente com cargo, início e fim; subdivisão da lista. | Gestões; regras de validade do ATV; PPF "a revisar" ao mudar a função. |
+| **5 — Controle de dados** | Itens por diretoria com posição (arrastar), validade, remover no desligamento, público (Jovem/Adulto/Responsável) com valor inicial, e valor na célula (situação, ano ou data); carga inicial com as 28 colunas do Doc 22; matriz única `/associados/controle` (abas Jovens/Adultos, diretorias em sequência, ocultar diretoria, só pendências, incluir desligados, responsáveis abaixo do jovem); situações no detalhe; "a remover" em toda saída. | Edição só pelas diretorias donas; cartão de pendências por diretoria no Início. |
 
-- Rota `/associados` com route group próprio (`app/(associados)/associados/...`), `RootHtml` com `data-app="associados"`, cor própria no tema e entrada no `AppBrand` (`current`).
-- Papel `memberships.associates_role` e diretorias do usuário; guards em `lib/server/session.ts` (`associatesEditorOrError`, …); coluna nova em `/usuarios`.
-- Camada `lib/server/associates/*` e domínio em `lib/associates/`.
-- Migration combinada com quem trabalha no Inventário e no módulo Ações (numeração e arquivos compartilhados: `memberships`, `session.ts`, roles, `AppBrand`, `theme.css`).
+Testes: pgTAP `associates.test.sql`, `associates_controls.test.sql`, `associates_relatives.test.sql`; vitest em
+`lib/associates/*.test.ts`; e2e `associates.e2e.ts`, `associates-controls.e2e.ts`, `associates-relatives.e2e.ts`.
 
-Histórias:
-- Como **administrador**, quero dar o papel no Associados e as diretorias a cada usuário, para controlar quem vê e edita o quê.
+## Próximas fases
 
-## Fase 1 — Cadastro e efetivo (substitui o Doc 10, aba Paxtu)
+### A — Diretorias e papéis (completa a 0 e a 5)
+- `memberships.directorates`; papel **Diretoria**: edita só as colunas das suas diretorias, vê o resto.
+- Papel **Chefe**: vê os jovens e responsáveis da sua seção.
+- Tirar a tesouraria de `can_manage_associates` quando a secretaria estiver usando o módulo.
+- Início geral (`/`): cartão do Associados com pendências por diretoria (`pendingByDirectorate` já existe).
 
-- Associado ganha nascimento, promessa, períodos (entrada/desligamento) e passagens com data; `active` passa a ser calculado.
-- Telas: lista por seção (abas como no Inventário: "Todos", uma por ramo, adultos), detalhe e edição; Configurações › Seções e equipes (sai do Financeiro).
-- `/financeiro/configuracoes/associados` aponta para cá; a importação CSV de associados vem junto.
-- Carga de desenvolvimento a partir dos Docs 10, 13 e 14 (script local, CSV não versionado, como no Inventário).
+### B — Carga das planilhas (desenvolvimento)
+- Scripts locais (como o do Inventário) para Docs 10, 13, 14 e 22: CSV fora do repo, só contra o Supabase local.
+- Doc 22: NÃO → pendente, OK → ok, DESAT./ANTIGA → desatualizado, VER/TEM? → a verificar, CONV. → convidado,
+  XXX → não se aplica, cinza → item fora do público; anos e datas nas colunas de registro; `*` → parentesco "outro".
 
-Histórias:
-- Como **secretaria**, quero cadastrar um associado com seção, nascimento, promessa e entrada, para não manter a lista de efetivo à mão.
-- Como **secretaria**, quero desligar um associado com data, para que ele saia do efetivo e das mensalidades seguintes sem perder o histórico.
-- Como **secretaria**, quero registrar a passagem de seção ou de ramo com data, inclusive pioneiro → adulto, mantendo promessa e tempo de atividade.
-- Como **qualquer usuário**, quero ver o efetivo por seção com contagem de jovens e adultos, para responder "quantos somos" sem planilha.
-- Como **tesouraria**, quero que mensalidades e devedores continuem funcionando com o cadastro novo, sem nada a refazer.
+### 2 — Datas (substitui Docs 13 e 14)
+- Faixa do ramo e transição; aniversários de nascimento e promessa; tempo de atividade.
+- Configurações › Faixas dos ramos. Resumo do módulo: aniversariantes do mês, transição, fora da faixa.
 
-## Fase 2 — Datas (substitui os Docs 13 e 14)
+### 4 — Adultos (restante)
+- Gestões (mandatos); ATV com os três tipos de validade; PPF marcado "a revisar" ao mudar a função; diretoria atual.
 
-- Idade, faixa do ramo, transição; aniversários de nascimento e de promessa; tempo de atividade.
-- Configurações › Faixas dos ramos.
-- Início do módulo (Resumo): aniversariantes do mês (nascimento e promessa), jovens em transição ou fora da faixa.
-- Início geral (`/`): cartão do Associados com o que pede atenção.
+### 6 — Registro UEB
+- Configurações › Registro: rubricas de registro e de repasse.
+- Ano-base e Validade do registro calculados dos rateios por associado; validade sugerida e confirmada à mão; lista de
+  quem pagou, quem falta repassar e quem vence.
 
-Histórias:
-- Como **chefe**, quero ver quem da minha seção está em período de transição, para planejar as passagens.
-- Como **comunicação**, quero a lista de aniversariantes do mês (nascimento e promessa), para as publicações e lembranças.
-- Como **diretoria de métodos educativos**, quero ver jovens acima da idade do ramo, para não esquecer passagens atrasadas.
-
-## Fase 3 — Familiares e responsáveis (substitui o Doc 10, aba Familiares)
-
-- Familiares, vínculo com parentesco, responsável legal e financeiro; família calculada (irmãos).
-- Familiar que também é associado aponta para o associado.
-- Carga de desenvolvimento do Doc 10 › Familiares.
-
-Histórias:
-- Como **secretaria**, quero cadastrar os familiares de um jovem uma vez só e reaproveitar para os irmãos.
-- Como **tesouraria**, quero saber quem é o responsável financeiro de cada jovem, para cobrar a pessoa certa.
-
-## Fase 4 — Adultos: funções, gestões, ATV e PPF
-
-- Funções (escotista de seção com cargo; dirigente com cargo), com início e fim; várias ao mesmo tempo; bloqueio para jovens.
-- Gestões (mandatos) da diretoria.
-- ATV com os três tipos de validade; PPF com revisão periódica e marcação "a revisar" ao mudar a função.
-- Lista de adultos por função (escotistas por seção, diretoria atual).
-
-Histórias:
-- Como **secretaria**, quero registrar que um adulto passou de assistente a chefe de seção, para que o PPF dele fique marcado para revisão.
-- Como **diretoria de métodos educativos**, quero ver ATVs vencendo nos próximos 30 dias e adultos sem ATV válido.
-- Como **secretaria**, quero abrir uma nova gestão e ver quais ATVs "até o fim da gestão" vencem com ela.
-
-## Fase 5 — Controles por diretoria (substitui o Doc 22)
-
-- Itens de controle configuráveis (diretoria dona, a quem se aplica, validade, remover no desligamento); situações por pessoa.
-- Tela por diretoria: matriz pessoa × item, como a planilha, editável por quem é da diretoria; filtro "só pendências".
-- Desligamento abre "a remover" nos itens marcados; a diretoria fecha como "removido".
-- Etapas de entrada (integração, estágio, promessa de adulto, Vamos Falar de Escotismo) como itens com data.
-- Carga de desenvolvimento do Doc 22 (situações da planilha → situações do modelo).
-
-Histórias:
-- Como **diretoria de comunicação**, quero ver quem ainda não está na lista de e-mails e no WhatsApp de avisos, para incluir.
-- Como **diretoria administrativa**, quero ver fichas médicas pendentes ou antigas por seção, antes de um acampamento.
-- Como **qualquer diretoria**, quero ver o que preciso remover de quem se desligou, para cumprir a LGPD.
-- Como **secretaria**, quero desativar um canal que o grupo não usa mais (Twitter) sem perder o histórico.
-
-## Fase 6 — Registro UEB e taxa de registro
-
-- Configurações › Registro: rubrica de registro e rubrica de repasse (como Configurações › Mensalidades).
-- Lista do ano-base calculada dos rateios por associado: pago, repassado, sem registro; total recebido × repassado.
-- Validade: ao aparecer o pagamento, sugerida (12 meses) e marcada a verificar; confirmada ou corrigida à mão; lista de quem vence.
-- Sem valor previsto, desconto nem isenção (contados no Paxtu).
-
-Histórias:
-- Como **diretoria administrativa**, quero ver quem tem registro vencendo ou vencido, para cobrar a renovação.
-- Como **tesouraria**, quero lançar o pagamento da taxa com o associado e ver o registro dele como pago sem digitar duas vezes.
-- Como **tesouraria**, quero ver quem já pagou e ainda não foi repassado à UEB.
-- Como **diretoria administrativa**, quero confirmar ou corrigir a validade sugerida depois de conferir no Paxtu.
-
-## Fase 7 — Integrações financeiras restantes
-
-- Mensalidades: grade pelos períodos de atividade; responsável financeiro na linha; irmãos agrupados.
-- Devedores: agrupar por responsável financeiro.
-- Sugestão de rateio quando um lançamento cobre vários jovens da mesma família.
+### 7 — Integrações financeiras
+- Responsável financeiro em mensalidades e devedores; irmãos agrupados; sugestão de rateio por família.
 - Desligamento avisa de mensalidades em aberto, dívidas e registro pendente.
 
-Histórias:
-- Como **tesouraria**, quero lançar o pagamento de um responsável por dois filhos e ter o rateio sugerido por associado.
-- Como **secretaria**, quero ser avisada de pendências financeiras ao desligar alguém.
+## Pendências técnicas
 
-## Depois (sem data)
+- `associates` ainda aceita escrita direta (política "editors manage associates", usada pelo código antigo do
+  Financeiro); trocar por funções auditadas quando nada mais escrever direto.
+- Passagem não guarda a equipe de origem.
+- A situação de um responsável só se edita pela matriz (não há página de responsável).
+- Responsável que era associado e foi desligado volta à matriz com "sem registro" (sem valor inicial).
+- O tema tem CSS legado em `td` (`border-top`): a matriz zera; outras tabelas novas devem fazer o mesmo.
 
-- Importação do Paxtu, se a exportação for usável.
-- Exportações: efetivo, aniversariantes, listas de contato por canal (para a comunicação).
+## Perguntas em aberto
+
+1. Ano-base e Validade do registro ficam na Administrativa (como nas abas de adultos do Doc 22) ou na Financeira?
+2. Twitter do GEAS: manter ativo ou desativar?
+3. A coluna "Observações" da aba de jovens do Doc 22 precisa de um campo próprio, além da observação por célula e da
+   nota do associado?
+4. Seções e equipes ainda precisam aparecer no Associados (cadastro e Configurações), ou só no Financeiro?
+5. Ordem das próximas fases: A (diretorias) e B (carga) antes de 2, 4, 6, 7?
 
 ## Divisão do trabalho
 
-- **Banco** (migrations, funções auditadas, pgTAP em `supabase/tests/associates.test.sql`) e **telas** de cada fase podem ser feitos por pessoas diferentes depois que o modelo da fase estiver fechado.
-- Fases 2, 3 e 4 dependem só da 1 e podem andar em paralelo; a 5 depende da 4 (ATV/PPF são itens de controle); a 6 e a 7 dependem da 1 e da 3.
-- Arquivos compartilhados com outros módulos (migrations, `memberships`, `session.ts`, `/usuarios`, `AppBrand`, tema) ficam na Fase 0, num PR só, para reduzir conflitos com o Inventário e o Ações.
-- Os dados reais das planilhas nunca entram no repositório: scripts de carga leem de uma pasta local e só rodam contra o Supabase local.
+- Banco (migrations, funções auditadas, pgTAP) e telas podem andar em paralelo depois de fechado um contrato com nomes
+  e assinaturas.
+- Arquivos compartilhados com outros módulos (migrations, `memberships`, `session.ts`, `/usuarios`, `AppBrand`, tema)
+  num PR só por vez, para reduzir conflitos com o Inventário e o Ações.
+- Dados reais das planilhas nunca entram no repositório nem nos testes.
