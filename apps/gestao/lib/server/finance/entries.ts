@@ -1,7 +1,7 @@
 import { decodeCategorySelection } from "@/lib/finance/categories";
 import { LEDGER_COLUMNS, PAGE_SIZE, SPLIT_COLUMNS, type EntryPage, type EntryView, type LedgerRow, type SplitRow } from "@/lib/finance/entry-rows";
 import type { EditableEntry } from "@/lib/finance/entries";
-import { likePattern, type EntryFilters, type SortOrder } from "@/lib/finance/filters";
+import { likePattern, type EntryFilters, type EntrySort, type EntrySortKey } from "@/lib/finance/filters";
 import type { Db } from "@/lib/server/db";
 import { rowsOf, rpc, untyped, unwrap } from "@/lib/server/supabase/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -10,6 +10,8 @@ import type { AuditRow } from "@/lib/finance/entry-history";
 import { toRpcSplits, type EntryInput } from "@/lib/finance/entry-schema";
 import { removeFiles } from "@/lib/server/files";
 import { pathsForEntry } from "./attachments";
+import { associateFilterData } from "./associates";
+import { expandDivisionTokens } from "@/lib/finance/associate-filter";
 
 // Lançamentos: listas paginadas (Movimentações, Detalhamento) e um lançamento para edição.
 
@@ -29,16 +31,34 @@ async function resolveCategoryTokens(supabase: SupabaseClient, groupId: string, 
   return { ids: ids.length ? ids : ["00000000-0000-0000-0000-000000000000"] };
 }
 
+/**
+ * Associados do filtro: os escolhidos por nome (`associado`) mais os ativos das divisões marcadas (`divisao`, expandidas
+ * pela divisão atual), e se entram rateios sem associado (`associado=nenhum` antigo ou `divisao=nenhum`).
+ * Divisões que não cobrem ninguém (e sem "(Sem associado)") viram um ID impossível, para não listar nada.
+ */
+async function resolveAssociateIds(db: Db, groupId: string, filters: EntryFilters): Promise<{ ids: string[]; withoutAssociate: boolean }> {
+  if (!filters.divisionTokens?.length) return { ids: filters.associateIds, withoutAssociate: filters.withoutAssociate };
+  const division = expandDivisionTokens(filters.divisionTokens, await associateFilterData(db, groupId));
+  const ids = [...new Set([...filters.associateIds, ...division.associateIds])];
+  const withoutAssociate = filters.withoutAssociate || division.withoutAssociate;
+  return { ids: ids.length || withoutAssociate ? ids : ["00000000-0000-0000-0000-000000000000"], withoutAssociate };
+}
+
 /** Uma página da lista (Movimentações ou Detalhamento) com os filtros e a ordem pedidos. */
 export async function fetchEntryPage(
-  db: Db, groupId: string, view: EntryView, filters: EntryFilters, order: SortOrder, offset: number, withTotal: boolean,
+  db: Db, groupId: string, view: EntryView, filters: EntryFilters, sort: EntrySort, offset: number, withTotal: boolean,
 ): Promise<EntryPage> {
   const supabase = untyped(db);
-  const ascending = order === "asc";
+  const ascending = sort.dir === "asc";
+  // coluna escolhida primeiro; desempate estável por data (e id) no sentido padrão (mais recentes primeiro),
+  // salvo quando a própria ordem é por data. A ordem é total, então o deslocamento não repete nem pula linhas.
+  const tieAscending = sort.key === "data" ? ascending : false;
+  const sortColumn = (columns: Record<Exclude<EntrySortKey, "data">, string>) => sort.key === "data" ? null : columns[sort.key];
   const range = [offset, offset + PAGE_SIZE - 1] as const;
   const count = withTotal ? "exact" as const : undefined;
   const { ids: categoryIds, error: categoryError } = await resolveCategoryTokens(supabase, groupId, filters.categoryTokens);
   if (categoryError) return { view, rows: [], total: null, error: categoryError };
+  const { ids: associateIds, withoutAssociate } = await resolveAssociateIds(db, groupId, filters);
 
   if (view === "detalhamento") {
     let query = supabase.from("entry_split_rows")
@@ -50,14 +70,18 @@ export async function fetchEntryPage(
     if (filters.paymentMethodIds.length) query = query.in("payment_method_id", filters.paymentMethodIds);
     if (filters.folder) query = query.eq("document_filed", filters.folder === "na-pasta");
     if (filters.reconciled !== undefined) query = query.eq("reconciled", filters.reconciled);
-    if (filters.associateIds.length && filters.withoutAssociate) query = query.or(`associate_id.is.null,associate_id.in.(${filters.associateIds.join(",")})`);
-    else if (filters.associateIds.length) query = query.in("associate_id", filters.associateIds);
-    else if (filters.withoutAssociate) query = query.is("associate_id", null);
+    if (associateIds.length && withoutAssociate) query = query.or(`associate_id.is.null,associate_id.in.(${associateIds.join(",")})`);
+    else if (associateIds.length) query = query.in("associate_id", associateIds);
+    else if (withoutAssociate) query = query.is("associate_id", null);
     if (categoryIds) query = query.in("category_id", categoryIds);
     if (filters.q) query = query.ilike("search_text", likePattern(filters.q));
     if (filters.ofx) query = query.contains("external_ids", [filters.ofx]);
+    if (filters.minCents !== undefined) query = query.gte("amount_cents", filters.minCents);
+    if (filters.maxCents !== undefined) query = query.lte("amount_cents", filters.maxCents);
+    const column = sortColumn({ historico: "entry_name", conta: "account_name", forma: "payment_method_name", valor: "amount_cents" });
+    if (column) query = query.order(column, { ascending, nullsFirst: false });
     const { data, error, count: total } = await query
-      .order("entry_date", { ascending }).order("entry_id", { ascending }).order("split_id", { ascending })
+      .order("entry_date", { ascending: tieAscending }).order("entry_id", { ascending: tieAscending }).order("split_id", { ascending: tieAscending })
       .range(...range);
     return { view, rows: await withAttachmentCounts(supabase, (data ?? []) as SplitRow[]), total: total ?? null, error: error?.message };
   }
@@ -71,14 +95,18 @@ export async function fetchEntryPage(
   if (filters.paymentMethodIds.length) query = query.in("payment_method_id", filters.paymentMethodIds);
   if (filters.folder) query = query.eq("document_filed", filters.folder === "na-pasta");
   if (filters.reconciled !== undefined) query = query.eq("reconciled", filters.reconciled);
-  if (filters.associateIds.length && filters.withoutAssociate) query = query.or(`has_split_without_associate.is.true,associate_ids.ov.{${filters.associateIds.join(",")}}`);
-  else if (filters.associateIds.length) query = query.overlaps("associate_ids", filters.associateIds);
-  else if (filters.withoutAssociate) query = query.eq("has_split_without_associate", true);
+  if (associateIds.length && withoutAssociate) query = query.or(`has_split_without_associate.is.true,associate_ids.ov.{${associateIds.join(",")}}`);
+  else if (associateIds.length) query = query.overlaps("associate_ids", associateIds);
+  else if (withoutAssociate) query = query.eq("has_split_without_associate", true);
   if (categoryIds) query = query.overlaps("category_ids", categoryIds);
   if (filters.q) query = query.ilike("search_text", likePattern(filters.q));
   if (filters.ofx) query = query.contains("external_ids", [filters.ofx]);
+  if (filters.minCents !== undefined) query = query.gte("total_cents", filters.minCents);
+  if (filters.maxCents !== undefined) query = query.lte("total_cents", filters.maxCents);
+  const column = sortColumn({ historico: "name", conta: "account_name", forma: "payment_method_name", valor: "total_cents" });
+  if (column) query = query.order(column, { ascending, nullsFirst: false });
   const { data, error, count: total } = await query
-    .order("entry_date", { ascending }).order("created_at", { ascending }).order("entry_id", { ascending })
+    .order("entry_date", { ascending: tieAscending }).order("created_at", { ascending: tieAscending }).order("entry_id", { ascending: tieAscending })
     .range(...range);
   return { view, rows: await withAttachmentCounts(supabase, (data ?? []) as LedgerRow[]), total: total ?? null, error: error?.message };
 }

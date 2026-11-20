@@ -1,7 +1,7 @@
 import { IconArrowDown, IconArrowUp, IconChevronDown, IconFilterFilled } from "@tabler/icons-react";
 
-// Cabeçalho da lista de Materiais, comum ao menu da coluna (cliente) e ao link de ordenar (servidor): fica fora do
-// módulo "use client" para a página receber a string e o componente, não referências de cliente.
+// Cabeçalho de coluna das listas (Materiais, Lançamentos), comum aos menus da coluna (cliente) e aos links de ordenar
+// (servidor): fica fora de módulo "use client" para a página receber a string e o componente, não referências de cliente.
 
 /** Indicadores do cabeçalho, sempre depois do rótulo e na mesma ordem em todas as colunas: ordem, filtro, menu. */
 export function HeadIcons({ sorted, dir, filtered, menu }: { sorted: boolean; dir: "asc" | "desc"; filtered?: boolean; menu?: boolean }) {

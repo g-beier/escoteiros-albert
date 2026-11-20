@@ -11,7 +11,7 @@ import { cn } from "@geas/ui/lib/utils";
 import { AppHeader } from "@/components/inventory/app-header";
 import { ConditionPill } from "@/components/inventory/condition-pill";
 import { ColumnMenu, type ColumnFilter } from "@/components/inventory/materials/column-menu";
-import { HEAD_TRIGGER, HeadIcons } from "@/components/inventory/materials/head-icons";
+import { HEAD_TRIGGER, HeadIcons } from "@/components/shell/column-head";
 import { rootOf, subtree, type LocationPath } from "@/lib/inventory/locations";
 import {
   COLUMNS_COOKIE, COLUMN_LABELS, CONDITION_RANK, EXPIRY_LABELS, MINIMUM_LABELS, compareLines, conditionBreakdown, hiddenColumns, matchesFilters, materialsHref, parseListState, withBack,

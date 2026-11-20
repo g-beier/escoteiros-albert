@@ -5,7 +5,7 @@ import { z } from "zod";
 import { InputError } from "@/lib/action";
 import { entrySchema } from "@/lib/finance/entry-schema";
 import type { EntryPage } from "@/lib/finance/entry-rows";
-import { parseFilters, parseOrder } from "@/lib/finance/filters";
+import { parseEntrySort, parseFilters } from "@/lib/finance/filters";
 import { DataError } from "@/lib/server/db";
 import * as entries from "@/lib/server/finance/entries";
 import { financeEditorOrError, memberOrError, type Member } from "@/lib/server/session";
@@ -98,5 +98,5 @@ export async function loadEntryPage(viewInput: unknown, query: unknown, offset: 
   if (!start.success) return { view, rows: [], total: null, error: "Página inválida." };
   const ctx = await memberOrError();
   if ("error" in ctx) return { view, rows: [], total: null, error: ctx.error };
-  return entries.fetchEntryPage(ctx.db, ctx.groupId, view, parseFilters(params), parseOrder(params), start.data, false);
+  return entries.fetchEntryPage(ctx.db, ctx.groupId, view, parseFilters(params), parseEntrySort(params), start.data, false);
 }

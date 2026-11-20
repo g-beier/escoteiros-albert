@@ -16,7 +16,7 @@ export type EditableEntry = {
 };
 
 
-const LIST_KEYS = ["ordem", "de", "ate", "conta", "forma", "pasta", "conciliado", "associado", "rubrica", "q", "ofx"] as const;
+const LIST_KEYS = ["ordem", "dir", "de", "ate", "conta", "forma", "pasta", "conciliado", "associado", "divisao", "rubrica", "q", "ofx", "valor_de", "valor_ate"] as const;
 
 /** Caminho de uma visão da lista (`/financeiro/lancamentos/movimentacoes` ou `/financeiro/lancamentos/detalhamento`), com a query dos filtros. */
 export function entriesPath(view: EntryView, query = "") {

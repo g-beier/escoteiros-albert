@@ -2,8 +2,9 @@
 
 import { createContext, useCallback, useContext, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import type { AssociateFilterData } from "@/lib/finance/associate-filter";
 
-export type FilterKey = "conta" | "forma" | "pasta" | "conciliado" | "associado" | "rubrica" | "secao";
+export type FilterKey = "conta" | "forma" | "pasta" | "conciliado" | "rubrica" | "secao";
 export type FilterOption = { value: string; label: string; depth?: number; tone?: "receita" | "despesa" };
 export type FilterDimension = {
   label: string;
@@ -18,18 +19,31 @@ export type FilterDimension = {
 /** Cada tela fornece só as dimensões que usa. */
 export type FilterDimensions = Partial<Record<FilterKey, FilterDimension>>;
 
-const DimensionsContext = createContext<FilterDimensions | null>(null);
+type FilterOptions = { dimensions: FilterDimensions; associates?: AssociateFilterData };
 
-export function FilterOptionsProvider({ dimensions, children }: { dimensions: FilterDimensions; children: React.ReactNode }) {
-  return <DimensionsContext.Provider value={dimensions}>{children}</DimensionsContext.Provider>;
+const OptionsContext = createContext<FilterOptions | null>(null);
+
+/** `associates`: divisões e pessoas do filtro da coluna Associado (por nome ou por divisão). */
+export function FilterOptionsProvider({ dimensions, associates, children }: FilterOptions & { children: React.ReactNode }) {
+  return <OptionsContext.Provider value={{ dimensions, associates }}>{children}</OptionsContext.Provider>;
+}
+
+function useOptions() {
+  const options = useContext(OptionsContext);
+  if (!options) throw new Error("FilterOptionsProvider ausente.");
+  return options;
 }
 
 export function useDimension(key: FilterKey) {
-  const dimensions = useContext(DimensionsContext);
-  if (!dimensions) throw new Error("FilterOptionsProvider ausente.");
-  const dimension = dimensions[key];
+  const dimension = useOptions().dimensions[key];
   if (!dimension) throw new Error(`Filtro "${key}" sem opções no FilterOptionsProvider.`);
   return dimension;
+}
+
+export function useAssociateOptions() {
+  const associates = useOptions().associates;
+  if (!associates) throw new Error("Filtro de associado sem dados no FilterOptionsProvider.");
+  return associates;
 }
 
 /** Lê e grava filtros na URL (estado compartilhável), sem rolar a página. */
