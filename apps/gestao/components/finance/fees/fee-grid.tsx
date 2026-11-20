@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useMemo, useOptimistic, useState, useTransition } from "react";
+import { memo, useCallback, useLayoutEffect, useMemo, useOptimistic, useRef, useState, useTransition } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { toast } from "sonner";
 import { IconCheck, IconChevronRight, IconDots, IconHelpCircle, IconSearch } from "@tabler/icons-react";
 import { addAssociateMovement, confirmFeeSuggestions, deleteAssociateMovement, setFeeAssociatePrice, setFeeExemption, setFeeRecord } from "@/app/(financeiro)/financeiro/mensalidades/actions";
@@ -11,13 +12,13 @@ import { FeeCell, FeeMark, STATE_LABELS, type CellChange } from "@/components/fi
 import { Button } from "@geas/ui/components/button";
 import { Checkbox } from "@geas/ui/components/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
 import { Input } from "@geas/ui/components/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@geas/ui/components/tooltip";
 import { Label } from "@geas/ui/components/label";
 import { branchLabels, isScoutBranch } from "@/lib/associates/model";
 import { NO_SECTION } from "@/lib/finance/associates";
-import { feeAmounts, feeBalance, priceForAssociate, todayInSaoPaulo, FEE_MONTH_LABELS, FEE_MONTH_NAMES, FEE_MONTHS, monthSummary, type AssociateMovement, type MonthSummary, type CellState, type MovementKind, type FeePrice, type FeeRow, type FeeSplit, type FeeSuggestion } from "@/lib/finance/fees";
+import { feeAmounts, type FeeBalance, feeBalance, priceForAssociate, todayInSaoPaulo, FEE_MONTH_LABELS, FEE_MONTH_NAMES, FEE_MONTHS, monthSummary, type AssociateMovement, type MonthSummary, type CellState, type MovementKind, type FeePrice, type FeeRow, type FeeSplit, type FeeSuggestion } from "@/lib/finance/fees";
 import { normalizeText } from "@/lib/finance/statement-import";
 import { dateBR, money } from "@/lib/format";
 import { cn } from "@geas/ui/lib/utils";
@@ -47,7 +48,9 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
   // seções recolhidas (accordion) na visão agrupada
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const sectionKey = (section: string | null | undefined) => section ?? NO_SECTION;
-  const toggleSection = (key: string) => setCollapsed((set) => { const next = new Set(set); if (next.has(key)) next.delete(key); else next.add(key); return next; });
+  const toggleSection = useCallback((key: string) => setCollapsed((set) => { const next = new Set(set); if (next.has(key)) next.delete(key); else next.add(key); return next; }), []);
+  const scroller = useRef<HTMLDivElement>(null);
+  const head = useRef<HTMLTableSectionElement>(null);
   const [exempting, setExempting] = useState<FeeRow | null>(null);
   const [pricing, setPricing] = useState<FeeRow | null>(null);
   // estado otimista por caixinha, até o servidor responder
@@ -82,14 +85,31 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
     return sections.map((section) => ({ section, rows: visible.filter((r) => (r.associate.section?.trim() || null) === section) }));
   }, [visible, bySection]);
 
-  function change(row: FeeRow, month: number, value: CellChange) {
-    return new Promise<void>((resolve) => startTransition(async () => {
-      addOptimistic({ associateId: row.associate.id, month, state: value.status ?? null });
-      const result = await setFeeRecord({ associateId: row.associate.id, year, month, ...value });
-      if (result.error) toast.error(result.error);
-      resolve();
-    }));
-  }
+  const columns = FEE_MONTHS.length + (canEdit ? 4 : 3) + extra;
+  // linhas da tabela na ordem da tela: cabeçalho de cada seção (na visão agrupada) e os associados das abertas
+  const lines = useMemo(() => groups.flatMap((group): Line[] => {
+    if (!bySection) return group.rows.map((row) => ({ kind: "row", row }));
+    const key = sectionKey(group.section);
+    const open = !collapsed.has(key);
+    const late = group.rows.filter((r) => !r.exemption && r.overdue > 0).length;
+    return [{ kind: "group", key, count: group.rows.length, late, open }, ...(open ? group.rows.map((row): Line => ({ kind: "row", row })) : [])];
+  }), [groups, bySection, collapsed]);
+  const virtual = lines.length >= VIRTUALIZE_FROM;
+
+  // estáveis: as linhas são memoizadas e não podem receber funções novas a cada render
+  const change = useCallback((row: FeeRow, month: number, value: CellChange) => new Promise<void>((resolve) => startTransition(async () => {
+    addOptimistic({ associateId: row.associate.id, month, state: value.status ?? null });
+    const result = await setFeeRecord({ associateId: row.associate.id, year, month, ...value });
+    if (result.error) toast.error(result.error);
+    resolve();
+  })), [year, addOptimistic]);
+
+  const action = useCallback((kind: RowAction, row: FeeRow) => {
+    if (kind === "price") setPricing(row);
+    else if (kind === "move") setMoving(row);
+    else if (kind === "exempt") setExempting(row);
+    else startTransition(async () => { const r = await setFeeExemption(row.associate.id, year, ""); if (r.error) toast.error(r.error); else toast.success(r.success); });
+  }, [year]);
 
   function confirmAll() {
     startTransition(async () => {
@@ -126,13 +146,13 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
         {collapsed.size ? "Expandir todas" : "Recolher todas"}</Button>}
       <Label className="font-normal"><Checkbox checked={onlyOverdue} onCheckedChange={(v) => setOnlyOverdue(v === true)} /> Só com atrasos ({overdueCount})</Label>
       {hiddenCount > 0 && <Label className="font-normal" title="Isentos no ano e quem está fora do grupo o ano todo (saídas, evasões)"><Checkbox checked={showHidden} onCheckedChange={(v) => setShowHidden(v === true)} /> Mostrar ocultos ({hiddenCount})</Label>}
-      {canEdit && suggestions.length > 0 && <Button className="ml-auto" disabled={pending} onClick={confirmAll}><IconCheck /> Confirmar sugestões ({suggestions.length})</Button>}
+      {canEdit && suggestions.length > 0 && <Button className="ml-auto" disabled={pending} onClick={confirmAll}><IconCheck data-icon="inline-start" /> Confirmar sugestões ({suggestions.length})</Button>}
     </div>
 
     {visible.length === 0
       ? <p className="m-0 surface px-4 py-8 text-center text-muted-foreground">{rows.length ? "Ninguém corresponde à busca." : "Nenhum associado ativo. Cadastre em Configurações › Associados."}</p>
-      : <div className="overflow-auto surface md:min-h-0">
-        <table className="w-full min-w-[60rem] table-fixed border-separate border-spacing-0 text-xs">
+      : <div ref={scroller} className="overflow-auto surface md:min-h-0" data-slot="fees-scroller">
+        <table className="w-full min-w-[60rem] table-fixed border-separate border-spacing-0 text-xs" aria-rowcount={virtual ? lines.length + 3 : undefined}>
           <caption className="sr-only">Mensalidades de {year}: associados por mês, de março a dezembro</caption>
           {/* larguras fixas: recolher seções não pode mudar as colunas; o nome fica com o espaço que sobra */}
           <colgroup>
@@ -143,8 +163,8 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
             {hasPrices && <col className="w-28" />}
             {canEdit && <col className="w-10" />}
           </colgroup>
-          <thead className="sticky top-0 z-10 bg-muted">
-            <tr>
+          <thead ref={head} className="sticky top-0 z-10 bg-muted">
+            <tr aria-rowindex={virtual ? 1 : undefined}>
               <th scope="col" className="sticky left-0 z-10 bg-muted px-3 py-2 text-right font-semibold">Associado</th>
               {FEE_MONTHS.map((m) => <th key={m} scope="col" className="px-1 py-2 text-center font-semibold">{FEE_MONTH_LABELS[m]}</th>)}
               <th scope="col" className="px-2 py-2 text-right font-semibold">Pagos</th>
@@ -153,61 +173,10 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
               {canEdit && <th scope="col"><span className="sr-only">Ações</span></th>}
             </tr>
           </thead>
-          <tbody>{groups.map((group) => <Fragment key={group.section ?? "__all"}>
-            {bySection && (() => {
-              const key = sectionKey(group.section);
-              const open = !collapsed.has(key);
-              const late = group.rows.filter((r) => !r.exemption && r.overdue > 0).length;
-              return <tr className="bg-muted/50 *:border-t *:border-border"><th scope="colgroup" colSpan={FEE_MONTHS.length + (canEdit ? 4 : 3) + extra} className="sticky left-0 p-0 text-left text-xs font-semibold">
-                <button type="button" aria-expanded={open} onClick={() => toggleSection(key)}
-                  className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left hover:bg-muted">
-                  <IconChevronRight className={cn("size-4 transition-transform", open && "rotate-90")} aria-hidden />
-                  {key} <span className="font-normal text-muted-foreground">({group.rows.length}{late > 0 && `, ${late} com atraso`})</span>
-                </button>
-              </th></tr>;
-            })()}
-            {(!bySection || !collapsed.has(sectionKey(group.section))) && group.rows.map((row) => {
-              const exempt = Boolean(row.exemption);
-              const paid = row.cells.filter((_, i) => stateOf(row, i) === "pago").length;
-              return <tr key={row.associate.id} className={cn("group/row *:border-t *:border-border hover:bg-accent has-[[aria-expanded=true]]:bg-accent", exempt && "text-muted-foreground")}>
-                <th scope="row" className="sticky left-0 bg-card px-3 py-1.5 text-right normal-case tracking-normal group-hover/row:bg-accent group-has-[[aria-expanded=true]]/row:bg-accent">
-                  <span className={cn("block truncate text-sm font-semibold", exempt ? "text-muted-foreground" : "text-foreground")}>{row.associate.name}</span>
-                  <span className="mt-0.5 block text-[11px] font-normal text-muted-foreground">
-                    {isScoutBranch(row.associate.branch) ? branchLabels[row.associate.branch] : row.associate.branch}
-                    {row.associate.section && ` · ${row.associate.section}`}{row.associate.patrol && ` › ${row.associate.patrol}`}
-                    {exempt && ` · isento: ${row.exemption!.reason}`}
-                    {row.hidden === "fora" && " · fora do grupo no ano"}
-                    {row.movements.length > 0 && <MovementSummary movements={row.movements} />}
-                    {individualPrices[row.associate.id] && <span className="text-foreground"> · {money(individualPrices[row.associate.id].monthlyCents / 100)}/mês ({individualPrices[row.associate.id].reason})</span>}
-                    {!row.associate.active && " · inativo"}
-                  </span>
-                </th>
-                {row.cells.map((cell, i) => <td key={cell.month} className="px-1 py-1 text-center">
-                  <FeeCell name={row.associate.name} month={cell.month} state={stateOf(row, i)} record={cell.record} suggestion={cell.suggestion}
-                    splits={splitsByAssociate[row.associate.id] ?? []} canEdit={canEdit} exempt={exempt} onChange={(value) => change(row, cell.month, value)} />
-                </td>)}
-                <td className="px-2 py-1 text-right num">{exempt || !row.monthsInGroup ? "—" : `${paid}/${row.monthsInGroup}`}</td>
-                <td className="px-2 py-1 text-right num whitespace-nowrap">{amounts.byAssociate[row.associate.id] ? money(amounts.byAssociate[row.associate.id] / 100) : <span className="text-muted-foreground">—</span>}</td>
-                {hasPrices && <td className={cn("px-2 py-1 text-right num whitespace-nowrap", (balances.get(row.associate.id)?.open ?? 0) > 0 && "text-destructive")}>
-                  {exempt ? "—" : balances.get(row.associate.id)?.integral ? <span className="text-success" title="Pagamento integral com desconto">integral</span> : money((balances.get(row.associate.id)?.open ?? 0) / 100)}
-                </td>}
-                {canEdit && <td className="px-1 py-1">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações de ${row.associate.name}`} />}><IconDots /></DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setPricing(row)}>{individualPrices[row.associate.id] ? "Alterar valor individual…" : `Valor individual em ${year}…`}</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setMoving(row)}>Entradas e saídas…</DropdownMenuItem>
-                      {exempt
-                        ? <DropdownMenuItem onClick={() => startTransition(async () => { const r = await setFeeExemption(row.associate.id, year, ""); if (r.error) toast.error(r.error); else toast.success(r.success); })}>Remover isenção de {year}</DropdownMenuItem>
-                        : <DropdownMenuItem onClick={() => setExempting(row)}>Isentar em {year}…</DropdownMenuItem>}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </td>}
-              </tr>;
-            })}
-          </Fragment>)}</tbody>
+          <FeeBody lines={lines} scroller={scroller} head={head} columns={columns} year={year} canEdit={canEdit} hasPrices={hasPrices} optimistic={optimistic}
+            splitsByAssociate={splitsByAssociate} individualPrices={individualPrices} received={amounts.byAssociate} balances={balances} onChange={change} onAction={action} onToggle={toggleSection} />
           <tfoot className="sticky bottom-0 z-10 bg-muted shadow-[0_-1px_0_var(--border)]">
-            <tr>
+            <tr aria-rowindex={virtual ? lines.length + 2 : undefined}>
               <th scope="row" className="sticky left-0 z-10 bg-muted px-3 py-1.5 text-left font-semibold">Alertas</th>
               {summary.map((s, i) => <td key={FEE_MONTHS[i]} className="p-0 text-center num">
                 <MonthAlerts month={FEE_MONTHS[i]} summary={s} receivedCents={amounts.byMonth[i]} />
@@ -217,8 +186,8 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
               {hasPrices && <td className={cn("px-2 py-1.5 text-right font-semibold whitespace-nowrap num", openTotal > 0 && "text-destructive")}>{money(openTotal / 100)}</td>}
               {canEdit && <td />}
             </tr>
-            <tr>
-              <td colSpan={FEE_MONTHS.length + (canEdit ? 4 : 3) + extra} className="border-t border-border p-0">
+            <tr aria-rowindex={virtual ? lines.length + 3 : undefined}>
+              <td colSpan={columns} className="border-t border-border p-0">
                 <ul className="sticky left-0 m-0 flex w-fit list-none flex-wrap gap-x-3 gap-y-1 px-3 py-1.5 text-xs text-muted-foreground" aria-label="Legenda">
                   {LEGEND.map((state) => <li key={state} className="inline-flex items-center gap-1"><FeeMark state={state} className="size-4 [&_svg]:size-3" />{STATE_LABELS[state]}</li>)}
                 </ul>
@@ -245,6 +214,153 @@ export function FeeGrid({ year, rows, suggestions, splitsByAssociate, canEdit, p
         setExempting(null);
       })} />
   </div>;
+}
+
+type Line = { kind: "row"; row: FeeRow } | { kind: "group"; key: string; count: number; late: number; open: boolean };
+type RowAction = "price" | "move" | "exempt" | "unexempt";
+const NO_SPLITS: FeeSplit[] = [];
+
+/** A partir de quantas linhas (associados e cabeçalhos de seção) a grade monta só as que estão perto da tela. */
+export const VIRTUALIZE_FROM = 100;
+
+/**
+ * Corpo da grade. Abaixo de VIRTUALIZE_FROM linhas o virtualizador fica desligado e todas são montadas; acima, só as
+ * visíveis (mais uma margem) ficam no DOM, entre duas linhas espaçadoras, e aria-rowcount/aria-rowindex mantêm a
+ * posição para leitores de tela. Fica num componente à parte para a rolagem re-renderizar só o corpo (e não totais,
+ * rodapé e diálogos), e as linhas são memoizadas para a rolagem só montar as novas. Cabeçalho, coluna do nome e
+ * rodapé continuam sticky (as linhas montadas ficam no fluxo normal da tabela). Medição: e2e/perf/mensalidades.perf.ts.
+ */
+function FeeBody({ lines, scroller, head, columns, ...props }: {
+  lines: Line[]; scroller: React.RefObject<HTMLDivElement | null>; head: React.RefObject<HTMLTableSectionElement | null>; columns: number;
+  onToggle: (key: string) => void;
+} & Omit<LineProps, "row" | "index" | "virtual" | "measure" | "splits" | "receivedCents" | "balance" | "individualPrice"> & {
+  splitsByAssociate: Record<string, FeeSplit[]>; individualPrices: Record<string, { monthlyCents: number; reason: string }>;
+  received: Record<string, number>; balances: Map<string, FeeBalance>;
+}) {
+  const { splitsByAssociate, individualPrices, received, balances, onToggle, ...rest } = props;
+  const virtual = lines.length >= VIRTUALIZE_FROM;
+  // as linhas começam abaixo do cabeçalho fixo, dentro da área que rola
+  const [headHeight, setHeadHeight] = useState(36);
+  useLayoutEffect(() => { if (virtual && head.current) setHeadHeight(head.current.offsetHeight); }, [virtual, head]);
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const virtualizer = useVirtualizer<HTMLDivElement, HTMLTableRowElement>({
+    enabled: virtual,
+    count: lines.length,
+    getScrollElement: () => scroller.current,
+    estimateSize: (index) => lines[index].kind === "group" ? 30 : 45,
+    getItemKey: (index) => { const line = lines[index]; return line.kind === "group" ? `secao:${line.key}` : line.row.associate.id; },
+    scrollMargin: headHeight,
+    overscan: 10,
+    initialRect: { width: 0, height: 900 },
+    useFlushSync: false,
+  });
+  let indexes: number[], top = 0, bottom = 0, measure: ((node: HTMLTableRowElement | null) => void) | undefined;
+  if (virtual) {
+    const items = virtualizer.getVirtualItems();
+    const first = items[0];
+    const last = items[items.length - 1];
+    indexes = items.map((item) => item.index);
+    top = first ? first.start - headHeight : 0;
+    bottom = last ? virtualizer.getTotalSize() - (last.end - headHeight) : 0;
+    measure = virtualizer.measureElement;
+  } else indexes = lines.map((_, index) => index);
+
+  return <tbody>
+    <Spacer height={top} columns={columns} />
+    {indexes.map((index) => {
+      const line = lines[index];
+      if (line.kind === "group") return <GroupLine key={`secao:${line.key}`} line={line} index={index} virtual={virtual} measure={measure} columns={columns} onToggle={onToggle} />;
+      const id = line.row.associate.id;
+      return <FeeLine key={id} row={line.row} index={index} virtual={virtual} measure={measure} {...rest}
+        splits={splitsByAssociate[id] ?? NO_SPLITS} individualPrice={individualPrices[id]} receivedCents={received[id]} balance={balances.get(id)} />;
+    })}
+    <Spacer height={bottom} columns={columns} />
+  </tbody>;
+}
+
+/** Linha vazia que ocupa a altura das linhas não montadas. */
+const Spacer = ({ height, columns }: { height: number; columns: number }) => height > 0
+  ? <tr aria-hidden><td colSpan={columns} className="p-0" style={{ height }} /></tr>
+  : null;
+
+type Positioned = { index: number; virtual: boolean; measure?: (node: HTMLTableRowElement | null) => void };
+
+/** Cabeçalho de seção (accordion) na visão agrupada. */
+const GroupLine = memo(function GroupLine({ line, index, virtual, measure, columns, onToggle }: Positioned & {
+  line: Extract<Line, { kind: "group" }>; columns: number; onToggle: (key: string) => void;
+}) {
+  return <tr ref={measure} data-index={index} aria-rowindex={virtual ? index + 2 : undefined} className="bg-muted/50 *:border-t *:border-border">
+    <th scope="colgroup" colSpan={columns} className="sticky left-0 p-0 text-left text-xs font-semibold">
+      <button type="button" aria-expanded={line.open} onClick={() => onToggle(line.key)}
+        className="flex w-full items-center gap-1.5 px-3 py-1.5 text-left hover:bg-muted">
+        <IconChevronRight className={cn("size-4 transition-transform", line.open && "rotate-90")} aria-hidden />
+        {line.key} <span className="font-normal text-muted-foreground">({line.count}{line.late > 0 && `, ${line.late} com atraso`})</span>
+      </button>
+    </th>
+  </tr>;
+});
+
+type LineProps = Positioned & {
+  row: FeeRow; year: number; canEdit: boolean; hasPrices: boolean;
+  /** Estado otimista das caixinhas (`<associado>:<mês>`), até o servidor responder. */
+  optimistic: Record<string, CellState | null>;
+  splits: FeeSplit[]; individualPrice?: { monthlyCents: number; reason: string }; receivedCents?: number; balance?: FeeBalance;
+  onChange: (row: FeeRow, month: number, value: CellChange) => Promise<void>;
+  onAction: (kind: RowAction, row: FeeRow) => void;
+};
+
+/** Um associado: nome, as caixinhas dos meses, totais e ações; memoizado (props estáveis entre rolagens). */
+const FeeLine = memo(function FeeLine({ row, index, virtual, measure, year, canEdit, hasPrices, optimistic, splits, individualPrice, receivedCents, balance, onChange, onAction }: LineProps) {
+  const exempt = Boolean(row.exemption);
+  const states = row.cells.map((cell, i) => optimistic[`${row.associate.id}:${FEE_MONTHS[i]}`] ?? cell.state);
+  const paid = states.filter((state) => state === "pago").length;
+  return <tr ref={measure} data-index={index} aria-rowindex={virtual ? index + 2 : undefined}
+    className={cn("group/row *:border-t *:border-border hover:bg-accent has-[[aria-expanded=true]]:bg-accent", exempt && "text-muted-foreground")}>
+    <th scope="row" className="sticky left-0 bg-card px-3 py-1.5 text-right normal-case tracking-normal group-hover/row:bg-accent group-has-[[aria-expanded=true]]/row:bg-accent">
+      <span className={cn("block truncate text-sm font-semibold", exempt ? "text-muted-foreground" : "text-foreground")}>{row.associate.name}</span>
+      <span className="mt-0.5 block text-[11px] font-normal text-muted-foreground">
+        {isScoutBranch(row.associate.branch) ? branchLabels[row.associate.branch] : row.associate.branch}
+        {row.associate.section && ` · ${row.associate.section}`}{row.associate.patrol && ` › ${row.associate.patrol}`}
+        {exempt && ` · isento: ${row.exemption!.reason}`}
+        {row.hidden === "fora" && " · fora do grupo no ano"}
+        {row.movements.length > 0 && <MovementSummary movements={row.movements} />}
+        {individualPrice && <span className="text-foreground"> · {money(individualPrice.monthlyCents / 100)}/mês ({individualPrice.reason})</span>}
+        {!row.associate.active && " · inativo"}
+      </span>
+    </th>
+    {row.cells.map((cell, i) => <td key={cell.month} className="px-1 py-1 text-center">
+      <FeeCell name={row.associate.name} month={cell.month} state={states[i]} record={cell.record} suggestion={cell.suggestion}
+        splits={splits} canEdit={canEdit} exempt={exempt} onChange={(value) => onChange(row, cell.month, value)} />
+    </td>)}
+    <td className="px-2 py-1 text-right num">{exempt || !row.monthsInGroup ? "—" : `${paid}/${row.monthsInGroup}`}</td>
+    <td className="px-2 py-1 text-right num whitespace-nowrap">{receivedCents ? money(receivedCents / 100) : <span className="text-muted-foreground">—</span>}</td>
+    {hasPrices && <td className={cn("px-2 py-1 text-right num whitespace-nowrap", (balance?.open ?? 0) > 0 && "text-destructive")}>
+      {exempt ? "—" : balance?.integral ? <span className="text-success" title="Pagamento integral com desconto">integral</span> : money((balance?.open ?? 0) / 100)}
+    </td>}
+    {canEdit && <td className="px-1 py-1"><RowActions row={row} year={year} exempt={exempt} hasIndividualPrice={Boolean(individualPrice)} onAction={onAction} /></td>}
+  </tr>;
+});
+
+/**
+ * Menu ⋯ do associado. Até o primeiro clique é só o botão: o menu (Base UI) é montado aberto nessa hora, como as
+ * caixinhas (fee-cell.tsx), para as linhas montadas durante a rolagem saírem baratas.
+ */
+function RowActions({ row, year, exempt, hasIndividualPrice, onAction }: { row: FeeRow; year: number; exempt: boolean; hasIndividualPrice: boolean; onAction: (kind: RowAction, row: FeeRow) => void }) {
+  const [active, setActive] = useState(false);
+  const label = `Ações de ${row.associate.name}`;
+  if (!active) return <Button variant="ghost" size="icon-sm" aria-label={label} aria-haspopup="menu" aria-expanded={false} onClick={() => setActive(true)}><IconDots /></Button>;
+  return <DropdownMenu defaultOpen>
+    <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={label} />}><IconDots /></DropdownMenuTrigger>
+    <DropdownMenuContent align="end">
+      <DropdownMenuGroup>
+        <DropdownMenuItem onClick={() => onAction("price", row)}>{hasIndividualPrice ? "Alterar valor individual…" : `Valor individual em ${year}…`}</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onAction("move", row)}>Entradas e saídas…</DropdownMenuItem>
+        {exempt
+          ? <DropdownMenuItem onClick={() => onAction("unexempt", row)}>Remover isenção de {year}</DropdownMenuItem>
+          : <DropdownMenuItem onClick={() => onAction("exempt", row)}>Isentar em {year}…</DropdownMenuItem>}
+      </DropdownMenuGroup>
+    </DropdownMenuContent>
+  </DropdownMenu>;
 }
 
 const REASONS = ["Voluntário(a)", "Bolsa", "Escotista", "Outro"];
@@ -399,7 +515,7 @@ function MonthAlerts({ month, summary, receivedCents }: { month: number; summary
     <TooltipTrigger render={<button type="button" aria-label={label}
       className="grid min-h-full w-full cursor-help place-items-center px-1 py-1.5 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none" />}>
       {alerts > 0
-        ? <span aria-hidden className="inline-flex min-w-6 justify-center rounded bg-destructive px-1 text-xs font-semibold text-white">{alerts}</span>
+        ? <span aria-hidden className="inline-flex min-w-6 justify-center rounded bg-destructive px-1 text-xs font-semibold text-destructive-foreground">{alerts}</span>
         : <span aria-hidden className="text-muted-foreground">—</span>}
     </TooltipTrigger>
     <TooltipContent className="grid w-auto max-w-none min-w-40 items-stretch gap-1 p-2.5">

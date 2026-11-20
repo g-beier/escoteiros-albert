@@ -186,6 +186,34 @@
   background-color: var(--card);
 }
 
+/*
+ * Tabelas longas renderizadas no servidor: janela por CSS. O navegador pula estilo, layout e pintura dos blocos fora
+ * da tela (`content-visibility: auto`) e tudo segue no DOM (Ctrl+F, leitores de tela, links). `content-visibility` não
+ * vale em `<tbody>`/`<tr>` com display de tabela (o Chrome ignora), por isso a tabela vira grade: `cv-table` no
+ * `<table>`, colunas em `--cv-cols` (larguras fixas e no máximo uma `minmax(<mín>, 1fr)`: cada bloco tem a sua grade,
+ * e trilhas pelo conteúdo desalinhariam), e cada `<tbody>` um bloco `cv-rows` de até ~25 linhas, com a altura
+ * estimada em `--cv-rows` linhas × `--cv-row-h` (depois o navegador lembra a real). O Chrome mantém a semântica de
+ * tabela. Célula com `colSpan` sozinha na linha ocupa a linha toda (outros `colSpan`/`rowSpan` precisam de
+ * `grid-column`/`grid-row` explícitos); `<colgroup>` sai (as larguras são `--cv-cols`); células centradas na vertical,
+ * como na tabela; a divisória entre linhas é a `border-b` da linha (zera a borda do `td` legado, que somaria outra).
+ */
+@utility cv-table {
+  display: grid;
+  grid-template-columns: var(--cv-cols);
+  & > :is(thead, tbody, tfoot) { display: grid; grid-column: 1 / -1; grid-template-columns: var(--cv-cols); }
+  & > * > tr { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; }
+  & > * > tr > :is(td, th) { align-content: center; border-top-width: 0; }
+  & > * > tr > [colspan]:only-child { grid-column: 1 / -1; }
+  & > colgroup { display: none; }
+  & > caption { grid-column: 1 / -1; }
+  /* `TableBody` tira a borda da última linha; entre blocos ela continua (`data-m`: linhas simples de Materiais). */
+  & > tbody:not(:last-of-type) > tr:is([data-slot="table-row"], [data-m]):last-child { border-bottom-width: 1px; }
+}
+@utility cv-rows {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto calc(var(--cv-rows, 25) * var(--cv-row-h, 2.5rem));
+}
+
 @layer base {
   * { @apply border-border outline-ring/50; }
   /* Reserva a faixa da barra de rolagem mesmo sem rolagem: a página não "pula" ao filtrar ou trocar de aba. */

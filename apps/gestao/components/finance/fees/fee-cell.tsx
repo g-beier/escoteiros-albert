@@ -17,9 +17,9 @@ export const STATE_LABELS: Record<CellState, string> = {
 };
 
 const STATE_STYLES: Record<CellState, string> = {
-  pago: "border-success bg-success text-white",
-  atencao: "border-amber-600 bg-amber-300 text-amber-950",
-  nao_pago: "border-destructive bg-destructive text-white",
+  pago: "border-success bg-success text-success-foreground",
+  atencao: "border-attention-strong bg-attention text-attention-foreground",
+  nao_pago: "border-destructive bg-destructive text-destructive-foreground",
   isento: "border-success/40 bg-success/10 text-success",
   atrasado: "border-destructive/50 bg-destructive/10 text-destructive",
   sugestao: "border-dashed border-success text-success",
@@ -30,7 +30,7 @@ const STATE_STYLES: Record<CellState, string> = {
 /** Ícone da caixinha; também usado na legenda. */
 export function FeeMark({ state, partial = false, className }: { state: CellState; partial?: boolean; className?: string }) {
   // sugestão parcial (valor menor que a mensalidade): tracejado amarelo com "!"
-  if (state === "sugestao" && partial) return <span aria-hidden className={cn("grid size-6 place-items-center rounded-md border border-dashed border-amber-500 text-amber-700", className)}><IconAlertTriangle className="size-3.5" /></span>;
+  if (state === "sugestao" && partial) return <span aria-hidden className={cn("grid size-6 place-items-center rounded-md border border-dashed border-attention-line text-attention-soft-foreground", className)}><IconAlertTriangle className="size-3.5" /></span>;
   return <span aria-hidden className={cn("grid size-6 place-items-center rounded-md border", STATE_STYLES[state], className)}>
     {state === "pago" || state === "sugestao" ? <IconCheck className="size-4" /> : state === "isento" ? <IconCircleCheck className="size-3.5" /> : state === "atencao" ? <IconAlertTriangle className="size-3.5" /> : state === "atrasado" || state === "nao_pago" ? <IconX className="size-3.5" /> : state === "fora" ? <IconMinus className="size-3" /> : null}
   </span>;
@@ -42,12 +42,36 @@ export type CellChange = { status: FeeStatus | null; note?: string; splitIds: st
 const NOTE_DEBOUNCE_MS = 400;
 
 /** Caixinha de um mês: botão com rótulo acessível; tesouraria edita no popover. */
-export function FeeCell({ name, month, state, record, suggestion, splits, canEdit, exempt, onChange }: {
+type CellProps = {
   name: string; month: number; state: CellState; record?: FeeRecord; suggestion?: FeeSuggestion;
   /** Rateios de mensalidade do associado no ano. */
   splits: FeeSplit[]; canEdit: boolean; exempt: boolean; onChange: (change: CellChange) => Promise<void>;
-}) {
-  const [open, setOpen] = useState(false);
+};
+
+const cellLabel = ({ name, month, state, record, suggestion }: Pick<CellProps, "name" | "month" | "state" | "record" | "suggestion">) => {
+  const partial = state === "sugestao" && suggestion?.status === "atencao";
+  const detail = record?.note ?? (state === "sugestao" ? suggestion?.note : undefined);
+  return { partial, label: `${name}, ${FEE_MONTH_NAMES[month]}: ${partial ? "pagamento parcial a confirmar" : STATE_LABELS[state]}${detail ? ` (${detail})` : ""}` };
+};
+const triggerClass = "rounded-md p-0.5 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none";
+
+/**
+ * Caixinha de um mês. Até o primeiro clique é só um botão: o popover de edição (Base UI) é montado na primeira vez
+ * que abre. Com centenas de caixinhas na grade (e linhas montadas durante a rolagem), montar um popover por caixinha
+ * era o custo principal.
+ */
+export function FeeCell(props: CellProps) {
+  const [active, setActive] = useState(false);
+  const { partial, label } = cellLabel(props);
+  const mark = <FeeMark state={props.state} partial={partial} className={cn(props.exempt && "opacity-40")} />;
+  if (!props.canEdit) return <span className="inline-grid" title={label} role="img" aria-label={label}>{mark}</span>;
+  if (!active) return <button type="button" className={triggerClass} aria-label={label} title={label} aria-haspopup="dialog" aria-expanded={false} onClick={() => setActive(true)}>{mark}</button>;
+  return <FeeCellEditor {...props} />;
+}
+
+/** Caixinha com o popover de edição (tesouraria); montada aberta, no primeiro clique. */
+function FeeCellEditor({ name, month, state, record, suggestion, splits, onChange, exempt }: CellProps) {
+  const [open, setOpen] = useState(true);
   // status escolhido no popover; com ele definido, observação e vínculos gravam sozinhos
   const [chosen, setChosen] = useState<FeeStatus | null>(record?.status ?? null);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
@@ -56,12 +80,8 @@ export function FeeCell({ name, month, state, record, suggestion, splits, canEdi
   useEffect(() => () => { if (pendingSave.current) { clearTimeout(pendingSave.current.timer); pendingSave.current.run(); } }, []);
   const [note, setNote] = useState(record?.note ?? suggestion?.note ?? "");
   const [linked, setLinked] = useState<Set<string>>(new Set(record?.splitIds ?? (suggestion ? [suggestion.splitId] : [])));
-  const partial = state === "sugestao" && suggestion?.status === "atencao";
-  const stateLabel = partial ? "pagamento parcial a confirmar" : STATE_LABELS[state];
-  const detail = record?.note ?? (state === "sugestao" ? suggestion?.note : undefined);
-  const label = `${name}, ${FEE_MONTH_NAMES[month]}: ${stateLabel}${detail ? ` (${detail})` : ""}`;
+  const { partial, label } = cellLabel({ name, month, state, record, suggestion });
   const mark = <FeeMark state={state} partial={partial} className={cn(exempt && "opacity-40")} />;
-  if (!canEdit) return <span className="inline-grid" title={label} role="img" aria-label={label}>{mark}</span>;
 
   const reset = () => {
     setNote(record?.note ?? suggestion?.note ?? "");
@@ -100,7 +120,7 @@ export function FeeCell({ name, month, state, record, suggestion, splits, canEdi
   const noteId = `fee-note-${month}-${name.replace(/\W+/g, "-")}`;
 
   return <Popover open={open} onOpenChange={(next) => { if (next) reset(); else flushPending(); setOpen(next); }}>
-    <PopoverTrigger render={<button type="button" className="rounded-md p-0.5 hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none" aria-label={label} title={label} />}>
+    <PopoverTrigger render={<button type="button" className={triggerClass} aria-label={label} title={label} />}>
       {mark}
     </PopoverTrigger>
     <PopoverContent align="center" className="w-80 gap-3 p-3">
@@ -109,10 +129,10 @@ export function FeeCell({ name, month, state, record, suggestion, splits, canEdi
         Sugestão a partir do fluxo de caixa: {suggestion.status === "atencao" ? `atenção (${suggestion.note})` : suggestion.integral ? "pago (pagamento integral do ano)" : "pago"}.
       </p>}
       <div className="flex flex-wrap gap-2" role="group" aria-label="Status">
-        <Button size="sm" variant={chosen === "pago" ? "default" : "outline"} aria-pressed={chosen === "pago"} onClick={() => apply("pago")}><IconCheck /> Pago</Button>
-        <Button size="sm" variant="outline" aria-pressed={chosen === "atencao"} className={cn(chosen === "atencao" && "border-amber-600 bg-amber-300 text-amber-950 hover:bg-amber-300")} onClick={() => apply("atencao")}><IconAlertTriangle /> Atenção</Button>
-        <Button size="sm" variant="outline" aria-pressed={chosen === "nao_pago"} className={cn("text-destructive", chosen === "nao_pago" && "border-destructive bg-destructive text-white hover:bg-destructive/90 hover:text-white")} onClick={() => apply("nao_pago")}><IconX /> Não pago</Button>
-        <Button size="sm" variant="outline" aria-pressed={chosen === "isento"} className={cn("text-success", chosen === "isento" && "border-success/40 bg-success/10 hover:bg-success/15")} onClick={() => apply("isento")}><IconCircleCheck /> Isento</Button>
+        <Button size="sm" variant={chosen === "pago" ? "default" : "outline"} aria-pressed={chosen === "pago"} onClick={() => apply("pago")}><IconCheck data-icon="inline-start" /> Pago</Button>
+        <Button size="sm" variant="outline" aria-pressed={chosen === "atencao"} className={cn(chosen === "atencao" && "border-attention-strong bg-attention text-attention-foreground hover:bg-attention")} onClick={() => apply("atencao")}><IconAlertTriangle data-icon="inline-start" /> Atenção</Button>
+        <Button size="sm" variant="outline" aria-pressed={chosen === "nao_pago"} className={cn("text-destructive", chosen === "nao_pago" && "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:text-destructive-foreground")} onClick={() => apply("nao_pago")}><IconX data-icon="inline-start" /> Não pago</Button>
+        <Button size="sm" variant="outline" aria-pressed={chosen === "isento"} className={cn("text-success", chosen === "isento" && "border-success/40 bg-success/10 hover:bg-success/15")} onClick={() => apply("isento")}><IconCircleCheck data-icon="inline-start" /> Isento</Button>
         {(record || chosen) && <Button size="sm" variant="ghost" onClick={() => apply(null)}>Limpar</Button>}
       </div>
       <div className="grid gap-1.5">
