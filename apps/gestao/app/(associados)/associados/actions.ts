@@ -54,6 +54,16 @@ export async function saveAssociate(_previous: ActionResult, formData: FormData)
   redirect(`/associados/${savedId}`);
 }
 
+/** Marca o cadastro do registro rápido como revisado (049). */
+export async function reviewAssociate(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
+  return runAction(associatesEditorOrError, async ({ db, groupId }) => {
+    await associates.review(db, groupId, [id(formData, "id")]);
+    revalidate();
+    revalidatePath("/");
+    return "Cadastro marcado como revisado.";
+  });
+}
+
 /** Passagem: novo ramo, seção ou equipe a partir de uma data. */
 export async function moveAssociate(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   return runAction(associatesEditorOrError, async ({ db }) => {

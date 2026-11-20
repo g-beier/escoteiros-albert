@@ -32,6 +32,8 @@ export type EntryFilters = {
    */
   minCents?: number;
   maxCents?: number;
+  /** Só os lançamentos do registro rápido ainda não revisados (`revisao=para_revisar`, 049). */
+  toReview?: boolean;
 };
 
 export type RawSearchParams = Record<string, string | string[] | undefined>;
@@ -48,6 +50,9 @@ export function currentYear(now = new Date()) {
 export function defaultFrom(now = new Date()) {
   return `${currentYear(now)}-01-01`;
 }
+
+/** Valor de `revisao` que lista só o que o registro rápido deixou para revisar. */
+export const REVIEW_PENDING = "para_revisar";
 
 /** Valor especial do filtro de associado para rateios sem vínculo. */
 export const NO_ASSOCIATE = "nenhum";
@@ -100,6 +105,7 @@ export function parseFilters(params: RawSearchParams, now = new Date()): EntryFi
     ofx: ofxId(params.ofx),
     minCents: cents(params.valor_de),
     maxCents: cents(params.valor_ate),
+    toReview: first(params.revisao) === REVIEW_PENDING || undefined,
   };
 }
 
@@ -121,7 +127,7 @@ export function likePattern(q: string) {
 }
 
 export function hasAnyFilter(filters: EntryFilters) {
-  return Boolean(filters.from || filters.to || filters.folder || filters.reconciled !== undefined || filters.q || filters.ofx || filters.withoutAssociate
+  return Boolean(filters.toReview || filters.from || filters.to || filters.folder || filters.reconciled !== undefined || filters.q || filters.ofx || filters.withoutAssociate
     || filters.minCents !== undefined || filters.maxCents !== undefined
     || filters.accountIds.length || filters.paymentMethodIds.length || filters.associateIds.length || filters.divisionTokens?.length || filters.categoryTokens.length);
 }

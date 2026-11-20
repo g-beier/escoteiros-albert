@@ -90,6 +90,17 @@ export async function moveEntriesAccount(entryIds: unknown, accountId: unknown):
   });
 }
 
+/** Marca lançamentos do registro rápido como revisados (049); os já revisados ficam como estão. */
+export async function reviewEntries(entryIds: unknown): Promise<{ error?: string; reviewed?: number }> {
+  const ids = z.array(z.uuid()).min(1, "Selecione ao menos um lançamento.").max(500, "Selecione no máximo 500 lançamentos por vez.").safeParse(entryIds);
+  if (!ids.success) return { error: ids.error.issues[0]?.message ?? "Seleção inválida." };
+  return withMember(() => financeEditorOrError("Sem permissão para revisar lançamentos."), async ({ db, groupId }) => {
+    const reviewed = await entries.review(db, groupId, ids.data);
+    revalidatePath("/", "layout");
+    return { reviewed };
+  });
+}
+
 /** Próxima página da rolagem infinita; os filtros chegam como a query string da lista. */
 export async function loadEntryPage(viewInput: unknown, query: unknown, offset: unknown): Promise<EntryPage> {
   const params = Object.fromEntries(new URLSearchParams(typeof query === "string" ? query : ""));

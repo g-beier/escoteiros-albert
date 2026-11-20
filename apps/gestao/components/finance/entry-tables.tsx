@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
-import { EntryCard, EntryLink, EntryRow, EntryRowActions, FolderStatus, useEntrySelection } from "@/components/finance/entries/entry-editor";
+import { EntryCard, EntryLink, EntryRow, EntryRowActions, FolderStatus, ReviewMark, useEntrySelection } from "@/components/finance/entries/entry-editor";
 import { Checkbox } from "@geas/ui/components/checkbox";
 import { Label } from "@geas/ui/components/label";
 import { dateBR, money } from "@/lib/format";
@@ -192,7 +192,7 @@ const LedgerLine = memo(function LedgerLine({ row, index, virtual, measure, canE
   return <EntryRow entryId={row.entry_id} ref={measure} data-index={index} aria-rowindex={virtual ? index + 2 : undefined} className={cn(stripe(index))}>
     {canEdit && <TableCell className="px-2.5 py-1 align-middle" onClick={(event) => event.stopPropagation()}><SelectRow row={row} /></TableCell>}
     <TableCell className={cn(cell, "whitespace-nowrap num")}>{dateBR(row.entry_date)}</TableCell>
-    <TableCell className={cell} title={row.name}><EntryLink entryId={row.entry_id} className={clip("max-w-96")}>{row.name}</EntryLink></TableCell>
+    <TableCell className={cell} title={row.name}><span className="flex items-center"><EntryLink entryId={row.entry_id} className={clip("max-w-96")}>{row.name}</EntryLink><ReviewMark entryId={row.entry_id} status={row.review_status} /></span></TableCell>
     <TableCell className={cell}><Clip text={row.account_name} max="max-w-44" /></TableCell>
     <TableCell className={cell}><Clip text={row.payment_method_name} max="max-w-40" /></TableCell>
     <TableCell className={cell}><span className="inline-flex items-center gap-1.5"><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} /><AttachmentClip count={row.attachment_count} /></span></TableCell>
@@ -207,7 +207,7 @@ const SplitLine = memo(function SplitLine({ row, index, virtual, measure, contin
   return <EntryRow entryId={row.entry_id} data-entry-id={row.entry_id} ref={measure} data-index={index} aria-rowindex={virtual ? index + 2 : undefined}
     className={cn(stripe(index))}>
     <TableCell className={cn(cell, "whitespace-nowrap num")}>{dateBR(row.entry_date)}</TableCell>
-    <TableCell className={cell} title={row.entry_name}><EntryLink entryId={row.entry_id} className={cn("font-medium", clip("max-w-52"))}>{row.entry_name}</EntryLink></TableCell>
+    <TableCell className={cell} title={row.entry_name}><span className="flex items-center"><EntryLink entryId={row.entry_id} className={cn("font-medium", clip("max-w-52"))}>{row.entry_name}</EntryLink>{!continued && <ReviewMark entryId={row.entry_id} status={row.review_status} />}</span></TableCell>
     <TableCell className={cell}><Clip text={row.account_name} max="max-w-40" /></TableCell>
     <TableCell className={cell}><Clip text={row.payment_method_name} max="max-w-36" /></TableCell>
     <TableCell className={cell}><span className="inline-flex items-center gap-1.5"><FolderStatus entryId={row.entry_id} filed={row.document_filed} document={row.document} />{!continued && <AttachmentClip count={row.attachment_count} />}</span></TableCell>
@@ -319,7 +319,7 @@ const LedgerCard = memo(function LedgerCard({ row, index, total, measure, canEdi
     {canEdit && <span className="pt-0.5"><SelectRow row={row} /></span>}
     <div className="grid min-w-0 flex-1 gap-1">
       <div className="flex items-baseline justify-between gap-3">
-        <EntryLink entryId={row.entry_id} className="min-w-0 text-sm break-words">{row.name}</EntryLink>
+        <span className="min-w-0"><EntryLink entryId={row.entry_id} className="text-sm break-words">{row.name}</EntryLink><ReviewMark entryId={row.entry_id} status={row.review_status} /></span>
         <span className={cardAmount(row.total_cents)}>{money(row.total_cents / 100)}</span>
       </div>
       <Meta parts={[<span key="date" className="num">{dateBR(row.entry_date)}</span>, row.account_name, row.payment_method_name]} />
@@ -352,7 +352,7 @@ const SplitCard = memo(function SplitCard({ row, index, total, measure, continue
     className={cn("flex items-start gap-2.5 px-3 py-2.5", index > 0 && "border-t", continued && "border-dashed")}>
     <div className="grid min-w-0 flex-1 gap-1">
       <div className="flex items-baseline justify-between gap-3">
-        <EntryLink entryId={row.entry_id} className="min-w-0 text-sm break-words">{row.entry_name}</EntryLink>
+        <span className="min-w-0"><EntryLink entryId={row.entry_id} className="text-sm break-words">{row.entry_name}</EntryLink><ReviewMark entryId={row.entry_id} status={row.review_status} /></span>
         <span className={cardAmount(row.amount_cents)}>{money(row.amount_cents / 100)}</span>
       </div>
       <Meta parts={[<span key="date" className="num">{dateBR(row.entry_date)}</span>, row.account_name, row.payment_method_name]} />

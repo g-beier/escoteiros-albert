@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { IconFolderExclamation, IconHelpCircle } from "@tabler/icons-react";
+import { IconBolt, IconFolderExclamation, IconHelpCircle, IconX } from "@tabler/icons-react";
 import { pageSession } from "@/lib/server/session";
 import { AppHeader } from "@/components/finance/app-header";
 import { EntryViewTabs, PageHeader } from "@/components/finance/nav/page-header";
 import { InfiniteEntries } from "@/components/finance/entries/infinite-entries";
-import { countInAccount, fetchEntryPage, listStats } from "@/lib/server/finance/entries";
+import { countInAccount, countToReview, fetchEntryPage, listStats } from "@/lib/server/finance/entries";
 import { entryCatalogs } from "@/lib/server/finance/registry";
 import { associateFilterData } from "@/lib/server/finance/associates";
 import { EntryListProvider, NewEntryButton } from "@/components/finance/entries/entry-editor";
@@ -47,7 +47,12 @@ export async function EntriesScreen({ view, searchParams }: { view: EntryView; s
   ]);
   // lançamentos digitados sem conta ficam em "A definir" (011) até serem movidos ou conciliados
   const undefinedAccount = accounts.find((account) => account.name === PLACEHOLDER_ACCOUNT_NAME);
-  const undefinedCount = undefinedAccount ? await countInAccount(db, groupId, undefinedAccount.id) : 0;
+  const [undefinedCount, toReview] = await Promise.all([
+    undefinedAccount ? countInAccount(db, groupId, undefinedAccount.id) : 0, countToReview(db, groupId),
+  ]);
+  // filtro do registro rápido: fora do painel de filtros, com um "×" que o tira mantendo os demais
+  const withoutReview = new URLSearchParams(returnQuery);
+  withoutReview.delete("revisao");
   const onlyUndefined = undefinedAccount && filters.accountIds.length === 1 && filters.accountIds[0] === undefinedAccount.id;
   const years = exportYears(firstDate, lastDate);
   const tree = sortCategories(categories as CategoryItem[]);
@@ -85,6 +90,9 @@ export async function EntriesScreen({ view, searchParams }: { view: EntryView; s
         <PageHeader title="Lançamentos" crumbs={[{ label: "Lançamentos", href: "/financeiro/lancamentos" }, { label: byCategory ? "Detalhamento" : "Movimentações" }]}
           tabs={<EntryViewTabs current={view} hrefs={{ movimentacoes: entriesPath("movimentacoes", returnQuery), detalhamento: entriesPath("detalhamento", returnQuery) }} />}
           actions={<>
+            {filters.toReview
+              ? <Link href={entriesPath(view, withoutReview.toString())} className="inline-flex items-center gap-1.5 rounded-full bg-caution-soft px-3 py-1 text-xs font-semibold text-caution hover:ring-1 hover:ring-current" title="Mostrar todos os lançamentos"><IconBolt className="size-4" aria-hidden /> Só os para revisar <IconX className="size-3.5" aria-label="tirar o filtro" /></Link>
+              : toReview > 0 && <Link href={entriesPath(view, `revisao=para_revisar&de=${ALL_DATES}`)} className="inline-flex items-center gap-1.5 rounded-full bg-caution-soft px-3 py-1 text-xs font-semibold text-caution hover:ring-1 hover:ring-current" title="Lançamentos do registro rápido ainda não conferidos; marque-os e use “Marcar revisados”"><IconBolt className="size-4" aria-hidden /> {toReview} para revisar</Link>}
             {(pendingDocs ?? 0) > 0 && filters.folder !== "pendente" && <Link href={entriesPath(view, `pasta=pendente&de=${ALL_DATES}`)} className="inline-flex items-center gap-1.5 rounded-full bg-caution-soft px-3 py-1 text-xs font-semibold text-caution hover:ring-1 hover:ring-current"><IconFolderExclamation className="size-4" aria-hidden /> {pendingDocs} {pendingDocs === 1 ? "documento pendente" : "documentos pendentes"}</Link>}
             <ExportMenu view={view} from={filters.from} to={filters.to} years={years} accounts={toOptions(accounts)} />
             {undefinedAccount && (undefinedCount ?? 0) > 0 && !onlyUndefined && <Link href={entriesPath("movimentacoes", `conta=${undefinedAccount.id}&de=${ALL_DATES}`)} className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-foreground hover:ring-1 hover:ring-current" title="Lançamentos sem conta definida; marque-os e escolha a conta certa"><IconHelpCircle className="size-4" aria-hidden /> {undefinedCount} em “{PLACEHOLDER_ACCOUNT_NAME}”</Link>}

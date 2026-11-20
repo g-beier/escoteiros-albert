@@ -9,6 +9,7 @@ import { Textarea } from "@geas/ui/components/textarea";
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
 import { cn } from "@geas/ui/lib/utils";
 import { saveAssociate } from "@/app/(associados)/associados/actions";
+import { quickAssociate } from "@/app/(gestao)/rapido/actions";
 import type { AssociateProfile } from "@/lib/associates/model";
 import { EMPTY_PLACEMENT, PlacementFields, PlacementSelect, type Catalog } from "./placement-select";
 
@@ -24,9 +25,10 @@ export function Field({ id, label, hint, className, children }: { id: string; la
 /**
  * Cadastro e edição do associado. No cadastro escolhe-se a divisão (ramo, seção, equipe); depois ela só muda por
  * passagem, no detalhe. Datas opcionais; sem data de entrada, a entrada fica registrada na data do cadastro.
+ * `quick`: cadastro pelo registro rápido (/rapido/associado), que fica para a Secretaria revisar.
  */
-export function AssociateForm({ catalog, associate, today }: { catalog: Catalog; associate?: AssociateProfile; today: string }) {
-  const [state, action, pending] = useActionState(saveAssociate, {} as ActionResult);
+export function AssociateForm({ catalog, associate, today, quick = false }: { catalog: Catalog; associate?: AssociateProfile; today: string; quick?: boolean }) {
+  const [state, action, pending] = useActionState(quick ? quickAssociate : saveAssociate, {} as ActionResult);
   useActionToast(state);
   const [place, setPlace] = useState(EMPTY_PLACEMENT);
   const creating = !associate;
@@ -58,7 +60,7 @@ export function AssociateForm({ catalog, associate, today }: { catalog: Catalog;
     </Field>
     <div className="flex flex-wrap gap-2">
       <Button type="submit" size="lg" disabled={pending || (creating && !place.branch)}>{pending ? "Salvando…" : creating ? "Cadastrar associado" : "Salvar"}</Button>
-      <Link href={associate ? `/associados/${associate.id}` : "/associados"} className={buttonVariants({ variant: "outline", size: "lg" })}>Cancelar</Link>
+      <Link href={associate ? `/associados/${associate.id}` : quick ? "/rapido" : "/associados"} className={buttonVariants({ variant: "outline", size: "lg" })}>Cancelar</Link>
     </div>
   </form>;
 }

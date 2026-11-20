@@ -6,6 +6,7 @@ Termos usados na interface, no código e na documentação. Quando um termo apar
 |---|---|---|
 | **Conta** | Onde o dinheiro está: conta corrente, poupança, caixa. Cada lançamento pertence a uma conta. | `accounts` |
 | **Conta contábil** | Código do plano de contas do sistema contábil de destino (`0.0.0.0.0000`). Sempre escrito por extenso: nunca chame de "conta" só. A rubrica tem uma (várias rubricas podem usar a mesma); a conta pode ter uma, usada como contrapartida. | `categories.ledger_code`, `accounts.ledger_code` (domínio `ledger_code`) |
+| **Para revisar** | Lançamento feito pelo registro rápido (`/rapido`, celular): entra já e conta nos relatórios, mas fica marcado até a tesouraria conferir, completar (conta, documento, rateio) e marcar como revisado. | `ledger_entries.review_status` (`para_revisar` / `revisado`), `create_quick_ledger_entry`, `review_ledger_entries` (049) |
 | **Extrato / linha do extrato** | O que veio do banco num arquivo OFX. É o "fato" do banco e não é editado. | `statement_imports`, `statement_lines` |
 | **ID OFX** | O `FITID` da linha do extrato. Não é único (nem combinado com a conta), mas junta a movimentação do banco ao lançamento e aos seus rateios. | `statement_lines.external_id`; nas visões, `external_ids` |
 | **Lançamento** | Movimentação registrada no app: data, **histórico** (quem pagou/recebeu, emitente), conta, forma de pagamento, documento e total. | `ledger_entries` (`name` = histórico) |

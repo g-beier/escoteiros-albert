@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { IconArrowRight, IconCake, IconCircleCheck, IconPlus, IconStar } from "@tabler/icons-react";
+import { IconArrowRight, IconBolt, IconCake, IconCircleCheck, IconPlus, IconStar } from "@tabler/icons-react";
 import { PageBody, PageHeader } from "@geas/ui";
 import { buttonVariants } from "@geas/ui/components/button";
 import { ListCard, StatCard } from "@geas/ui/components/stat-card";
@@ -14,6 +14,9 @@ import { formatCents } from "@/lib/format";
 import { EXPIRY_WARNING_DAYS } from "@/lib/inventory/vocabulary";
 import { DATES_AFTER_DAYS, DATES_BEFORE_DAYS, relativeDay, VALIDITY_WARNING_DAYS } from "@/lib/associates/alerts";
 import { overview as associatesOverview } from "@/lib/server/associates/home";
+import { REVIEW_HREF } from "@/lib/quick";
+import { countToReview as associatesToReview } from "@/lib/server/associates/associates";
+import { countToReview as entriesToReview } from "@/lib/server/finance/entries";
 import * as financeHome from "@/lib/server/finance/home";
 import { overview as inventoryOverview } from "@/lib/server/inventory/overview";
 import { pageSession } from "@/lib/server/session";
@@ -35,18 +38,23 @@ export default async function Home() {
   const year = currentYear();
   const today = todayInSaoPaulo();
 
-  const [months, pendingDocs, accounts, overdue, openLines, inventory, associates] = await Promise.all([
+  const [months, pendingDocs, accounts, overdue, openLines, inventory, associates, entriesReview, associatesReview] = await Promise.all([
     financeHome.yearMonths(db, groupId, year), financeHome.pendingDocuments(db, groupId), financeHome.accountBalances(db, groupId, today),
     financeHome.overdueFees(db, groupId, year),
     member.finance.canEdit ? financeHome.openStatementLines(db, groupId) : Promise.resolve(0),
     inventoryOverview(db, groupId, today, member.inventory.canManage), associatesOverview(db, groupId, today),
+    member.finance.canEdit ? entriesToReview(db, groupId) : Promise.resolve(0),
+    member.associates.canEdit ? associatesToReview(db, groupId) : Promise.resolve(0),
   ]);
   const income = months.reduce((sum, m) => sum + m.income, 0);
   const expense = months.reduce((sum, m) => sum + m.expense, 0);
   const inAccounts = accounts.reduce((sum, a) => sum + (a.balanceCents ?? 0), 0);
 
   const plural = (count: number, one: string, many: string) => `${count === 1 ? one : many}`;
+  const canQuick = member.finance.canEdit || member.inventory.canEdit || member.associates.canEdit;
   const alerts: Alert[] = ([
+    { module: "financeiro", count: entriesReview, label: plural(entriesReview, "lançamento do registro rápido para revisar", "lançamentos do registro rápido para revisar"),
+      href: REVIEW_HREF.financeiro },
     { module: "financeiro", count: pendingDocs, label: plural(pendingDocs, "lançamento sem documento na pasta", "lançamentos sem documento na pasta"),
       href: `/financeiro/lancamentos/movimentacoes?pasta=pendente&de=${ALL_DATES}` },
     { module: "financeiro", count: overdue.length, label: plural(overdue.length, "associado com mensalidade atrasada", "associados com mensalidade atrasada"),
@@ -57,6 +65,8 @@ export default async function Home() {
     { module: "inventario", count: inventory.belowMinimum, label: plural(inventory.belowMinimum, "material abaixo do mínimo", "materiais abaixo do mínimo"),
       href: "/inventario/materiais?alerta=1" },
     { module: "inventario", count: inventory.expired, label: plural(inventory.expired, "lote vencido", "lotes vencidos"), href: "/inventario/materiais?validade=vencido" },
+    { module: "associados", count: associatesReview, label: plural(associatesReview, "cadastro do registro rápido para revisar", "cadastros do registro rápido para revisar"),
+      href: REVIEW_HREF.associados },
     { module: "associados", count: associates.pending.jovem, label: plural(associates.pending.jovem, "pendência no controle dos jovens", "pendências no controle dos jovens"),
       href: "/associados/controle?pendencias=1" },
     { module: "associados", count: associates.pending.adulto, label: plural(associates.pending.adulto, "pendência no controle dos adultos", "pendências no controle dos adultos"),
@@ -67,9 +77,10 @@ export default async function Home() {
   ] satisfies Alert[]).filter((alert) => alert.count > 0);
 
   return <div className="shell">
-    <GestaoHeader current="/" email={user.email} role={member.finance.role} isAdmin={member.isAdmin} />
+    <GestaoHeader current="/" email={user.email} role={member.finance.role} isAdmin={member.isAdmin} quick={canQuick} />
     <PageBody>
       <PageHeader title="Início" hideTitle actions={<>
+        {canQuick && <Link href="/rapido" className={buttonVariants({ variant: "outline", size: "lg" })}><IconBolt data-icon="inline-start" /> Registro rápido</Link>}
         {member.finance.canEdit && <NewEntryButton returnHref="" />}
         {member.inventory.canEdit && <Link href="/inventario/materiais/novo" className={buttonVariants({ variant: "outline", size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}
       </>} />

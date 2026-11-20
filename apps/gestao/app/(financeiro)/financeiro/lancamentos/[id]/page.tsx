@@ -12,6 +12,7 @@ import { loadEntryContext } from "../context";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { EntryAttachments } from "@/components/finance/entries/entry-attachments";
+import { ReviewEntryNotice } from "@/components/finance/entries/review-entry";
 import { describeHistory, type HistoryItem, type HistoryNames } from "@/lib/finance/entry-history";
 import type { Catalogs } from "@/components/finance/entries/entry-form";
 
@@ -100,6 +101,7 @@ export default async function EntryDetailPage({ params, searchParams }: { params
           {" · "}criado em {dateTime.format(new Date(entry.createdAt))}{edited && <> · alterado em {dateTime.format(new Date(entry.updatedAt))}</>}
           {!canEdit && " · somente consulta"}
         </>} />
+      {entry.toReview && <ReviewEntryNotice entryId={id} canEdit={canEdit} />}
       {statementLines.length > 0 && <StatementLines lines={statementLines} />}
       <SectionCard className="p-5"><EntryForm entry={entry} catalogs={catalogs} canEdit={canEdit} backHref={backHref} /></SectionCard>
       <EntryAttachments entryId={id} attachments={attachments} canEdit={canEdit} />

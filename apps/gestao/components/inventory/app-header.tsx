@@ -17,7 +17,7 @@ const sections = [
 export function AppHeader({ current, email, role, isAdmin }: { current: string; email: string; role: InventoryRole; isAdmin: boolean }) {
   return <SharedHeader brand={<Brand module="inventario" />} navigation={sections.map((item) => ({ href: item.href, label: item.label, active: item.match(current) }))}
     utilities={[
-      ...(role === "viewer" ? [] : [{ href: "/inventario/rapido", label: "Registro rápido", icon: <IconBolt size={18} />, active: current.startsWith("/inventario/rapido") }]),
+      ...(role === "viewer" ? [] : [{ href: "/rapido", label: "Registro rápido", icon: <IconBolt size={18} />, active: false }]),
       { href: SETTINGS_HOME, label: "Configurações", icon: <IconSettings size={18} />, active: current.startsWith("/inventario/configuracoes") },
     ]}
     account={<UserMenu email={email} role={isAdmin ? "admin" : ROLE_LABELS[role]} logoutAction={logout}

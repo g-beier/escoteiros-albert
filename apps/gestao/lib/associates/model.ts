@@ -91,6 +91,8 @@ export type AssociateProfile = {
   id: string; name: string; branch: ScoutBranch; active: boolean;
   section_id: string | null; section: string | null; patrol_id: string | null; patrol: string | null;
   birth_date: string | null; promise_date: string | null; joined_on: string | null; notes: string | null; left_on: string | null;
+  /** `para_revisar`: cadastrado pelo registro rápido e ainda não conferido pela Secretaria (049). */
+  review_status?: string;
 };
 
 /** Passagem (`associate_moves`): de onde para onde, com data. A equipe de origem não é guardada. */

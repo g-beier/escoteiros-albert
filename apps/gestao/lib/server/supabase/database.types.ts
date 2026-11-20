@@ -177,14 +177,14 @@ isOneToOne: false
                   ]
                 },"associates": {
                   Row: {
-                    "active": boolean,"birth_date": string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at": string,"group_id": string,"id": string,"joined_on": string | null,"name": string,"notes": string | null,"patrol_id": string | null,"promise_date": string | null,"section_id": string | null,"updated_at": string
+                    "active": boolean,"birth_date": string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at": string,"group_id": string,"id": string,"joined_on": string | null,"name": string,"notes": string | null,"patrol_id": string | null,"promise_date": string | null,"review_status": string,"reviewed_at": string | null,"reviewed_by": string | null,"section_id": string | null,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "active"?: boolean,"birth_date"?: string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at"?: string,"group_id": string,"id"?: string,"joined_on"?: string | null,"name": string,"notes"?: string | null,"patrol_id"?: string | null,"promise_date"?: string | null,"section_id"?: string | null,"updated_at"?: string
+                    "active"?: boolean,"birth_date"?: string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at"?: string,"group_id": string,"id"?: string,"joined_on"?: string | null,"name": string,"notes"?: string | null,"patrol_id"?: string | null,"promise_date"?: string | null,"review_status"?: string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"section_id"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "active"?: boolean,"birth_date"?: string | null,"branch"?: Database["public"]['Enums']["scout_branch"],"created_at"?: string,"group_id"?: string,"id"?: string,"joined_on"?: string | null,"name"?: string,"notes"?: string | null,"patrol_id"?: string | null,"promise_date"?: string | null,"section_id"?: string | null,"updated_at"?: string
+                    "active"?: boolean,"birth_date"?: string | null,"branch"?: Database["public"]['Enums']["scout_branch"],"created_at"?: string,"group_id"?: string,"id"?: string,"joined_on"?: string | null,"name"?: string,"notes"?: string | null,"patrol_id"?: string | null,"promise_date"?: string | null,"review_status"?: string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"section_id"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -1019,14 +1019,14 @@ isOneToOne: false
                   ]
                 },"ledger_entries": {
                   Row: {
-                    "account_id": string,"created_at": string,"created_by": string,"document": string | null,"document_filed": boolean,"entry_date": string,"group_id": string,"id": string,"name": string,"notes": string | null,"outside_statement": boolean,"payment_method_id": string,"total_cents": number,"updated_at": string
+                    "account_id": string,"created_at": string,"created_by": string,"document": string | null,"document_filed": boolean,"entry_date": string,"group_id": string,"id": string,"name": string,"notes": string | null,"outside_statement": boolean,"payment_method_id": string,"review_status": string,"reviewed_at": string | null,"reviewed_by": string | null,"total_cents": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"created_at"?: string,"created_by": string,"document"?: string | null,"document_filed"?: boolean,"entry_date": string,"group_id": string,"id"?: string,"name": string,"notes"?: string | null,"outside_statement"?: boolean,"payment_method_id": string,"total_cents": number,"updated_at"?: string
+                    "account_id": string,"created_at"?: string,"created_by": string,"document"?: string | null,"document_filed"?: boolean,"entry_date": string,"group_id": string,"id"?: string,"name": string,"notes"?: string | null,"outside_statement"?: boolean,"payment_method_id": string,"review_status"?: string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"total_cents": number,"updated_at"?: string
                   }
                   Update: {
-                    "account_id"?: string,"created_at"?: string,"created_by"?: string,"document"?: string | null,"document_filed"?: boolean,"entry_date"?: string,"group_id"?: string,"id"?: string,"name"?: string,"notes"?: string | null,"outside_statement"?: boolean,"payment_method_id"?: string,"total_cents"?: number,"updated_at"?: string
+                    "account_id"?: string,"created_at"?: string,"created_by"?: string,"document"?: string | null,"document_filed"?: boolean,"entry_date"?: string,"group_id"?: string,"id"?: string,"name"?: string,"notes"?: string | null,"outside_statement"?: boolean,"payment_method_id"?: string,"review_status"?: string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"total_cents"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -1450,7 +1450,7 @@ isOneToOne: false
                   ]
                 },"associate_profile_rows": {
                   Row: {
-                    "active": boolean,"birth_date": string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at": string,"group_id": string,"id": string,"joined_on": string | null,"left_on": string | null,"name": string,"notes": string | null,"patrol": string | null,"patrol_id": string | null,"promise_date": string | null,"section": string | null,"section_id": string | null,"updated_at": string
+                    "active": boolean,"birth_date": string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at": string,"group_id": string,"id": string,"joined_on": string | null,"left_on": string | null,"name": string,"notes": string | null,"patrol": string | null,"patrol_id": string | null,"promise_date": string | null,"review_status": string,"section": string | null,"section_id": string | null,"updated_at": string
                   }
                   ComputedFields: never
                   Relationships: [
@@ -1558,7 +1558,7 @@ isOneToOne: false
                   ]
                 },"entry_split_rows": {
                   Row: {
-                    "account_id": string,"account_ledger_code": string | null,"account_name": string,"amount_cents": number,"associate_id": string | null,"associate_name": string | null,"category_code": string | null,"category_id": string,"category_kind": Database["public"]['Enums']["category_kind"] | null,"category_ledger_code": string | null,"category_name": string,"description": string,"document": string | null,"document_filed": boolean,"entry_date": string,"entry_id": string,"entry_name": string,"entry_total_cents": number,"external_ids": (string)[] | null,"group_id": string,"outside_statement": boolean,"payment_method_id": string,"payment_method_name": string,"reconciled": boolean | null,"search_text": string | null,"split_id": string
+                    "account_id": string,"account_ledger_code": string | null,"account_name": string,"amount_cents": number,"associate_id": string | null,"associate_name": string | null,"category_code": string | null,"category_id": string,"category_kind": Database["public"]['Enums']["category_kind"] | null,"category_ledger_code": string | null,"category_name": string,"description": string,"document": string | null,"document_filed": boolean,"entry_date": string,"entry_id": string,"entry_name": string,"entry_total_cents": number,"external_ids": (string)[] | null,"group_id": string,"outside_statement": boolean,"payment_method_id": string,"payment_method_name": string,"reconciled": boolean | null,"review_status": string,"search_text": string | null,"split_id": string
                   }
                   ComputedFields: never
                   Relationships: [
@@ -1688,7 +1688,7 @@ isOneToOne: false
                   ]
                 },"ledger_entry_rows": {
                   Row: {
-                    "account_id": string,"account_ledger_code": string | null,"account_name": string,"associate_ids": (string)[] | null,"category_ids": (string)[] | null,"created_at": string,"document": string | null,"document_filed": boolean,"entry_date": string,"entry_id": string,"external_ids": (string)[] | null,"group_id": string,"has_split_without_associate": boolean | null,"name": string,"outside_statement": boolean,"payment_method_id": string,"payment_method_name": string,"reconciled": boolean | null,"search_text": string | null,"split_count": number | null,"total_cents": number
+                    "account_id": string,"account_ledger_code": string | null,"account_name": string,"associate_ids": (string)[] | null,"category_ids": (string)[] | null,"created_at": string,"document": string | null,"document_filed": boolean,"entry_date": string,"entry_id": string,"external_ids": (string)[] | null,"group_id": string,"has_split_without_associate": boolean | null,"name": string,"outside_statement": boolean,"payment_method_id": string,"payment_method_name": string,"reconciled": boolean | null,"review_status": string,"search_text": string | null,"split_count": number | null,"total_cents": number
                   }
                   ComputedFields: never
                   Relationships: [
@@ -1881,6 +1881,9 @@ isOneToOne: false
 "associates_create":
 { Args: { "p_birth_date": string,"p_branch": Database["public"]['Enums']["scout_branch"],"p_group_id": string,"p_joined_on": string,"p_name": string,"p_notes": string,"p_patrol_id": string,"p_promise_date": string,"p_section_id": string }; Returns: string
                            },
+"associates_create_quick":
+{ Args: { "p_birth_date": string,"p_branch": Database["public"]['Enums']["scout_branch"],"p_group_id": string,"p_joined_on": string,"p_name": string,"p_notes": string,"p_patrol_id": string,"p_promise_date": string,"p_section_id": string }; Returns: string
+                           },
 "associates_delete_function":
 { Args: { "p_function_id": string }; Returns: undefined
                            },
@@ -1895,6 +1898,9 @@ isOneToOne: false
                            },
 "associates_rejoin":
 { Args: { "p_associate_id": string,"p_date": string,"p_reason": string }; Returns: undefined
+                           },
+"associates_review":
+{ Args: { "p_associate_ids": (string)[],"p_group_id": string }; Returns: number
                            },
 "associates_role_of":
 { Args: { "p_group_id": string }; Returns: Database["public"]['Enums']["associates_role"]
@@ -2039,6 +2045,9 @@ isOneToOne: false
                            },
 "create_payment_method":
 { Args: { "p_group_id": string,"p_name": string }; Returns: string
+                           },
+"create_quick_ledger_entry":
+{ Args: { "p_category_id": string,"p_description"?: string,"p_entry_date": string,"p_group_id": string,"p_name": string,"p_notes"?: string,"p_payment_method_id": string,"p_total_cents": number }; Returns: string
                            },
 "create_section":
 { Args: { "p_branch": Database["public"]['Enums']["scout_branch"],"p_group_id": string,"p_name": string }; Returns: string
@@ -2350,6 +2359,9 @@ isOneToOne: false
                            },
 "restrict_auth_domain":
 { Args: { "event": Json }; Returns: Json
+                           },
+"review_ledger_entries":
+{ Args: { "p_entry_ids": (string)[],"p_group_id": string }; Returns: number
                            },
 "save_category_tree":
 { Args: { "p_deleted": Json,"p_group_id": string,"p_nodes": Json }; Returns: Json

@@ -22,6 +22,7 @@ importação dele fica para depois.
 | Termo | O que é | No banco |
 |---|---|---|
 | **Associado** | Pessoa registrada no grupo: jovem (Lobinho, Escoteiro, Sênior, Pioneiro) ou adulto. É a mesma linha que o Financeiro usa em mensalidades, isenções, rateios e devedores; o cadastro é feito aqui, e o Financeiro só lê. | `associates` (+ `birth_date`, `promise_date`, `joined_on`, `notes`); visão `associate_profile_rows` |
+| **Para revisar** | Cadastro feito pelo registro rápido (`/rapido/associado`): o associado já existe, mas fica marcado até a Secretaria conferir e marcar como revisado (`/associados?revisao=para_revisar`). | `associates.review_status`, `associates_create_quick`, `associates_review` (049) |
 | **Jovem** / **Adulto** | Tipo do associado, dado pelo ramo (`adulto` = adulto). A lista divide os associados só por ramo; os adultos se subdividem por **função**. | `associates.branch` |
 | **Seção** / **Equipe** | Continuam existindo (o Financeiro filtra mensalidades por seção) e se configuram aqui, mas a lista não agrupa por elas. | `sections`, `patrols` |
 | **Nascimento**, **Promessa**, **Entrada** | Datas do cadastro. Nenhuma pode ser futura; promessa e entrada não podem ser antes do nascimento. A promessa "formal" de adulto (feita em outro grupo) fica sem data. | `associates.birth_date`, `promise_date`, `joined_on` |

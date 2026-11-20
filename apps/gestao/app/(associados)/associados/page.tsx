@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Fragment } from "react";
-import { IconPlus } from "@tabler/icons-react";
+import { IconBolt, IconPlus, IconX } from "@tabler/icons-react";
 import { PageBody, PageHeader, SectionTabs } from "@geas/ui";
 import { Badge } from "@geas/ui/components/badge";
 import { buttonVariants } from "@geas/ui/components/button";
@@ -19,11 +19,12 @@ import * as associatesData from "@/lib/server/associates/associates";
 import * as functionsData from "@/lib/server/associates/functions";
 import { pageSession } from "@/lib/server/session";
 
-type Search = { ramo?: string; situacao?: string; q?: string };
+type Search = { ramo?: string; situacao?: string; q?: string; revisao?: string };
 
 /**
  * Lista de associados: abas por ramo, um grupo por ramo (sem seções) e adultos em Escotistas, Dirigentes e Sem
  * função (pela função ativa; quem tem as duas aparece nos dois). Filtro de situação e efetivo no topo.
+ * `revisao=para_revisar`: só os cadastros do registro rápido ainda não revisados (049).
  */
 export default async function AssociatesPage({ searchParams }: { searchParams: Promise<Search> }) {
   const params = await searchParams;
@@ -39,7 +40,9 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
 
   const active = all.filter((a) => a.active);
   const youth = active.filter((a) => a.branch !== "adulto").length;
-  const shown = all.filter((a) => (!branch || a.branch === branch)
+  const onlyReview = params.revisao === "para_revisar";
+  const toReview = all.filter((a) => a.review_status === "para_revisar").length;
+  const shown = all.filter((a) => (!onlyReview || a.review_status === "para_revisar") && (!branch || a.branch === branch)
     && (status === "todos" || (status === "ativos") === a.active)
     && matchesQuery(a.name, params.q));
   const groups = listGroups(shown, branch, kinds);
@@ -53,6 +56,7 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
     if (ramo) next.set("ramo", ramo);
     if (params.situacao) next.set("situacao", params.situacao);
     if (params.q) next.set("q", params.q);
+    if (onlyReview) next.set("revisao", "para_revisar");
     return next.size ? `/associados?${next}` : "/associados";
   };
   const tab = BRANCH_TABS.find((t) => t.value === branch) ?? BRANCH_TABS[0];
@@ -62,7 +66,12 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
     <PageBody width="narrow">
       <PageHeader title="Associados" crumbs={[{ label: "Associados" }]}
         description={<>Efetivo hoje: <strong className="num">{active.length}</strong> {active.length === 1 ? "ativo" : "ativos"} (<span className="num">{youth}</span> {youth === 1 ? "jovem" : "jovens"} e <span className="num">{active.length - youth}</span> {active.length - youth === 1 ? "adulto" : "adultos"}).</>}
-        actions={member.associates.canEdit && <Link href="/associados/novo" className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo associado</Link>}>
+        actions={<>
+          {onlyReview
+            ? <Link href={reviewToggle(params, false)} className={PILL} title="Mostrar todos os associados"><IconBolt className="size-4" aria-hidden /> Só os para revisar <IconX className="size-3.5" aria-label="tirar o filtro" /></Link>
+            : toReview > 0 && <Link href={reviewToggle(params, true)} className={PILL} title="Cadastros do registro rápido ainda não conferidos"><IconBolt className="size-4" aria-hidden /> {toReview} para revisar</Link>}
+          {member.associates.canEdit && <Link href="/associados/novo" className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo associado</Link>}
+        </>}>
         <SectionTabs label="Ramos" tabs={BRANCH_TABS.map((t) => ({ href: hrefFor(t.value), label: t.label, active: t.value === branch }))} />
         <AssociateFilters />
       </PageHeader>
@@ -96,6 +105,15 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
   </div>;
 }
 
+const PILL = "inline-flex items-center gap-1.5 rounded-full bg-caution-soft px-3 py-1 text-xs font-semibold text-caution hover:ring-1 hover:ring-current";
+
+/** Liga ou desliga o filtro do registro rápido, mantendo os demais. */
+function reviewToggle(params: Search, on: boolean) {
+  const next = new URLSearchParams(Object.entries(params).filter(([key, value]) => key !== "revisao" && typeof value === "string") as [string, string][]);
+  if (on) next.set("revisao", "para_revisar");
+  return next.size ? `/associados?${next}` : "/associados";
+}
+
 /** Subtítulo: ramo ou, nos adultos, Escotistas / Dirigentes / Sem função. */
 function GroupRow({ group, columns }: { group: ListGroup; columns: number }) {
   return <TableRow className="hover:bg-transparent">
@@ -112,6 +130,7 @@ function AssociateLine({ associate, today, indent }: { associate: AssociateProfi
     <TableCell className={cn(CELL_CLASS, "whitespace-normal")} style={indent ? { paddingLeft: "2rem" } : undefined}>
       <Link href={`/associados/${associate.id}`} className="font-medium hover:underline">{associate.name}</Link>
       {place && <span className="ml-2 text-[11px] text-muted-foreground">{place}</span>}
+      {associate.review_status === "para_revisar" && <Badge variant="caution" className="ml-2 align-middle">Revisar</Badge>}
       {!associate.active && <Badge variant="outline" className="ml-2 align-middle">Desligado{associate.left_on && ` em ${dateBR(associate.left_on)}`}</Badge>}
     </TableCell>
     <TableCell className={cn(CELL_CLASS, "num text-right")}>{ageLabel(ageInYears(associate.birth_date, today))}</TableCell>

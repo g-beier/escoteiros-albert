@@ -3,8 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { IconArrowsExchange, IconX } from "@tabler/icons-react";
-import { moveEntriesAccount } from "@/app/actions";
+import { IconArrowsExchange, IconChecks, IconX } from "@tabler/icons-react";
+import { moveEntriesAccount, reviewEntries } from "@/app/actions";
 import { Button } from "@geas/ui/components/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
 import { Label } from "@geas/ui/components/label";
@@ -15,7 +15,8 @@ const plural = (count: number, one: string, many: string) => `${count} ${count =
 
 /**
  * Barra que aparece com lançamentos marcados: move todos para a conta escolhida
- * (ex.: tirar de "A definir"). Conciliados em outra conta perdem o vínculo com o extrato.
+ * (ex.: tirar de "A definir"). Conciliados em outra conta perdem o vínculo com o extrato. Também marca como
+ * revisados os que vieram do registro rápido.
  */
 export function BulkAccountBar({ accounts }: { accounts: Option[] }) {
   const { canEdit, selected, clearSelection, override } = useEntrySelection();
@@ -47,6 +48,17 @@ export function BulkAccountBar({ accounts }: { accounts: Option[] }) {
     });
   }
 
+  function review() {
+    startTransition(async () => {
+      const result = await reviewEntries(entries.map(([id]) => id));
+      if (result.error) { toast.error(result.error); return; }
+      for (const [id] of entries) override(id, { reviewed: true });
+      toast.success(result.reviewed ? `${plural(result.reviewed, "lançamento marcado", "lançamentos marcados")} como revisado.` : "Nenhum dos selecionados estava para revisar.");
+      clearSelection();
+      router.refresh();
+    });
+  }
+
   return <section aria-label="Ações em lote" className="flex flex-wrap items-end gap-2 rounded-lg border border-primary bg-accent/40 px-3 py-2">
     <p className="m-0 self-center text-sm font-semibold">{plural(selected.size, "lançamento selecionado", "lançamentos selecionados")}</p>
     <div className="grid gap-1">
@@ -54,6 +66,7 @@ export function BulkAccountBar({ accounts }: { accounts: Option[] }) {
       <OptionSelect id="bulk-account" value={accountId} onValueChange={setAccountId} options={accounts} placeholder="Escolha a conta…" className="h-8" />
     </div>
     <Button disabled={!target || pending} onClick={() => (unlinking ? setConfirming(true) : move())}><IconArrowsExchange data-icon="inline-start" /> {pending ? "Movendo…" : "Mover"}</Button>
+    <Button variant="outline" onClick={review} disabled={pending}><IconChecks data-icon="inline-start" /> Marcar revisados</Button>
     <Button variant="ghost" onClick={clearSelection} disabled={pending}><IconX data-icon="inline-start" /> Limpar seleção</Button>
     <Dialog open={confirming} onOpenChange={(open) => { if (!open) setConfirming(false); }}>
       <DialogContent>

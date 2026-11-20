@@ -4,7 +4,7 @@ import { IconChevronRight } from "@tabler/icons-react";
 import { PageBody, PageHeader } from "@geas/ui";
 import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { cn } from "@geas/ui/lib/utils";
-import { AppHeader } from "@/components/inventory/app-header";
+import { GestaoHeader } from "@/components/shell/gestao-header";
 import { QuickForm, type QuickItem } from "@/components/inventory/quick/quick-form";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { locationOptions } from "@/lib/inventory/locations";
@@ -39,13 +39,13 @@ export default async function QuickMaterial({ params, searchParams }: { params: 
   ].sort((a, b) => a.path.localeCompare(b.path, "pt-BR"));
   const actions = QUICK_ACTIONS.filter((row) => isLot || !row.lotOnly);
   const chosen = isQuickKind(acao) && acao !== "novo" ? actions.find((row) => row.kind === acao) : undefined;
-  const crumbs = [{ label: "Inventário", href: "/inventario" }, { label: "Registro rápido", href: "/inventario/rapido" }];
+  const crumbs = [{ label: "Registro rápido", href: "/rapido" }];
 
   return <div className="shell">
-    <AppHeader current={`/inventario/rapido/${id}`} email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
+    <GestaoHeader current={`/rapido/inventario/${id}`} email={user.email} role={member.finance.role} isAdmin={member.isAdmin} quick />
     <PageBody width="narrow">
       <PageHeader title={chosen ? chosen.label : material.name}
-        crumbs={chosen ? [...crumbs, { label: material.name, href: `/inventario/rapido/${id}` }, { label: chosen.label }] : [...crumbs, { label: material.name }]}
+        crumbs={chosen ? [...crumbs, { label: material.name, href: `/rapido/inventario/${id}` }, { label: chosen.label }] : [...crumbs, { label: material.name }]}
         description={chosen ? material.name : <span className={cn("num", material.below_minimum && "text-destructive")}>{material.quantity} em estoque{material.minimum_quantity != null && ` (mínimo ${material.minimum_quantity})`}</span>} />
       {chosen
         ? <SectionCard><div className="p-4">
@@ -55,7 +55,7 @@ export default async function QuickMaterial({ params, searchParams }: { params: 
         : <SectionCard>
           <SectionHeader title="O que aconteceu?" />
           <ul className="m-0 list-none p-0">{actions.map((row) => <li key={row.kind} className="border-t first:border-t-0">
-            <Link href={`/inventario/rapido/${id}?acao=${row.kind}`} className="flex min-h-14 items-center gap-3 px-4 py-2 hover:bg-muted">
+            <Link href={`/rapido/inventario/${id}?acao=${row.kind}`} className="flex min-h-14 items-center gap-3 px-4 py-2 hover:bg-muted">
               <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{row.label}</span><span className="block text-xs text-muted-foreground">{row.description}</span></span>
               <IconChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
             </Link>

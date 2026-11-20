@@ -154,7 +154,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
         actions={<>
           {toReview > 0 && <Link href="/inventario/movimentacoes?revisao=para_revisar" className="inline-flex items-center gap-1.5 rounded-full bg-caution-soft px-3 py-1 text-xs font-semibold text-caution hover:ring-1 hover:ring-current">
             <IconClipboardCheck className="size-4" aria-hidden /> {toReview} para revisar</Link>}
-          {member.inventory.canEdit && <Link href="/inventario/rapido" className={buttonVariants({ variant: "outline", size: "lg" })}><IconBolt data-icon="inline-start" /> Registro rápido</Link>}
+          {member.inventory.canEdit && <Link href="/rapido" className={buttonVariants({ variant: "outline", size: "lg" })}><IconBolt data-icon="inline-start" /> Registro rápido</Link>}
           {member.inventory.canEdit && <Link href={withBack("/inventario/materiais/novo", here)} className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}
         </>}>
         <SectionTabs label="Locais" tabs={tabs} />

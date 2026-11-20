@@ -31,7 +31,7 @@ Modelo e vocabulário em `docs/modelo.md`.
 ## Concluído (2026-11-19, passo 3 — revisão e registro rápido)
 
 - Revisão com dois status, **Para revisar** e **Revisado** (044; o antigo "pendente" virou "para revisar", e a recusa saiu). O gestor revisa em Movimentações › Para revisar (seleção em lote, nota opcional) ou no histórico do material; inconsistência é corrigida por fora, com um movimento normal.
-- Registro rápido para celular (`/inventario/rapido`, 045): busca, retirar/consumir, entrada, mudar condição, transferir, ajustar contagem e cadastro de material novo. Tudo fica para revisar, mesmo do gestor ou do administrador (`channel = 'rapido'`). Atalho no cabeçalho (raio) e no Resumo.
+- Registro rápido para celular (045; desde 049 parte do registro rápido comum `/rapido`, com lançamento financeiro e associado novo): busca, retirar/consumir, entrada, mudar condição, transferir, ajustar contagem e cadastro de material novo. Tudo fica para revisar, mesmo do gestor ou do administrador (`channel = 'rapido'`). Atalho no cabeçalho (raio) e no Resumo.
 
 ## Concluído (2026-11-19, entrada pelo Materiais)
 

@@ -12,6 +12,7 @@ import { AssociateActions } from "@/components/associates/associate-actions";
 import { AssociateControls } from "@/components/associates/associate-controls";
 import { AssociateFunctions } from "@/components/associates/associate-functions";
 import { AssociateRelatives } from "@/components/associates/associate-relatives";
+import { ReviewNotice } from "@/components/associates/review-notice";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import { associateAudiences } from "@/lib/associates/controls";
@@ -75,6 +76,8 @@ export default async function AssociateDetail({ params }: { params: Promise<{ id
           <Fact label="Entrada no grupo"><span className="num">{associate.joined_on ? dateBR(associate.joined_on) : "—"}</span></Fact>
         </dl>
       </PageHeader>
+
+      {associate.review_status === "para_revisar" && <ReviewNotice associateId={id} canEdit={canEdit} />}
 
       {(associate.branch === "adulto" || functions.length > 0) &&
         <AssociateFunctions associateId={id} associateName={associate.name} functions={functions} canEdit={canEdit} today={today} />}

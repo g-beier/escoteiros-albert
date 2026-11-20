@@ -3,14 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
+import { z } from "zod";
 import { InputError, runAction } from "@/lib/action";
+import { isScoutBranch } from "@/lib/associates/model";
 import { QUICK_DONE, type QuickKind } from "@/lib/inventory/quick";
+import { quickDoneHref } from "@/lib/quick";
 import { CONDITION_LABELS, WRITE_OFF_LABELS, type Condition, type Tracking, type WriteOffReason } from "@/lib/inventory/vocabulary";
+import * as associates from "@/lib/server/associates/associates";
+import * as entries from "@/lib/server/finance/entries";
 import * as quick from "@/lib/server/inventory/quick";
-import { inventoryEditorOrError } from "@/lib/server/session";
+import { associatesEditorOrError, financeEditorOrError, inventoryEditorOrError } from "@/lib/server/session";
 
-// Registro rápido (celular): validação aqui, gravação por inventory_quick (045). Tudo fica para revisar, mesmo do
-// gestor. Depois de gravar, volta para a busca do registro rápido com a confirmação.
+// Registro rápido comum (/rapido, celular): validação aqui; gravação por inventory_quick (045),
+// create_quick_ledger_entry e associates_create_quick (049). Tudo fica para revisar, mesmo do gestor ou do
+// administrador. Depois de gravar, volta para o registro rápido com a confirmação.
 
 const UUID = /^[0-9a-f-]{36}$/i;
 const text = (data: FormData, key: string) => String(data.get(key) ?? "").trim();
@@ -96,7 +102,7 @@ function build(kind: QuickKind, data: FormData, groupId: string): quick.QuickAct
   }
 }
 
-/** Grava a ação do registro rápido (`kind` no campo oculto) e volta para a busca com a confirmação. */
+/** Inventário: grava a ação (`kind` no campo oculto) e volta para o registro rápido com a confirmação. */
 export async function quickRecord(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   const kind = text(formData, "kind") as QuickKind;
   if (!(kind in QUICK_DONE)) return { error: "Ação inválida. Recarregue a página." };
@@ -108,5 +114,57 @@ export async function quickRecord(_previous: ActionResult, formData: FormData): 
     revalidatePath("/");
   });
   if (result.error) return result;
-  redirect(`/inventario/rapido?feito=${kind}${UUID.test(materialId) ? `&material=${materialId}` : ""}`);
+  redirect(quickDoneHref(kind, materialId));
+}
+
+const quickEntrySchema = z.object({
+  date: z.iso.date("Informe a data."),
+  name: z.string().trim().min(2, "Informe o histórico (quem pagou ou recebeu).").max(200, "Histórico: no máximo 200 caracteres."),
+  paymentMethodId: z.uuid("Escolha a forma de pagamento."),
+  categoryId: z.uuid("Escolha a rubrica."),
+  totalCents: z.number().int().refine((value) => value !== 0, "Informe o valor."),
+  description: z.string().trim().max(200, "Descrição: no máximo 200 caracteres.").nullable(),
+  notes: z.string().trim().max(2000, "Observações: no máximo 2.000 caracteres.").nullable(),
+});
+
+/**
+ * Financeiro: lançamento com uma rubrica; a conta é a padrão da forma de pagamento (ou "A definir"). Devolve o id
+ * para o navegador anexar o comprovante antes de voltar ao registro rápido.
+ */
+export async function quickEntry(payload: unknown): Promise<{ error?: string; id?: string }> {
+  const parsed = quickEntrySchema.safeParse(payload);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  let id = "";
+  const result = await runAction(() => financeEditorOrError("Sem permissão para registrar lançamentos."), async ({ db, groupId }) => {
+    const input = parsed.data;
+    id = await entries.createQuick(db, groupId, { ...input, description: input.description || null, notes: input.notes || null });
+    revalidatePath("/", "layout");
+  });
+  return result.error ? { error: result.error } : { id };
+}
+
+/** Associados: o cadastro do formulário normal, para a Secretaria revisar. */
+export async function quickAssociate(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
+  let savedId = "";
+  const result = await runAction(associatesEditorOrError, async ({ db, groupId }) => {
+    const name = text(formData, "name");
+    if (name.length < 2 || name.length > 120) throw new InputError("Informe o nome (2 a 120 caracteres).");
+    const branch = text(formData, "branch");
+    if (!isScoutBranch(branch)) throw new InputError("Escolha o ramo, a seção ou a equipe.");
+    const optionalId = (key: string) => {
+      const value = optional(formData, key);
+      if (value && !UUID.test(value)) throw new InputError("Registro inválido. Recarregue a página.");
+      return value;
+    };
+    const notes = optional(formData, "notes");
+    if (notes && notes.length > 500) throw new InputError("Use no máximo 500 caracteres.");
+    savedId = await associates.createQuick(db, groupId, {
+      name, branch, sectionId: optionalId("sectionId"), patrolId: optionalId("patrolId"), notes,
+      birthDate: date(formData, "birthDate"), promiseDate: date(formData, "promiseDate"), joinedOn: date(formData, "joinedOn"),
+    });
+    revalidatePath("/associados", "layout");
+    revalidatePath("/");
+  });
+  if (result.error || !savedId) return result;
+  redirect(quickDoneHref("associado", savedId));
 }

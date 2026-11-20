@@ -14,7 +14,7 @@ import { ATTACHMENT_ACCEPT, attachmentProblem, fileSize, type Attachment } from 
 const dateTime = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
 
 /** Envia um arquivo: URL assinada (servidor) → PUT direto no Storage → registro auditado. */
-async function upload(entryId: string, file: File): Promise<string | null> {
+export async function upload(entryId: string, file: File): Promise<string | null> {
   const ticket = await prepareAttachmentUpload(entryId, { name: file.name, type: file.type, size: file.size });
   if ("error" in ticket) return ticket.error;
   const response = await fetch(ticket.uploadUrl, {

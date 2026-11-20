@@ -11,7 +11,7 @@ import type { Option } from "@geas/ui/components/option-controls";
 import { RadioGroup, RadioGroupItem } from "@geas/ui/components/radio-group";
 import { useActionToast } from "@geas/ui/lib/use-action-toast";
 import { cn } from "@geas/ui/lib/utils";
-import { quickRecord } from "@/app/(inventario)/inventario/rapido/actions";
+import { quickRecord } from "@/app/(gestao)/rapido/actions";
 import { ConditionPill } from "@/components/inventory/condition-pill";
 import { ConditionField, Field, NotesField, SelectField } from "@/components/inventory/materials/fields";
 import type { QuickKind } from "@/lib/inventory/quick";

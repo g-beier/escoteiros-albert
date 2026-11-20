@@ -12,7 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
 
-export type EntryOverride = { filed?: boolean; deleted?: boolean; accountName?: string; reconciled?: boolean };
+export type EntryOverride = { filed?: boolean; deleted?: boolean; accountName?: string; reconciled?: boolean; reviewed?: boolean };
 /** Lançamento marcado para ação em lote, com o que a barra precisa mostrar. */
 export type SelectedEntry = { accountName: string; reconciled: boolean };
 
@@ -152,6 +152,13 @@ export function EntryCard({ entryId, className, children, ...props }: { entryId:
 export function EntryLink({ entryId, children, className }: { entryId: string; children: React.ReactNode; className?: string }) {
   const { detailHref } = useList();
   return <Link href={detailHref(entryId)} className={cn("font-medium underline-offset-2 hover:underline focus-visible:underline", className)}>{children}</Link>;
+}
+
+/** Marca do lançamento que veio do registro rápido e ainda não foi revisado (some ao marcar revisado na lista). */
+export function ReviewMark({ entryId, status }: { entryId: string; status?: string }) {
+  const { overrides } = useList();
+  if (status !== "para_revisar" || overrides[entryId]?.reviewed) return null;
+  return <Badge variant="caution" className="ml-1.5 align-middle" title="Veio do registro rápido: confira e marque como revisado">Revisar</Badge>;
 }
 
 export function FolderStatus({ entryId, filed, document }: { entryId: string; filed: boolean; document: string | null }) {

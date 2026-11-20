@@ -6,7 +6,7 @@ import { rowsOf, rpc, sb, unwrap } from "@/lib/server/supabase/db";
 // Cadastro de associados (040): leituras de `associate_profile_rows`, `associate_moves` e `associate_movements`;
 // escritas só pelas funções auditadas associates_* (conferem `can_manage_associates`).
 
-const PROFILE_COLUMNS = "id, name, branch, active, section_id, section, patrol_id, patrol, birth_date, promise_date, joined_on, notes, left_on";
+const PROFILE_COLUMNS = "id, name, branch, active, section_id, section, patrol_id, patrol, birth_date, promise_date, joined_on, notes, left_on, review_status";
 
 /** Associados do grupo (ativos e desligados), por nome. */
 export async function list(db: Db, groupId: string): Promise<AssociateProfile[]> {
@@ -44,6 +44,25 @@ export async function create(db: Db, groupId: string, input: CreateInput): Promi
     p_group_id: groupId, p_name: input.name, p_branch: input.branch, p_section_id: input.sectionId, p_patrol_id: input.patrolId,
     p_birth_date: input.birthDate, p_promise_date: input.promiseDate, p_joined_on: input.joinedOn, p_notes: input.notes,
   });
+}
+
+/** Cadastro pelo registro rápido (049): o mesmo de `create`, para a Secretaria revisar. */
+export async function createQuick(db: Db, groupId: string, input: CreateInput): Promise<string> {
+  return rpc(db, "associates_create_quick", {
+    p_group_id: groupId, p_name: input.name, p_branch: input.branch, p_section_id: input.sectionId, p_patrol_id: input.patrolId,
+    p_birth_date: input.birthDate, p_promise_date: input.promiseDate, p_joined_on: input.joinedOn, p_notes: input.notes,
+  });
+}
+
+/** Marca cadastros do registro rápido como revisados; devolve quantos estavam para revisar. */
+export async function review(db: Db, groupId: string, ids: string[]): Promise<number> {
+  return rpc(db, "associates_review", { p_group_id: groupId, p_associate_ids: ids });
+}
+
+/** Cadastros do registro rápido ainda não revisados. */
+export async function countToReview(db: Db, groupId: string): Promise<number> {
+  const { count } = await sb(db).from("associates").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("review_status", "para_revisar");
+  return count ?? 0;
 }
 
 /** Nome, datas e observações; ramo, seção e equipe mudam só por passagem. */

@@ -78,6 +78,7 @@ export async function fetchEntryPage(
     if (filters.ofx) query = query.contains("external_ids", [filters.ofx]);
     if (filters.minCents !== undefined) query = query.gte("amount_cents", filters.minCents);
     if (filters.maxCents !== undefined) query = query.lte("amount_cents", filters.maxCents);
+    if (filters.toReview) query = query.eq("review_status", "para_revisar");
     const column = sortColumn({ historico: "entry_name", conta: "account_name", forma: "payment_method_name", valor: "amount_cents" });
     if (column) query = query.order(column, { ascending, nullsFirst: false });
     const { data, error, count: total } = await query
@@ -103,6 +104,7 @@ export async function fetchEntryPage(
   if (filters.ofx) query = query.contains("external_ids", [filters.ofx]);
   if (filters.minCents !== undefined) query = query.gte("total_cents", filters.minCents);
   if (filters.maxCents !== undefined) query = query.lte("total_cents", filters.maxCents);
+  if (filters.toReview) query = query.eq("review_status", "para_revisar");
   const column = sortColumn({ historico: "name", conta: "account_name", forma: "payment_method_name", valor: "total_cents" });
   if (column) query = query.order(column, { ascending, nullsFirst: false });
   const { data, error, count: total } = await query
@@ -129,7 +131,7 @@ type EntrySplitRow = { category_id: string; amount_cents: number; description: s
 /** Carrega um lançamento com seus rateios na ordem em que foram gravados (RLS restringe ao grupo). */
 export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | null> {
   const { data } = await untyped(db).from("ledger_entries")
-    .select("id, entry_date, name, payment_method_id, account_id, document, document_filed, notes, total_cents, created_at, updated_at, entry_splits(id, category_id, amount_cents, description, associate_id, created_at)")
+    .select("id, entry_date, name, payment_method_id, account_id, document, document_filed, notes, total_cents, created_at, updated_at, review_status, entry_splits(id, category_id, amount_cents, description, associate_id, created_at)")
     .eq("id", id).maybeSingle();
   if (!data) return null;
   const splits = [...(data.entry_splits as EntrySplitRow[])].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
@@ -145,6 +147,7 @@ export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | nu
     totalCents: data.total_cents,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
+    toReview: data.review_status === "para_revisar",
     splits: splits.map((s) => ({ categoryId: s.category_id, amountCents: s.amount_cents, description: s.description, associateId: s.associate_id })),
   };
 }
@@ -181,6 +184,12 @@ export async function listStats(db: Db, groupId: string) {
   return { pendingDocs: pending.count ?? 0, firstDate: (first as { entry_date: string } | null)?.entry_date, lastDate: (last as { entry_date: string } | null)?.entry_date };
 }
 
+/** Lançamentos do registro rápido ainda não revisados (049). */
+export async function countToReview(db: Db, groupId: string): Promise<number> {
+  const { count } = await untyped(db).from("ledger_entries").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("review_status", "para_revisar");
+  return count ?? 0;
+}
+
 /** Quantos lançamentos estão numa conta (ex.: "A definir"). */
 export async function countInAccount(db: Db, groupId: string, accountId: string): Promise<number> {
   const { count } = await untyped(db).from("ledger_entries").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("account_id", accountId);
@@ -213,6 +222,21 @@ export async function remove(db: Db, entryId: string) {
 
 export async function setDocumentFiled(db: Db, entryId: string, filed: boolean) {
   await rpc(db, "set_entry_document_filed", { p_entry_id: entryId, p_filed: filed });
+}
+
+/** Lançamento do registro rápido (049): uma rubrica, conta padrão da forma ou "A definir"; fica para revisar. */
+export type QuickEntryInput = { date: string; name: string; paymentMethodId: string; totalCents: number; categoryId: string; description: string | null; notes: string | null };
+
+export async function createQuick(db: Db, groupId: string, input: QuickEntryInput): Promise<string> {
+  return await rpc(db, "create_quick_ledger_entry", {
+    p_group_id: groupId, p_entry_date: input.date, p_name: input.name, p_payment_method_id: input.paymentMethodId, p_total_cents: input.totalCents,
+    p_category_id: input.categoryId, p_description: input.description ?? undefined, p_notes: input.notes ?? undefined,
+  }) as string;
+}
+
+/** Marca como revisados; devolve quantos estavam para revisar. */
+export async function review(db: Db, groupId: string, entryIds: string[]): Promise<number> {
+  return await rpc(db, "review_ledger_entries", { p_group_id: groupId, p_entry_ids: entryIds }) as number;
 }
 
 /** Move vários lançamentos para outra conta; conciliados perdem o vínculo. */
