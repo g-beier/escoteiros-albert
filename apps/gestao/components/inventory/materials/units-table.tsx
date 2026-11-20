@@ -4,7 +4,7 @@ import { useState } from "react";
 import { IconDots, IconPlus } from "@tabler/icons-react";
 import { ConditionPill } from "@/components/inventory/condition-pill";
 import { Button } from "@geas/ui/components/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
 import { Input } from "@geas/ui/components/input";
 import type { Option } from "@geas/ui/components/option-controls";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
@@ -93,11 +93,15 @@ export function UnitsTable({ materialId, units, locations, canEdit, nextTag, fam
             <DropdownMenu>
               <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações da ${label(row)}`}><IconDots /></Button>} />
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setActive({ mode: "transfer", unit: row })}>Transferir</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActive({ mode: "condition", unit: row })}>Mudar condição</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActive({ mode: "edit", unit: row })}>{row.tag ? "Editar dados" : "Editar e etiquetar"}</DropdownMenuItem>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={() => setActive({ mode: "transfer", unit: row })}>Transferir</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActive({ mode: "condition", unit: row })}>Mudar condição</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setActive({ mode: "edit", unit: row })}>{row.tag ? "Editar dados" : "Editar e etiquetar"}</DropdownMenuItem>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive" onClick={() => setActive({ mode: "writeOff", unit: row })}>Dar baixa</DropdownMenuItem>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem variant="destructive" onClick={() => setActive({ mode: "writeOff", unit: row })}>Dar baixa</DropdownMenuItem>
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
           </TableCell>}

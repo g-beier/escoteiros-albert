@@ -14,6 +14,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { ACCOUNT_KINDS, accountDetails, type Account, type AccountKind } from "@/lib/finance/accounts";
 import { centsToInput, dateBR, money } from "@/lib/format";
 import { useActionToast } from "@geas/ui/lib/use-action-toast";
+import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
 
 export type AccountItem = Account & { usage: number };
@@ -26,7 +27,7 @@ export function AccountsManager({ accounts, canEdit }: { accounts: AccountItem[]
   return <SectionCard aria-labelledby="accounts-title">
     <SectionHeader title="Contas" titleId="accounts-title" description="Onde o dinheiro está: conta corrente, poupança, caixa. Cada lançamento pertence a uma conta.">
       <SectionCount>{accounts.filter((a) => a.active).length} ativas de {accounts.length}</SectionCount>
-      {canEdit && <Button onClick={() => setEditing("new")}><IconPlus /> Nova conta</Button>}
+      {canEdit && <Button onClick={() => setEditing("new")}><IconPlus data-icon="inline-start" /> Nova conta</Button>}
     </SectionHeader>
     <Table>
       <TableCaption className="sr-only">Contas do grupo</TableCaption>
@@ -67,7 +68,7 @@ function AccountRow({ account, canEdit, onEdit }: { account: AccountItem; canEdi
     <TableCell className="px-3 py-1 text-right num" title="Lançamentos nesta conta">{account.usage}</TableCell>
     <TableCell className="px-3 py-1">
       <div className="flex items-center gap-2">
-        <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", account.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{account.active ? "Ativa" : "Inativa"}</span>
+        <Badge size="md" variant={account.active ? "success" : "muted"}>{account.active ? "Ativa" : "Inativa"}</Badge>
         {canEdit && <>
           <Button type="button" variant="ghost" size="icon-sm" aria-label={`Editar ${account.name}`} onClick={onEdit}><IconPencil /></Button>
           <form action={toggle}>

@@ -23,7 +23,7 @@ const STATUSES = Object.keys(REVIEW_LABELS) as ReviewStatus[];
 const KINDS = Object.keys(MOVEMENT_LABELS) as MovementKind[];
 
 const REVIEW_BADGE: Record<ReviewStatus, string> = {
-  para_revisar: "bg-[#f5eed1] text-[#725d0d]",
+  para_revisar: "bg-caution-soft text-caution",
   revisado: "bg-success-soft text-success",
 };
 

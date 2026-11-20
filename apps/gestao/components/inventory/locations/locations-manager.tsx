@@ -14,6 +14,7 @@ import { DragHandle, DragHandleSpacer, DROP_CLASS, useTreeDrag, type DropPlace }
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { Textarea } from "@geas/ui/components/textarea";
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
+import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
 import { placeLocation, saveLocation, setLocationActive } from "@/app/(inventario)/inventario/configuracoes/divisoes/actions";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
@@ -99,7 +100,7 @@ function LocationRow({ location, canManage, draggable, dragging, drop, rowProps,
     <TableCell className={cn(CELL_CLASS, "num text-right text-muted-foreground")}>{location.total}</TableCell>
     <TableCell className={CELL_CLASS}>
       <div className="flex items-center gap-2">
-        <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", location.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{location.active ? "Ativa" : "Inativa"}</span>
+        <Badge size="md" variant={location.active ? "success" : "muted"}>{location.active ? "Ativa" : "Inativa"}</Badge>
         {canManage && <>
           <Button type="button" variant="ghost" size="icon-sm" aria-label={`Editar ${location.path}`} onClick={onEdit}><IconPencil /></Button>
           {location.active && <Button type="button" variant="ghost" size="icon-sm" aria-label={`Nova subdivisão em ${location.path}`} title="Nova subdivisão" onClick={onAddChild}><IconPlus /></Button>}

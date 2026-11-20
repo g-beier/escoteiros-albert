@@ -53,8 +53,8 @@ export function BulkAccountBar({ accounts }: { accounts: Option[] }) {
       <Label htmlFor="bulk-account">Mover para a conta</Label>
       <OptionSelect id="bulk-account" value={accountId} onValueChange={setAccountId} options={accounts} placeholder="Escolha a conta…" className="h-8" />
     </div>
-    <Button disabled={!target || pending} onClick={() => (unlinking ? setConfirming(true) : move())}><IconArrowsExchange /> {pending ? "Movendo…" : "Mover"}</Button>
-    <Button variant="ghost" onClick={clearSelection} disabled={pending}><IconX /> Limpar seleção</Button>
+    <Button disabled={!target || pending} onClick={() => (unlinking ? setConfirming(true) : move())}><IconArrowsExchange data-icon="inline-start" /> {pending ? "Movendo…" : "Mover"}</Button>
+    <Button variant="ghost" onClick={clearSelection} disabled={pending}><IconX data-icon="inline-start" /> Limpar seleção</Button>
     <Dialog open={confirming} onOpenChange={(open) => { if (!open) setConfirming(false); }}>
       <DialogContent>
         <DialogHeader>

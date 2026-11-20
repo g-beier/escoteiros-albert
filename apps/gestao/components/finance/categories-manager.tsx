@@ -17,7 +17,7 @@ import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/se
 import { Button } from "@geas/ui/components/button";
 import { Checkbox } from "@geas/ui/components/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
 import { Input } from "@geas/ui/components/input";
 import { Label } from "@geas/ui/components/label";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
@@ -92,7 +92,7 @@ export function CategoriesManager({ categories, canEdit }: { categories: SavedCa
           Só sem conta contábil ({missing})
         </Label>}
         <SectionCount>{rows.filter((row) => row.node.active).length} ativas de {rows.length}</SectionCount>
-        {canEdit && expenses && <Button variant="outline" onClick={() => add(expenses.node.key)}><IconPlus /> Nova rubrica</Button>}
+        {canEdit && expenses && <Button variant="outline" onClick={() => add(expenses.node.key)}><IconPlus data-icon="inline-start" /> Nova rubrica</Button>}
       </SectionHeader>
       <div className="overflow-x-auto"><Table className="min-w-[680px]">
         <TableCaption className="sr-only">Rubricas do grupo</TableCaption>
@@ -121,7 +121,7 @@ export function CategoriesManager({ categories, canEdit }: { categories: SavedCa
         </p>
         {!dragKey && <>
           <Button variant="outline" disabled={saving} onClick={() => setDraft(saved)}>Descartar</Button>
-          <Button disabled={saving} onClick={() => (draft.deleted.length ? setReviewing(true) : save())}><IconDeviceFloppy /> {saving ? "Salvando…" : "Salvar alterações"}</Button>
+          <Button disabled={saving} onClick={() => (draft.deleted.length ? setReviewing(true) : save())}><IconDeviceFloppy data-icon="inline-start" /> {saving ? "Salvando…" : "Salvar alterações"}</Button>
         </>}
       </div>
     </div>}
@@ -152,7 +152,7 @@ export function CategoriesManager({ categories, canEdit }: { categories: SavedCa
         </ul>
         <DialogFooter>
           <Button variant="outline" onClick={() => setReviewing(false)}>Voltar</Button>
-          <Button disabled={saving} onClick={save}><IconDeviceFloppy /> {saving ? "Salvando…" : "Salvar"}</Button>
+          <Button disabled={saving} onClick={save}><IconDeviceFloppy data-icon="inline-start" /> {saving ? "Salvando…" : "Salvar"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -204,17 +204,17 @@ function CategoryTableRow({ row, saved, canEdit, draggable, dragging, drop, auto
           <Input id={`category-${node.key}`} value={node.name} maxLength={100} autoFocus={autoFocus} onFocus={autoFocus ? (event) => event.currentTarget.select() : undefined}
             onChange={(event) => onChange({ name: event.target.value })}
             aria-invalid={node.name.trim().length < 2 || undefined}
-            className={cn("max-w-md", row.subtree.length > 1 && "font-semibold", (renamed || !node.id) && "border-amber-500")} />
+            className={cn("max-w-md", row.subtree.length > 1 && "font-semibold", (renamed || !node.id) && "border-attention-line")} />
         </> : <span className={cn(row.subtree.length > 1 && "font-semibold")}>{node.name}</span>}
-        {!node.id && <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Nova</span>}
+        {!node.id && <span className="shrink-0 rounded-full bg-attention-soft px-2 py-0.5 text-[11px] font-semibold text-attention-soft-foreground">Nova</span>}
       </div>
     </TableCell>
     <TableCell className="px-3 py-1">
       {canEdit ? <div className="flex items-center gap-1.5">
         <Label htmlFor={`category-${node.key}-ledger`} className="sr-only">Conta contábil de {title}</Label>
         <LedgerCodeInput id={`category-${node.key}-ledger`} defaultValue={node.ledgerCode} onValueChange={(value) => onChange({ ledgerCode: value || null })}
-          className={cn("w-36 shrink-0", ledgerChanged && "border-amber-500")} />
-        {needsLedgerCode(row) && <IconAlertTriangle className="size-4 shrink-0 text-amber-600" aria-label="Sem conta contábil" title="Rubrica usada e sem conta contábil: necessária para exportar à contabilidade" />}
+          className={cn("w-36 shrink-0", ledgerChanged && "border-attention-line")} />
+        {needsLedgerCode(row) && <IconAlertTriangle className="size-4 shrink-0 text-attention-strong" aria-label="Sem conta contábil" title="Rubrica usada e sem conta contábil: necessária para exportar à contabilidade" />}
       </div> : <span className="num">{node.ledgerCode ?? "—"}</span>}
     </TableCell>
     <TableCell className="px-3 py-1 text-right num" title="Rateios que usam esta rubrica">
@@ -228,12 +228,16 @@ function CategoryTableRow({ row, saved, canEdit, draggable, dragging, drop, auto
         {canEdit && <DropdownMenu>
           <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações de ${title}`} />}><IconDots /></DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            {!node.isRoot && <DropdownMenuItem onClick={onMove}><IconArrowsMove /> Mover para dentro de…</DropdownMenuItem>}
-            {row.code && row.depth < MAX_DEPTH && <DropdownMenuItem onClick={onAdd}><IconPlus /> Nova rubrica dentro desta</DropdownMenuItem>}
+            <DropdownMenuGroup>
+              {!node.isRoot && <DropdownMenuItem onClick={onMove}><IconArrowsMove /> Mover para dentro de…</DropdownMenuItem>}
+              {row.code && row.depth < MAX_DEPTH && <DropdownMenuItem onClick={onAdd}><IconPlus /> Nova rubrica dentro desta</DropdownMenuItem>}
+            </DropdownMenuGroup>
             {!node.isRoot && <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onChange({ active: !node.active })}>{node.active ? <IconEyeOff /> : <IconEye />} {node.active ? "Inativar" : "Reativar"}</DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onClick={onRemove}><IconTrash /> Excluir{row.subtree.length > 1 ? " (com as de baixo)" : ""}</DropdownMenuItem>
+              <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => onChange({ active: !node.active })}>{node.active ? <IconEyeOff /> : <IconEye />} {node.active ? "Inativar" : "Reativar"}</DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" onClick={onRemove}><IconTrash /> Excluir{row.subtree.length > 1 ? " (com as de baixo)" : ""}</DropdownMenuItem>
+              </DropdownMenuGroup>
             </>}
           </DropdownMenuContent>
         </DropdownMenu>}

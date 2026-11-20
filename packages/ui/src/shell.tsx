@@ -52,11 +52,11 @@ export function AppBrand({
       <img src={light ? "/images/logo-dark.svg" : "/images/logo.svg"} alt="Grupo Escoteiro Albert Schweitzer" width="210" height="60" />
     </Link>
     <div className="geas-brand__apps" aria-label="Trocar de módulo">
-      <Link href={currentHref} className={`geas-brand__static geas-app--${current}`}>{APPS[current].label}</Link>
+      <Link href={currentHref} className={cn("geas-brand__static", `geas-app--${current}`)}>{APPS[current].label}</Link>
       <div className="geas-brand__options">
         {options.map((app, index) => <a key={app} href={hrefs[app]} aria-current={app === current ? "page" : undefined}
           style={{ "--geas-brand-shift": `${(index - middle) * OPTION_STEP}px` } as CSSProperties}
-          className={`geas-brand__option geas-app--${app}`}>{APPS[app].label}</a>)}
+          className={cn("geas-brand__option", `geas-app--${app}`)}>{APPS[app].label}</a>)}
       </div>
     </div>
   </div>;
@@ -72,7 +72,7 @@ type AppLoginProps = AppBrandProps & {
 
 /** Estrutura comum das telas de acesso; cada app fornece somente conteúdo e formulário. */
 export function AppLogin({ eyebrow, headline, description, protectedText = "Acesso protegido para a equipe do grupo", children, ...brand }: AppLoginProps) {
-  return <main className={`geas-login geas-login--${brand.current}`}>
+  return <main className={cn("geas-login", `geas-login--${brand.current}`)}>
     <section className="geas-login__story">
       <AppBrand {...brand} />
       <div className="geas-login__copy">
@@ -183,8 +183,8 @@ export function PageHeader({ title, description, crumbs, hideTitle, tabs, action
 }
 
 export type PageWidth = "full" | "narrow";
-export function PageBody({ width = "full", className = "", ...props }: React.ComponentProps<"main"> & { width?: PageWidth }) {
-  return <main className={`geas-page geas-page--${width} ${className}`.trim()} {...props} />;
+export function PageBody({ width = "full", className, ...props }: React.ComponentProps<"main"> & { width?: PageWidth }) {
+  return <main className={cn("geas-page", `geas-page--${width}`, className)} {...props} />;
 }
 
 export type Tab = { href: string; label: string; active: boolean };

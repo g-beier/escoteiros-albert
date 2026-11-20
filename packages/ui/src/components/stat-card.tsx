@@ -5,7 +5,7 @@ import { cn } from "@geas/ui/lib/utils";
 const TONES = {
   success: "text-success",
   destructive: "text-destructive",
-  warning: "text-[#725d0d]",
+  warning: "text-caution",
   neutral: "text-foreground",
 } as const;
 

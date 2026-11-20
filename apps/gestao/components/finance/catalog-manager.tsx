@@ -12,6 +12,7 @@ import { Label } from "@geas/ui/components/label";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import type { CatalogKind } from "@/lib/finance/catalogs";
 import { useActionToast } from "@geas/ui/lib/use-action-toast";
+import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
 
 type Item = {
@@ -33,7 +34,7 @@ export function CatalogManager({ kind, title, singular, maxLength, items, canEdi
       <input type="hidden" name="kind" value={kind} />
       <div className="flex flex-wrap items-end gap-2">
         <div className="grid min-w-48 flex-1 gap-1.5"><Label htmlFor={`${kind}-new`}>Nova {singular}</Label><Input id={`${kind}-new`} name="name" maxLength={maxLength} required /></div>
-        <Button type="submit" disabled={pending}><IconPlus /> Adicionar</Button>
+        <Button type="submit" disabled={pending}><IconPlus data-icon="inline-start" /> Adicionar</Button>
       </div>
     </form>}
     <Table>
@@ -54,7 +55,7 @@ function CatalogRow({ kind, item, maxLength, canEdit, accounts }: { kind: Catalo
   const [toggleState, toggle, toggling] = useActionState(updateCatalogItem, initial);
   useActionToast(renameState);
   useActionToast(toggleState);
-  const status = <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", item.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{item.active ? "Ativa" : "Inativa"}</span>;
+  const status = <Badge size="md" variant={item.active ? "success" : "muted"}>{item.active ? "Ativa" : "Inativa"}</Badge>;
   const save = <Button type="submit" variant="ghost" size="icon-sm" aria-label={`Salvar ${item.name}`} disabled={renaming}><IconCheck /></Button>;
   return <TableRow className={cn(!item.active && "text-muted-foreground")}>
     <TableCell className="px-3 py-1">

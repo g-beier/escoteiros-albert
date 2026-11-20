@@ -58,7 +58,7 @@ export function ControlFilters({ hidden }: { hidden: Directorate[] }) {
         const off = hidden.includes(directorate);
         return <Button key={directorate} type="button" size="sm" variant="outline" aria-pressed={off} onClick={() => toggleHidden(directorate)}
           className={cn("rounded-full", off && "border-dashed text-muted-foreground line-through")}>
-          {off ? <IconEyeOff aria-hidden /> : <IconEye aria-hidden />}{directorateLabels[directorate]}
+          {off ? <IconEyeOff data-icon="inline-start" aria-hidden /> : <IconEye data-icon="inline-start" aria-hidden />}{directorateLabels[directorate]}
         </Button>;
       })}
     </div>

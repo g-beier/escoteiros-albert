@@ -41,6 +41,19 @@
   --amber-soft: #ffecc7;
   --blue-dark: #1f4a7a;
   --blue-soft: #e1ebf7;
+  /* Dourado do "pendente" (convite não aceito, indicador de aviso): mais claro que o âmbar de warning. */
+  --gold-dark: #725d0d;
+  --gold-soft: #f5eed1;
+  --gold-line: #e5c45a;
+  /* Âmbar de "atenção" (mensalidade em atenção, campo alterado, item novo, alerta): tons do âmbar do Tailwind. */
+  --attention: oklch(87.9% 0.169 91.605);
+  --attention-foreground: oklch(27.9% 0.077 45.635);
+  --attention-line: oklch(76.9% 0.188 70.08);
+  --attention-strong: oklch(66.6% 0.179 58.318);
+  --attention-soft: oklch(96.2% 0.059 95.617);
+  --attention-soft-foreground: oklch(47.3% 0.137 46.201);
+  /* Texto sobre preenchimento de status (verde de sucesso, vermelho destrutivo). */
+  --on-status: #ffffff;
   --shadow: 5px 6px 0 rgba(37, 35, 40, .09);
   --topbar-h: 60px;
 
@@ -74,6 +87,19 @@
   --chart-4: var(--yellow);
   --chart-5: var(--ink);
   --radius: 0.625rem;
+}
+
+/* Não há tema escuro completo; estes tokens de status já têm seus valores escuros para quando houver. */
+.dark {
+  --gold-dark: #e8d48a;
+  --gold-soft: rgb(114 93 13 / .35);
+  --gold-line: rgb(232 212 138 / .5);
+  --attention: oklch(66.6% 0.179 58.318);
+  --attention-foreground: oklch(98.7% 0.022 95.277);
+  --attention-line: oklch(76.9% 0.188 70.08);
+  --attention-strong: oklch(82.8% 0.189 84.429);
+  --attention-soft: oklch(41.4% 0.112 45.904 / .4);
+  --attention-soft-foreground: oklch(92.4% 0.12 95.746);
 }
 
 /* Laranja escuro: o laranja da marca não tem contraste suficiente com texto branco. */
@@ -127,6 +153,17 @@
   --color-warning-soft: var(--amber-soft);
   --color-info: var(--blue-dark);
   --color-info-soft: var(--blue-soft);
+  --color-caution: var(--gold-dark);
+  --color-caution-soft: var(--gold-soft);
+  --color-caution-line: var(--gold-line);
+  --color-attention: var(--attention);
+  --color-attention-foreground: var(--attention-foreground);
+  --color-attention-line: var(--attention-line);
+  --color-attention-strong: var(--attention-strong);
+  --color-attention-soft: var(--attention-soft);
+  --color-attention-soft-foreground: var(--attention-soft-foreground);
+  --color-success-foreground: var(--on-status);
+  --color-destructive-foreground: var(--on-status);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

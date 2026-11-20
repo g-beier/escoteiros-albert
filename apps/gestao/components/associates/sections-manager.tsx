@@ -11,6 +11,7 @@ import { Label } from "@geas/ui/components/label";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { branchLabels, hasPatrols, SCOUT_BRANCHES, SECTION_BRANCHES, type PatrolItem, type SectionItem } from "@/lib/associates/model";
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
+import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
 
 const initial: ActionResult = {};
@@ -43,7 +44,7 @@ export function SectionsManager({ sections, patrols, counts, canEdit }: {
         <OptionSelect id="section-branch" value={branch} onValueChange={setBranch} options={branchOptions} /><input type="hidden" name="branch" value={branch} /></div>
       <div className="grid gap-1.5"><Label htmlFor="section-name">Nova seção</Label>
         <Input id="section-name" name="name" maxLength={60} required minLength={2} placeholder="Ex.: Alcateia Seeonee" /></div>
-      <Button type="submit" disabled={pending || !branch}><IconPlus /> Adicionar seção</Button>
+      <Button type="submit" disabled={pending || !branch}><IconPlus data-icon="inline-start" /> Adicionar seção</Button>
     </form>}
     {branches.length === 0
       ? <p className="m-0 px-4 py-4 text-center text-xs text-muted-foreground">Nenhuma seção cadastrada. Comece pelo ramo e o nome da seção.</p>
@@ -79,7 +80,7 @@ function NameRow({ kind, item, count, sectionName, canEdit }: { kind: "section" 
 }
 
 const StatusPill = ({ active }: { active: boolean }) =>
-  <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{active ? "Ativa" : "Inativa"}</span>;
+  <Badge size="md" variant={active ? "success" : "muted"}>{active ? "Ativa" : "Inativa"}</Badge>;
 
 function EditableNameRow({ kind, item, count, sectionName }: { kind: "section" | "patrol"; item: { id: string; name: string; active: boolean }; count: number; sectionName?: string }) {
   const [state, save, saving] = useActionState(updateSectionOrPatrol, initial);
@@ -127,6 +128,6 @@ function NewPatrolRow({ section }: { section: SectionItem }) {
       </div>
     </TableCell>
     <TableCell colSpan={2} />
-    <TableCell className="px-3 py-1"><Button form={formId} type="submit" variant="outline" size="sm" disabled={pending}><IconPlus /> Equipe</Button></TableCell>
+    <TableCell className="px-3 py-1"><Button form={formId} type="submit" variant="outline" size="sm" disabled={pending}><IconPlus data-icon="inline-start" /> Equipe</Button></TableCell>
   </TableRow>;
 }

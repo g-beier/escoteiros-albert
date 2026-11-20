@@ -32,7 +32,7 @@ export function AssociateFunctions({ associateName, associateId, functions, canE
   return <SectionCard aria-labelledby="functions-title">
     <SectionHeader title="Funções" titleId="functions-title" description="Escotista (de seção) ou dirigente (diretoria), com início e fim. Definem os itens de controle que se aplicam.">
       <SectionCount>{active} {active === 1 ? "ativa" : "ativas"}</SectionCount>
-      {canEdit && <Button onClick={() => { setKind("escotista"); setOpen({ kind: "nova" }); }}><IconPlus /> Adicionar função</Button>}
+      {canEdit && <Button onClick={() => { setKind("escotista"); setOpen({ kind: "nova" }); }}><IconPlus data-icon="inline-start" /> Adicionar função</Button>}
     </SectionHeader>
     {functions.length === 0
       ? <p className="px-4 py-6 text-center text-xs text-muted-foreground">Nenhuma função: aparece em “Sem função” na lista.</p>

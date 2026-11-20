@@ -182,7 +182,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
     <fieldset disabled={readOnly} className="grid gap-2">
       <div className="flex items-center justify-between">
         <legend className="text-sm font-semibold">Rateio por rubricas</legend>
-        {!readOnly && <Button type="button" variant="ghost" size="sm" onClick={() => update({ splits: [...draft.splits, emptySplit()] })}><IconPlus /> Adicionar rubrica</Button>}
+        {!readOnly && <Button type="button" variant="ghost" size="sm" onClick={() => update({ splits: [...draft.splits, emptySplit()] })}><IconPlus data-icon="inline-start" /> Adicionar rubrica</Button>}
       </div>
       {draft.splits.map((split, index) => <div key={split.key} role="group" aria-label={`Rubrica ${index + 1}`} className="grid gap-2 rounded-lg bg-muted p-2.5 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_minmax(0,1fr)_8rem_auto] sm:items-end">
         <div className="grid gap-1.5"><Label htmlFor={`split-category-${index}`}>Rubrica</Label><CategoryPicker id={`split-category-${index}`} value={split.categoryId} onChange={(categoryId) => updateSplit(split.key, { categoryId })} categories={catalogs.categories} preferredKind={kindFor(draft.direction)} usedIds={usedCategoryIds} placeholder="Buscar receita ou despesa…" disabled={readOnly} /></div>
@@ -213,7 +213,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
     </div>
 
     {!readOnly && <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
-      <div>{entry && <Button type="button" variant="destructive" onClick={() => setConfirmDelete(true)}><IconTrash /> Excluir lançamento</Button>}</div>
+      <div>{entry && <Button type="button" variant="destructive" onClick={() => setConfirmDelete(true)}><IconTrash data-icon="inline-start" /> Excluir lançamento</Button>}</div>
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={() => entry && dirty ? setDraft(saved) : router.push(backHref)}>{entry && dirty ? "Descartar alterações" : "Voltar"}</Button>
         <Button type="submit" size="lg" disabled={!draft.direction || !balanced || pending || (Boolean(entry) && !dirty)}>{pending ? "Salvando…" : entry ? "Salvar alterações" : "Salvar lançamento"}</Button>

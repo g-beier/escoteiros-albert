@@ -44,8 +44,8 @@ export function AssociateRelatives({ associate, links, relatives, associates, ca
       description="Mãe, pai ou outra pessoa que acompanha o jovem. Irmãos compartilham o mesmo responsável: vincule o já cadastrado.">
       <SectionCount>{links.length} {links.length === 1 ? "responsável" : "responsáveis"}</SectionCount>
       {canEdit && <>
-        {linkable.length > 0 && <Button variant="outline" onClick={() => setOpen({ kind: "vincular" })}><IconLink /> Vincular existente</Button>}
-        <Button onClick={() => setOpen({ kind: "novo" })}><IconPlus /> Adicionar responsável</Button>
+        {linkable.length > 0 && <Button variant="outline" onClick={() => setOpen({ kind: "vincular" })}><IconLink data-icon="inline-start" /> Vincular existente</Button>}
+        <Button onClick={() => setOpen({ kind: "novo" })}><IconPlus data-icon="inline-start" /> Adicionar responsável</Button>
       </>}
     </SectionHeader>
     {ordered.length === 0
@@ -70,7 +70,7 @@ export function AssociateRelatives({ associate, links, relatives, associates, ca
           <TableCell className={CELL_CLASS}>{kinshipText(link)}</TableCell>
           <TableCell className={cn(CELL_CLASS, "whitespace-normal text-muted-foreground")}>{roleText(link) || "—"}</TableCell>
           {canEdit && <TableCell className={CELL_CLASS}><div className="flex items-center gap-1.5">
-            <Button variant="ghost" size="sm" onClick={() => setOpen({ kind: "editar", link })} aria-label={`Editar ${link.relative_name}`}><IconPencil /> Editar</Button>
+            <Button variant="ghost" size="sm" onClick={() => setOpen({ kind: "editar", link })} aria-label={`Editar ${link.relative_name}`}><IconPencil data-icon="inline-start" /> Editar</Button>
             <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setOpen({ kind: "desvincular", link })} aria-label={`Desvincular ${link.relative_name}`}>Desvincular</Button>
           </div></TableCell>}
         </TableRow>)}</TableBody>

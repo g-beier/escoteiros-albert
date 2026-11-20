@@ -40,7 +40,7 @@ export function KindPrefixes({ selected, suggestions, onChange }: {
     <div className="flex max-w-sm items-center gap-2">
       <Input id="kind-prefix-custom" value={custom} onChange={(event) => setCustom(event.target.value)} placeholder="Ex.: Pix recebido"
         onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); add(); } }} />
-      <Button type="button" variant="outline" size="sm" onClick={add} disabled={!custom.trim()}><IconPlus /> Adicionar</Button>
+      <Button type="button" variant="outline" size="sm" onClick={add} disabled={!custom.trim()}><IconPlus data-icon="inline-start" /> Adicionar</Button>
     </div>
   </fieldset>;
 }

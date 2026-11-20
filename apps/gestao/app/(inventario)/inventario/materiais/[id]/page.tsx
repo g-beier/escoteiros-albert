@@ -31,7 +31,7 @@ import { formatCents } from "@/lib/format";
 import { pageSession } from "@/lib/server/session";
 
 const REVIEW_TONES: Record<ReviewStatus, string> = {
-  para_revisar: "border-[#e5c45a] bg-[#f5eed1] text-[#725d0d]",
+  para_revisar: "border-caution-line bg-caution-soft text-caution",
   revisado: "text-muted-foreground",
 };
 

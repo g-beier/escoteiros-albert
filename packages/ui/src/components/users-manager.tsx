@@ -105,7 +105,7 @@ function UserRow({ user, self, actions }: { user: GroupUser; self: boolean; acti
   const id = (name: string) => `${name}-${user.userId}`;
   return <TableRow>
     <TableCell className={CELL}><span className="font-semibold">{user.email}</span>{self && <span className="text-muted-foreground"> (você)</span>}</TableCell>
-    <TableCell className={CELL}><Badge className={user.confirmed ? "bg-success-soft text-success" : "bg-[#f5eed1] text-[#725d0d]"}>{user.confirmed ? "Ativo" : "Convite pendente"}</Badge></TableCell>
+    <TableCell className={CELL}><Badge variant={user.confirmed ? "success" : "caution"}>{user.confirmed ? "Ativo" : "Convite pendente"}</Badge></TableCell>
     <TableCell className={CELL}>
       {self
         ? <span className="text-xs text-muted-foreground" title="Você não pode mudar o próprio papel de administrador">{GROUP_ROLE_LABELS[role]}</span>

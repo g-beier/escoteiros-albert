@@ -10,6 +10,7 @@ import { Label } from "@geas/ui/components/label";
 import type { Option } from "@geas/ui/components/option-controls";
 import { RadioGroup, RadioGroupItem } from "@geas/ui/components/radio-group";
 import { useActionToast } from "@geas/ui/lib/use-action-toast";
+import { cn } from "@geas/ui/lib/utils";
 import { quickRecord } from "@/app/(inventario)/inventario/rapido/actions";
 import { ConditionPill } from "@/components/inventory/condition-pill";
 import { ConditionField, Field, NotesField, SelectField } from "@/components/inventory/materials/fields";
@@ -92,13 +93,13 @@ export function QuickForm({ kind, material, items = [], locations, families = []
     {kind === "condicao" && <SelectField id="quick-condition" name="condition" label="Nova condição" options={conditionOptions.filter((row) => row.value !== item?.condition)} />}
     {(kind === "entrada" || kind === "novo") && <ConditionField id="quick-condition" />}
     {(kind === "entrada" || kind === "novo") && tracking === "unit" && <Field id="quick-tag" label="Etiqueta (se já tiver)">
-      <Input id="quick-tag" name="tag" placeholder="Ex.: GEAS-001-0012" className={`${BIG} num`} />
+      <Input id="quick-tag" name="tag" placeholder="Ex.: GEAS-001-0012" className={cn(BIG, "num")} />
     </Field>}
     {kind === "entrada" && tracking === "lot" && <Field id="quick-variant" label="Variação (se for diferente dos outros)">
       <Input id="quick-variant" name="variant" maxLength={80} placeholder="Ex.: modelo antigo" className={BIG} />
     </Field>}
     {(kind === "entrada" || kind === "novo") && tracking === "lot" && <Field id="quick-expires" label="Validade (se houver)">
-      <Input id="quick-expires" name="expiresOn" type="date" className={`${BIG} num`} />
+      <Input id="quick-expires" name="expiresOn" type="date" className={cn(BIG, "num")} />
     </Field>}
 
     <NotesField id="quick-notes" label={kind === "ajustar" ? "Por que a contagem mudou?" : "Observação"} required={kind === "ajustar"} />

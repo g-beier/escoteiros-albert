@@ -10,6 +10,7 @@ import { Label } from "@geas/ui/components/label";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
+import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
 import { saveFamily, setFamilyActive } from "@/app/(inventario)/inventario/configuracoes/familias/actions";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
@@ -58,7 +59,7 @@ function FamilyRow({ family, canManage, onEdit }: { family: FamilyItem; canManag
     <TableCell className={cn(CELL_CLASS, "num text-right text-muted-foreground")}>{family.tagged}</TableCell>
     <TableCell className={CELL_CLASS}>
       <div className="flex items-center gap-2">
-        <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", family.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{family.active ? "Ativa" : "Inativa"}</span>
+        <Badge size="md" variant={family.active ? "success" : "muted"}>{family.active ? "Ativa" : "Inativa"}</Badge>
         {canManage && <>
           <Button type="button" variant="ghost" size="icon-sm" aria-label={`Editar ${family.name}`} onClick={onEdit}><IconPencil /></Button>
           <form action={toggle}>

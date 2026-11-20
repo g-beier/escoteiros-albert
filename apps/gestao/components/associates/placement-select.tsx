@@ -1,6 +1,6 @@
 "use client";
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@geas/ui/components/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@geas/ui/components/select";
 import { cn } from "@geas/ui/lib/utils";
 import { placementOptions, placementValue, resolvePlacement, type PatrolItem, type Placement, type SectionItem } from "@/lib/associates/model";
 
@@ -22,10 +22,12 @@ export function PlacementSelect({ id, catalog, value, current, onValueChange, cl
       <SelectValue className="block min-w-0 truncate" placeholder="Selecione…" />
     </SelectTrigger>
     <SelectContent alignItemWithTrigger={false} align="start" className="w-auto min-w-(--anchor-width)">
-      {options.map((option) => <SelectItem key={option.value} value={option.value}
-        className={cn(option.depth === 0 && "font-semibold", option.depth === 1 && "pl-5", option.depth === 2 && "pl-8 text-muted-foreground")}>
-        {option.name}
-      </SelectItem>)}
+      <SelectGroup>
+        {options.map((option) => <SelectItem key={option.value} value={option.value}
+          className={cn(option.depth === 0 && "font-semibold", option.depth === 1 && "pl-5", option.depth === 2 && "pl-8 text-muted-foreground")}>
+          {option.name}
+        </SelectItem>)}
+      </SelectGroup>
     </SelectContent>
   </Select>;
 }

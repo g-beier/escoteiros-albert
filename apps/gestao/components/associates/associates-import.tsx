@@ -8,6 +8,7 @@ import { importAssociates } from "@/app/(associados)/associados/configuracoes/im
 import { Button } from "@geas/ui/components/button";
 import { Checkbox } from "@geas/ui/components/checkbox";
 import { Label } from "@geas/ui/components/label";
+import { Spinner } from "@geas/ui/components/spinner";
 import { branchLabels, type PatrolItem, type SectionItem } from "@/lib/associates/model";
 import { ASSOCIATE_CSV_TEMPLATE, parseAssociatesCsv, planAssociatesImport, type ExistingAssociate, type PlannedAssociate } from "@/lib/associates/import";
 import { decodeBytes } from "@/lib/finance/statement-import";
@@ -100,7 +101,7 @@ export function AssociatesImport({ existing, sections, patrols }: { existing: Ex
           {shown.length > VISIBLE && <p className="m-0 border-t px-2 py-1.5 text-xs text-muted-foreground">Mostrando {VISIBLE} de {shown.length}.</p>}
         </div>}
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={runImport} disabled={pending || toSend.length === 0}><IconUpload /> {pending ? "Importando…" : `Importar ${toSend.length} ${toSend.length === 1 ? "associado" : "associados"}`}</Button>
+          <Button onClick={runImport} disabled={pending || toSend.length === 0}>{pending ? <Spinner data-icon="inline-start" /> : <IconUpload data-icon="inline-start" />} {pending ? "Importando…" : `Importar ${toSend.length} ${toSend.length === 1 ? "associado" : "associados"}`}</Button>
           <Button variant="ghost" onClick={() => setFile(null)} disabled={pending}>Trocar arquivo</Button>
         </div>
       </>}

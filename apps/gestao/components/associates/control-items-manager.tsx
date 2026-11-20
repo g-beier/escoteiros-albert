@@ -13,6 +13,7 @@ import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/se
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { DragHandle, DragHandleSpacer, DROP_CLASS, useTreeDrag, type DropPlace } from "@geas/ui/components/tree-drag";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
+import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
 import { placeControlItem, saveControlItem, toggleControlItem } from "@/app/(associados)/associados/configuracoes/itens/actions";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
@@ -66,7 +67,7 @@ export function ControlItemsManager({ items: saved, canEdit }: { items: ControlI
     <SectionHeader title="Itens de controle" titleId="items-title"
       description="O que se acompanha por pessoa (documentos, sistemas, canais, etapas), por diretoria. Desative o que deixou de valer: o histórico fica.">
       <SectionCount>{active} ativos de {items.length}</SectionCount>
-      {canEdit && <Button onClick={() => setEditing({ item: null, directorate: "administrativa" })}><IconPlus /> Novo item</Button>}
+      {canEdit && <Button onClick={() => setEditing({ item: null, directorate: "administrativa" })}><IconPlus data-icon="inline-start" /> Novo item</Button>}
     </SectionHeader>
     <div className="overflow-x-auto"><Table className="min-w-[760px]">
       <TableCaption className="sr-only">Itens de controle por diretoria</TableCaption>
@@ -133,11 +134,11 @@ function ItemRow({ item, canEdit, draggable, dragging, drop, rowProps, handlePro
     <TableCell className={CELL_CLASS}>{validityLabel(item.validity_months)}</TableCell>
     <TableCell className={CELL_CLASS}>{item.remove_on_leave ? "Remover" : "—"}</TableCell>
     <TableCell className={CELL_CLASS}>
-      <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", item.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{item.active ? "Ativo" : "Inativo"}</span>
+      <Badge size="md" variant={item.active ? "success" : "muted"}>{item.active ? "Ativo" : "Inativo"}</Badge>
     </TableCell>
     {canEdit && <TableCell className={CELL_CLASS}>
       <div className="flex items-center gap-1.5">
-        <Button variant="ghost" size="sm" onClick={onEdit} aria-label={`Editar ${item.name}`}><IconPencil /> Editar</Button>
+        <Button variant="ghost" size="sm" onClick={onEdit} aria-label={`Editar ${item.name}`}><IconPencil data-icon="inline-start" /> Editar</Button>
         <Button variant="outline" size="sm" onClick={toggle} disabled={toggling} aria-label={`${item.active ? "Desativar" : "Reativar"} ${item.name}`}>{item.active ? "Desativar" : "Reativar"}</Button>
       </div>
     </TableCell>}

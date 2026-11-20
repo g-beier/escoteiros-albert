@@ -18,10 +18,21 @@ const badgeVariants = cva(
         ghost:
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
         link: "text-primary underline-offset-4 hover:underline",
+        success: "bg-success-soft text-success [a]:hover:bg-success-soft/80",
+        warning: "bg-warning-soft text-warning [a]:hover:bg-warning-soft/80",
+        caution: "bg-caution-soft text-caution [a]:hover:bg-caution-soft/80",
+        info: "bg-info-soft text-info [a]:hover:bg-info-soft/80",
+        muted: "bg-muted text-muted-foreground [a]:hover:bg-muted/80",
+      },
+      size: {
+        default: "",
+        /** Pílula de situação em tabelas e listas (11px, semibold). */
+        md: "text-[11px] font-semibold",
       },
     },
     defaultVariants: {
       variant: "default",
+      size: "default",
     },
   }
 )
@@ -29,6 +40,7 @@ const badgeVariants = cva(
 function Badge({
   className,
   variant = "default",
+  size = "default",
   render,
   ...props
 }: useRender.ComponentProps<"span"> & VariantProps<typeof badgeVariants>) {
@@ -36,7 +48,7 @@ function Badge({
     defaultTagName: "span",
     props: mergeProps<"span">(
       {
-        className: cn(badgeVariants({ variant }), className),
+        className: cn(badgeVariants({ variant, size }), className),
       },
       props
     ),
@@ -44,6 +56,7 @@ function Badge({
     state: {
       slot: "badge",
       variant,
+      size,
     },
   })
 }
