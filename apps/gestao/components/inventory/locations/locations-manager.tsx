@@ -21,6 +21,7 @@ import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import { placeError, placeLocal } from "@/lib/inventory/locations";
 
 import type { LocationItem } from "@/lib/inventory/model";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 export type { LocationItem };
 
@@ -125,7 +126,7 @@ function LocationForm({ editing, locations, onDone }: { editing: Editing; locati
     .filter((item) => item.active && (!location || (item.id !== location.id && !item.ancestors.includes(location.id))))
     .map((item) => ({ value: item.id, label: item.path }));
   const field = (id: string) => `location-${location?.id ?? "new"}-${id}`;
-  return <form action={action} className="grid gap-3">
+  return <ActionForm action={action} result={state} className="grid gap-3">
     <DialogHeader>
       <DialogTitle>{location ? `Editar ${location.name}` : "Nova divisão"}</DialogTitle>
       <DialogDescription>Divisões são lugares na sede (armário, estante, prateleira, caixa de patrulha). Deixe a superior vazia para uma divisão de primeiro nível.</DialogDescription>
@@ -141,5 +142,5 @@ function LocationForm({ editing, locations, onDone }: { editing: Editing; locati
       <Button type="button" variant="outline" onClick={onDone}>Cancelar</Button>
       <Button type="submit" disabled={pending}>{pending ? "Salvando…" : location ? "Salvar divisão" : "Cadastrar divisão"}</Button>
     </DialogFooter>
-  </form>;
+  </ActionForm>;
 }

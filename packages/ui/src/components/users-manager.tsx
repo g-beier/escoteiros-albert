@@ -15,6 +15,7 @@ import {
 } from "@geas/ui/lib/roles";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { cn } from "@geas/ui/lib/utils";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 type Action = (previous: ActionResult, formData: FormData) => Promise<ActionResult>;
 export type UsersActions = { invite: Action; save: Action; remove: Action };
@@ -67,10 +68,10 @@ function InviteForm({ invite }: { invite: Action }) {
     const result = await withToast(invite)(previous, formData);
     return { ...result, sent: previous.sent + (result.success ? 1 : 0) };
   }, { sent: 0 });
-  return <form action={action} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(240px,1fr)_170px_170px_170px_auto] sm:items-end">
+  return <ActionForm action={action} result={state} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(240px,1fr)_170px_170px_170px_auto] sm:items-end">
     <InviteFields key={state.sent} />
     <Button type="submit" disabled={pending}>{pending ? "Enviando…" : "Enviar convite"}</Button>
-  </form>;
+  </ActionForm>;
 }
 
 function InviteFields() {

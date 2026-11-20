@@ -16,6 +16,7 @@ import { ConditionPill } from "@/components/inventory/condition-pill";
 import { ConditionField, Field, NotesField, SelectField } from "@/components/inventory/materials/fields";
 import type { QuickKind } from "@/lib/inventory/quick";
 import { conditionOptions, writeOffOptions, type Condition, type Tracking } from "@/lib/inventory/vocabulary";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 // Formulário do registro rápido: poucos campos, uma coluna, botões altos para o dedo. O item (lote ou peça) é
 // escolhido em cartões; a quantidade tem botões − e +.
@@ -36,7 +37,7 @@ export function QuickForm({ kind, material, items = [], locations, families = []
   const needsItem = kind !== "entrada" && kind !== "novo";
   const isLot = needsItem ? item?.kind === "lot" : tracking === "lot";
 
-  return <form action={formAction} className="grid gap-4">
+  return <ActionForm action={formAction} result={state} className="grid gap-4">
     <input type="hidden" name="kind" value={kind} />
     {material && <input type="hidden" name="materialId" value={material.id} />}
     {kind !== "novo" && <input type="hidden" name="tracking" value={tracking} />}
@@ -106,7 +107,7 @@ export function QuickForm({ kind, material, items = [], locations, families = []
 
     <Button type="submit" size="lg" className={BIG} disabled={pending || (needsItem && !selected)}>{pending ? "Salvando…" : "Registrar"}</Button>
     <p className="m-0 text-center text-[11px] text-muted-foreground">Vale na hora e fica para revisar pelo gestor.</p>
-  </form>;
+  </ActionForm>;
 }
 
 /** Quantidade com − e + (o campo continua editável). */

@@ -14,6 +14,7 @@ import type { CatalogKind } from "@/lib/finance/catalogs";
 import { useActionToast } from "@geas/ui/lib/use-action-toast";
 import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 type Item = {
   id: string; name: string; active: boolean; usage: number;
@@ -30,13 +31,13 @@ export function CatalogManager({ kind, title, singular, maxLength, items, canEdi
     <SectionHeader title={title} titleId={`${kind}-title`}>
       <SectionCount>{items.filter((i) => i.active).length} ativas de {items.length}</SectionCount>
     </SectionHeader>
-    {canEdit && <form action={action} className="grid gap-2 border-b p-3">
+    {canEdit && <ActionForm action={action} result={state} className="grid gap-2 border-b p-3">
       <input type="hidden" name="kind" value={kind} />
       <div className="flex flex-wrap items-end gap-2">
         <div className="grid min-w-48 flex-1 gap-1.5"><Label htmlFor={`${kind}-new`}>Nova {singular}</Label><Input id={`${kind}-new`} name="name" maxLength={maxLength} required /></div>
         <Button type="submit" disabled={pending}><IconPlus data-icon="inline-start" /> Adicionar</Button>
       </div>
-    </form>}
+    </ActionForm>}
     <Table>
       <TableCaption className="sr-only">{title} do grupo</TableCaption>
       <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
@@ -59,13 +60,13 @@ function CatalogRow({ kind, item, maxLength, canEdit, accounts }: { kind: Catalo
   const save = <Button type="submit" variant="ghost" size="icon-sm" aria-label={`Salvar ${item.name}`} disabled={renaming}><IconCheck /></Button>;
   return <TableRow className={cn(!item.active && "text-muted-foreground")}>
     <TableCell className="px-3 py-1">
-      {canEdit ? <form action={rename} className="flex items-center gap-1.5">
+      {canEdit ? <ActionForm action={rename} result={renameState} className="flex items-center gap-1.5">
         <input type="hidden" name="kind" value={kind} /><input type="hidden" name="id" value={item.id} />
         {/* rótulo visível: cabeçalho da coluna; este nomeia o campo de cada linha para leitores de tela */}
         <Label htmlFor={`${kind}-${item.id}`} className="sr-only">Nome de {item.name}</Label>
         <Input id={`${kind}-${item.id}`} name="name" defaultValue={item.name} maxLength={maxLength} required className="max-w-md" />
         {save}
-      </form> : item.name}
+      </ActionForm> : item.name}
     </TableCell>
     {accounts && <TableCell className="px-3 py-1"><DefaultAccount item={item} accounts={accounts} canEdit={canEdit} /></TableCell>}
     <TableCell className="px-3 py-1 text-right num" title="Lançamentos que usam este cadastro">{item.usage}</TableCell>

@@ -5,17 +5,19 @@ import { Button } from "@geas/ui/components/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
 import { toast } from "sonner";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 export type FormAction = (previous: ActionResult, formData: FormData) => Promise<ActionResult>;
 
 /**
  * Diálogo com formulário de uma Server Action: mostra o resultado como toast e fecha quando dá certo.
  * O toast sai daqui (e não de useActionToast) porque o diálogo desmonta ao fechar, antes do efeito rodar.
- * Os campos ocultos (`hidden`) levam os ids; `children` são os campos visíveis (grade de 2 colunas).
+ * Os campos ocultos (`hidden`) levam os ids; `children` são os campos visíveis (grade de 2 colunas). `footerStart`: botões
+ * à esquerda do rodapé (ex.: Encerrar, Apagar), do tipo `button`.
  */
-export function ActionDialog({ open, onOpenChange, title, description, action, submitLabel, hidden, children, destructive }: {
+export function ActionDialog({ open, onOpenChange, title, description, action, submitLabel, hidden, children, destructive, footerStart }: {
   open: boolean; onOpenChange: (open: boolean) => void; title: string; description?: ReactNode;
-  action: FormAction; submitLabel: string; hidden: Record<string, string>; children: ReactNode; destructive?: boolean;
+  action: FormAction; submitLabel: string; hidden: Record<string, string>; children: ReactNode; destructive?: boolean; footerStart?: ReactNode;
 }) {
   const [, formAction, pending] = useActionState(async (previous: ActionResult, formData: FormData) => {
     const result = await action(previous, formData);
@@ -32,14 +34,17 @@ export function ActionDialog({ open, onOpenChange, title, description, action, s
         <DialogTitle>{title}</DialogTitle>
         {description && <DialogDescription>{description}</DialogDescription>}
       </DialogHeader>
-      <form action={formAction} className="grid gap-3">
+      <ActionForm action={formAction} className="grid gap-3">
         {Object.entries(hidden).map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)}
         <div className="grid items-start gap-3 sm:grid-cols-2">{children}</div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button type="submit" variant={destructive ? "destructive" : "default"} disabled={pending}>{pending ? "Salvando…" : submitLabel}</Button>
+        <DialogFooter className={footerStart ? "sm:justify-between" : undefined}>
+          {footerStart && <div className="flex flex-col-reverse gap-2 sm:flex-row">{footerStart}</div>}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button type="submit" variant={destructive ? "destructive" : "default"} disabled={pending}>{pending ? "Salvando…" : submitLabel}</Button>
+          </div>
         </DialogFooter>
-      </form>
+      </ActionForm>
     </DialogContent>
   </Dialog>;
 }

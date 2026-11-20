@@ -16,6 +16,7 @@ import { saveFamily, setFamilyActive } from "@/app/(inventario)/inventario/confi
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 
 import type { FamilyItem } from "@/lib/inventory/model";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 export type { FamilyItem };
 
@@ -77,7 +78,7 @@ function FamilyForm({ family, onDone }: { family: FamilyItem | null; onDone: () 
   useActionToast(state);
   useEffect(() => { if (state.success) onDone(); }, [state, onDone]);
   const field = (id: string) => `family-${family?.id ?? "new"}-${id}`;
-  return <form action={action} className="grid gap-3">
+  return <ActionForm action={action} result={state} className="grid gap-3">
     <DialogHeader>
       <DialogTitle>{family ? `Editar ${family.name}` : "Nova família"}</DialogTitle>
       <DialogDescription>O código só é necessário quando as peças da família forem etiquetadas. Ele não muda depois que houver peças etiquetadas.</DialogDescription>
@@ -92,5 +93,5 @@ function FamilyForm({ family, onDone }: { family: FamilyItem | null; onDone: () 
       <Button type="button" variant="outline" onClick={onDone}>Cancelar</Button>
       <Button type="submit" disabled={pending}>{pending ? "Salvando…" : family ? "Salvar família" : "Cadastrar família"}</Button>
     </DialogFooter>
-  </form>;
+  </ActionForm>;
 }

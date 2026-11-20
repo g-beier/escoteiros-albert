@@ -16,6 +16,7 @@ import { centsToInput, dateBR, money } from "@/lib/format";
 import { useActionToast } from "@geas/ui/lib/use-action-toast";
 import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 export type AccountItem = Account & { usage: number };
 
@@ -87,7 +88,7 @@ function AccountForm({ account, onDone }: { account: AccountItem | null; onDone:
   useActionToast(state);
   useEffect(() => { if (state.success) onDone(); }, [state, onDone]);
   const field = (id: string) => `account-${account?.id ?? "new"}-${id}`;
-  return <form action={action} className="grid gap-3">
+  return <ActionForm action={action} result={state} className="grid gap-3">
     <DialogHeader>
       <DialogTitle>{account ? `Editar ${account.name}` : "Nova conta"}</DialogTitle>
       <DialogDescription>Banco, agência e número ajudam a reconhecer o extrato. O saldo inicial é o saldo da conta na data de início.</DialogDescription>
@@ -116,5 +117,5 @@ function AccountForm({ account, onDone }: { account: AccountItem | null; onDone:
       <Button type="button" variant="outline" onClick={onDone}>Cancelar</Button>
       <Button type="submit" disabled={pending}>{pending ? "Salvando…" : account ? "Salvar conta" : "Cadastrar conta"}</Button>
     </DialogFooter>
-  </form>;
+  </ActionForm>;
 }
