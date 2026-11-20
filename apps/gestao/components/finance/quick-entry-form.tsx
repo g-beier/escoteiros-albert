@@ -15,11 +15,12 @@ import { quickEntry } from "@/app/(gestao)/rapido/actions";
 import { CategoryPicker } from "@/components/finance/entries/category-picker";
 import { upload } from "@/components/finance/entries/entry-attachments";
 import { ATTACHMENT_ACCEPT, attachmentProblem } from "@/lib/finance/attachments";
+import { ATTACHMENTS_ENABLED } from "@/lib/features";
 import type { CategoryItem } from "@/lib/finance/categories";
 import { parseMoneyToCents } from "@/lib/money";
 import { quickDoneHref } from "@/lib/quick";
 
-// Lançamento pelo registro rápido (celular): só o essencial, uma rubrica e o comprovante. A conta é a padrão da
+// Lançamento pelo registro rápido (celular): só o essencial, uma rubrica e o comprovante (se ligado, `lib/features.ts`). A conta é a padrão da
 // forma de pagamento (ou "A definir"); documento, rateio e conciliação a tesouraria completa na revisão.
 
 type Direction = "saida" | "entrada";
@@ -109,14 +110,14 @@ export function QuickEntryForm({ categories, paymentMethods, today }: {
     <Field id="quick-description" label="Descrição (opcional)">
       <Input id="quick-description" name="description" maxLength={200} placeholder="Ex.: lanche do acampamento" autoComplete="off" className={BIG} />
     </Field>
-    <div className="grid gap-1.5">
+    {ATTACHMENTS_ENABLED && <div className="grid gap-1.5">
       <Label htmlFor="quick-receipt">Comprovante (opcional)</Label>
       <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-md border border-dashed border-input bg-card px-3 text-sm hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring/30">
         <IconCamera className="size-5 shrink-0 text-muted-foreground" aria-hidden />
         <span className="min-w-0 truncate">{files.length ? files.map((f) => f.name).join(", ") : "Foto ou PDF da nota ou recibo…"}</span>
         <input id="quick-receipt" type="file" multiple accept={ATTACHMENT_ACCEPT} className="sr-only" onChange={onFiles} disabled={pending} />
       </label>
-    </div>
+    </div>}
     <Field id="quick-notes" label="Observações (opcional)">
       <Textarea id="quick-notes" name="notes" maxLength={2000} rows={2} />
     </Field>

@@ -8,6 +8,7 @@ import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { cn } from "@geas/ui/lib/utils";
 import { GestaoHeader } from "@/components/shell/gestao-header";
 import { SetupNeeded } from "@/components/shell/setup-needed";
+import { ATTACHMENTS_ENABLED } from "@/lib/features";
 import { QUICK_DONE, isQuickDone, type QuickDone } from "@/lib/quick";
 import * as materials from "@/lib/server/inventory/materials";
 import { pageSession } from "@/lib/server/session";
@@ -58,7 +59,7 @@ export default async function QuickHome({ searchParams }: { searchParams: Promis
         <ul className="m-0 list-none p-0">
           {can.financeiro && <li className="border-t first:border-t-0"><Link href="/rapido/lancamento" className={BIG_LINK}>
             <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">Lançamento financeiro</span>
-              <span className="block text-xs text-muted-foreground">Uma despesa ou receita, com foto do comprovante.</span></span>
+              <span className="block text-xs text-muted-foreground">Uma despesa ou receita{ATTACHMENTS_ENABLED && ", com foto do comprovante"}.</span></span>
             <IconChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           </Link></li>}
           {can.associados && <li className="border-t first:border-t-0"><Link href="/rapido/associado" className={BIG_LINK}>

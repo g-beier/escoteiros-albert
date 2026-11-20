@@ -6,6 +6,7 @@ import type { Db } from "@/lib/server/db";
 import { rowsOf, rpc, untyped, unwrap } from "@/lib/server/supabase/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ATTACHMENT_BUCKET } from "@/lib/finance/attachments";
+import { ATTACHMENTS_ENABLED } from "@/lib/features";
 import type { AuditRow } from "@/lib/finance/entry-history";
 import { toRpcSplits, type EntryInput } from "@/lib/finance/entry-schema";
 import { removeFiles } from "@/lib/server/files";
@@ -118,6 +119,7 @@ export async function fetchEntryPage(
  * por página, fora das visões, para não pesar na busca e na contagem de `ledger_entry_rows`.
  */
 async function withAttachmentCounts<T extends { entry_id: string }>(supabase: SupabaseClient, rows: T[]): Promise<T[]> {
+  if (!ATTACHMENTS_ENABLED) return rows;
   const ids = [...new Set(rows.map((row) => row.entry_id))];
   if (!ids.length) return rows;
   const { data } = await supabase.from("entry_attachments").select("entry_id").in("entry_id", ids);

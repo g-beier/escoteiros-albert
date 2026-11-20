@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { ATTACHMENTS_ENABLED } from "../lib/features";
 import { cleanupE2eGroup, psql } from "./support/db";
 import { E2E_ADMIN_EMAIL } from "./support/env";
 import { chooseOption, entryRow, search, uniqueName } from "./support/entries";
@@ -35,10 +36,15 @@ test("lançamento rápido: entra para revisar e sai da lista ao revisar", async 
   await page.getByRole("combobox", { name: "Rubrica" }).fill("Telefone");
   await page.getByRole("option", { name: /Telefone/ }).first().click();
   await chooseOption(page, "Forma de pagamento", "PIX");
-  await page.getByLabel("Comprovante (opcional)").setInputFiles({
-    name: "recibo-rapido.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"),
-  });
-  await expect(page.getByText("recibo-rapido.pdf")).toBeVisible();
+  // comprovantes desligados por padrão (lib/features.ts): sem o campo de arquivo
+  if (ATTACHMENTS_ENABLED) {
+    await page.getByLabel("Comprovante (opcional)").setInputFiles({
+      name: "recibo-rapido.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"),
+    });
+    await expect(page.getByText("recibo-rapido.pdf")).toBeVisible();
+  } else {
+    await expect(page.getByLabel("Comprovante (opcional)")).toHaveCount(0);
+  }
   await page.getByRole("button", { name: "Registrar" }).click();
   await expect(page.getByRole("status")).toContainText("Lançamento registrado. Fica para revisar.");
 
@@ -50,7 +56,8 @@ test("lançamento rápido: entra para revisar e sai da lista ao revisar", async 
   await expect(row).toContainText("12,34");
   await row.getByRole("link", { name, exact: true }).click();
   // o comprovante enviado pelo celular já está no lançamento
-  await expect(page.getByRole("region", { name: "Comprovantes" }).getByRole("link", { name: "recibo-rapido.pdf", exact: true })).toBeVisible();
+  if (ATTACHMENTS_ENABLED) await expect(page.getByRole("region", { name: "Comprovantes" }).getByRole("link", { name: "recibo-rapido.pdf", exact: true })).toBeVisible();
+  else await expect(page.getByRole("region", { name: "Comprovantes" })).toHaveCount(0);
   await page.getByRole("button", { name: "Marcar como revisado" }).click();
   await expect(page.getByText("Lançamento marcado como revisado.")).toBeVisible();
   await expect(page.getByRole("note")).toHaveCount(0);
