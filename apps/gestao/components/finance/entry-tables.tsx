@@ -73,11 +73,16 @@ const Head = memo(function Head({ columns, selectRows, virtual }: { columns: Col
 });
 
 const LEDGER_COLUMNS: Column[] = [{ label: "Data", className: "w-28" }, { label: "Histórico" }, { label: "Conta", className: "w-40" }, { label: "Forma pgto", className: "w-40" }, { label: "Documentos", className: "w-48" }, { label: "ID OFX", className: "w-36" }, { label: "Valor", className: "w-32 text-right" }];
-const SPLIT_COLUMNS: Column[] = [{ label: "Data", className: "w-24" }, { label: "Histórico" }, { label: "Conta" }, { label: "Forma pgto" }, { label: "Documentos" }, { label: "ID OFX" }, { label: "Valor", className: "text-right" }, { label: "Associado" }, { label: "Descrição" }, { label: "Rubrica" }];
+const SPLIT_COLUMNS: Column[] = [{ label: "Data", className: "w-24" }, { label: "Histórico" }, { label: "Conta" }, { label: "Forma pgto" }, { label: "Documentos" }, { label: "ID OFX" }, { label: "Valor", className: "text-right" }, { label: "Associado" }, { label: "Descrição" }, { label: "Rubrica", className: "w-40" }];
 
-/** Rubrica com código e cor do tipo, como na planilha: verde receita, vermelho despesa. */
+/**
+ * Rubrica com código e cor do tipo, como na planilha: verde receita, vermelho despesa.
+ * Na tabela a coluna tem largura fixa (`w-40` no cabeçalho, com o padding da célula): a etiqueta cabe
+ * no espaço útil (10rem − 1.25rem) e corta o nome com reticências, para a largura não variar
+ * conforme as rubricas das linhas visíveis.
+ */
 function CategoryTag({ code, name, kind }: { code: string | null; name: string; kind: "receita" | "despesa" | null }) {
-  return <span className={cn("inline-flex max-w-full items-center md:max-w-72 gap-1 truncate rounded px-1.5 py-0.5 font-medium",
+  return <span className={cn("inline-flex max-w-full items-center md:max-w-[8.75rem] gap-1 truncate rounded px-1.5 py-0.5 font-medium",
     kind === "receita" ? "bg-success-soft text-success" : kind === "despesa" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground")} title={code ? `${code} ${name}` : name}>
     {code && <span className="num shrink-0 opacity-80">{code}</span>}<span className="min-w-0 truncate">{name}</span>
   </span>;
