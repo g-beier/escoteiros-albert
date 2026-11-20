@@ -32,10 +32,20 @@ test.afterAll(() => {
   `);
 });
 
-/** Como chooseOption, mas só a opção visível: o Base UI deixa montada (sem tamanho) a lista do select anterior. */
+/**
+ * Como chooseOption, mas só a opção visível: o Base UI deixa montada (sem tamanho) a lista do select anterior.
+ * Espera a lista anterior terminar de fechar (animação) antes de abrir a próxima: com a máquina carregada, o clique
+ * no select seguinte caía durante o fechamento e se perdia, e a opção achada era a da lista que sumia.
+ */
 async function choose(page: Page, scope: Locator, label: string, option: string) {
-  await scope.getByLabel(label, { exact: true }).click();
-  const choice = page.getByRole("listbox").filter({ visible: true }).getByRole("option", { name: option, exact: true });
+  const visibleLists = page.getByRole("listbox").filter({ visible: true });
+  await expect(visibleLists).toHaveCount(0);
+  const trigger = scope.getByLabel(label, { exact: true });
+  await expect(async () => {
+    if (await visibleLists.count() === 0) await trigger.click();
+    await expect(visibleLists).toHaveCount(1, { timeout: 1_000 });
+  }).toPass();
+  const choice = visibleLists.getByRole("option", { name: option, exact: true });
   await expect(choice).toBeVisible();
   await choice.click();
 }
