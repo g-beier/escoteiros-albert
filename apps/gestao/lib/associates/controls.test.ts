@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  activeFunctionKinds, addMonths, associateAudiences, audienceFromSlug, audiencesSummary, cellValue, columnTotals, filterBlocks, pendingCount, directorateFromSlug, directorateSlug, effectiveStatus,
+  activeFunctionKinds, addMonths, associateAudiences, audienceFromSlug, audiencesSummary, cellValue, columnTotals, filterBlocks, pendingCount, relativesOnce, scouterCounts, scouterSections, directorateFromSlug, directorateSlug, effectiveStatus,
   hiddenDirectorates, hiddenParam, isPending, matrixCell, matrixGroups, pendingByDirectorate, rowHasPending, shortDate, statusMap, suggestedValidUntil, validityLabel,
   type AssociateFunction, type ControlAudience, type ControlItem, type ControlStatusRow, type MatrixPerson,
 } from "./controls";
@@ -12,7 +12,7 @@ const status = (associate_id: string, item_id: string, effective_status: Control
   associate_id, relative_id: null, item_id, status: effective_status, effective_status, status_date: null, valid_until: null, value_year: null, note: null, updated_at: "2026-01-01",
 });
 const fn = (associate_id: string, kind: AssociateFunction["kind"], started_on: string | null, ended_on: string | null = null): AssociateFunction =>
-  ({ id: `${associate_id}-${kind}`, associate_id, kind, title: null, started_on, ended_on });
+  ({ id: `${associate_id}-${kind}`, associate_id, kind, title: null, started_on, ended_on, section_id: null, section: null });
 
 describe("situação e validade", () => {
   it("ok vencido vira desatualizado; o resto fica", () => {
@@ -155,5 +155,46 @@ describe("responsáveis na matriz e valor inicial", () => {
   });
   it("resumo dos públicos com o valor inicial", () => {
     expect(audiencesSummary([{ audience: "responsavel", initial_status: null }, { audience: "jovem", initial_status: "pendente" }])).toBe("Jovem: Pend. · Responsável: —");
+  });
+});
+
+describe("escotistas nas seções", () => {
+  const scouter = (associate_id: string, section_id: string, ended_on: string | null = null): AssociateFunction =>
+    ({ id: `${associate_id}-${section_id}`, associate_id, kind: "escotista", title: null, started_on: "2024-01-01", ended_on, section_id, section: section_id.toUpperCase() });
+  const functions = [scouter("a", "s1"), scouter("a", "s1"), scouter("b", "s1"), scouter("c", "s2", "2025-01-01"), scouter("d", "s2"), fn("e", "dirigente", null)];
+
+  it("conta pessoas ativas com função ativa, uma vez por seção", () => {
+    expect(scouterCounts(functions, new Set(["a", "b", "c", "e"]), "2026-11-19")).toEqual({ s1: 2 });
+  });
+  it("seções de cada escotista", () => {
+    expect(scouterSections([...functions, scouter("a", "s0")], "2026-11-19")).toEqual(new Map([["a", ["S0", "S1"]], ["b", ["S1"]], ["d", ["S2"]]]));
+  });
+});
+
+describe("relativesOnce", () => {
+  const youth = (id: string): MatrixPerson => ({ id, name: id, active: true, audiences: ["jovem"] });
+  const relative = (id: string): MatrixPerson => ({ id, name: id, active: true, audiences: ["responsavel"], relative: true });
+
+  it("responsável compartilhado só sob o primeiro irmão da lista", () => {
+    const blocks = relativesOnce([
+      { person: youth("ana"), relatives: [relative("mae"), relative("pai")] },
+      { person: youth("bia"), relatives: [relative("mae")] },
+      { person: youth("caio"), relatives: [relative("pai"), relative("avo")] },
+    ]);
+    expect(blocks.map((b) => [b.person.id, b.relatives.map((r) => r.id)])).toEqual([["ana", ["mae", "pai"]], ["bia", []], ["caio", ["avo"]]]);
+  });
+  it("família recomposta: fica sob o jovem casa (legal), não sob o primeiro da lista", () => {
+    // Luana: "outro" da Isa (primeira da lista) e mãe legal da Sol
+    const blocks = [
+      { person: youth("isa"), relatives: [relative("roberto"), relative("luana")] },
+      { person: youth("sol"), relatives: [relative("luana"), relative("roberto")] },
+    ];
+    const homes = new Map([["luana", "sol"], ["roberto", "isa"]]);
+    expect(relativesOnce(blocks, homes).map((b) => [b.person.id, b.relatives.map((r) => r.id)])).toEqual([["isa", ["roberto"]], ["sol", ["luana"]]]);
+    // casa fora dos blocos mostrados (filtro): fica no primeiro mostrado
+    expect(relativesOnce(blocks.slice(0, 1), homes)[0].relatives.map((r) => r.id)).toEqual(["roberto", "luana"]);
+  });
+  it("associado com o mesmo id do responsável não conta", () => {
+    expect(relativesOnce([{ person: youth("x"), relatives: [] }, { person: youth("y"), relatives: [relative("x")] }])[1].relatives).toHaveLength(1);
   });
 });

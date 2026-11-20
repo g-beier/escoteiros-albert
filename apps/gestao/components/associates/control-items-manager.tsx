@@ -22,6 +22,7 @@ import {
   orderedItems, statusLabels, validityLabel, valueKindLabels, type ControlAudience, type ControlItem, type Directorate,
 } from "@/lib/associates/controls";
 import { Field } from "./associate-form";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 const kindOptions = CONTROL_ITEM_KINDS.map((value) => ({ value, label: itemKindLabels[value] }));
 const directorateOptions = DIRECTORATES.map((value) => ({ value, label: directorateLabels[value] }));
@@ -174,7 +175,7 @@ function ItemForm({ item, directorate: initialDirectorate, onDone }: { item: Con
       <DialogTitle>{item ? `Editar ${item.name}` : "Novo item de controle"}</DialogTitle>
       <DialogDescription>Validade em branco: não vence. Ao desligar alguém, os itens marcados para remover ficam “a remover”.</DialogDescription>
     </DialogHeader>
-    <form action={action} className="grid gap-3">
+    <ActionForm action={action} className="grid gap-3">
       {item && <><input type="hidden" name="id" value={item.id} /><input type="hidden" name="active" value={String(item.active)} /></>}
       <input type="hidden" name="kind" value={kind} />
       <input type="hidden" name="valueKind" value={valueKind} />
@@ -231,6 +232,6 @@ function ItemForm({ item, directorate: initialDirectorate, onDone }: { item: Con
         <Button type="button" variant="outline" onClick={onDone}>Cancelar</Button>
         <Button type="submit" disabled={pending}>{pending ? "Salvando…" : item ? "Salvar item" : "Criar item"}</Button>
       </DialogFooter>
-    </form>
+    </ActionForm>
   </>;
 }

@@ -57,14 +57,20 @@ export function audienceFromSlug(value: string | undefined | null): MatrixAudien
 
 // Funções do adulto -----------------------------------------------------------------------------
 
-export const FUNCTION_KINDS = ["escotista", "dirigente"] as const;
+export const FUNCTION_KINDS = ["escotista", "dirigente", "honorifico", "colaborador", "contribuinte", "comissao_fiscal"] as const;
 export type FunctionKind = (typeof FUNCTION_KINDS)[number];
-export const functionKindLabels: Record<FunctionKind, string> = { escotista: "Escotista", dirigente: "Dirigente" };
+export const functionKindLabels: Record<FunctionKind, string> = {
+  escotista: "Escotista", dirigente: "Dirigente", honorifico: "Honorífico", colaborador: "Colaborador", contribuinte: "Contribuinte",
+  comissao_fiscal: "Comissão fiscal",
+};
 export const isFunctionKind = (value: string): value is FunctionKind => (FUNCTION_KINDS as readonly string[]).includes(value);
 
-/** Linha de `associate_function_rows`. */
+/** Linha de `associate_function_rows`. `section`: seção do escotista (052; obrigatória ao adicionar ou editar). */
 export type AssociateFunction = {
   id: string; associate_id: string; kind: FunctionKind; title: string | null; started_on: string | null; ended_on: string | null;
+  section_id: string | null; section: string | null;
+  /** Dirigente eleito (054): em negrito no Doc 10. */
+  elected?: boolean;
 };
 
 /** Função ativa na data `on`, como `associate_function_rows.active`: sem fim ou com fim depois de `on`. */
@@ -82,6 +88,26 @@ export function activeFunctionKinds(functions: AssociateFunction[], on: string):
     kinds.set(fn.associate_id, set);
   }
   return kinds;
+}
+
+/** Seções em que cada associado é escotista hoje (id → nomes, sem repetir, por nome). */
+export function scouterSections(functions: AssociateFunction[], on: string): Map<string, string[]> {
+  const sections = new Map<string, Set<string>>();
+  for (const fn of functions) {
+    if (fn.kind !== "escotista" || !fn.section || !isFunctionActive(fn, on)) continue;
+    sections.set(fn.associate_id, (sections.get(fn.associate_id) ?? new Set()).add(fn.section));
+  }
+  return new Map([...sections].map(([id, names]) => [id, [...names].sort((a, b) => a.localeCompare(b, "pt-BR"))]));
+}
+
+/** Escotistas ativos por seção (id da seção → quantidade de pessoas). `activeIds`: associados ativos. */
+export function scouterCounts(functions: AssociateFunction[], activeIds: ReadonlySet<string>, on: string): Record<string, number> {
+  const people = new Map<string, Set<string>>();
+  for (const fn of functions) {
+    if (fn.kind !== "escotista" || !fn.section_id || !activeIds.has(fn.associate_id) || !isFunctionActive(fn, on)) continue;
+    people.set(fn.section_id, (people.get(fn.section_id) ?? new Set()).add(fn.associate_id));
+  }
+  return Object.fromEntries([...people].map(([id, set]) => [id, set.size]));
 }
 
 /** Público do associado (como a visão `associate_audiences`): só pelo ramo; as funções não mudam o público. */
@@ -286,8 +312,28 @@ export const rowHasPending = (person: MatrixPerson, items: ControlItem[], rows: 
     return (cell.applies || cell.row) && isPending(cell.status);
   });
 
-/** Bloco da aba Jovens: o jovem e, logo abaixo, os seus responsáveis (o compartilhado aparece sob cada irmão). */
+/** Bloco da aba Jovens: o jovem e, logo abaixo, os seus responsáveis (o compartilhado, só sob o primeiro irmão: `relativesOnce`). */
 export type MatrixBlock = { person: MatrixPerson; relatives: MatrixPerson[] };
+
+/**
+ * Responsável compartilhado (irmãos, famílias recompostas) uma vez só: fica sob o seu jovem "casa" (`homes`, de
+ * `relativeHomes`: responsável legal, depois mãe/pai, depois o primeiro da lista) quando esse jovem está entre os
+ * blocos mostrados; senão, sob o primeiro bloco em que aparece. Os jovens continuam na lista; só a linha do
+ * responsável não se repete.
+ */
+export function relativesOnce(blocks: MatrixBlock[], homes: ReadonlyMap<string, string> = new Map()): MatrixBlock[] {
+  const shown = new Set(blocks.map((block) => block.person.id));
+  const owner = new Map<string, string>();
+  for (const block of blocks) {
+    for (const relative of block.relatives) {
+      const key = personKey(relative);
+      if (owner.has(key)) continue;
+      const home = homes.get(relative.id);
+      owner.set(key, home && shown.has(home) ? home : block.person.id);
+    }
+  }
+  return blocks.map((block) => ({ ...block, relatives: block.relatives.filter((relative) => owner.get(personKey(relative)) === block.person.id) }));
+}
 
 /** Filtros da matriz por bloco: a busca e "só pendências" valem se o jovem ou um dos seus responsáveis atende. */
 export function filterBlocks(blocks: MatrixBlock[], items: ControlItem[], rows: Map<string, ControlStatusRow>,

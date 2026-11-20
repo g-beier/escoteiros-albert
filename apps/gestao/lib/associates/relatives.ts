@@ -34,22 +34,33 @@ export function orderedLinks<T extends Pick<RelativeLink, "position" | "kinship"
     || a.relative_name.localeCompare(b.relative_name, "pt-BR", { sensitivity: "base" }));
 }
 
-/** Vínculos por jovem (id → vínculos em ordem). */
+/**
+ * Ordem dos responsáveis de um jovem em toda parte (ficha, matriz do controle de dados, relatórios): legais primeiro,
+ * depois mãe/pai, depois "outro"; dentro de cada grupo, a ordem do cadastro (`orderedLinks`). Mesma prioridade do
+ * jovem "casa" (`relativeHomes`).
+ */
+export function guardianOrder<T extends Pick<RelativeLink, "position" | "kinship" | "relative_name" | "legal">>(links: T[]): T[] {
+  const rank = (link: T) => (link.legal ? 0 : 2) + (link.kinship === "outro" ? 1 : 0);
+  return orderedLinks(links).map((link, index) => ({ link, index })).sort((a, b) => rank(a.link) - rank(b.link) || a.index - b.index).map(({ link }) => link);
+}
+
+/** Vínculos por jovem (id → vínculos em `guardianOrder`). */
 export function linksByAssociate<T extends RelativeLink>(links: T[]): Map<string, T[]> {
   const map = new Map<string, T[]>();
   for (const link of links) map.set(link.associate_id, [...(map.get(link.associate_id) ?? []), link]);
-  for (const [key, list] of map) map.set(key, orderedLinks(list));
+  for (const [key, list] of map) map.set(key, guardianOrder(list));
   return map;
 }
 
 /**
- * Linhas dos responsáveis sob um jovem na matriz: público "responsavel", parentesco no detalhe. Ativo se algum
+ * Linhas dos responsáveis sob um jovem na matriz, na ordem `guardianOrder` (legais primeiro): público "responsavel",
+ * parentesco no detalhe. Ativo se algum
  * jovem ligado a ele estiver ativo (desligados sem registro não são cobrados). O responsável que também é associado
  * ativo (`activeAssociates`) fica de fora: os itens dele já são controlados na linha de adulto; se o associado
  * estiver desligado, a linha volta, com as situações próprias do responsável.
  */
 export function relativeRows(links: RelativeLink[], activeRelatives: ReadonlySet<string>, activeAssociates: ReadonlySet<string> = new Set()): MatrixPerson[] {
-  return orderedLinks(links).filter((link) => !link.relative_associate_id || !activeAssociates.has(link.relative_associate_id)).map((link) => ({
+  return guardianOrder(links).filter((link) => !link.relative_associate_id || !activeAssociates.has(link.relative_associate_id)).map((link) => ({
     id: link.relative_id, name: link.relative_name, relative: true, audiences: ["responsavel"],
     active: activeRelatives.has(link.relative_id), detail: kinshipText(link),
   }));
@@ -71,4 +82,25 @@ export function kinshipNoteError(kinship: Kinship, note: string | null): string 
   if (kinship !== "outro") return null;
   if (!note) return "Descreva o parentesco (ex.: irmã, avó).";
   return note.length > 40 ? "Parentesco: no máximo 40 caracteres." : null;
+}
+
+/**
+ * Jovem "casa" de cada responsável (id do responsável → id do jovem), entre os jovens de `order` (id → posição na
+ * lista): o vínculo de responsável legal, depois o de mãe/pai (não "outro"), depois o primeiro da lista. É onde o
+ * responsável compartilhado aparece por inteiro (Doc 10, matriz do controle de dados); nos demais, só a referência.
+ */
+export function relativeHomes(links: Pick<RelativeLink, "associate_id" | "relative_id" | "legal" | "kinship">[], order: ReadonlyMap<string, number>): Map<string, string> {
+  const rank = (link: (typeof links)[number]) => [link.legal ? 0 : 1, link.kinship === "outro" ? 1 : 0, order.get(link.associate_id)!];
+  const best = new Map<string, (typeof links)[number]>();
+  for (const link of links) {
+    if (!order.has(link.associate_id)) continue;
+    const current = best.get(link.relative_id);
+    if (!current || compare(rank(link), rank(current)) < 0) best.set(link.relative_id, link);
+  }
+  return new Map([...best].map(([relativeId, link]) => [relativeId, link.associate_id]));
+}
+
+function compare(a: number[], b: number[]) {
+  for (let i = 0; i < a.length; i += 1) if (a[i] !== b[i]) return a[i] - b[i];
+  return 0;
 }

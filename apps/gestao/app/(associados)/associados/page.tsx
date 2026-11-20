@@ -9,9 +9,10 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { cn } from "@geas/ui/lib/utils";
 import { AssociateFilters } from "@/components/associates/associate-filters";
 import { AppHeader } from "@/components/associates/app-header";
+import { ReportsDialog } from "@/components/associates/reports-dialog";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import { SetupNeeded } from "@/components/shell/setup-needed";
-import { activeFunctionKinds } from "@/lib/associates/controls";
+import { activeFunctionKinds, scouterSections } from "@/lib/associates/controls";
 import { listGroups, matchesQuery, type ListGroup } from "@/lib/associates/list";
 import { ageInYears, ageLabel, BRANCH_TABS, isScoutBranch, statusFilter, todayISO, type AssociateProfile } from "@/lib/associates/model";
 import { dateBR } from "@/lib/format";
@@ -37,6 +38,7 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
   const status = statusFilter(params.situacao);
   const today = todayISO();
   const kinds = activeFunctionKinds(functions, today);
+  const scouterOf = scouterSections(functions, today);
 
   const active = all.filter((a) => a.active);
   const youth = active.filter((a) => a.branch !== "adulto").length;
@@ -48,7 +50,7 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
   const groups = listGroups(shown, branch, kinds);
   const shownActive = shown.filter((a) => a.active).length;
   const shownInactive = shown.length - shownActive;
-  const columns = 4;
+  const columns = 3;
 
   // Abas mantêm busca e situação; trocam só o ramo.
   const hrefFor = (ramo: string) => {
@@ -70,6 +72,7 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
           {onlyReview
             ? <Link href={reviewToggle(params, false)} className={PILL} title="Mostrar todos os associados"><IconBolt className="size-4" aria-hidden /> Só os para revisar <IconX className="size-3.5" aria-label="tirar o filtro" /></Link>
             : toReview > 0 && <Link href={reviewToggle(params, true)} className={PILL} title="Cadastros do registro rápido ainda não conferidos"><IconBolt className="size-4" aria-hidden /> {toReview} para revisar</Link>}
+          <ReportsDialog toReview={toReview} />
           {member.associates.canEdit && <Link href="/associados/novo" className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo associado</Link>}
         </>}>
         <SectionTabs label="Ramos" tabs={BRANCH_TABS.map((t) => ({ href: hrefFor(t.value), label: t.label, active: t.value === branch }))} />
@@ -85,18 +88,18 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
         </SectionHeader>
         {groups.length === 0
           ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhum associado encontrado.</p>
-          : <div className="overflow-x-auto"><Table className="min-w-[640px]">
+          : <div className="overflow-x-auto"><Table className="min-w-[520px]">
             <TableCaption className="sr-only">Associados por ramo</TableCaption>
             <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
               <TableHead className={HEAD_CLASS}>Nome</TableHead>
               <TableHead className={cn(HEAD_CLASS, "w-24 text-right")}>Idade</TableHead>
               <TableHead className={cn(HEAD_CLASS, "w-28")}>Nascimento</TableHead>
-              <TableHead className={cn(HEAD_CLASS, "w-28")}>Entrada</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {groups.map((group) => <Fragment key={group.key}>
                 <GroupRow group={group} columns={columns} />
-                {group.rows.map((row) => <AssociateLine key={row.id} associate={row} today={today} indent={group.level === "sub"} />)}
+                {group.rows.map((row) => <AssociateLine key={row.id} associate={row} today={today} indent={group.level === "sub"}
+                  scouterOf={group.key === "adulto-escotista" ? scouterOf.get(row.id) : undefined} />)}
               </Fragment>)}
             </TableBody>
           </Table></div>}
@@ -114,7 +117,7 @@ function reviewToggle(params: Search, on: boolean) {
   return next.size ? `/associados?${next}` : "/associados";
 }
 
-/** Subtítulo: ramo ou, nos adultos, Escotistas / Dirigentes / Sem função. */
+/** Subtítulo: ramo ou, nos adultos, o grupo por função (Escotistas, Dirigentes, Honoríficos, Comissão fiscal) ou Sem função. */
 function GroupRow({ group, columns }: { group: ListGroup; columns: number }) {
   return <TableRow className="hover:bg-transparent">
     <TableCell colSpan={columns} className={cn(CELL_CLASS, group.level === "root" ? "bg-secondary pt-3 text-sm font-bold" : "bg-muted/60 text-xs font-semibold text-muted-foreground")}
@@ -124,8 +127,9 @@ function GroupRow({ group, columns }: { group: ListGroup; columns: number }) {
   </TableRow>;
 }
 
-function AssociateLine({ associate, today, indent }: { associate: AssociateProfile; today: string; indent: boolean }) {
-  const place = [associate.section, associate.patrol].filter(Boolean).join(" › ");
+/** Linha do associado. Entrada, passagens e histórico ficam só na ficha. `scouterOf`: seções do escotista. */
+function AssociateLine({ associate, today, indent, scouterOf }: { associate: AssociateProfile; today: string; indent: boolean; scouterOf?: string[] }) {
+  const place = scouterOf?.join(", ") || [associate.section, associate.patrol].filter(Boolean).join(" › ");
   return <TableRow className={cn(!associate.active && "text-muted-foreground")}>
     <TableCell className={cn(CELL_CLASS, "whitespace-normal")} style={indent ? { paddingLeft: "2rem" } : undefined}>
       <Link href={`/associados/${associate.id}`} className="font-medium hover:underline">{associate.name}</Link>
@@ -135,6 +139,5 @@ function AssociateLine({ associate, today, indent }: { associate: AssociateProfi
     </TableCell>
     <TableCell className={cn(CELL_CLASS, "num text-right")}>{ageLabel(ageInYears(associate.birth_date, today))}</TableCell>
     <TableCell className={cn(CELL_CLASS, "num")}>{associate.birth_date ? dateBR(associate.birth_date) : "—"}</TableCell>
-    <TableCell className={cn(CELL_CLASS, "num")}>{associate.joined_on ? dateBR(associate.joined_on) : "—"}</TableCell>
   </TableRow>;
 }

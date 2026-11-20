@@ -11,8 +11,13 @@ test.describe.configure({ mode: "serial" });
 const item = uniqueName("Canal");
 const youth = uniqueName("Jovem controle");
 const adult = uniqueName("Adulto controle");
+const troop = uniqueName("Tropa função");
 const literal = (value: string) => `'${value.replaceAll("'", "''")}'`;
 const group = `(select m.group_id from public.memberships m join auth.users u on u.id = m.user_id where u.email = ${literal(E2E_ADMIN_EMAIL)})`;
+
+test.beforeAll(() => {
+  psql(`insert into public.sections(group_id, branch, name) values (${group}, 'escoteiro', ${literal(troop)});`);
+});
 
 test.afterAll(() => {
   const people = `(select id from public.associates where group_id = ${group} and name in (${[youth, adult].map(literal).join(", ")}))`;
@@ -23,6 +28,7 @@ test.afterAll(() => {
     delete from public.associate_movements where associate_id in ${people};
     delete from public.associates where id in ${people};
     delete from public.control_items where group_id = ${group} and name = ${literal(item)};
+    delete from public.sections where group_id = ${group} and name = ${literal(troop)};
   `);
 });
 
@@ -136,16 +142,36 @@ test("adulto: na matriz de Adultos com ou sem função; a função o leva para E
   await page.goto(detail);
   await page.getByRole("button", { name: "Adicionar função" }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Cargo (opcional)").fill("Assistente de seção");
+  // escotista exige a seção; o erro não apaga o que foi digitado (ActionForm)
+  await dialog.getByLabel("Cargo (opcional)").fill("Assistente");
+  await dialog.getByRole("button", { name: "Adicionar função" }).click();
+  await expect(page.getByText("Escolha a seção do escotista.")).toBeVisible();
+  await expect(dialog.getByLabel("Cargo (opcional)")).toHaveValue("Assistente");
+  await chooseOption(page, "Seção", new RegExp(`^${troop}`), dialog);
   await dialog.getByRole("button", { name: "Adicionar função" }).click();
   await expect(page.getByText("Função adicionada.")).toBeVisible();
-  await expect(page.getByRole("table", { name: "Funções do associado" })).toContainText("Escotista: Assistente de seção");
+  const functionsTable = page.getByRole("table", { name: "Funções do associado" });
+  await expect(functionsTable).toContainText("Escotista: Assistente");
+  await expect(functionsTable).toContainText(troop);
 
+  // a função é editável
+  await page.getByRole("button", { name: "Editar Escotista: Assistente" }).click();
+  await page.getByRole("dialog").getByLabel("Cargo (opcional)").fill("Assistente de seção");
+  await page.getByRole("dialog").getByRole("button", { name: "Salvar função" }).click();
+  await expect(page.getByText("Função salva.")).toBeVisible();
+  await expect(functionsTable).toContainText("Escotista: Assistente de seção");
+
+  // na lista, entre os escotistas, com a seção; e contado na seção
   await expect(await groupOf()).toContainText("Escotistas");
+  await expect(page.getByRole("row").filter({ has: page.getByRole("link", { name: adult }) })).toContainText(troop);
+  await page.goto("/associados/configuracoes/secoes");
+  const troopRow = page.getByRole("row").filter({ has: page.getByRole("textbox", { name: `Nome da seção ${troop}` }) });
+  await expect(troopRow.getByRole("cell").nth(1)).toHaveText("0"); // jovens
+  await expect(troopRow.getByRole("cell").nth(2)).toHaveText("1"); // escotistas
 
   // a função aparece abaixo do nome na matriz; o item continua se aplicando
   await page.goto(matrixUrl("adultos", adult));
-  await expect(page.getByRole("rowheader").filter({ hasText: adult })).toContainText("Escotista");
+  await expect(page.getByRole("rowheader").filter({ hasText: adult })).toContainText(`Escotista (${troop})`);
   await expect(matrixCell(page, adult)).toHaveAccessibleName(new RegExp(`${adult}: Sem registro$`));
 
   // itens que mostram um valor (Doc 22): o ano e a data curta aparecem na célula, situação ok pelo valor
@@ -162,6 +188,16 @@ test("adulto: na matriz de Adultos com ou sem função; a função o leva para E
   await dialog2.getByRole("button", { name: "Salvar situação" }).click();
   await expect(valueCell("Validade do registro")).toContainText("31/03/99");
   await expect(valueCell("Validade do registro")).toHaveAccessibleName(/: 31\/03\/99 \(OK\)$/);
+
+  // na tabela de funções, só "Editar"; encerrar e apagar ficam no diálogo de edição
+  await page.goto(detail);
+  const fnRow = page.getByRole("table", { name: "Funções do associado" }).getByRole("row").filter({ hasText: "Assistente de seção" });
+  await expect(fnRow.getByRole("button")).toHaveCount(1);
+  await fnRow.getByRole("button", { name: "Editar Escotista: Assistente de seção" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Encerrar", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Encerrar função" }).click();
+  await expect(page.getByText("Função encerrada.")).toBeVisible();
+  await expect(fnRow).not.toContainText("em exercício");
 });
 
 for (const width of [1280, 390]) {

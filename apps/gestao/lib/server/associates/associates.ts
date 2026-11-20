@@ -1,4 +1,4 @@
-import type { AssociateMove, AssociateMovement, AssociateProfile, ScoutBranch } from "@/lib/associates/model";
+import type { AssociateMove, AssociateMovement, AssociateProfile, Registration, ScoutBranch } from "@/lib/associates/model";
 import type { ExistingAssociate } from "@/lib/associates/import";
 import type { Db } from "@/lib/server/db";
 import { rowsOf, rpc, sb, unwrap } from "@/lib/server/supabase/db";
@@ -6,7 +6,7 @@ import { rowsOf, rpc, sb, unwrap } from "@/lib/server/supabase/db";
 // Cadastro de associados (040): leituras de `associate_profile_rows`, `associate_moves` e `associate_movements`;
 // escritas só pelas funções auditadas associates_* (conferem `can_manage_associates`).
 
-const PROFILE_COLUMNS = "id, name, branch, active, section_id, section, patrol_id, patrol, birth_date, promise_date, joined_on, notes, left_on, review_status";
+const PROFILE_COLUMNS = "id, name, branch, active, section_id, section, patrol_id, patrol, birth_date, promise_date, joined_on, notes, left_on, review_status, transition_started_on, registration, nickname";
 
 /** Associados do grupo (ativos e desligados), por nome. */
 export async function list(db: Db, groupId: string): Promise<AssociateProfile[]> {
@@ -35,7 +35,7 @@ export async function existingForImport(db: Db, groupId: string): Promise<Existi
 
 export type Dates = { birthDate: string | null; promiseDate: string | null; joinedOn: string | null };
 export type CreateInput = Dates & { name: string; branch: ScoutBranch; sectionId: string | null; patrolId: string | null; notes: string | null };
-export type UpdateInput = Dates & { id: string; name: string; notes: string | null };
+export type UpdateInput = Dates & { id: string; name: string; notes: string | null; registration: Registration; nickname: string | null };
 export type MoveInput = { id: string; date: string; branch: ScoutBranch; sectionId: string | null; patrolId: string | null };
 
 /** Cadastra (com a entrada na data de entrada, ou hoje) e devolve o id. */
@@ -59,16 +59,22 @@ export async function review(db: Db, groupId: string, ids: string[]): Promise<nu
   return rpc(db, "associates_review", { p_group_id: groupId, p_associate_ids: ids });
 }
 
+/** Marca o início da transição de ramo (ou a partida programada, no Pioneiro); `null` desmarca (050). */
+export async function setTransition(db: Db, id: string, date: string | null): Promise<void> {
+  await rpc(db, "associates_set_transition", { p_associate_id: id, p_date: date as string });
+}
+
 /** Cadastros do registro rápido ainda não revisados. */
 export async function countToReview(db: Db, groupId: string): Promise<number> {
   const { count } = await sb(db).from("associates").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("review_status", "para_revisar");
   return count ?? 0;
 }
 
-/** Nome, datas e observações; ramo, seção e equipe mudam só por passagem. */
+/** Nome, datas, observações, registro e apelido; ramo, seção e equipe mudam só por passagem. */
 export async function update(db: Db, input: UpdateInput): Promise<void> {
   await rpc(db, "associates_update", {
     p_associate_id: input.id, p_name: input.name, p_birth_date: input.birthDate, p_promise_date: input.promiseDate, p_joined_on: input.joinedOn, p_notes: input.notes,
+    p_registration: input.registration, p_nickname: input.nickname as string,
   });
 }
 

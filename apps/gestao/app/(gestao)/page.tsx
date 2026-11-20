@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { IconArrowRight, IconBolt, IconCake, IconCircleCheck, IconPlus, IconStar } from "@tabler/icons-react";
 import { PageBody, PageHeader } from "@geas/ui";
 import { buttonVariants } from "@geas/ui/components/button";
+import { Badge } from "@geas/ui/components/badge";
 import { ListCard, StatCard } from "@geas/ui/components/stat-card";
 import { cn } from "@geas/ui/lib/utils";
 import { NewEntryButton } from "@/components/finance/entries/entry-editor";
@@ -10,9 +11,10 @@ import { GestaoHeader } from "@/components/shell/gestao-header";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { ALL_DATES, currentYear } from "@/lib/finance/filters";
 import { todayInSaoPaulo } from "@/lib/finance/fees";
-import { formatCents } from "@/lib/format";
+import { dateBR, formatCents } from "@/lib/format";
 import { EXPIRY_WARNING_DAYS } from "@/lib/inventory/vocabulary";
 import { DATES_AFTER_DAYS, DATES_BEFORE_DAYS, relativeDay, VALIDITY_WARNING_DAYS } from "@/lib/associates/alerts";
+import { ageYearsMonthsLabel } from "@/lib/associates/model";
 import { overview as associatesOverview } from "@/lib/server/associates/home";
 import { REVIEW_HREF } from "@/lib/quick";
 import { countToReview as associatesToReview } from "@/lib/server/associates/associates";
@@ -25,6 +27,7 @@ type Module = "financeiro" | "inventario" | "associados";
 type Alert = { module: Module; count: number; label: string; href: string };
 
 const MODULE_LABEL: Record<Module, string> = { financeiro: "Financeiro", inventario: "Inventário", associados: "Associados" };
+const TRANSITION_BADGE = { critico: "destructive", aviso: "caution", iniciada: "info" } as const;
 const dayMonth = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 
 /**
@@ -51,6 +54,7 @@ export default async function Home() {
   const inAccounts = accounts.reduce((sum, a) => sum + (a.balanceCents ?? 0), 0);
 
   const plural = (count: number, one: string, many: string) => `${count === 1 ? one : many}`;
+  const lateTransitions = associates.transitions.filter((t) => t.level === "critico").length;
   const canQuick = member.finance.canEdit || member.inventory.canEdit || member.associates.canEdit;
   const alerts: Alert[] = ([
     { module: "financeiro", count: entriesReview, label: plural(entriesReview, "lançamento do registro rápido para revisar", "lançamentos do registro rápido para revisar"),
@@ -67,6 +71,8 @@ export default async function Home() {
     { module: "inventario", count: inventory.expired, label: plural(inventory.expired, "lote vencido", "lotes vencidos"), href: "/inventario/materiais?validade=vencido" },
     { module: "associados", count: associatesReview, label: plural(associatesReview, "cadastro do registro rápido para revisar", "cadastros do registro rápido para revisar"),
       href: REVIEW_HREF.associados },
+    { module: "associados", count: lateTransitions, label: plural(lateTransitions, "jovem que já devia ter passado de ramo", "jovens que já deviam ter passado de ramo"),
+      href: "/#transitions-title" },
     { module: "associados", count: associates.pending.jovem, label: plural(associates.pending.jovem, "pendência no controle dos jovens", "pendências no controle dos jovens"),
       href: "/associados/controle?pendencias=1" },
     { module: "associados", count: associates.pending.adulto, label: plural(associates.pending.adulto, "pendência no controle dos adultos", "pendências no controle dos adultos"),
@@ -108,13 +114,16 @@ export default async function Home() {
             </Link>
           </li>)}</ul>}
         </ListCard>
-        <ListCard title="Período de transição de ramo" titleId="transitions-title" href="/associados" linkLabel="Associados"
-          empty="Nenhum jovem em idade de transição.">
+        <ListCard title="Transição de ramo" titleId="transitions-title" href="/associados" linkLabel="Associados"
+          empty="Nenhum jovem em período de transição.">
           {associates.transitions.length > 0 && <ul className="m-0 list-none p-0">{associates.transitions.map((t) => <li key={t.associateId} className="border-t first:border-t-0">
             <Link href={`/associados/${t.associateId}`} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted">
-              <span className="min-w-0 flex-1 truncate">{t.name}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">{t.label}</span>
-              <span className="w-14 shrink-0 text-right text-xs num">{t.age} anos</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{t.name}</span>
+                <span className="block truncate text-xs text-muted-foreground">{t.label}</span>
+              </span>
+              <Badge variant={TRANSITION_BADGE[t.level]} className="shrink-0" title={`Até ${dateBR(t.criticalOn)}`}>{t.text}</Badge>
+              <span className="w-32 shrink-0 text-right text-xs num">{ageYearsMonthsLabel(t.age)}</span>
             </Link>
           </li>)}</ul>}
         </ListCard>

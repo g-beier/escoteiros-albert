@@ -12,7 +12,7 @@ import { PlacementFields, PlacementSelect, type Catalog } from "./placement-sele
 
 type Dialog = "passagem" | "desligar" | "reingressar" | null;
 
-/** Ações do detalhe: Passagem e Desligar (ativo) ou Reingressar (desligado), cada uma num diálogo com data. */
+/** Ações do detalhe: Passagem (só jovens) e Desligar (ativo) ou Reingressar (desligado), cada uma num diálogo com data. */
 export function AssociateActions({ associate, catalog, today }: { associate: AssociateProfile; catalog: Catalog; today: string }) {
   const [open, setOpen] = useState<Dialog>(null);
   const current: Placement = { branch: associate.branch, sectionId: associate.section_id ?? "", patrolId: associate.patrol_id ?? "" };
@@ -23,7 +23,7 @@ export function AssociateActions({ associate, catalog, today }: { associate: Ass
   return <>
     {associate.active
       ? <>
-        <Button variant="outline" size="lg" onClick={() => { setPlace(current); setOpen("passagem"); }}><IconArrowsExchange data-icon="inline-start" /> Passagem</Button>
+        {associate.branch !== "adulto" && <Button variant="outline" size="lg" onClick={() => { setPlace(current); setOpen("passagem"); }}><IconArrowsExchange data-icon="inline-start" /> Passagem</Button>}
         <Button variant="outline" size="lg" onClick={() => setOpen("desligar")}><IconLogout2 data-icon="inline-start" /> Desligar</Button>
       </>
       : <Button variant="outline" size="lg" onClick={() => setOpen("reingressar")}><IconLogin2 data-icon="inline-start" /> Reingressar</Button>}

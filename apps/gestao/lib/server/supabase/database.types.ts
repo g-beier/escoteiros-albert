@@ -27,14 +27,14 @@ isOneToOne: false
                   ]
                 },"associate_functions": {
                   Row: {
-                    "associate_id": string,"created_at": string,"created_by": string | null,"ended_on": string | null,"group_id": string,"id": string,"kind": Database["public"]['Enums']["associate_function_kind"],"started_on": string | null,"title": string | null
+                    "associate_id": string,"created_at": string,"created_by": string | null,"elected": boolean,"ended_on": string | null,"group_id": string,"id": string,"kind": Database["public"]['Enums']["associate_function_kind"],"section_id": string | null,"started_on": string | null,"title": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "associate_id": string,"created_at"?: string,"created_by"?: string | null,"ended_on"?: string | null,"group_id": string,"id"?: string,"kind": Database["public"]['Enums']["associate_function_kind"],"started_on"?: string | null,"title"?: string | null
+                    "associate_id": string,"created_at"?: string,"created_by"?: string | null,"elected"?: boolean,"ended_on"?: string | null,"group_id": string,"id"?: string,"kind": Database["public"]['Enums']["associate_function_kind"],"section_id"?: string | null,"started_on"?: string | null,"title"?: string | null
                   }
                   Update: {
-                    "associate_id"?: string,"created_at"?: string,"created_by"?: string | null,"ended_on"?: string | null,"group_id"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["associate_function_kind"],"started_on"?: string | null,"title"?: string | null
+                    "associate_id"?: string,"created_at"?: string,"created_by"?: string | null,"elected"?: boolean,"ended_on"?: string | null,"group_id"?: string,"id"?: string,"kind"?: Database["public"]['Enums']["associate_function_kind"],"section_id"?: string | null,"started_on"?: string | null,"title"?: string | null
                   }
                   Relationships: [
                     {
@@ -66,6 +66,12 @@ isOneToOne: false
       columns: ["group_id"]
 isOneToOne: false
       referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_functions_section_id_fkey"
+      columns: ["section_id"]
+isOneToOne: false
+      referencedRelation: "sections"
       referencedColumns: ["id"]
     }
                   ]
@@ -177,14 +183,14 @@ isOneToOne: false
                   ]
                 },"associates": {
                   Row: {
-                    "active": boolean,"birth_date": string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at": string,"group_id": string,"id": string,"joined_on": string | null,"name": string,"notes": string | null,"patrol_id": string | null,"promise_date": string | null,"review_status": string,"reviewed_at": string | null,"reviewed_by": string | null,"section_id": string | null,"updated_at": string
+                    "active": boolean,"birth_date": string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at": string,"group_id": string,"id": string,"joined_on": string | null,"name": string,"nickname": string | null,"notes": string | null,"patrol_id": string | null,"promise_date": string | null,"registration": Database["public"]['Enums']["associate_registration"],"review_status": string,"reviewed_at": string | null,"reviewed_by": string | null,"section_id": string | null,"transition_started_on": string | null,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "active"?: boolean,"birth_date"?: string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at"?: string,"group_id": string,"id"?: string,"joined_on"?: string | null,"name": string,"notes"?: string | null,"patrol_id"?: string | null,"promise_date"?: string | null,"review_status"?: string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"section_id"?: string | null,"updated_at"?: string
+                    "active"?: boolean,"birth_date"?: string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at"?: string,"group_id": string,"id"?: string,"joined_on"?: string | null,"name": string,"nickname"?: string | null,"notes"?: string | null,"patrol_id"?: string | null,"promise_date"?: string | null,"registration"?: Database["public"]['Enums']["associate_registration"],"review_status"?: string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"section_id"?: string | null,"transition_started_on"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "active"?: boolean,"birth_date"?: string | null,"branch"?: Database["public"]['Enums']["scout_branch"],"created_at"?: string,"group_id"?: string,"id"?: string,"joined_on"?: string | null,"name"?: string,"notes"?: string | null,"patrol_id"?: string | null,"promise_date"?: string | null,"review_status"?: string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"section_id"?: string | null,"updated_at"?: string
+                    "active"?: boolean,"birth_date"?: string | null,"branch"?: Database["public"]['Enums']["scout_branch"],"created_at"?: string,"group_id"?: string,"id"?: string,"joined_on"?: string | null,"name"?: string,"nickname"?: string | null,"notes"?: string | null,"patrol_id"?: string | null,"promise_date"?: string | null,"registration"?: Database["public"]['Enums']["associate_registration"],"review_status"?: string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"section_id"?: string | null,"transition_started_on"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -1412,7 +1418,7 @@ isOneToOne: false
                   ]
                 },"associate_function_rows": {
                   Row: {
-                    "active": boolean | null,"associate_id": string,"associate_name": string,"created_at": string,"ended_on": string | null,"group_id": string,"id": string,"kind": Database["public"]['Enums']["associate_function_kind"],"started_on": string | null,"title": string | null
+                    "active": boolean | null,"associate_id": string,"associate_name": string,"created_at": string,"elected": boolean,"ended_on": string | null,"group_id": string,"id": string,"kind": Database["public"]['Enums']["associate_function_kind"],"section": string | null,"section_id": string | null,"started_on": string | null,"title": string | null
                   }
                   ComputedFields: never
                   Relationships: [
@@ -1446,11 +1452,17 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "groups"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "associate_functions_section_id_fkey"
+      columns: ["section_id"]
+isOneToOne: false
+      referencedRelation: "sections"
+      referencedColumns: ["id"]
     }
                   ]
                 },"associate_profile_rows": {
                   Row: {
-                    "active": boolean,"birth_date": string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at": string,"group_id": string,"id": string,"joined_on": string | null,"left_on": string | null,"name": string,"notes": string | null,"patrol": string | null,"patrol_id": string | null,"promise_date": string | null,"review_status": string,"section": string | null,"section_id": string | null,"updated_at": string
+                    "active": boolean,"birth_date": string | null,"branch": Database["public"]['Enums']["scout_branch"],"created_at": string,"group_id": string,"id": string,"joined_on": string | null,"left_on": string | null,"name": string,"nickname": string | null,"notes": string | null,"patrol": string | null,"patrol_id": string | null,"promise_date": string | null,"registration": Database["public"]['Enums']["associate_registration"],"review_status": string,"section": string | null,"section_id": string | null,"transition_started_on": string | null,"updated_at": string
                   }
                   ComputedFields: never
                   Relationships: [
@@ -1870,10 +1882,13 @@ isOneToOne: false
 { Args: { "p_associate_id": string }; Returns: Json
                            },
 "associates_add_function":
-{ Args: { "p_associate_id": string,"p_kind": Database["public"]['Enums']["associate_function_kind"],"p_started_on": string,"p_title": string }; Returns: string
+{ Args: { "p_associate_id": string,"p_elected"?: boolean,"p_kind": Database["public"]['Enums']["associate_function_kind"],"p_section_id"?: string,"p_started_on": string,"p_title": string }; Returns: string
                            },
 "associates_check_details":
 { Args: { "p_birth_date": string,"p_joined_on": string,"p_name": string,"p_notes": string,"p_promise_date": string }; Returns: string
+                           },
+"associates_check_function_section":
+{ Args: { "p_current": string,"p_group_id": string,"p_kind": Database["public"]['Enums']["associate_function_kind"],"p_section_id": string }; Returns: undefined
                            },
 "associates_check_placement":
 { Args: { "p_branch": Database["public"]['Enums']["scout_branch"],"p_group_id": string,"p_patrol_id": string,"p_section_id": string }; Returns: undefined
@@ -1889,6 +1904,9 @@ isOneToOne: false
                            },
 "associates_end_function":
 { Args: { "p_ended_on": string,"p_function_id": string }; Returns: undefined
+                           },
+"associates_function_taken":
+{ Args: { "p_associate_id": string,"p_except": string,"p_kind": Database["public"]['Enums']["associate_function_kind"],"p_section_id": string,"p_title": string }; Returns: boolean
                            },
 "associates_leave":
 { Args: { "p_associate_id": string,"p_date": string,"p_reason": string }; Returns: undefined
@@ -1908,8 +1926,14 @@ isOneToOne: false
 "associates_seed_control_items":
 { Args: { "p_group_id": string }; Returns: number
                            },
+"associates_set_transition":
+{ Args: { "p_associate_id": string,"p_date": string }; Returns: undefined
+                           },
 "associates_update":
-{ Args: { "p_associate_id": string,"p_birth_date": string,"p_joined_on": string,"p_name": string,"p_notes": string,"p_promise_date": string }; Returns: undefined
+{ Args: { "p_associate_id": string,"p_birth_date": string,"p_joined_on": string,"p_name": string,"p_nickname": string,"p_notes": string,"p_promise_date": string,"p_registration": Database["public"]['Enums']["associate_registration"] }; Returns: undefined
+                           },
+"associates_update_function":
+{ Args: { "p_elected"?: boolean,"p_ended_on": string,"p_function_id": string,"p_kind": Database["public"]['Enums']["associate_function_kind"],"p_section_id": string,"p_started_on": string,"p_title": string }; Returns: undefined
                            },
 "attachment_path_entry":
 { Args: { "p_name": string }; Returns: Record<string, unknown>
@@ -2458,7 +2482,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "account_kind": "corrente"|"poupanca"|"caixa"|"outro","associate_function_kind": "escotista"|"dirigente","associate_movement_kind": "entrada"|"saida","associates_role": "manager"|"viewer","category_kind": "receita"|"despesa","control_audience": "jovem"|"adulto"|"responsavel","control_item_kind": "documento"|"sistema"|"canal"|"etapa","control_status": "ok"|"pendente"|"desatualizado"|"a_verificar"|"convidado"|"nao_se_aplica"|"a_remover"|"removido","control_value_kind": "situacao"|"ano"|"data","directorate": "metodos_educativos"|"administrativa"|"financeira"|"comunicacao","fee_due_rule": "dia_fixo"|"dia_util"|"fim_do_mes","fee_status": "pago"|"atencao"|"nao_pago"|"isento","inventory_condition": "novo"|"bom"|"regular"|"ruim"|"manutencao"|"inservivel","inventory_movement_kind": "entrada"|"transferencia"|"condicao"|"ajuste"|"baixa"|"edicao","inventory_origin": "compra"|"doacao"|"fabricacao"|"nao_informada","inventory_review_status": "para_revisar"|"revisado","inventory_role": "manager"|"chief"|"viewer","inventory_tracking": "unit"|"lot","inventory_write_off_reason": "perda"|"extravio"|"descarte"|"doacao"|"consumo","member_role": "admin"|"treasurer"|"viewer","relative_kinship": "mae"|"pai"|"outro","scout_branch": "lobinho"|"escoteiro"|"senior"|"pioneiro"|"adulto","statement_line_status": "aberta"|"conciliada"|"ignorada"
+            "account_kind": "corrente"|"poupanca"|"caixa"|"outro","associate_function_kind": "escotista"|"dirigente"|"honorifico"|"comissao_fiscal"|"colaborador"|"contribuinte","associate_movement_kind": "entrada"|"saida","associate_registration": "provisorio"|"definitivo","associates_role": "manager"|"viewer","category_kind": "receita"|"despesa","control_audience": "jovem"|"adulto"|"responsavel","control_item_kind": "documento"|"sistema"|"canal"|"etapa","control_status": "ok"|"pendente"|"desatualizado"|"a_verificar"|"convidado"|"nao_se_aplica"|"a_remover"|"removido","control_value_kind": "situacao"|"ano"|"data","directorate": "metodos_educativos"|"administrativa"|"financeira"|"comunicacao","fee_due_rule": "dia_fixo"|"dia_util"|"fim_do_mes","fee_status": "pago"|"atencao"|"nao_pago"|"isento","inventory_condition": "novo"|"bom"|"regular"|"ruim"|"manutencao"|"inservivel","inventory_movement_kind": "entrada"|"transferencia"|"condicao"|"ajuste"|"baixa"|"edicao","inventory_origin": "compra"|"doacao"|"fabricacao"|"nao_informada","inventory_review_status": "para_revisar"|"revisado","inventory_role": "manager"|"chief"|"viewer","inventory_tracking": "unit"|"lot","inventory_write_off_reason": "perda"|"extravio"|"descarte"|"doacao"|"consumo","member_role": "admin"|"treasurer"|"viewer","relative_kinship": "mae"|"pai"|"outro","scout_branch": "filhote"|"lobinho"|"escoteiro"|"senior"|"pioneiro"|"adulto","statement_line_status": "aberta"|"conciliada"|"ignorada"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -2574,7 +2598,7 @@ export type CompositeTypes<
 export const Constants = {
   "public": {
           Enums: {
-            "account_kind": ["corrente", "poupanca", "caixa", "outro"],"associate_function_kind": ["escotista", "dirigente"],"associate_movement_kind": ["entrada", "saida"],"associates_role": ["manager", "viewer"],"category_kind": ["receita", "despesa"],"control_audience": ["jovem", "adulto", "responsavel"],"control_item_kind": ["documento", "sistema", "canal", "etapa"],"control_status": ["ok", "pendente", "desatualizado", "a_verificar", "convidado", "nao_se_aplica", "a_remover", "removido"],"control_value_kind": ["situacao", "ano", "data"],"directorate": ["metodos_educativos", "administrativa", "financeira", "comunicacao"],"fee_due_rule": ["dia_fixo", "dia_util", "fim_do_mes"],"fee_status": ["pago", "atencao", "nao_pago", "isento"],"inventory_condition": ["novo", "bom", "regular", "ruim", "manutencao", "inservivel"],"inventory_movement_kind": ["entrada", "transferencia", "condicao", "ajuste", "baixa", "edicao"],"inventory_origin": ["compra", "doacao", "fabricacao", "nao_informada"],"inventory_review_status": ["para_revisar", "revisado"],"inventory_role": ["manager", "chief", "viewer"],"inventory_tracking": ["unit", "lot"],"inventory_write_off_reason": ["perda", "extravio", "descarte", "doacao", "consumo"],"member_role": ["admin", "treasurer", "viewer"],"relative_kinship": ["mae", "pai", "outro"],"scout_branch": ["lobinho", "escoteiro", "senior", "pioneiro", "adulto"],"statement_line_status": ["aberta", "conciliada", "ignorada"]
+            "account_kind": ["corrente", "poupanca", "caixa", "outro"],"associate_function_kind": ["escotista", "dirigente", "honorifico", "comissao_fiscal", "colaborador", "contribuinte"],"associate_movement_kind": ["entrada", "saida"],"associate_registration": ["provisorio", "definitivo"],"associates_role": ["manager", "viewer"],"category_kind": ["receita", "despesa"],"control_audience": ["jovem", "adulto", "responsavel"],"control_item_kind": ["documento", "sistema", "canal", "etapa"],"control_status": ["ok", "pendente", "desatualizado", "a_verificar", "convidado", "nao_se_aplica", "a_remover", "removido"],"control_value_kind": ["situacao", "ano", "data"],"directorate": ["metodos_educativos", "administrativa", "financeira", "comunicacao"],"fee_due_rule": ["dia_fixo", "dia_util", "fim_do_mes"],"fee_status": ["pago", "atencao", "nao_pago", "isento"],"inventory_condition": ["novo", "bom", "regular", "ruim", "manutencao", "inservivel"],"inventory_movement_kind": ["entrada", "transferencia", "condicao", "ajuste", "baixa", "edicao"],"inventory_origin": ["compra", "doacao", "fabricacao", "nao_informada"],"inventory_review_status": ["para_revisar", "revisado"],"inventory_role": ["manager", "chief", "viewer"],"inventory_tracking": ["unit", "lot"],"inventory_write_off_reason": ["perda", "extravio", "descarte", "doacao", "consumo"],"member_role": ["admin", "treasurer", "viewer"],"relative_kinship": ["mae", "pai", "outro"],"scout_branch": ["filhote", "lobinho", "escoteiro", "senior", "pioneiro", "adulto"],"statement_line_status": ["aberta", "conciliada", "ignorada"]
           }
         }
 } as const

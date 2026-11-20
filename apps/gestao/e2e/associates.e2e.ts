@@ -59,6 +59,18 @@ test("secretaria: cadastrar, passagem, desligar e reingressar", async ({ page })
   await expect(periods).toContainText("01/03/2020");
   await expect(periods).toContainText("em atividade");
 
+  // cadastro novo começa com registro provisório; na edição, registro definitivo e apelido
+  const registro = page.locator("dt", { hasText: "Registro" }).locator("xpath=following-sibling::dd[1]");
+  await expect(registro).toHaveText("Provisório");
+  const detail = page.url();
+  await page.getByRole("link", { name: "Editar" }).click();
+  await page.getByRole("radio", { name: /Definitivo/ }).click();
+  await page.getByLabel("Apelido (opcional)").fill("Teste");
+  await page.getByRole("button", { name: "Salvar" }).click();
+  await expect(page).toHaveURL(detail);
+  await expect(registro).toHaveText("Definitivo");
+  await expect(page.locator("dt", { hasText: "Apelido" }).locator("xpath=following-sibling::dd[1]")).toHaveText("Teste");
+
   // na lista: aba do ramo, só por ramo (seção e equipe como texto pequeno na linha)
   await page.goto("/associados?ramo=escoteiro");
   await expect(page.getByRole("navigation", { name: "Ramos" }).getByRole("link", { name: "Escoteiro" })).toHaveAttribute("aria-current", "page");

@@ -1,4 +1,5 @@
-import { ageInYears, type AssociateProfile, type ScoutBranch } from "./model";
+import { FILHOTES_ENABLED } from "@/lib/features";
+import { ageInYearsMonths, type AssociateProfile, type ScoutBranch } from "./model";
 
 // Alertas do Associados para o Início geral: datas comemorativas por perto e jovens em período de transição de ramo.
 
@@ -9,15 +10,36 @@ export const DATES_AFTER_DAYS = 15;
 export const VALIDITY_WARNING_DAYS = 30;
 
 /**
- * Períodos de transição de ramo (docs/associados/modelo.md, Faixa do ramo / Transição): o jovem aparece no alerta
- * a partir de `fromAge` (anos completos) enquanto continuar no ramo. Provisório: o grupo ainda vai confirmar as idades.
+ * Faixas dos ramos (POR): Filhote dos 5 aos 7 (se o grupo tiver o ramo; aí o Lobinho começa aos 7, com transição a
+ * partir dos 6½), senão Lobinho a partir de 6½ anos; Escoteiro aos 10–11, Sênior aos 14–15, Pioneiro no aniversário
+ * de 18, partida do Pioneiro entre 18 e 22. Para cada ramo, a transição tem dois alertas, contados da data de nascimento:
+ * - aviso (`warnMonths`): hora de pensar na transição (ou, no Pioneiro, de programar a partida);
+ * - crítico (`criticalMonths`): já devia estar no ramo seguinte (ou ter saído). `afterBirthday`: o crítico começa no dia
+ *   seguinte ao aniversário (Sênior → Pioneiro é exatamente no aniversário de 18 anos, não antes).
+ * Marcar "começamos a transição" (`transition_started_on`, 050) troca o aviso por "em transição"; o crítico continua
+ * valendo até a passagem (troca de ramo) ou o desligamento, que apagam a marca.
  */
-export const TRANSITIONS: { branch: ScoutBranch; fromAge: number; label: string }[] = [
-  { branch: "lobinho", fromAge: 10, label: "Lobinho → Escoteiro" },
-  { branch: "escoteiro", fromAge: 14, label: "Escoteiro → Sênior" },
-  { branch: "senior", fromAge: 17, label: "Sênior → Pioneiro" },
-  { branch: "pioneiro", fromAge: 21, label: "Pioneiro → Adulto" },
+export type TransitionRule = {
+  branch: ScoutBranch; label: string; warnMonths: number; criticalMonths: number; afterBirthday?: boolean;
+  warn: string; critical: string; started: string; startAction: string;
+};
+const FILHOTE_RULE: TransitionRule = { branch: "filhote", label: "Filhote → Lobinho", warnMonths: 6 * 12 + 6, criticalMonths: 7 * 12,
+  warn: "Pensar na transição", critical: "Já devia estar no Lobinho", started: "Em transição", startAction: "Começamos a transição" };
+
+const BASE_RULES: TransitionRule[] = [
+  { branch: "lobinho", label: "Lobinho → Escoteiro", warnMonths: 10 * 12, criticalMonths: 11 * 12,
+    warn: "Pensar na transição", critical: "Já devia estar no Escoteiro", started: "Em transição", startAction: "Começamos a transição" },
+  { branch: "escoteiro", label: "Escoteiro → Sênior", warnMonths: 14 * 12, criticalMonths: 15 * 12,
+    warn: "Pensar na transição", critical: "Já devia estar no Sênior", started: "Em transição", startAction: "Começamos a transição" },
+  { branch: "senior", label: "Sênior → Pioneiro", warnMonths: 17 * 12 + 6, criticalMonths: 18 * 12, afterBirthday: true,
+    warn: "Preparar a passagem no aniversário de 18 anos", critical: "Passou do aniversário de 18 anos", started: "Em transição", startAction: "Começamos a transição" },
+  { branch: "pioneiro", label: "Partida do Pioneiro", warnMonths: 21 * 12 + 6, criticalMonths: 22 * 12,
+    warn: "Programar a partida (desligar ou passar a adulto)", critical: "Passou dos 22 anos: falta a partida", started: "Partida programada", startAction: "Partida programada" },
 ];
+
+/** Regras de transição em uso; a do Filhote só com o ramo ligado (`FILHOTES_ENABLED`). */
+export const transitionRules = (filhotes: boolean) => (filhotes ? [FILHOTE_RULE, ...BASE_RULES] : BASE_RULES);
+export const TRANSITIONS = transitionRules(FILHOTES_ENABLED);
 
 export type DateKind = "aniversario" | "promessa";
 export type UpcomingDate = {
@@ -29,7 +51,20 @@ export type UpcomingDate = {
   /** Anos completados na data. */
   years: number;
 };
-export type Transition = { associateId: string; name: string; age: number; label: string };
+export type TransitionLevel = "aviso" | "iniciada" | "critico";
+export type Transition = {
+  associateId: string; name: string; label: string; level: TransitionLevel;
+  /** Idade hoje, em anos e meses completos. */
+  age: { years: number; months: number };
+  /** Texto do alerta ("Pensar na transição", "Já devia estar no Escoteiro"…). */
+  text: string;
+  /** Desde quando vale o aviso e quando começa o crítico (`AAAA-MM-DD`). */
+  warnOn: string; criticalOn: string;
+  /** Idade-limite do ramo (fim do período de transição), `AAAA-MM-DD`. */
+  dueOn: string;
+  /** Data em que a transição foi marcada como iniciada, se foi. */
+  startedOn: string | null;
+};
 
 const DAY = 86_400_000;
 const toTime = (iso: string) => Date.parse(`${iso}T12:00:00Z`);
@@ -70,14 +105,49 @@ export function upcomingDates(people: Pick<AssociateProfile, "id" | "name" | "ac
   return result.sort((a, b) => a.days - b.days || a.name.localeCompare(b.name, "pt-BR"));
 }
 
-/** Jovens ativos que já chegaram à idade de transição do próprio ramo (mais velhos primeiro). */
-export function transitions(people: Pick<AssociateProfile, "id" | "name" | "active" | "branch" | "birth_date">[], today: string): Transition[] {
-  return people.flatMap((person) => {
-    const rule = TRANSITIONS.find((t) => t.branch === person.branch);
-    const age = ageInYears(person.birth_date, today);
-    return person.active && rule && age !== null && age >= rule.fromAge
-      ? [{ associateId: person.id, name: person.name, age, label: rule.label }] : [];
-  }).sort((a, b) => b.age - a.age || a.name.localeCompare(b.name, "pt-BR"));
+/** `date` mais `months` meses; dia que não existe no mês de destino vira o último dia (31/08 + 6 meses = 28/02). */
+export function addMonths(date: string, months: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  const total = y * 12 + (m - 1) + months;
+  const year = Math.floor(total / 12);
+  const month = total % 12 + 1;
+  const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return `${year}-${String(month).padStart(2, "0")}-${String(Math.min(d, last)).padStart(2, "0")}`;
+}
+
+type TransitionPerson = Pick<AssociateProfile, "id" | "name" | "active" | "branch" | "birth_date"> & { transition_started_on?: string | null };
+
+/** Período de transição do ramo: do aviso (`warnOn`) à idade-limite (`dueOn`); o crítico começa em `criticalOn`. */
+export type TransitionWindow = { rule: TransitionRule; warnOn: string; dueOn: string; criticalOn: string };
+
+/** Período de transição do jovem no ramo atual, qualquer que seja hoje; nulo para adulto ou sem nascimento. */
+export function transitionWindow(person: Pick<TransitionPerson, "branch" | "birth_date">, rules = TRANSITIONS): TransitionWindow | null {
+  const rule = rules.find((t) => t.branch === person.branch);
+  if (!rule || !person.birth_date) return null;
+  const dueOn = addMonths(person.birth_date, rule.criticalMonths);
+  return { rule, warnOn: addMonths(person.birth_date, rule.warnMonths), dueOn, criticalOn: rule.afterBirthday ? toISO(toTime(dueOn) + DAY) : dueOn };
+}
+
+/** Situação da transição de um jovem ativo hoje, ou nula (fora da janela, adulto, desligado ou sem nascimento). */
+export function transitionOf(person: TransitionPerson, today: string, rules = TRANSITIONS): Transition | null {
+  const span = person.active ? transitionWindow(person, rules) : null;
+  if (!span || today < span.warnOn) return null;
+  const { rule, warnOn, dueOn, criticalOn } = span;
+  const startedOn = person.transition_started_on ?? null;
+  const level: TransitionLevel = today >= criticalOn ? "critico" : startedOn ? "iniciada" : "aviso";
+  const text = level === "critico" ? rule.critical : level === "iniciada" ? rule.started : rule.warn;
+  return {
+    associateId: person.id, name: person.name, age: ageInYearsMonths(person.birth_date, today) ?? { years: 0, months: 0 },
+    label: rule.label, level, text, warnOn, criticalOn, dueOn, startedOn,
+  };
+}
+
+const LEVEL_ORDER: Record<TransitionLevel, number> = { critico: 0, aviso: 1, iniciada: 2 };
+
+/** Jovens ativos na janela de transição do próprio ramo: críticos primeiro, depois avisos e em transição; mais velhos primeiro. */
+export function transitions(people: TransitionPerson[], today: string): Transition[] {
+  return people.flatMap((person) => transitionOf(person, today) ?? [])
+    .sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level] || a.criticalOn.localeCompare(b.criticalOn) || a.name.localeCompare(b.name, "pt-BR"));
 }
 
 /** Validades (`valid_until`) entre hoje e `days` dias à frente. */

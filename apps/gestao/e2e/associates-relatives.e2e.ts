@@ -5,7 +5,7 @@ import { chooseOption, uniqueName } from "./support/entries";
 
 // Responsáveis e valor inicial dos itens de controle (041), como o administrador E2E: itens com valor inicial por
 // público, jovem novo já com as situações iniciais, mãe cadastrada num jovem e vinculada ao irmão, situação da mãe
-// marcada na matriz aparecendo sob os dois irmãos, célula cinza fora do público. Nomes fictícios; tudo apagado no fim.
+// na matriz uma vez só, sob o primeiro irmão da lista, célula cinza fora do público. Nomes fictícios; tudo apagado no fim.
 test.describe.configure({ mode: "serial" });
 
 const shared = uniqueName("Canal família");
@@ -114,31 +114,30 @@ test("valor inicial, mãe compartilhada por irmãos e situação dela na matriz"
   await expect(page.getByText("Responsável vinculado.")).toBeVisible();
   await expect(relativesTable(page).getByRole("row").filter({ hasText: mother })).toContainText("compartilhado com 1 irmão");
 
-  // matriz: a busca pelo nome da mãe mostra os dois irmãos, cada um com a mãe logo abaixo
+  // matriz: a busca pelo nome da mãe mostra os dois irmãos; a mãe aparece uma vez só, sob o primeiro da lista
+  const [top, other] = [first, second].sort((a, b) => a.localeCompare(b, "pt-BR"));
   await page.goto(`/associados/controle?publico=jovens&q=${encodeURIComponent(mother)}`);
   await expect(page.getByRole("rowheader").filter({ has: page.getByRole("link", { name: first }) })).toBeVisible();
   await expect(page.getByRole("rowheader").filter({ has: page.getByRole("link", { name: second }) })).toBeVisible();
   await expect(cell(page, shared, first)).toHaveAccessibleName(/: Pendente$/);
-  await expect(motherCell(page, shared, first)).toHaveAccessibleName(/: Convidado$/);
-  await expect(motherCell(page, shared, second)).toHaveAccessibleName(/: Convidado$/);
+  await expect(motherCell(page, shared, top)).toHaveAccessibleName(/: Convidado$/);
+  await expect(motherCell(page, shared, other)).toHaveCount(0);
   // item só de responsável: célula do jovem cinza (sem botão), a da mãe sem registro
   await expect(cell(page, onlyRelative, first)).toHaveCount(0);
   await expect(page.getByRole("row").filter({ has: page.getByRole("link", { name: first }) })).toContainText("não se aplica a este tipo de pessoa");
-  await expect(motherCell(page, onlyRelative, first)).toHaveAccessibleName(/: Sem registro$/);
+  await expect(motherCell(page, onlyRelative, top)).toHaveAccessibleName(/: Sem registro$/);
 
-  // marcar a situação da mãe sob um irmão aparece sob o outro
-  await motherCell(page, shared, first).click();
+  await motherCell(page, shared, top).click();
   dialog = page.getByRole("dialog");
   await choose(page, dialog, "Situação", "OK");
   await dialog.getByRole("button", { name: "Salvar situação" }).click();
   await expect(page.getByText("Situação salva: OK.")).toBeVisible();
-  await expect(motherCell(page, shared, first)).toHaveAccessibleName(/: OK$/);
-  await expect(motherCell(page, shared, second)).toHaveAccessibleName(/: OK$/);
+  await expect(motherCell(page, shared, top)).toHaveAccessibleName(/: OK$/);
 
-  // a busca por um irmão traz o bloco dele, com a mãe
-  await page.goto(`/associados/controle?publico=jovens&q=${encodeURIComponent(second)}`);
-  await expect(motherCell(page, shared, second)).toBeVisible();
-  await expect(motherCell(page, shared, first)).toHaveCount(0);
+  // a busca só pelo outro irmão traz o bloco dele, com a mãe (é o primeiro da lista mostrada)
+  await page.goto(`/associados/controle?publico=jovens&q=${encodeURIComponent(other)}`);
+  await expect(motherCell(page, shared, other)).toHaveAccessibleName(/: OK$/);
+  await expect(motherCell(page, shared, top)).toHaveCount(0);
 
   // pai que também é associado ativo: aparece no detalhe, com o link, mas não na matriz de Jovens
   await page.goto(firstUrl);

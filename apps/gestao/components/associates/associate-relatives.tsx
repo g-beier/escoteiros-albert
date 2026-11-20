@@ -15,7 +15,7 @@ import { addRelative, unlinkRelative, updateRelative } from "@/app/(associados)/
 import { ActionDialog } from "@/components/shell/action-dialog";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import {
-  KINSHIPS, kinshipLabels, kinshipText, linkableRelatives, orderedLinks, roleText, siblingText,
+  KINSHIPS, kinshipLabels, kinshipText, guardianOrder, linkableRelatives, roleText, siblingText,
   type Relative, type RelativeLink,
 } from "@/lib/associates/relatives";
 import { Field } from "./associate-form";
@@ -36,7 +36,7 @@ export function AssociateRelatives({ associate, links, relatives, associates, ca
 }) {
   const [open, setOpen] = useState<Open>(null);
   const close = (value: boolean) => { if (!value) setOpen(null); };
-  const ordered = orderedLinks(links);
+  const ordered = guardianOrder(links);
   const linkable = linkableRelatives(relatives, links);
 
   return <SectionCard aria-labelledby="relatives-title">

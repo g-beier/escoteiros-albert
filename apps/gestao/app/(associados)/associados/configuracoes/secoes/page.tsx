@@ -17,7 +17,7 @@ export default async function SectionsPage() {
     <PageBody width="narrow">
       <PageHeader title="Configurações" tabs={<SettingsTabs current="secoes" canEdit={canEdit} />} crumbs={settingsCrumbs("secoes")}
         description={canEdit
-          ? "Seções de cada ramo e as equipes (matilhas, patrulhas) dos ramos que se dividem. Inativas deixam de aparecer nos cadastros e passagens."
+          ? "Seções de cada ramo e as equipes (matilhas, patrulhas) dos ramos que se dividem, com os jovens e os escotistas ativos. Inativas deixam de aparecer nos cadastros, passagens e funções."
           : "Seções de cada ramo e as equipes dos ramos que se dividem. Só a secretaria altera."} />
       <SectionsManager {...catalog} counts={counts} canEdit={canEdit} />
     </PageBody>

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { expiringSoon, relativeDay, transitions, upcomingDates } from "./alerts";
+import type { ScoutBranch } from "./model";
+import { addMonths, expiringSoon, relativeDay, transitionOf, transitionRules, transitions, transitionWindow, upcomingDates } from "./alerts";
 
-const person = (over: Partial<{ id: string; name: string; active: boolean; branch: "lobinho" | "escoteiro" | "senior" | "pioneiro" | "adulto"; birth_date: string | null; promise_date: string | null }>) =>
+const person = (over: Partial<{ id: string; name: string; active: boolean; branch: ScoutBranch; birth_date: string | null; promise_date: string | null }>) =>
   ({ id: "a", name: "Ana", active: true, branch: "lobinho" as const, birth_date: null, promise_date: null, ...over });
 
 describe("upcomingDates", () => {
@@ -32,15 +33,74 @@ describe("upcomingDates", () => {
 });
 
 describe("transitions", () => {
-  it("lista ativos a partir da idade de transição do ramo, mais velhos primeiro", () => {
+  const at = (branch: ScoutBranch, birth: string, today: string, started: string | null = null) =>
+    transitionOf({ ...person({ branch, birth_date: birth }), transition_started_on: started }, today);
+
+  it("Lobinho: aviso a partir dos 10 anos, crítico a partir dos 11", () => {
+    expect(at("lobinho", "2016-11-20", "2026-11-19")).toBeNull();
+    expect(at("lobinho", "2016-11-19", "2026-11-19")).toMatchObject({ level: "aviso", text: "Pensar na transição", age: { years: 10, months: 0 }, criticalOn: "2027-11-19", dueOn: "2027-11-19" });
+    expect(at("lobinho", "2015-11-19", "2026-11-19")).toMatchObject({ level: "critico", text: "Já devia estar no Escoteiro" });
+  });
+
+  it("Escoteiro: aviso aos 14, crítico aos 15", () => {
+    expect(at("escoteiro", "2012-11-20", "2026-11-19")).toBeNull();
+    expect(at("escoteiro", "2012-11-19", "2026-11-19")?.level).toBe("aviso");
+    expect(at("escoteiro", "2011-11-19", "2026-11-19")?.level).toBe("critico");
+  });
+
+  it("Sênior: aviso aos 17 anos e meio; crítico só depois do aniversário de 18", () => {
+    expect(at("senior", "2009-05-20", "2026-11-19")).toBeNull();
+    expect(at("senior", "2009-05-19", "2026-11-19")).toMatchObject({ level: "aviso", warnOn: "2026-11-19", criticalOn: "2027-05-20" });
+    expect(at("senior", "2008-11-19", "2026-11-19")?.level).toBe("aviso"); // o próprio aniversário é o dia da passagem
+    expect(at("senior", "2008-11-18", "2026-11-19")).toMatchObject({ level: "critico", text: "Passou do aniversário de 18 anos" });
+  });
+
+  it("Pioneiro: partida a programar aos 21 anos e meio, crítica aos 22", () => {
+    expect(at("pioneiro", "2005-05-20", "2026-11-19")).toBeNull();
+    expect(at("pioneiro", "2005-05-19", "2026-11-19")).toMatchObject({ level: "aviso", label: "Partida do Pioneiro" });
+    expect(at("pioneiro", "2004-11-19", "2026-11-19")?.level).toBe("critico");
+  });
+
+  it("transição iniciada troca o aviso, mas não o crítico", () => {
+    expect(at("lobinho", "2016-01-10", "2026-11-19", "2026-10-01")).toMatchObject({ level: "iniciada", text: "Em transição", startedOn: "2026-10-01" });
+    expect(at("pioneiro", "2005-01-10", "2026-11-19", "2026-10-01")).toMatchObject({ level: "iniciada", text: "Partida programada" });
+    expect(at("lobinho", "2015-01-10", "2026-11-19", "2026-10-01")).toMatchObject({ level: "critico", startedOn: "2026-10-01" });
+  });
+
+  it("Filhote (só com o ramo ligado): aviso aos 6 anos e meio, crítico aos 7", () => {
+    const filhote = (birth: string) => transitionOf(person({ branch: "filhote", birth_date: birth }), "2026-11-19", transitionRules(true));
+    expect(filhote("2020-05-20")).toBeNull();
+    expect(filhote("2020-05-19")).toMatchObject({ level: "aviso", label: "Filhote → Lobinho", criticalOn: "2027-05-19" });
+    expect(filhote("2019-11-19")).toMatchObject({ level: "critico", text: "Já devia estar no Lobinho" });
+    expect(transitionOf(person({ branch: "filhote", birth_date: "2019-11-19" }), "2026-11-19", transitionRules(false))).toBeNull();
+  });
+
+  it("adultos, desligados e sem nascimento não entram", () => {
+    expect(at("adulto", "1990-01-01", "2026-11-19")).toBeNull();
+    expect(transitionOf(person({ branch: "senior", birth_date: "2008-01-01", active: false }), "2026-11-19")).toBeNull();
+    expect(transitionOf(person({ branch: "senior" }), "2026-11-19")).toBeNull();
+  });
+
+  it("lista críticos primeiro, depois avisos e em transição", () => {
     const list = transitions([
-      person({ id: "1", name: "Ana", branch: "lobinho", birth_date: "2016-11-19" }),
-      person({ id: "2", name: "Bia", branch: "lobinho", birth_date: "2016-11-20" }),
+      { ...person({ id: "1", name: "Ana", branch: "lobinho", birth_date: "2016-06-01" }), transition_started_on: "2026-11-01" },
+      person({ id: "2", name: "Bia", branch: "lobinho", birth_date: "2016-03-01" }),
       person({ id: "3", name: "Caio", branch: "escoteiro", birth_date: "2011-01-01" }),
-      person({ id: "4", name: "Duda", branch: "adulto", birth_date: "1990-01-01" }),
-      person({ id: "5", name: "Edu", branch: "senior", birth_date: "2008-01-01", active: false }),
     ], "2026-11-19");
-    expect(list.map((t) => [t.name, t.age, t.label])).toEqual([["Caio", 15, "Escoteiro → Sênior"], ["Ana", 10, "Lobinho → Escoteiro"]]);
+    expect(list.map((t) => [t.name, t.level])).toEqual([["Caio", "critico"], ["Bia", "aviso"], ["Ana", "iniciada"]]);
+  });
+
+  it("período de transição do ramo, mesmo fora da janela", () => {
+    expect(transitionWindow({ branch: "lobinho", birth_date: "2016-01-15" })).toMatchObject({ warnOn: "2026-01-15", dueOn: "2027-01-15", criticalOn: "2027-01-15" });
+    expect(transitionWindow({ branch: "senior", birth_date: "2008-11-19" })).toMatchObject({ dueOn: "2026-11-19", criticalOn: "2026-11-20" });
+    expect(transitionWindow({ branch: "adulto", birth_date: "1990-01-01" })).toBeNull();
+    expect(transitionWindow({ branch: "lobinho", birth_date: null })).toBeNull();
+    expect(at("lobinho", "2016-07-19", "2026-11-19")?.age).toEqual({ years: 10, months: 4 });
+  });
+
+  it("addMonths ajusta o fim do mês", () => {
+    expect(addMonths("2008-08-31", 6)).toBe("2009-02-28");
+    expect(addMonths("2009-05-19", 17 * 12 + 6)).toBe("2026-11-19");
   });
 });
 

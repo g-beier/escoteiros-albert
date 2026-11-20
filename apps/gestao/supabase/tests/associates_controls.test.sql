@@ -46,9 +46,10 @@ select public.associates_create(:'gid_a', 'Edu Escotista', 'adulto', null, null,
 select public.associates_create(:'gid_a', 'Lia Lobinha', 'lobinho', null, null, null, null, null, null) as lia \gset
 select is((select string_agg(audience::text, ',') from public.associate_audiences where associate_id = :'edu'), 'adulto', 'adulto sem função é público adulto');
 select throws_like(format($$select public.associates_add_function(%L, 'escotista', null, null)$$, :'lia'), 'Só adultos têm função%', 'jovem não tem função');
-select public.associates_add_function(:'edu', 'escotista', '  Chefe   de seção ', '2025-02-01') as f_esc \gset
+select public.create_section(:'gid_a', 'escoteiro', 'Tropa Funções') as tropa_f \gset
+select public.associates_add_function(:'edu', 'escotista', '  Chefe   de seção ', '2025-02-01', :'tropa_f') as f_esc \gset
 select is((select title || '|' || started_on from public.associate_functions where id = :'f_esc'), 'Chefe de seção|2025-02-01', 'cargo limpo');
-select throws_like(format($$select public.associates_add_function(%L, 'escotista', 'chefe de seção', null)$$, :'edu'), 'O associado já tem esta função ativa%', 'função ativa repetida');
+select throws_like(format($$select public.associates_add_function(%L, 'escotista', 'chefe de seção', null, %L)$$, :'edu', :'tropa_f'), 'O associado já tem esta função ativa%', 'função ativa repetida');
 select throws_like(format($$select public.associates_add_function(%L, 'dirigente', null, current_date + 1)$$, :'edu'), 'O início da função não pode ser futuro%', 'início futuro');
 select throws_like(format($$select public.associates_add_function(%L, 'dirigente', %L, null)$$, :'edu', repeat('x', 81)), 'Cargo%', 'cargo longo');
 select public.associates_add_function(:'edu', 'dirigente', 'Presidente', null) as f_dir \gset

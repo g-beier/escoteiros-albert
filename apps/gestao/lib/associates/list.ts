@@ -1,8 +1,8 @@
 import type { FunctionKind } from "./controls";
 import { branchLabels, SCOUT_BRANCHES, type AssociateProfile, type ScoutBranch } from "./model";
 
-// Grupos da lista de associados: só por ramo (sem seção nem equipe). Adultos se dividem em Escotistas, Dirigentes
-// (um adulto com as duas funções aparece nos dois) e Sem função. Na aba Todos, um subtítulo por ramo; na aba de um
+// Grupos da lista de associados: só por ramo (sem seção nem equipe). Adultos se dividem em Escotistas, Dirigentes,
+// Honoríficos, Colaboradores, Contribuintes, Comissão fiscal (um adulto com várias funções aparece em cada uma) e Sem função. Na aba Todos, um subtítulo por ramo; na aba de um
 // ramo de jovens, um só grupo; na aba Adultos, só os subgrupos.
 
 export type ListGroup = { key: string; level: "root" | "sub"; label: string; count: number; rows: AssociateProfile[] };
@@ -22,6 +22,10 @@ export function adultGroups(adults: AssociateProfile[], kinds: Map<string, Set<F
   const groups: ListGroup[] = [
     { key: "adulto-escotista", level: "sub", label: "Escotistas", count: 0, rows: sorted.filter((a) => kinds.get(a.id)?.has("escotista")) },
     { key: "adulto-dirigente", level: "sub", label: "Dirigentes", count: 0, rows: sorted.filter((a) => kinds.get(a.id)?.has("dirigente")) },
+    { key: "adulto-honorifico", level: "sub", label: "Honoríficos", count: 0, rows: sorted.filter((a) => kinds.get(a.id)?.has("honorifico")) },
+    { key: "adulto-colaborador", level: "sub", label: "Colaboradores", count: 0, rows: sorted.filter((a) => kinds.get(a.id)?.has("colaborador")) },
+    { key: "adulto-contribuinte", level: "sub", label: "Contribuintes", count: 0, rows: sorted.filter((a) => kinds.get(a.id)?.has("contribuinte")) },
+    { key: "adulto-comissao-fiscal", level: "sub", label: "Comissão fiscal", count: 0, rows: sorted.filter((a) => kinds.get(a.id)?.has("comissao_fiscal")) },
     { key: "adulto-sem-funcao", level: "sub", label: "Sem função", count: 0, rows: sorted.filter((a) => !kinds.get(a.id)?.size) },
   ];
   return groups.filter((g) => g.rows.length).map((g) => ({ ...g, count: g.rows.length }));

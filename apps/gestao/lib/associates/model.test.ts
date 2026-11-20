@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { activityPeriods, ageInYears, ageLabel, patrolChoices, placementLabel, placementOptions, placementValue, resolvePlacement, sectionChoices, statusFilter } from "./model";
+import { activityPeriods, ageInYears, ageInYearsMonths, ageLabel, ageYearsMonthsLabel, patrolChoices, placementLabel, placementOptions, placementValue, resolvePlacement, sectionChoices, statusFilter } from "./model";
+import { FILHOTES_ENABLED } from "@/lib/features";
 
 describe("seções cadastradas", () => {
   const sections = [
@@ -36,8 +37,9 @@ describe("divisão (seleção única Ramo › Seção › Equipe)", () => {
   ];
 
   it("monta a hierarquia: Adulto e Clã sem divisões abaixo", () => {
+    // o Filhote só aparece com o ramo ligado (lib/features.ts)
     expect(placementOptions(sections, patrols).map((o) => `${o.depth}:${o.name}`)).toEqual([
-      "0:Lobinho", "1:Alcateia Seeonee", "0:Escoteiro", "1:Tropa Tupã", "2:Lobo", "0:Sênior", "0:Pioneiro", "1:Clã Sol", "0:Adulto",
+      ...(FILHOTES_ENABLED ? ["0:Filhote"] : []), "0:Lobinho", "1:Alcateia Seeonee", "0:Escoteiro", "1:Tropa Tupã", "2:Lobo", "0:Sênior", "0:Pioneiro", "1:Clã Sol", "0:Adulto",
     ]);
   });
   it("mantém a divisão atual mesmo fora das regras", () => {
@@ -68,6 +70,16 @@ describe("idade e períodos", () => {
     expect(ageInYears("2027-01-01", "2026-05-20")).toBeNull();
     expect(ageLabel(1)).toBe("1 ano");
     expect(ageLabel(null)).toBe("—");
+  });
+  it("conta anos e meses completos", () => {
+    expect(ageInYearsMonths("2016-07-20", "2026-11-19")).toEqual({ years: 10, months: 3 });
+    expect(ageInYearsMonths("2016-07-19", "2026-11-19")).toEqual({ years: 10, months: 4 });
+    expect(ageInYearsMonths("2016-11-20", "2026-11-19")).toEqual({ years: 9, months: 11 });
+    expect(ageInYearsMonths("2027-01-01", "2026-11-19")).toBeNull();
+    expect(ageYearsMonthsLabel({ years: 10, months: 4 })).toBe("10 anos e 4 meses");
+    expect(ageYearsMonthsLabel({ years: 1, months: 1 })).toBe("1 ano e 1 mês");
+    expect(ageYearsMonthsLabel({ years: 10, months: 0 })).toBe("10 anos");
+    expect(ageYearsMonthsLabel(null)).toBe("—");
   });
   it("monta os períodos a partir das entradas e saídas", () => {
     const m = (id: string, kind: "entrada" | "saida", date: string) => ({ id, kind, movement_date: date, reason: null, created_at: `${date}T00:00:00Z` });

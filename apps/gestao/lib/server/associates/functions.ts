@@ -4,7 +4,7 @@ import { rowsOf, rpc, sb } from "@/lib/server/supabase/db";
 
 // Funções dos adultos (041): leitura de `associate_function_rows`; escritas pelas funções auditadas associates_*_function.
 
-const COLUMNS = "id, associate_id, kind, title, started_on, ended_on";
+const COLUMNS = "id, associate_id, kind, title, started_on, ended_on, section_id, section, elected";
 
 /** Funções do grupo (atuais e encerradas): base dos subgrupos Escotistas/Dirigentes e do público. */
 export async function list(db: Db, groupId: string): Promise<AssociateFunction[]> {
@@ -17,8 +17,22 @@ export async function listOf(db: Db, associateId: string): Promise<AssociateFunc
     .order("started_on", { ascending: false, nullsFirst: true })) as AssociateFunction[];
 }
 
-export async function add(db: Db, associateId: string, kind: FunctionKind, title: string | null, startedOn: string): Promise<string> {
-  return rpc(db, "associates_add_function", { p_associate_id: associateId, p_kind: kind, p_title: title, p_started_on: startedOn });
+/** Tipo, seção (só escotista, obrigatória: 052), cargo e datas da função. */
+export type FunctionInput = { kind: FunctionKind; sectionId: string | null; title: string | null; startedOn: string; elected: boolean };
+
+export async function add(db: Db, associateId: string, input: FunctionInput): Promise<string> {
+  return rpc(db, "associates_add_function", {
+    p_associate_id: associateId, p_kind: input.kind, p_section_id: input.sectionId as string, p_title: input.title as string, p_started_on: input.startedOn,
+    p_elected: input.elected,
+  });
+}
+
+/** Corrige a função; `endedOn` nulo = em exercício. */
+export async function update(db: Db, functionId: string, input: FunctionInput & { endedOn: string | null }): Promise<void> {
+  await rpc(db, "associates_update_function", {
+    p_function_id: functionId, p_kind: input.kind, p_section_id: input.sectionId as string, p_title: input.title as string,
+    p_started_on: input.startedOn, p_ended_on: input.endedOn as string, p_elected: input.elected,
+  });
 }
 
 export async function end(db: Db, functionId: string, endedOn: string): Promise<void> {

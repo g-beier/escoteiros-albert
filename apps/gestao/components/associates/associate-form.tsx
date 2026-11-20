@@ -4,14 +4,17 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Button, buttonVariants } from "@geas/ui/components/button";
 import { Input } from "@geas/ui/components/input";
+import { Field as ChoiceField, FieldContent, FieldDescription, FieldLabel, FieldTitle } from "@geas/ui/components/field";
 import { Label } from "@geas/ui/components/label";
+import { RadioGroup, RadioGroupItem } from "@geas/ui/components/radio-group";
 import { Textarea } from "@geas/ui/components/textarea";
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
 import { cn } from "@geas/ui/lib/utils";
 import { saveAssociate } from "@/app/(associados)/associados/actions";
 import { quickAssociate } from "@/app/(gestao)/rapido/actions";
-import type { AssociateProfile } from "@/lib/associates/model";
+import { NICKNAME_MAX, REGISTRATIONS, registrationLabels, type AssociateProfile, type Registration } from "@/lib/associates/model";
 import { EMPTY_PLACEMENT, PlacementFields, PlacementSelect, type Catalog } from "./placement-select";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 /** Campo com rótulo visível acima. */
 export function Field({ id, label, hint, className, children }: { id: string; label: string; hint?: string; className?: string; children: React.ReactNode }) {
@@ -26,14 +29,21 @@ export function Field({ id, label, hint, className, children }: { id: string; la
  * Cadastro e edição do associado. No cadastro escolhe-se a divisão (ramo, seção, equipe); depois ela só muda por
  * passagem, no detalhe. Datas opcionais; sem data de entrada, a entrada fica registrada na data do cadastro.
  * `quick`: cadastro pelo registro rápido (/rapido/associado), que fica para a Secretaria revisar.
+ * Registro e apelido (054) só na edição: o cadastro novo começa com registro provisório.
  */
+
+const REGISTRATION_HINTS: Record<Registration, string> = {
+  provisorio: "Ainda sem o registro anual efetivado na UEB.",
+  definitivo: "Registro efetivado na UEB.",
+};
 export function AssociateForm({ catalog, associate, today, quick = false }: { catalog: Catalog; associate?: AssociateProfile; today: string; quick?: boolean }) {
   const [state, action, pending] = useActionState(quick ? quickAssociate : saveAssociate, {} as ActionResult);
   useActionToast(state);
   const [place, setPlace] = useState(EMPTY_PLACEMENT);
   const creating = !associate;
+  const [registration, setRegistration] = useState<string>(associate?.registration ?? "provisorio");
 
-  return <form action={action} className="grid gap-4">
+  return <ActionForm action={action} result={state} className="grid gap-4">
     {associate && <input type="hidden" name="id" value={associate.id} />}
     <div className="grid items-start gap-4 sm:grid-cols-2">
       <Field id="associate-name" label="Nome">
@@ -55,6 +65,26 @@ export function AssociateForm({ catalog, associate, today, quick = false }: { ca
         <Input id="associate-joined" name="joinedOn" type="date" max={today} defaultValue={associate?.joined_on ?? ""} className="num" />
       </Field>
     </div>
+    {!creating && <div className="grid items-start gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <fieldset className="m-0 grid gap-1.5 border-0 p-0">
+        <legend className="mb-1.5 text-xs font-medium">Registro</legend>
+        <input type="hidden" name="registration" value={registration} />
+        <RadioGroup value={registration} onValueChange={(value) => setRegistration(String(value))} className="grid gap-2 sm:grid-cols-2" aria-label="Registro">
+          {REGISTRATIONS.map((value) => <FieldLabel key={value} htmlFor={`associate-registration-${value}`} className="has-data-checked:border-primary">
+            <ChoiceField orientation="horizontal">
+              <FieldContent>
+                <FieldTitle>{registrationLabels[value]}</FieldTitle>
+                <FieldDescription>{REGISTRATION_HINTS[value]}</FieldDescription>
+              </FieldContent>
+              <RadioGroupItem value={value} id={`associate-registration-${value}`} />
+            </ChoiceField>
+          </FieldLabel>)}
+        </RadioGroup>
+      </fieldset>
+      <Field id="associate-nickname" label="Apelido (opcional)" hint={`Até ${NICKNAME_MAX} letras; usado em referências curtas nos relatórios, ex.: “Ver Manu”.`}>
+        <Input id="associate-nickname" name="nickname" maxLength={NICKNAME_MAX} defaultValue={associate?.nickname ?? ""} autoComplete="off" placeholder="Ex.: Manu" />
+      </Field>
+    </div>}
     <Field id="associate-notes" label="Observações">
       <Textarea id="associate-notes" name="notes" maxLength={500} rows={3} defaultValue={associate?.notes ?? ""} />
     </Field>
@@ -62,5 +92,5 @@ export function AssociateForm({ catalog, associate, today, quick = false }: { ca
       <Button type="submit" size="lg" disabled={pending || (creating && !place.branch)}>{pending ? "Salvando…" : creating ? "Cadastrar associado" : "Salvar"}</Button>
       <Link href={associate ? `/associados/${associate.id}` : quick ? "/rapido" : "/associados"} className={buttonVariants({ variant: "outline", size: "lg" })}>Cancelar</Link>
     </div>
-  </form>;
+  </ActionForm>;
 }

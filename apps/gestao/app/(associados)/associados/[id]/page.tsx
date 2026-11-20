@@ -13,11 +13,13 @@ import { AssociateControls } from "@/components/associates/associate-controls";
 import { AssociateFunctions } from "@/components/associates/associate-functions";
 import { AssociateRelatives } from "@/components/associates/associate-relatives";
 import { ReviewNotice } from "@/components/associates/review-notice";
+import { TransitionNotice } from "@/components/associates/transition-notice";
+import { transitionOf, transitionWindow } from "@/lib/associates/alerts";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
-import { associateAudiences } from "@/lib/associates/controls";
-import { activityPeriods, ageInYears, ageLabel, branchLabels, todayISO, type AssociateMove, type AssociateMovement } from "@/lib/associates/model";
-import { dateBR } from "@/lib/format";
+import { associateAudiences, scouterSections } from "@/lib/associates/controls";
+import { activityPeriods, ageInYears, ageLabel, branchLabels, registrationLabels, todayISO, type AssociateMove, type AssociateMovement } from "@/lib/associates/model";
+import { dateBR, monthYearBR } from "@/lib/format";
 import * as associates from "@/lib/server/associates/associates";
 import * as controls from "@/lib/server/associates/controls";
 import * as functionsData from "@/lib/server/associates/functions";
@@ -26,8 +28,9 @@ import * as sectionsData from "@/lib/server/associates/sections";
 import { pageSession } from "@/lib/server/session";
 
 /**
- * Detalhe do associado: dados, funções (adultos), responsáveis (jovens), controle de dados, passagens e períodos de atividade; ações
- * Passagem, Desligar e Reingressar.
+ * Ficha do associado, o único lugar com entrada, passagens e histórico: dados (jovem: período de transição do ramo;
+ * escotista: seções), funções (só adultos), responsáveis (jovens), controle de dados, passagens e períodos de
+ * atividade; ações Passagem (só jovens), Desligar e Reingressar.
  */
 export default async function AssociateDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -54,6 +57,9 @@ export default async function AssociateDetail({ params }: { params: Promise<{ id
   const where = (branch: AssociateMove["from_branch"], sectionId: string | null, patrolId?: string | null) =>
     [branchLabels[branch], sectionId && (sectionName.get(sectionId) ?? "seção removida"), patrolId && patrolName.get(patrolId)].filter(Boolean).join(" › ");
   const canEdit = member.associates.canEdit;
+  const transition = transitionOf(associate, today);
+  const span = youth ? transitionWindow(associate) : null;
+  const scouterOf = youth ? [] : scouterSections(functions, today).get(id) ?? [];
 
   return <div className="shell">
     <AppHeader current={`/associados/${id}`} email={user.email} role={member.associates.role} isAdmin={member.isAdmin} />
@@ -69,18 +75,24 @@ export default async function AssociateDetail({ params }: { params: Promise<{ id
             ? <Badge variant="outline" className="border-success/30 bg-success-soft text-success">Ativo</Badge>
             : <Badge variant="outline">Desligado{associate.left_on && ` em ${dateBR(associate.left_on)}`}</Badge>}</Fact>
           <Fact label="Ramo">{branchLabels[associate.branch]}</Fact>
-          {associate.branch !== "adulto" && <Fact label="Seção">{associate.section ?? "—"}</Fact>}
+          {youth ? <Fact label="Seção">{associate.section ?? "—"}</Fact> : scouterOf.length > 0 && <Fact label="Escotista em">{scouterOf.join(", ")}</Fact>}
           {associate.patrol && <Fact label="Equipe">{associate.patrol}</Fact>}
           <Fact label="Nascimento">{associate.birth_date ? <><span className="num">{dateBR(associate.birth_date)}</span> <span className="text-muted-foreground">({ageLabel(age)})</span></> : "—"}</Fact>
+          {associate.nickname && <Fact label="Apelido">{associate.nickname}</Fact>}
+          <Fact label="Registro">{associate.registration ? registrationLabels[associate.registration] : "—"}</Fact>
           <Fact label="Promessa"><span className="num">{associate.promise_date ? dateBR(associate.promise_date) : "—"}</span></Fact>
           <Fact label="Entrada no grupo"><span className="num">{associate.joined_on ? dateBR(associate.joined_on) : "—"}</span></Fact>
+          {span && <Fact label={associate.branch === "pioneiro" ? "Período de partida" : "Período de transição"}>
+            <span className="num" title={`${span.rule.label}: de ${dateBR(span.warnOn)} a ${dateBR(span.dueOn)}`}>{monthYearBR(span.warnOn)} – {monthYearBR(span.dueOn)}</span>
+          </Fact>}
         </dl>
       </PageHeader>
 
       {associate.review_status === "para_revisar" && <ReviewNotice associateId={id} canEdit={canEdit} />}
+      {transition && <TransitionNotice associateId={id} transition={transition} branch={associate.branch} canEdit={canEdit} today={today} />}
 
-      {(associate.branch === "adulto" || functions.length > 0) &&
-        <AssociateFunctions associateId={id} associateName={associate.name} functions={functions} canEdit={canEdit} today={today} />}
+      {!youth && <AssociateFunctions associateId={id} associateName={associate.name} functions={functions} sections={catalog.sections}
+        canEdit={canEdit} today={today} />}
 
       {(youth || links.length > 0) && <AssociateRelatives associate={{ id, name: associate.name }} links={links} relatives={relatives} canEdit={canEdit && youth}
         associates={people.filter((p) => p.active).map((p) => ({ value: p.id, label: `${p.name} (${branchLabels[p.branch]})` }))} />}

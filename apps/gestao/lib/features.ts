@@ -8,3 +8,10 @@
 export const ATTACHMENTS_ENABLED = process.env.NEXT_PUBLIC_FEATURE_ATTACHMENTS === "on";
 
 export const ATTACHMENTS_DISABLED_MESSAGE = "Os comprovantes estão desativados por enquanto.";
+
+/**
+ * Ramo Filhote (5 a 7 anos, 051): o grupo ainda não tem. Ligado, o ramo aparece nas listas, seções, cadastro e
+ * importação, e a transição Filhote → Lobinho entra nos alertas (Lobinho passa a começar aos 7, não aos 6½).
+ * Ligar com `NEXT_PUBLIC_FEATURE_FILHOTES=on`.
+ */
+export const FILHOTES_ENABLED = process.env.NEXT_PUBLIC_FEATURE_FILHOTES === "on";

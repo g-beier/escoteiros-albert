@@ -1,5 +1,6 @@
 import { readCsv, sniffCsvLayout } from "@/lib/finance/csv-reader";
 import { normalizeText } from "@/lib/finance/statement-import";
+import { FILHOTES_ENABLED } from "@/lib/features";
 import { SCOUT_BRANCHES, branchLabels, type PatrolItem, type ScoutBranch, type SectionItem } from "@/lib/associates/model";
 
 /**
@@ -39,6 +40,7 @@ for (const branch of SCOUT_BRANCHES) {
   BRANCH_ALIASES[normalizeText(branchLabels[branch])] = branch;
 }
 Object.assign(BRANCH_ALIASES, {
+  ...(FILHOTES_ENABLED ? { filhotes: "filhote" as const } : {}),
   lobinhos: "lobinho", lobinha: "lobinho", lobinhas: "lobinho", alcateia: "lobinho",
   escoteiros: "escoteiro", escoteira: "escoteiro", escoteiras: "escoteiro", "tropa escoteira": "escoteiro",
   seniores: "senior", guia: "senior", guias: "senior", "tropa senior": "senior",

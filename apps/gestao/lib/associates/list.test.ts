@@ -9,19 +9,19 @@ const person = (name: string, branch: ScoutBranch, section_id: string | null = n
 });
 const rows = [person("Bia", "escoteiro", "t2"), person("Ana", "escoteiro", "t1"), person("Caio", "escoteiro"), person("Duda", "lobinho", "a1"),
   person("Eva", "adulto"), person("Fábio", "adulto"), person("Gil", "adulto")];
-const kinds = new Map<string, Set<FunctionKind>>([["Eva", new Set(["escotista", "dirigente"])], ["Fábio", new Set(["dirigente"])]]);
+const kinds = new Map<string, Set<FunctionKind>>([["Eva", new Set(["escotista", "dirigente"])], ["Fábio", new Set(["dirigente"])], ["Gil", new Set(["honorifico", "comissao_fiscal"])]]);
 const shape = (groups: ReturnType<typeof listGroups>) => groups.map((g) => `${g.level}:${g.label}(${g.count}):${g.rows.map((r) => r.name).join(",")}`);
 
 describe("lista de associados", () => {
-  it("aba Todos: só por ramo, sem seções; adultos em Escotistas, Dirigentes e Sem função", () => {
+  it("aba Todos: só por ramo, sem seções; adultos por função", () => {
     expect(shape(listGroups(rows, "", kinds))).toEqual([
       "root:Lobinho(1):Duda", "root:Escoteiro(3):Ana,Bia,Caio", "root:Adultos(3):",
-      "sub:Escotistas(1):Eva", "sub:Dirigentes(2):Eva,Fábio", "sub:Sem função(1):Gil",
+      "sub:Escotistas(1):Eva", "sub:Dirigentes(2):Eva,Fábio", "sub:Honoríficos(1):Gil", "sub:Comissão fiscal(1):Gil",
     ]);
   });
   it("aba de um ramo: um grupo só; Adultos só os subgrupos", () => {
     expect(shape(listGroups(rows, "escoteiro", kinds))).toEqual(["root:Escoteiro(3):Ana,Bia,Caio"]);
-    expect(listGroups(rows, "adulto", kinds).map((g) => g.label)).toEqual(["Escotistas", "Dirigentes", "Sem função"]);
+    expect(listGroups(rows, "adulto", kinds).map((g) => g.label)).toEqual(["Escotistas", "Dirigentes", "Honoríficos", "Comissão fiscal"]);
     expect(listGroups(rows, "adulto").map((g) => [g.label, g.count])).toEqual([["Sem função", 3]]);
     expect(listGroups(rows, "senior")).toEqual([]);
   });

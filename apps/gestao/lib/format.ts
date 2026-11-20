@@ -11,6 +11,13 @@ export function dateBR(value: string) {
   );
 }
 
+export const MONTHS_SHORT = ["jan.", "fev.", "mar.", "abr.", "maio", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."];
+
+/** Mês e ano de `AAAA-MM-DD`: "jan. 2026", "maio 2027". */
+export function monthYearBR(value: string) {
+  return `${MONTHS_SHORT[Number(value.slice(5, 7)) - 1]} ${value.slice(0, 4)}`;
+}
+
 /** Centavos em reais ("R$ 1.234,56"); ausente vale zero. `money` recebe reais. */
 export function formatCents(cents: number | string | null | undefined) {
   return money(Number(cents ?? 0) / 100);

@@ -1,9 +1,15 @@
 // Associados: ramos, seções e equipes (028–030) e a divisão Ramo › Seção › Equipe. Puro, usado pelo Associados e pelo Financeiro.
 
-export const SCOUT_BRANCHES = ["lobinho", "escoteiro", "senior", "pioneiro", "adulto"] as const;
-export type ScoutBranch = (typeof SCOUT_BRANCHES)[number];
+import { FILHOTES_ENABLED } from "@/lib/features";
+
+/** Todos os ramos do banco, em ordem de idade (051: Filhote antes do Lobinho). */
+export const ALL_SCOUT_BRANCHES = ["filhote", "lobinho", "escoteiro", "senior", "pioneiro", "adulto"] as const;
+export type ScoutBranch = (typeof ALL_SCOUT_BRANCHES)[number];
+/** Ramos em uso: o Filhote só com o interruptor ligado (lib/features.ts). Desligado, não aparece nem é aceito. */
+export const SCOUT_BRANCHES = (FILHOTES_ENABLED ? ALL_SCOUT_BRANCHES : ALL_SCOUT_BRANCHES.filter((b) => b !== "filhote")) as [ScoutBranch, ...ScoutBranch[]];
 
 export const branchLabels: Record<ScoutBranch, string> = {
+  filhote: "Filhote",
   lobinho: "Lobinho",
   escoteiro: "Escoteiro",
   senior: "Sênior",
@@ -34,7 +40,7 @@ export function patrolChoices(patrols: PatrolItem[], sectionId: string, currentI
 }
 
 /** Ramos com seções (Alcateia, Tropa, Clã…). Adulto é só o ramo, sem seção. */
-export const SECTION_BRANCHES: readonly ScoutBranch[] = ["lobinho", "escoteiro", "senior", "pioneiro"];
+export const SECTION_BRANCHES: readonly ScoutBranch[] = SCOUT_BRANCHES.filter((b) => b !== "adulto");
 /** Ramos cujas seções se dividem em equipes (matilhas, patrulhas). O Clã Pioneiro não se divide. */
 export const PATROL_BRANCHES: readonly ScoutBranch[] = ["lobinho", "escoteiro", "senior"];
 export const hasSections = (branch: string) => SECTION_BRANCHES.includes(branch as ScoutBranch);
@@ -93,7 +99,19 @@ export type AssociateProfile = {
   birth_date: string | null; promise_date: string | null; joined_on: string | null; notes: string | null; left_on: string | null;
   /** `para_revisar`: cadastrado pelo registro rápido e ainda não conferido pela Secretaria (049). */
   review_status?: string;
+  /** Transição de ramo iniciada (ou partida programada) neste ramo, em `AAAA-MM-DD` (050). */
+  transition_started_on?: string | null;
+  /** Registro na UEB (054): novos cadastros começam provisórios. */
+  registration?: Registration;
+  /** Apelido curto (até 8 caracteres), para referências como "Ver Manu" nos relatórios (054). */
+  nickname?: string | null;
 };
+
+export const REGISTRATIONS = ["provisorio", "definitivo"] as const;
+export type Registration = (typeof REGISTRATIONS)[number];
+export const registrationLabels: Record<Registration, string> = { provisorio: "Provisório", definitivo: "Definitivo" };
+export const isRegistration = (value: string): value is Registration => (REGISTRATIONS as readonly string[]).includes(value);
+export const NICKNAME_MAX = 8;
 
 /** Passagem (`associate_moves`): de onde para onde, com data. A equipe de origem não é guardada. */
 export type AssociateMove = {
@@ -138,6 +156,22 @@ export function ageInYears(birthDate: string | null | undefined, on: string): nu
 }
 
 export const ageLabel = (age: number | null) => (age === null ? "—" : `${age} ${age === 1 ? "ano" : "anos"}`);
+
+/** Idade em anos e meses completos na data `on`; nula como `ageInYears`. */
+export function ageInYearsMonths(birthDate: string | null | undefined, on: string): { years: number; months: number } | null {
+  if (!birthDate) return null;
+  const [by, bm, bd] = birthDate.split("-").map(Number);
+  const [y, m, d] = on.split("-").map(Number);
+  const total = (y - by) * 12 + (m - bm) - (d < bd ? 1 : 0);
+  return total < 0 ? null : { years: Math.floor(total / 12), months: total % 12 };
+}
+
+/** "10 anos e 4 meses", "1 ano e 1 mês", "10 anos" (sem meses). */
+export function ageYearsMonthsLabel(age: { years: number; months: number } | null): string {
+  if (!age) return "—";
+  const years = ageLabel(age.years);
+  return age.months ? `${years} e ${age.months} ${age.months === 1 ? "mês" : "meses"}` : years;
+}
 
 /**
  * Períodos de atividade a partir das entradas e saídas (em ordem de data): cada entrada abre um período e a saída

@@ -67,10 +67,10 @@ select throws_like(format($$select public.associates_create(%L, 'Promessa Cedo',
 select throws_like(format($$select public.associates_create(%L, 'Notas', 'adulto', null, null, null, null, null, repeat('x', 501))$$, :'gid_a'), 'Observações%', 'observação longa');
 
 -- Edição: dados pessoais, sem mexer em ramo/seção.
-select lives_ok(format($$select public.associates_update(%L, 'Ana Lobinha Silva', '2017-04-10', null, '2024-03-01', null)$$, :'ana'), 'secretaria edita');
+select lives_ok(format($$select public.associates_update(%L, 'Ana Lobinha Silva', '2017-04-10', null, '2024-03-01', null, 'definitivo', null)$$, :'ana'), 'secretaria edita');
 select is((select name || '|' || branch || '|' || section_id::text || '|' || coalesce(notes, '-') || '|' || coalesce(promise_date::text, '-') from public.associates where id = :'ana'),
   'Ana Lobinha Silva|lobinho|' || :'alcateia' || '|-|-', 'edita dados pessoais e mantém ramo e seção');
-select throws_like(format($$select public.associates_update(%L, 'Ana', '2017-04-10', null, '2016-01-01', null)$$, :'ana'), 'A entrada não pode ser antes do nascimento%', 'entrada antes do nascimento');
+select throws_like(format($$select public.associates_update(%L, 'Ana', '2017-04-10', null, '2016-01-01', null, 'definitivo', null)$$, :'ana'), 'A entrada não pode ser antes do nascimento%', 'entrada antes do nascimento');
 
 -- Passagens ------------------------------------------------------------------------------------
 select public.associates_move(:'ana', '2026-03-01', 'escoteiro', :'tropa', :'aguia') as move_ana \gset
@@ -83,7 +83,7 @@ select lives_ok(format($$select public.associates_move(%L, '2026-06-01', 'adulto
 select is((select branch || '|' || coalesce(section_id::text, '-') || '|' || coalesce(patrol_id::text, '-') from public.associates where id = :'carla'), 'adulto|-|-', 'adulto sem seção nem equipe');
 select is((select count(*)::int from public.associate_moves where associate_id in (:'ana', :'bruno', :'carla')), 4, 'quatro passagens');
 
-select throws_like(format($$select public.associates_move(%L, '2026-06-01', 'adulto', %L, null)$$, :'diretor', :'cla'), 'Adultos não têm seção%', 'passagem: adulto sem seção');
+select throws_like(format($$select public.associates_move(%L, '2026-06-01', 'adulto', %L, null)$$, :'bruno', :'cla'), 'Adultos não têm seção%', 'passagem: adulto sem seção');
 select throws_like(format($$select public.associates_move(%L, '2026-06-01', 'senior', %L, null)$$, :'bruno', :'tropa'), 'A seção não é deste ramo%', 'passagem: seção do mesmo ramo');
 select throws_like(format($$select public.associates_move(%L, '2026-06-01', 'escoteiro', %L, %L)$$, :'bruno', :'tropa', :'touro'), 'A equipe não é desta seção%', 'passagem: equipe da seção');
 select throws_like(format($$select public.associates_move(%L, '2026-06-01', 'escoteiro', %L, %L)$$, :'bruno', :'tropa2', :'touro'), 'A passagem não muda%', 'passagem sem mudança');
@@ -112,7 +112,7 @@ select tests.login('00000000-0000-0000-0000-00000000f0a3') \gset
 select is((select count(*)::int from public.associate_moves where group_id = :'gid_a'), 4, 'consulta lê as passagens');
 select ok(exists(select 1 from public.associate_profile_rows where id = :'ana'), 'consulta lê associate_profile_rows');
 select throws_like(format($$select public.associates_create(%L, 'Consulta', 'adulto', null, null, null, null, null, null)$$, :'gid_a'), 'Sem permissão%', 'consulta não cadastra');
-select throws_like(format($$select public.associates_update(%L, 'Consulta', null, null, null, null)$$, :'ana'), 'Associado não encontrado ou sem permissão%', 'consulta não edita');
+select throws_like(format($$select public.associates_update(%L, 'Consulta', null, null, null, null, 'definitivo', null)$$, :'ana'), 'Associado não encontrado ou sem permissão%', 'consulta não edita');
 select throws_like(format($$select public.associates_move(%L, '2026-09-01', 'senior', null, null)$$, :'ana'), 'Associado não encontrado ou sem permissão%', 'consulta não faz passagem');
 select throws_like(format($$select public.associates_leave(%L, '2026-09-01', null)$$, :'ana'), 'Associado não encontrado ou sem permissão%', 'consulta não desliga');
 select throws_like(format($$select public.associates_rejoin(%L, '2026-09-01', null)$$, :'carla'), 'Associado não encontrado ou sem permissão%', 'consulta não reintegra');

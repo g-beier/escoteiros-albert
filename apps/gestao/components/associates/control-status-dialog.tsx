@@ -14,6 +14,7 @@ import {
 } from "@/lib/associates/controls";
 import { dateBR } from "@/lib/format";
 import { Field } from "./associate-form";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 const statusOptions = CONTROL_STATUSES.map((value) => ({ value, label: statusLabels[value] }));
 
@@ -75,7 +76,7 @@ function StatusForm({ target: { person, item, row }, today, onClose }: { target:
         {row && <> · atualizado em <span className="num">{dateBR(row.updated_at.slice(0, 10))}</span></>}
       </DialogDescription>
     </DialogHeader>
-    <form action={save} className="grid gap-3">
+    <ActionForm action={(data) => (data.get("acao") === "apagar" ? clear : save)(data)} className="grid gap-3">
       <input type="hidden" name={person.relative ? "relativeId" : "associateId"} value={person.id} />
       <input type="hidden" name="itemId" value={item.id} />
       <input type="hidden" name="status" value={status} />
@@ -102,13 +103,13 @@ function StatusForm({ target: { person, item, row }, today, onClose }: { target:
       </div>
       <DialogFooter className="sm:justify-between">
         {row
-          ? <Button type="submit" formAction={clear} variant="ghost" className="text-destructive" disabled={clearing || saving}>Apagar situação</Button>
+          ? <Button type="submit" name="acao" value="apagar" variant="ghost" className="text-destructive" disabled={clearing || saving}>Apagar situação</Button>
           : <span />}
         <div className="flex flex-col-reverse gap-2 sm:flex-row">
           <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
           <Button type="submit" disabled={saving || clearing}>{saving ? "Salvando…" : "Salvar situação"}</Button>
         </div>
       </DialogFooter>
-    </form>
+    </ActionForm>
   </>;
 }

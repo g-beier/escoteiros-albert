@@ -1,4 +1,5 @@
-import type { PatrolItem, ScoutBranch, SectionItem } from "@/lib/associates/model";
+import { scouterCounts, type AssociateFunction } from "@/lib/associates/controls";
+import { todayISO, type PatrolItem, type ScoutBranch, type SectionItem } from "@/lib/associates/model";
 import type { Db } from "@/lib/server/db";
 import { rowsOf, rpc, sb } from "@/lib/server/supabase/db";
 
@@ -18,12 +19,23 @@ export async function catalog(db: Db, groupId: string): Promise<Catalog> {
   };
 }
 
-/** Associados ativos por seção e por equipe (id → quantidade). */
-export async function activeCounts(db: Db, groupId: string): Promise<Record<string, number>> {
-  const rows = rowsOf(await sb(db).from("associates").select("section_id, patrol_id").eq("group_id", groupId).eq("active", true).limit(10000));
-  const counts: Record<string, number> = {};
-  for (const row of rows) for (const key of [row.section_id, row.patrol_id]) if (key) counts[key] = (counts[key] ?? 0) + 1;
-  return counts;
+export type SectionCounts = {
+  /** Jovens ativos por seção e por equipe (id → quantidade). */
+  youth: Record<string, number>;
+  /** Escotistas ativos (com função de escotista ativa) por seção (052). */
+  scouters: Record<string, number>;
+};
+
+/** Efetivo de cada seção: jovens (e por equipe) e escotistas. */
+export async function activeCounts(db: Db, groupId: string): Promise<SectionCounts> {
+  const [rows, functions] = await Promise.all([
+    sb(db).from("associates").select("id, section_id, patrol_id").eq("group_id", groupId).eq("active", true).limit(10000).then(rowsOf),
+    sb(db).from("associate_function_rows").select("id, associate_id, kind, title, started_on, ended_on, section_id, section, elected")
+      .eq("group_id", groupId).eq("kind", "escotista").not("section_id", "is", null).limit(10000).then(rowsOf),
+  ]);
+  const youth: Record<string, number> = {};
+  for (const row of rows) for (const key of [row.section_id, row.patrol_id]) if (key) youth[key] = (youth[key] ?? 0) + 1;
+  return { youth, scouters: scouterCounts(functions as AssociateFunction[], new Set(rows.map((row) => row.id)), todayISO()) };
 }
 
 export async function createSection(db: Db, groupId: string, branch: ScoutBranch, name: string) {
