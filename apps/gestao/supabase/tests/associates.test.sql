@@ -1,7 +1,7 @@
 -- pgTAP: módulo Associados (040_associates_module.sql). Papel por módulo, cadastro, passagens,
 -- desligamento e reingresso, seções pela secretaria e isolamento entre grupos. Rode com `npm run test:db`.
 begin;
-select plan(72);
+select plan(77);
 \ir _fixture.psql
 
 -- Secretaria (…f0a6): no Financeiro é só consulta.
@@ -77,16 +77,22 @@ select public.associates_move(:'ana', '2026-03-01', 'escoteiro', :'tropa', :'agu
 select is((select branch || '|' || section || '|' || patrol from public.associate_rows where id = :'ana'), 'escoteiro|Tropa Assoc|Patrulha Águia', 'passagem de ramo');
 select is((select from_branch || '>' || to_branch || '|' || (from_section_id = :'alcateia')::text || '|' || (to_patrol_id = :'aguia')::text from public.associate_moves where id = :'move_ana'),
   'lobinho>escoteiro|true|true', 'passagem registrada com origem e destino');
-select lives_ok(format($$select public.associates_move(%L, '2026-04-01', 'escoteiro', %L, %L)$$, :'bruno', :'tropa', :'aguia'), 'troca de equipe no mesmo ramo');
-select lives_ok(format($$select public.associates_move(%L, '2026-05-01', 'escoteiro', %L, %L)$$, :'bruno', :'tropa2', :'touro'), 'troca de seção no mesmo ramo');
+select throws_like(format($$select public.associates_move(%L, '2026-04-01', 'escoteiro', %L, %L)$$, :'bruno', :'tropa', :'aguia'), 'A passagem é para o ramo seguinte (senior)%', 'passagem não troca equipe no mesmo ramo');
+select throws_like(format($$select public.associates_move(%L, '2026-04-01', 'pioneiro', %L, null)$$, :'bruno', :'cla'), 'A passagem é para o ramo seguinte%', 'passagem não pula ramo');
 select lives_ok(format($$select public.associates_move(%L, '2026-06-01', 'adulto', null, null)$$, :'carla'), 'pioneiro → adulto');
 select is((select branch || '|' || coalesce(section_id::text, '-') || '|' || coalesce(patrol_id::text, '-') from public.associates where id = :'carla'), 'adulto|-|-', 'adulto sem seção nem equipe');
-select is((select count(*)::int from public.associate_moves where associate_id in (:'ana', :'bruno', :'carla')), 4, 'quatro passagens');
+select is((select count(*)::int from public.associate_moves where associate_id in (:'ana', :'bruno', :'carla')), 2, 'duas passagens');
+select throws_like(format($$select public.associates_move(%L, '2026-06-01', 'senior', %L, null)$$, :'bruno', :'tropa'), 'A seção não é deste ramo%', 'passagem: seção do novo ramo');
 
-select throws_like(format($$select public.associates_move(%L, '2026-06-01', 'adulto', %L, null)$$, :'bruno', :'cla'), 'Adultos não têm seção%', 'passagem: adulto sem seção');
-select throws_like(format($$select public.associates_move(%L, '2026-06-01', 'senior', %L, null)$$, :'bruno', :'tropa'), 'A seção não é deste ramo%', 'passagem: seção do mesmo ramo');
-select throws_like(format($$select public.associates_move(%L, '2026-06-01', 'escoteiro', %L, %L)$$, :'bruno', :'tropa', :'touro'), 'A equipe não é desta seção%', 'passagem: equipe da seção');
-select throws_like(format($$select public.associates_move(%L, '2026-06-01', 'escoteiro', %L, %L)$$, :'bruno', :'tropa2', :'touro'), 'A passagem não muda%', 'passagem sem mudança');
+-- Correção da divisão pela edição (055): sem passagem no histórico
+select lives_ok(format($$select public.associates_update(%L, 'Bruno Escoteiro', null, null, null, null, 'provisorio', null, 'escoteiro', %L, %L)$$, :'bruno', :'tropa2', :'touro'), 'edição corrige seção e equipe');
+select is((select section_id::text || '|' || patrol_id::text from public.associates where id = :'bruno'), :'tropa2' || '|' || :'touro', 'seção e equipe corrigidas');
+select is((select count(*)::int from public.associate_moves where associate_id = :'bruno'), 0, 'correção não vira passagem');
+select lives_ok(format($$select public.associates_update(%L, 'Bruno Escoteiro', null, null, null, null, 'provisorio', null)$$, :'bruno'), 'sem divisão mantém a atual');
+select is((select patrol_id::text from public.associates where id = :'bruno'), :'touro', 'divisão mantida');
+select throws_like(format($$select public.associates_update(%L, 'Bruno Escoteiro', null, null, null, null, 'provisorio', null, 'escoteiro', %L, %L)$$, :'bruno', :'tropa', :'touro'), 'A equipe não é desta seção%', 'correção valida a divisão');
+select lives_ok(format($$select public.associates_update(%L, 'Carla Pioneira', '2004-01-01', null, '2015-02-01', null, 'provisorio', null, 'pioneiro', %L, null)$$, :'carla', :'cla'), 'edição corrige o ramo');
+select is((select branch::text from public.associates where id = :'carla'), 'pioneiro', 'ramo corrigido sem passagem');
 select throws_like(format($$select public.associates_move(%L, null, 'escoteiro', %L, null)$$, :'bruno', :'tropa'), 'Informe a data%', 'passagem sem data');
 
 -- Desligamento e reingresso --------------------------------------------------------------------
@@ -109,7 +115,7 @@ select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
 select lives_ok(format($$select public.associates_create(%L, 'Pela Tesouraria', 'adulto', null, null, null, null, null, null)$$, :'gid_a'), 'tesouraria cadastra');
 
 select tests.login('00000000-0000-0000-0000-00000000f0a3') \gset
-select is((select count(*)::int from public.associate_moves where group_id = :'gid_a'), 4, 'consulta lê as passagens');
+select is((select count(*)::int from public.associate_moves where group_id = :'gid_a'), 2, 'consulta lê as passagens');
 select ok(exists(select 1 from public.associate_profile_rows where id = :'ana'), 'consulta lê associate_profile_rows');
 select throws_like(format($$select public.associates_create(%L, 'Consulta', 'adulto', null, null, null, null, null, null)$$, :'gid_a'), 'Sem permissão%', 'consulta não cadastra');
 select throws_like(format($$select public.associates_update(%L, 'Consulta', null, null, null, null, 'definitivo', null)$$, :'ana'), 'Associado não encontrado ou sem permissão%', 'consulta não edita');
@@ -129,7 +135,7 @@ select throws_like(format($$select public.associates_leave(%L, '2026-09-01', nul
 select tests.logout() \gset
 
 select is((select count(*)::int from public.audit_events where group_id = :'gid_a'
-  and action in ('associate.created', 'associate.updated', 'associate.moved', 'associate.left', 'associate.rejoined', 'user.associates_role_changed')), 13,
+  and action in ('associate.created', 'associate.updated', 'associate.moved', 'associate.left', 'associate.rejoined', 'user.associates_role_changed')), 14,
   'cadastros, passagens, saídas e papéis auditados');
 
 select * from finish();

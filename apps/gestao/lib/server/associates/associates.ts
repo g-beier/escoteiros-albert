@@ -35,7 +35,11 @@ export async function existingForImport(db: Db, groupId: string): Promise<Existi
 
 export type Dates = { birthDate: string | null; promiseDate: string | null; joinedOn: string | null };
 export type CreateInput = Dates & { name: string; branch: ScoutBranch; sectionId: string | null; patrolId: string | null; notes: string | null };
-export type UpdateInput = Dates & { id: string; name: string; notes: string | null; registration: Registration; nickname: string | null };
+export type UpdateInput = Dates & {
+  id: string; name: string; notes: string | null; registration: Registration; nickname: string | null;
+  /** Correção da divisão, sem passagem no histórico (055); ausente mantém a atual. */
+  placement?: { branch: ScoutBranch; sectionId: string | null; patrolId: string | null };
+};
 export type MoveInput = { id: string; date: string; branch: ScoutBranch; sectionId: string | null; patrolId: string | null };
 
 /** Cadastra (com a entrada na data de entrada, ou hoje) e devolve o id. */
@@ -70,15 +74,16 @@ export async function countToReview(db: Db, groupId: string): Promise<number> {
   return count ?? 0;
 }
 
-/** Nome, datas, observações, registro e apelido; ramo, seção e equipe mudam só por passagem. */
+/** Nome, datas, observações, registro, apelido e a correção de ramo, seção e equipe (sem histórico, 055). */
 export async function update(db: Db, input: UpdateInput): Promise<void> {
   await rpc(db, "associates_update", {
     p_associate_id: input.id, p_name: input.name, p_birth_date: input.birthDate, p_promise_date: input.promiseDate, p_joined_on: input.joinedOn, p_notes: input.notes,
     p_registration: input.registration, p_nickname: input.nickname as string,
+    ...(input.placement && { p_branch: input.placement.branch, p_section_id: input.placement.sectionId as string, p_patrol_id: input.placement.patrolId as string }),
   });
 }
 
-/** Passagem: muda ramo, seção ou equipe numa data. */
+/** Passagem: cerimônia que leva o jovem ao ramo seguinte (e à seção e equipe dele) numa data. */
 export async function move(db: Db, input: MoveInput): Promise<void> {
   await rpc(db, "associates_move", { p_associate_id: input.id, p_date: input.date, p_branch: input.branch, p_section_id: input.sectionId, p_patrol_id: input.patrolId });
 }

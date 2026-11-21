@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activityPeriods, ageInYears, ageInYearsMonths, ageLabel, ageYearsMonthsLabel, patrolChoices, placementLabel, placementOptions, placementValue, resolvePlacement, sectionChoices, statusFilter } from "./model";
+import { activityPeriods, ageInYears, ageInYearsMonths, ageLabel, ageYearsMonthsLabel, nextBranch, patrolChoices, placementLabel, placementOptions, placementValue, resolvePlacement, sectionChoices, statusFilter } from "./model";
 import { FILHOTES_ENABLED } from "@/lib/features";
 
 describe("seções cadastradas", () => {
@@ -46,6 +46,13 @@ describe("divisão (seleção única Ramo › Seção › Equipe)", () => {
     const values = placementOptions(sections, patrols, { sectionId: "s5", patrolId: "p3" }).map((o) => o.value);
     expect(values).toContain("p:p3");
     expect(placementOptions(sections, patrols, { sectionId: "s6" }).map((o) => o.value)).toContain("s:s6");
+  });
+  it("passagem: só o ramo seguinte, com suas seções e equipes", () => {
+    expect(placementOptions(sections, patrols, undefined, "escoteiro").map((o) => `${o.depth}:${o.name}`)).toEqual(["0:Escoteiro", "1:Tropa Tupã", "2:Lobo"]);
+    expect(nextBranch("lobinho")).toBe("escoteiro");
+    expect(nextBranch("pioneiro")).toBe("adulto");
+    expect(nextBranch("filhote")).toBe("lobinho");
+    expect(nextBranch("adulto")).toBeNull();
   });
   it("a equipe define a seção e o ramo; a seção define o ramo", () => {
     expect(resolvePlacement("p:p1", sections, patrols)).toEqual({ branch: "escoteiro", sectionId: "s2", patrolId: "p1" });

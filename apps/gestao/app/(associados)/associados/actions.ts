@@ -46,7 +46,7 @@ export async function saveAssociate(_previous: ActionResult, formData: FormData)
       const registration = text(formData, "registration");
       if (!isRegistration(registration)) throw new InputError("Escolha o registro (provisório ou definitivo).");
       const nickname = notes(formData, "nickname", NICKNAME_MAX);
-      await associates.update(db, { id: editing, name: name(formData), notes: notes(formData), registration, nickname, ...dates(formData) });
+      await associates.update(db, { id: editing, name: name(formData), notes: notes(formData), registration, nickname, placement: placement(formData), ...dates(formData) });
       savedId = editing;
     } else {
       savedId = await associates.create(db, groupId, { name: name(formData), notes: notes(formData), ...placement(formData), ...dates(formData) });
@@ -78,7 +78,7 @@ export async function setTransition(_previous: ActionResult, formData: FormData)
   });
 }
 
-/** Passagem: novo ramo, seção ou equipe a partir de uma data. */
+/** Passagem: ramo seguinte (com seção e equipe dele) a partir de uma data. */
 export async function moveAssociate(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   return runAction(associatesEditorOrError, async ({ db }) => {
     const associateId = id(formData, "associateId");

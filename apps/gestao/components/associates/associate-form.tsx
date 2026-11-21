@@ -12,7 +12,7 @@ import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast
 import { cn } from "@geas/ui/lib/utils";
 import { saveAssociate } from "@/app/(associados)/associados/actions";
 import { quickAssociate } from "@/app/(gestao)/rapido/actions";
-import { NICKNAME_MAX, REGISTRATIONS, registrationLabels, type AssociateProfile, type Registration } from "@/lib/associates/model";
+import { NICKNAME_MAX, REGISTRATIONS, registrationLabels, type AssociateProfile, type Placement, type Registration } from "@/lib/associates/model";
 import { EMPTY_PLACEMENT, PlacementFields, PlacementSelect, type Catalog } from "./placement-select";
 import { ActionForm } from "@geas/ui/components/action-form";
 
@@ -26,8 +26,9 @@ export function Field({ id, label, hint, className, children }: { id: string; la
 }
 
 /**
- * Cadastro e edição do associado. No cadastro escolhe-se a divisão (ramo, seção, equipe); depois ela só muda por
- * passagem, no detalhe. Datas opcionais; sem data de entrada, a entrada fica registrada na data do cadastro.
+ * Cadastro e edição do associado, com a divisão (ramo, seção, equipe). Na edição ela é corrigida sem histórico (055):
+ * a passagem de ramo, cerimônia registrada, fica no detalhe. Datas opcionais; sem data de entrada, a entrada fica
+ * registrada na data do cadastro.
  * `quick`: cadastro pelo registro rápido (/rapido/associado), que fica para a Secretaria revisar.
  * Registro e apelido (054) só na edição: o cadastro novo começa com registro provisório.
  */
@@ -39,7 +40,8 @@ const REGISTRATION_HINTS: Record<Registration, string> = {
 export function AssociateForm({ catalog, associate, today, quick = false }: { catalog: Catalog; associate?: AssociateProfile; today: string; quick?: boolean }) {
   const [state, action, pending] = useActionState(quick ? quickAssociate : saveAssociate, {} as ActionResult);
   useActionToast(state);
-  const [place, setPlace] = useState(EMPTY_PLACEMENT);
+  const current: Placement | undefined = associate && { branch: associate.branch, sectionId: associate.section_id ?? "", patrolId: associate.patrol_id ?? "" };
+  const [place, setPlace] = useState(current ?? EMPTY_PLACEMENT);
   const creating = !associate;
   const [registration, setRegistration] = useState<string>(associate?.registration ?? "provisorio");
 
@@ -49,10 +51,11 @@ export function AssociateForm({ catalog, associate, today, quick = false }: { ca
       <Field id="associate-name" label="Nome">
         <Input id="associate-name" name="name" required minLength={2} maxLength={120} defaultValue={associate?.name} autoComplete="off" />
       </Field>
-      {creating && <Field id="associate-placement" label="Ramo, seção e equipe" hint="Adulto é só o ramo. A equipe é opcional.">
-        <PlacementSelect id="associate-placement" catalog={catalog} value={place} onValueChange={setPlace} />
+      <Field id="associate-placement" label="Ramo, seção e equipe"
+        hint={creating ? "Adulto é só o ramo. Seção e equipe são opcionais: dá para completar depois, editando." : "Corrige o cadastro, sem histórico. A passagem para o ramo seguinte é no detalhe."}>
+        <PlacementSelect id="associate-placement" catalog={catalog} value={place} current={current} onValueChange={setPlace} />
         <PlacementFields value={place} />
-      </Field>}
+      </Field>
     </div>
     <div className="grid items-start gap-4 sm:grid-cols-3">
       <Field id="associate-birth" label="Nascimento">
@@ -89,7 +92,7 @@ export function AssociateForm({ catalog, associate, today, quick = false }: { ca
       <Textarea id="associate-notes" name="notes" maxLength={500} rows={3} defaultValue={associate?.notes ?? ""} />
     </Field>
     <div className="flex flex-wrap gap-2">
-      <Button type="submit" size="lg" disabled={pending || (creating && !place.branch)}>{pending ? "Salvando…" : creating ? "Cadastrar associado" : "Salvar"}</Button>
+      <Button type="submit" size="lg" disabled={pending || !place.branch}>{pending ? "Salvando…" : creating ? "Cadastrar associado" : "Salvar"}</Button>
       <Link href={associate ? `/associados/${associate.id}` : quick ? "/rapido" : "/associados"} className={buttonVariants({ variant: "outline", size: "lg" })}>Cancelar</Link>
     </div>
   </ActionForm>;

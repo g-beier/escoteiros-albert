@@ -43,33 +43,35 @@ test("secretaria: cadastrar, passagem, desligar e reingressar", async ({ page })
   await page.getByRole("row").filter({ has: page.getByLabel(`Nova equipe em ${troop}`) }).getByRole("button", { name: "Equipe" }).click();
   await expect(page.getByText(`Equipe “${patrol}” cadastrada.`)).toBeVisible();
 
-  // cadastro na equipe (define seção e ramo), com nascimento e entrada
+  // cadastro só com o ramo (seção e equipe vêm depois, pela edição), com nascimento e entrada
   await page.goto("/associados/novo");
   await page.getByLabel("Nome").fill(person);
-  await chooseOption(page, "Ramo, seção e equipe", patrol);
+  await chooseOption(page, "Ramo, seção e equipe", "Escoteiro");
   await page.getByLabel("Nascimento").fill("2012-05-20");
   await page.getByLabel("Entrada no grupo").fill("2020-03-01");
   await page.getByRole("button", { name: "Cadastrar associado" }).click();
   await expect(page).toHaveURL(/\/associados\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("heading", { name: person })).toBeVisible();
-  await expect(page.getByText(troop)).toBeVisible();
   await expect(page.getByText("20/05/2012")).toBeVisible();
   await expect(page.getByText(/\(\d+ anos\)/)).toBeVisible();
   const periods = page.getByRole("table", { name: "Períodos de atividade do associado" });
   await expect(periods).toContainText("01/03/2020");
   await expect(periods).toContainText("em atividade");
 
-  // cadastro novo começa com registro provisório; na edição, registro definitivo e apelido
+  // cadastro novo começa com registro provisório; na edição, registro definitivo, apelido e a equipe (correção, sem passagem)
   const registro = page.locator("dt", { hasText: "Registro" }).locator("xpath=following-sibling::dd[1]");
   await expect(registro).toHaveText("Provisório");
   const detail = page.url();
   await page.getByRole("link", { name: "Editar" }).click();
+  await chooseOption(page, "Ramo, seção e equipe", patrol);
   await page.getByRole("radio", { name: /Definitivo/ }).click();
   await page.getByLabel("Apelido (opcional)").fill("Teste");
   await page.getByRole("button", { name: "Salvar" }).click();
   await expect(page).toHaveURL(detail);
   await expect(registro).toHaveText("Definitivo");
   await expect(page.locator("dt", { hasText: "Apelido" }).locator("xpath=following-sibling::dd[1]")).toHaveText("Teste");
+  await expect(page.getByText(troop)).toBeVisible();
+  await expect(page.getByText("Nenhuma passagem registrada.")).toBeVisible();
 
   // na lista: aba do ramo, só por ramo (seção e equipe como texto pequeno na linha)
   await page.goto("/associados?ramo=escoteiro");
@@ -78,10 +80,12 @@ test("secretaria: cadastrar, passagem, desligar e reingressar", async ({ page })
   await expect(page.getByRole("cell", { name: new RegExp(`^${troop}`) })).toHaveCount(0);
   await page.getByRole("link", { name: person }).click();
 
-  // passagem para a seção do Sênior
+  // passagem (cerimônia) só para o ramo seguinte: o Sênior, com a seção dele
   await page.getByRole("button", { name: "Passagem" }).click();
   const move = page.getByRole("dialog");
-  await chooseOption(page, "Para", senior, move);
+  await move.getByLabel("Para", { exact: true }).click();
+  await expect(page.getByRole("option", { name: troop, exact: true })).toHaveCount(0);
+  await page.getByRole("option", { name: senior, exact: true }).click();
   await move.getByRole("button", { name: "Registrar passagem" }).click();
   await expect(page.getByText("Passagem registrada.")).toBeVisible();
   const moves = page.getByRole("table", { name: "Passagens do associado" });

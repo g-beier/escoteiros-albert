@@ -1,6 +1,6 @@
 -- pgTAP: seção do escotista, edição de funções e passagem só de jovens (052). Rode com `npm run test:db`.
 begin;
-select plan(22);
+select plan(23);
 \ir _fixture.psql
 
 select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
@@ -49,7 +49,8 @@ select throws_like(format($$select public.associates_add_function(%L, 'comissao_
 
 -- Passagem só de jovens
 select throws_like(format($$select public.associates_move(%L, current_date, 'escoteiro', %L, null)$$, :'ana', :'alcateia'), 'Passagem é só de jovens%', 'adulto não tem passagem');
-select lives_ok(format($$select public.associates_move(%L, current_date, 'adulto', null, null)$$, :'leo'), 'jovem passa (até para adulto)');
+select lives_ok(format($$select public.associates_move(%L, current_date, 'escoteiro', null, null)$$, :'leo'), 'jovem passa ao ramo seguinte');
+select throws_like(format($$select public.associates_update(%L, a.name, null, null, null, null, 'definitivo', null, 'lobinho', null, null) from public.associates a where a.id = %L$$, :'ana', :'ana'), 'Adulto com função ativa%', 'correção não tira do Adulto quem tem função');
 
 select * from finish();
 rollback;

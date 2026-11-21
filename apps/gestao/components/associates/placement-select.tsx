@@ -2,7 +2,7 @@
 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@geas/ui/components/select";
 import { cn } from "@geas/ui/lib/utils";
-import { placementOptions, placementValue, resolvePlacement, type PatrolItem, type Placement, type SectionItem } from "@/lib/associates/model";
+import { placementOptions, placementValue, resolvePlacement, type PatrolItem, type Placement, type ScoutBranch, type SectionItem } from "@/lib/associates/model";
 
 export type Catalog = { sections: SectionItem[]; patrols: PatrolItem[] };
 
@@ -10,12 +10,12 @@ export const EMPTY_PLACEMENT: Placement = { branch: "", sectionId: "", patrolId:
 
 /**
  * Divisão numa seleção só, em hierarquia: Ramo › Seção › Equipe. Escolher a equipe define a seção e o ramo;
- * escolher a seção define o ramo. Adulto é só o ramo; seções do Pioneiro não têm equipes.
+ * escolher a seção define o ramo. Adulto é só o ramo; seções do Pioneiro não têm equipes. `only`: só um ramo (passagem).
  */
-export function PlacementSelect({ id, catalog, value, current, onValueChange, className }: {
-  id: string; catalog: Catalog; value: Placement; current?: Placement; onValueChange: (value: Placement) => void; className?: string;
+export function PlacementSelect({ id, catalog, value, current, only, onValueChange, className }: {
+  id: string; catalog: Catalog; value: Placement; current?: Placement; only?: ScoutBranch; onValueChange: (value: Placement) => void; className?: string;
 }) {
-  const options = placementOptions(catalog.sections, catalog.patrols, current);
+  const options = placementOptions(catalog.sections, catalog.patrols, current, only);
   const selected = placementValue(value);
   return <Select items={options} value={selected || null} onValueChange={(next) => onValueChange(resolvePlacement((next as string | null) ?? "", catalog.sections, catalog.patrols))}>
     <SelectTrigger id={id} className={cn("w-full min-w-48", className)}>

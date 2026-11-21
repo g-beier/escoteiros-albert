@@ -1057,14 +1057,14 @@ isOneToOne: false
                   ]
                 },"memberships": {
                   Row: {
-                    "activities_role": string | null,"associates_role": Database["public"]['Enums']["associates_role"],"created_at": string,"group_id": string,"inventory_role": Database["public"]['Enums']["inventory_role"],"role": Database["public"]['Enums']["member_role"],"user_id": string
+                    "associates_role": Database["public"]['Enums']["associates_role"],"created_at": string,"group_id": string,"inventory_role": Database["public"]['Enums']["inventory_role"],"role": Database["public"]['Enums']["member_role"],"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "activities_role"?: string | null,"associates_role"?: Database["public"]['Enums']["associates_role"],"created_at"?: string,"group_id": string,"inventory_role"?: Database["public"]['Enums']["inventory_role"],"role"?: Database["public"]['Enums']["member_role"],"user_id": string
+                    "associates_role"?: Database["public"]['Enums']["associates_role"],"created_at"?: string,"group_id": string,"inventory_role"?: Database["public"]['Enums']["inventory_role"],"role"?: Database["public"]['Enums']["member_role"],"user_id": string
                   }
                   Update: {
-                    "activities_role"?: string | null,"associates_role"?: Database["public"]['Enums']["associates_role"],"created_at"?: string,"group_id"?: string,"inventory_role"?: Database["public"]['Enums']["inventory_role"],"role"?: Database["public"]['Enums']["member_role"],"user_id"?: string
+                    "associates_role"?: Database["public"]['Enums']["associates_role"],"created_at"?: string,"group_id"?: string,"inventory_role"?: Database["public"]['Enums']["inventory_role"],"role"?: Database["public"]['Enums']["member_role"],"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -1914,6 +1914,9 @@ isOneToOne: false
 "associates_move":
 { Args: { "p_associate_id": string,"p_branch": Database["public"]['Enums']["scout_branch"],"p_date": string,"p_patrol_id": string,"p_section_id": string }; Returns: string
                            },
+"associates_next_branch":
+{ Args: { "p_branch": Database["public"]['Enums']["scout_branch"] }; Returns: Database["public"]['Enums']["scout_branch"]
+                           },
 "associates_rejoin":
 { Args: { "p_associate_id": string,"p_date": string,"p_reason": string }; Returns: undefined
                            },
@@ -1930,7 +1933,7 @@ isOneToOne: false
 { Args: { "p_associate_id": string,"p_date": string }; Returns: undefined
                            },
 "associates_update":
-{ Args: { "p_associate_id": string,"p_birth_date": string,"p_joined_on": string,"p_name": string,"p_nickname": string,"p_notes": string,"p_promise_date": string,"p_registration": Database["public"]['Enums']["associate_registration"] }; Returns: undefined
+{ Args: { "p_associate_id": string,"p_birth_date": string,"p_branch"?: Database["public"]['Enums']["scout_branch"],"p_joined_on": string,"p_name": string,"p_nickname": string,"p_notes": string,"p_patrol_id"?: string,"p_promise_date": string,"p_registration": Database["public"]['Enums']["associate_registration"],"p_section_id"?: string }; Returns: undefined
                            },
 "associates_update_function":
 { Args: { "p_elected"?: boolean,"p_ended_on": string,"p_function_id": string,"p_kind": Database["public"]['Enums']["associate_function_kind"],"p_section_id": string,"p_started_on": string,"p_title": string }; Returns: undefined

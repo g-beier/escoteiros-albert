@@ -21,6 +21,11 @@ export function isScoutBranch(value: string): value is ScoutBranch {
   return (SCOUT_BRANCHES as readonly string[]).includes(value);
 }
 
+/** Ramo da passagem: o seguinte na ordem (Pioneiro → Adulto); `null` para o Adulto. Mesma regra de `associates_move` (055). */
+export function nextBranch(branch: ScoutBranch): ScoutBranch | null {
+  return ALL_SCOUT_BRANCHES[ALL_SCOUT_BRANCHES.indexOf(branch) + 1] ?? null;
+}
+
 const byName = (a: string, b: string) => a.localeCompare(b, "pt-BR", { sensitivity: "base", numeric: true });
 
 // Seções e patrulhas cadastradas (028_sections.sql): Ramo › Seção › Patrulha ------------------
@@ -57,11 +62,11 @@ export function placementValue({ branch, sectionId, patrolId }: Placement): stri
 
 /**
  * Hierarquia para a seleção única: cada ramo, suas seções e as equipes de cada seção.
- * Só ativas, mais a seção e a equipe atuais (mesmo inativas ou fora das regras de hoje).
+ * Só ativas, mais a seção e a equipe atuais (mesmo inativas ou fora das regras de hoje). `only`: um ramo só (passagem).
  */
-export function placementOptions(sections: SectionItem[], patrols: PatrolItem[], current?: Partial<Placement>): PlacementOption[] {
+export function placementOptions(sections: SectionItem[], patrols: PatrolItem[], current?: Partial<Placement>, only?: ScoutBranch): PlacementOption[] {
   const options: PlacementOption[] = [];
-  for (const branch of SCOUT_BRANCHES) {
+  for (const branch of only ? [only] : SCOUT_BRANCHES) {
     options.push({ value: `b:${branch}`, name: branchLabels[branch], label: branchLabels[branch], depth: 0 });
     const branchSections = sectionChoices(sections, branch, current?.sectionId).filter((s) => hasSections(branch) || s.id === current?.sectionId);
     for (const section of branchSections) {
