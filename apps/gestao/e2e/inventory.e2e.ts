@@ -306,7 +306,7 @@ test("chefe registra, fica para revisar, e o gestor revisa", async ({ browser, p
 
 test("registro rápido (celular): fica para revisar mesmo do gestor", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/inventario/rapido");
+  await page.goto("/rapido");
   await page.getByLabel("Buscar material").fill(lotMaterial);
   await page.getByRole("button", { name: "Buscar" }).click();
   await page.getByRole("link", { name: new RegExp(lotMaterial) }).click();
@@ -368,7 +368,8 @@ test("consulta: só vê, sem cadastrar nem movimentar", async ({ browser }) => {
   await expect(viewer.getByRole("button", { name: /^Incluir ou remover/ })).toHaveCount(0);
   await viewer.goto("/inventario/materiais/novo");
   await expect(viewer).toHaveURL(/\/inventario\/materiais$/);
-  await viewer.goto("/inventario/rapido");
-  await expect(viewer).toHaveURL(/\/inventario\/materiais$/);
+  await viewer.goto("/rapido/inventario/novo");
+  await expect(viewer).toHaveURL(/\/rapido$|\/$/);
+  await expect(viewer.getByLabel("Buscar material")).toHaveCount(0);
   await viewer.context().close();
 });

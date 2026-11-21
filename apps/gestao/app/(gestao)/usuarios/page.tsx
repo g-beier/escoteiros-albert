@@ -14,7 +14,7 @@ export default async function UsersPage() {
   return <div className="shell">
     <GestaoHeader current="/usuarios" email={user.email} role={member.finance.role} isAdmin={member.isAdmin} />
     <PageBody width="narrow">
-      <PageHeader title="Usuários" crumbs={[{ label: "Usuários" }]} description="Convide pessoas do domínio institucional e defina o acesso de cada uma no Financeiro e no Inventário." />
+      <PageHeader title="Usuários" crumbs={[{ label: "Usuários" }]} description="Convide pessoas do domínio institucional e defina o acesso de cada uma no Financeiro, no Inventário e no Associados." />
       <UsersManager users={users} currentUserId={user.id} actions={{ invite: inviteUser, save: saveUserRoles, remove: removeUser }} />
     </PageBody>
   </div>;

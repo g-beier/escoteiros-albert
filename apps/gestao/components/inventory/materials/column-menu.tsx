@@ -7,10 +7,11 @@ import { Button } from "@geas/ui/components/button";
 import { Checkbox } from "@geas/ui/components/checkbox";
 import { Input } from "@geas/ui/components/input";
 import { Label } from "@geas/ui/components/label";
+import { ToggleGroup, ToggleGroupItem } from "@geas/ui/components/toggle-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@geas/ui/components/popover";
 import { cn } from "@geas/ui/lib/utils";
 import type { SortKey } from "@/lib/inventory/material-list";
-import { HEAD_TRIGGER, HeadIcons } from "./head-icons";
+import { HEAD_TRIGGER, HeadIcons } from "@/components/shell/column-head";
 
 /** Filtros de uma coluna: por valores (caixas de marcar) e/ou por faixa de/até (valor em reais ou inteiro). */
 export type ColumnFilter = {
@@ -79,17 +80,17 @@ export function ColumnMenu({ label, sortKey, sortLabels, filter, align = "start"
     </PopoverTrigger>
     <PopoverContent align={align} className="w-72 gap-0 p-0 text-xs font-normal tracking-normal normal-case">
       <div className="border-b px-3 py-2 text-sm font-semibold text-foreground">{label}</div>
-      <div className="grid p-1.5" role="group" aria-label="Ordenar">
+      <ToggleGroup orientation="vertical" aria-label="Ordenar" value={sorted ? [dir] : []} className="grid w-full gap-0 p-1.5">
         {(["asc", "desc"] as const).map((value, index) => {
           const active = sorted && dir === value;
-          return <button key={value} type="button" onClick={() => sort(value)} aria-pressed={active}
-            className={cn("flex items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-muted", active && "font-semibold")}>
+          return <ToggleGroupItem key={value} value={value} onClick={() => sort(value)}
+            className="h-auto justify-start gap-2 rounded-md px-2 py-1.5 text-left text-xs font-normal hover:bg-muted aria-pressed:bg-transparent aria-pressed:font-semibold aria-pressed:hover:bg-muted">
             {value === "asc" ? <IconArrowUp className="size-3.5" aria-hidden /> : <IconArrowDown className="size-3.5" aria-hidden />}
             {sortLabels[index]}
             {active && <IconCheck className="ml-auto size-3.5 text-primary" aria-hidden />}
-          </button>;
+          </ToggleGroupItem>;
         })}
-      </div>
+      </ToggleGroup>
       {values && <div className="grid gap-2 border-t p-3">
         <span className="font-semibold text-foreground">{values.title}</span>
         <div className="flex gap-3">

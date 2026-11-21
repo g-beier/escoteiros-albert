@@ -131,6 +131,10 @@ function describe(row: AuditRow, names: HistoryNames): { title: string; changes:
       const from = Array.isArray(details.from) ? details.from.map(label).join(", ") : "—";
       return { title: "Rubrica excluída: rateios movidos", changes: [{ label: "Rubrica", before: from, after: label(details.to) }] };
     }
+    case "ledger_entry.quick":
+      return { title: "Registrado pelo registro rápido (para revisar)", changes: [] };
+    case "ledger_entry.reviewed":
+      return { title: "Marcado como revisado", changes: [] };
     case "reconciliation.suggestion_rejected":
       return { title: "Sugestão de conciliação recusada", changes: [] };
     default:

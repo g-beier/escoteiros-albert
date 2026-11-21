@@ -189,6 +189,22 @@ export async function adjustLot(_previous: ActionResult, formData: FormData) {
   });
 }
 
+/**
+ * Lotes de um material numa divisão, para o diálogo ± da lista (a lista não leva os lotes de cada linha no HTML).
+ * Leitura: devolve os lotes ou a mensagem de erro.
+ */
+export async function loadRowLots(materialId: unknown, locationId: unknown): Promise<{ lots: Awaited<ReturnType<typeof materials.openLotsAt>> } | { error: string }> {
+  const member = await inventoryEditorOrError();
+  if ("error" in member) return member;
+  const uuid = /^[0-9a-f-]{36}$/i;
+  if (typeof materialId !== "string" || typeof locationId !== "string" || !uuid.test(materialId) || !uuid.test(locationId)) return { error: "Registro inválido. Recarregue a página." };
+  try {
+    return { lots: await materials.openLotsAt(member.db, materialId, locationId) };
+  } catch (error) {
+    return { error: error instanceof DataError ? error.message : "Não foi possível carregar os lotes." };
+  }
+}
+
 export async function writeOffLot(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
     await materials.writeOffLot(db, id(formData, "lotId"), integer(formData, "quantity", "a quantidade"), reason(formData), optional(formData, "notes"));

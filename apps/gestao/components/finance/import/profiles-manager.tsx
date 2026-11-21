@@ -14,6 +14,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { dateBR } from "@/lib/format";
 import type { ProfileAccountUse } from "@/lib/finance/import-flow";
 import { useActionToast } from "@geas/ui/lib/use-action-toast";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 export type ProfileItem = {
   id: string;
@@ -95,7 +96,7 @@ function RenameForm({ profile, onDone }: { profile: ProfileItem; onDone: () => v
   const [state, action, pending] = useActionState(renameImportProfile, initial);
   useActionToast(state);
   useEffect(() => { if (state.success) onDone(); }, [state, onDone]);
-  return <form action={action} className="grid gap-3">
+  return <ActionForm action={action} result={state} className="grid gap-3">
     <DialogHeader>
       <DialogTitle>Renomear perfil</DialogTitle>
       <DialogDescription>O nome aparece na importação e nas importações recentes.</DialogDescription>
@@ -107,5 +108,5 @@ function RenameForm({ profile, onDone }: { profile: ProfileItem; onDone: () => v
       <Button type="button" variant="outline" onClick={onDone}>Cancelar</Button>
       <Button type="submit" disabled={pending}>{pending ? "Salvando…" : "Salvar nome"}</Button>
     </DialogFooter>
-  </form>;
+  </ActionForm>;
 }

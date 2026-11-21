@@ -13,6 +13,7 @@ import { centsToInput, dateBR, money } from "@/lib/format";
 import { parseMoneyToCents } from "@/lib/money";
 import { annualAmounts, DUE_RULE_LABELS, dueDate, FEE_MONTH_LABELS, FEE_MONTHS, type DueRule, type FeePrice, type FeeSettings } from "@/lib/finance/fees";
 import { useActionToast } from "@geas/ui/lib/use-action-toast";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 const initial: FeeSettingsState = {};
 const ruleOptions = (Object.keys(DUE_RULE_LABELS) as DueRule[]).map((value) => ({ value, label: DUE_RULE_LABELS[value] }));
@@ -33,7 +34,7 @@ export function FeeSettingsForm({ settings, categories, year }: {
 
   return <SectionCard aria-labelledby="fee-settings-title">
     <SectionHeader title="Mensalidades" titleId="fee-settings-title" description="Vencimento usado para marcar as mensalidades atrasadas e rubrica cujos rateios com associado viram sugestão de pagamento." />
-    <form action={action} className="grid gap-3 p-3">
+    <ActionForm action={action} result={state} className="grid gap-3 p-3">
       <input type="hidden" name="dueRule" value={rule} />
       <input type="hidden" name="categoryId" value={categoryId} />
       <div className="flex flex-wrap items-end gap-3">
@@ -54,7 +55,7 @@ export function FeeSettingsForm({ settings, categories, year }: {
         <p className="m-0 text-xs text-balance text-muted-foreground">Rateios nesta rubrica (e nas de baixo dela) com associado aparecem como sugestão na grade.{!categoryId && " Sem rubrica escolhida, a grade não sugere pagamentos."}</p>
       </div>
       <Button type="submit" className="w-fit" disabled={pending || !validDay}>{pending ? "Salvando…" : "Salvar"}</Button>
-    </form>
+    </ActionForm>
   </SectionCard>;
 }
 
@@ -82,7 +83,7 @@ function FeeYearFields({ year, price }: { year: number; price?: FeePrice }) {
   const monthlyCents = parseMoneyToCents(monthly);
   const discountPct = Number(discount.replace(",", ".")) || 0;
   const preview = monthlyCents && monthlyCents > 0 ? annualAmounts({ monthlyCents, discountPct, deadline: deadline || null }) : null;
-  return <form action={action} className="grid gap-3">
+  return <ActionForm action={action} result={state} className="grid gap-3">
     <input type="hidden" name="year" value={year} />
     <div className="flex flex-wrap items-end gap-3">
       <div className="grid gap-1.5"><Label htmlFor="fee-monthly">Mensalidade (R$)</Label>
@@ -97,5 +98,5 @@ function FeeYearFields({ year, price }: { year: number; price?: FeePrice }) {
       Ano completo: <strong className="num text-foreground">{money(preview.full / 100)}</strong>
       {discountPct > 0 && deadline && <> · integral até <span className="num">{dateBR(deadline)}</span>: <strong className="num text-success">{money(preview.discounted / 100)}</strong></>}
     </p>}
-  </form>;
+  </ActionForm>;
 }

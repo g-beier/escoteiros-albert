@@ -1,14 +1,5 @@
-node_modules
-.next
 out
 .env*
 !.env.example
-npm-debug.log*
-.DS_Store
 supabase/snippets
-supabase/.branches
-supabase/.temp
-test-results
-playwright-report
 e2e/.auth
-next-env.d.ts

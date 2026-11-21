@@ -128,16 +128,16 @@ Com o contador:
 
 No navegador (desktop e celular):
 
-- `/extrato/importar` com `nubank.ofx`, `itau.ofx` e um OFX convertido: escolha da conta, perfil lembrado na segunda importação, suspeitas/órfãs na conferência, desfazer e retorno para `/extrato/conciliar`.
-- `/extrato/conciliar`: sugestões aproximadas, "Criar lançamento", criação e ignorar em massa.
-- `/configuracoes/contas` e `/configuracoes/rubricas` (conta contábil), formulário com rateio misto (receita + despesa), seletor de rubrica e painel de filtros.
+- `/financeiro/extrato/importar` com `nubank.ofx`, `itau.ofx` e um OFX convertido: escolha da conta, perfil lembrado na segunda importação, suspeitas/órfãs na conferência, desfazer e retorno para `/financeiro/extrato/conciliar`.
+- `/financeiro/extrato/conciliar`: sugestões aproximadas, "Criar lançamento", criação e ignorar em massa.
+- `/financeiro/configuracoes/contas` e `/financeiro/configuracoes/rubricas` (conta contábil), formulário com rateio misto (receita + despesa), seletor de rubrica e painel de filtros.
 - Início e rolagem da tabela de lançamentos.
-- `/mensalidades`: valores individuais, não pago, entradas/saídas/retornos.
-- `/configuracoes/associados`: recadastrar as seções e patrulhas reais e atribuir aos associados (as seções em texto foram descartadas).
-- Celular: cartões de `/lancamentos/movimentacoes` e `/detalhamento` (seleção, rodapé fixo); desktop com mais de 300 lançamentos carregados (virtualização, teclado).
+- `/financeiro/mensalidades/controle`: valores individuais, não pago, entradas/saídas/retornos.
+- `/financeiro/configuracoes/associados`: recadastrar as seções e patrulhas reais e atribuir aos associados (as seções em texto foram descartadas).
+- Celular: cartões de `/financeiro/lancamentos/movimentacoes` e `/detalhamento` (seleção, rodapé fixo); desktop com mais de 300 lançamentos carregados (virtualização, teclado).
 - Comprovantes: HEIC real e arquivo perto de 10 MB (fluxo básico coberto pelo e2e).
-- `/lancamentos/movimentacoes`: "Limpar filtros" seguido de busca antes da navegação terminar pode trazer de volta o filtro antigo.
-- Importação: bloco de saldo inicial na conferência e aba "Perfis de leitura" (`/configuracoes/perfis`).
+- `/financeiro/lancamentos/movimentacoes`: "Limpar filtros" seguido de busca antes da navegação terminar pode trazer de volta o filtro antigo.
+- Importação: bloco de saldo inicial na conferência e aba "Perfis de leitura" (`/financeiro/configuracoes/perfis`).
 - `/login` e `/usuarios` com a aparência de antes.
 - Exportações (XLSX e CSV do fluxo) abertas no Excel/LibreOffice/Google Sheets (cores, fórmulas) e download pelo navegador logado.
 
@@ -157,5 +157,5 @@ Decidido (2026-11-12):
 
 - Cada frente em worktree própria, um commit por item, `npm run lint`, `npm run typecheck` e `npm test` verdes; SQL testado com `supabase/tests/`.
 - Worktree criada a partir de `main`; numeração de migrations reservada por frente para evitar colisão.
-- Seguir `CLAUDE.md` (PageHeader, rótulos visíveis, escrita só por funções SQL auditadas, `lib/session.ts`) e `AGENTS.md` (Next.js desta versão).
+- Seguir `CLAUDE.md` (PageHeader, rótulos visíveis, escrita só por funções SQL auditadas, `lib/server/session.ts`) e `AGENTS.md` (Next.js desta versão).
 - Atualizar este BACKLOG e os `docs/` ao concluir.

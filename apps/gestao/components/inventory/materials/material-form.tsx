@@ -15,6 +15,7 @@ import type { MaterialDefaults } from "@/lib/inventory/model";
 import type { Tracking } from "@/lib/inventory/vocabulary";
 import { ConditionField, Field, LocationField, SelectField } from "./fields";
 import { originOptions } from "@/lib/inventory/vocabulary";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 export type { MaterialDefaults };
 
@@ -46,7 +47,7 @@ export function MaterialForm({ families, locations = [], material, hasStock = fa
   const isLot = tracking === "lot";
   const creating = !material;
 
-  return <form action={action} className="grid gap-4">
+  return <ActionForm action={action} result={state} className="grid gap-4">
     {material && <input type="hidden" name="id" value={material.id} />}
     {back && <input type="hidden" name="voltar" value={back} />}
     <Field id="material-name" label="Nome">
@@ -129,5 +130,5 @@ export function MaterialForm({ families, locations = [], material, hasStock = fa
     <div className="flex justify-end">
       <Button type="submit" disabled={pending}>{pending ? "Salvando…" : material ? "Salvar material" : "Cadastrar material"}</Button>
     </div>
-  </form>;
+  </ActionForm>;
 }

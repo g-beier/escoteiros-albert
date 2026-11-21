@@ -5,6 +5,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { dateBR, money } from "@/lib/format";
 import type { ParsedStatement } from "@/lib/finance/statement-import";
 import type { PreviewLine } from "@/lib/finance/import-schema";
+import { Alert, AlertDescription } from "@geas/ui/components/alert";
 import { Checkbox } from "@geas/ui/components/checkbox";
 import { cn } from "@geas/ui/lib/utils";
 
@@ -108,6 +109,8 @@ function BalanceStatus({ statement }: { statement: ParsedStatement }) {
     return <p className="m-0 flex items-center gap-2 text-xs text-success"><IconCircleCheck className="size-4 shrink-0" />
       Saldos conferem{balances ? `: ${balances}` : ""}.</p>;
   }
-  return <p role="alert" className="m-0 flex items-center gap-2 text-xs text-destructive"><IconAlertTriangle className="size-4 shrink-0" />
-    <span>Os saldos não fecham com o total dos movimentos{balances ? ` (${balances})` : ""}. Confira as linhas ignoradas nos ajustes de leitura.</span></p>;
+  return <Alert variant="destructive" className="rounded-md border-destructive/30 bg-destructive/5 px-3 py-2">
+    <IconAlertTriangle className="size-4" />
+    <AlertDescription>Os saldos não fecham com o total dos movimentos{balances ? ` (${balances})` : ""}. Confira as linhas ignoradas nos ajustes de leitura.</AlertDescription>
+  </Alert>;
 }

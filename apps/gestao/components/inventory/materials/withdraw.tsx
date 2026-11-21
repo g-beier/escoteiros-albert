@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { IconMinus, IconPlus, IconPlusMinus } from '@tabler/icons-react';
-import { Button } from '@geas/ui/components/button';
+import { IconMinus, IconPlus } from '@tabler/icons-react';
 import {
   Field as ChoiceField,
   FieldContent,
@@ -17,7 +16,7 @@ import { cn } from '@geas/ui/lib/utils';
 import { addLot, writeOffLot } from '@/app/(inventario)/inventario/materiais/actions';
 import { ConditionPill } from '@/components/inventory/condition-pill';
 import { dateBR, writeOffOptions, type Condition } from '@/lib/inventory/vocabulary';
-import { ActionDialog, type FormAction } from './action-dialog';
+import { ActionDialog, type FormAction } from '@/components/shell/action-dialog';
 import { ConditionField, EntryFields, Field, LocationField, NotesField, QuantityField, SelectField, VariantField } from './fields';
 
 // Saída do estoque como baixa (consumo, perda, descarte…), o caminho normal quando unidades saem. "Corrigir
@@ -196,16 +195,18 @@ const moveStock: FormAction = (previous, formData) =>
   (formData.get('direction') === 'incluir' ? addLot : writeOffLot)(previous, formData);
 
 /**
- * Botão único (±) de uma linha da lista de Materiais (material por quantidade numa divisão): o diálogo escolhe entre
- * remover (baixa/consumo, o padrão quando há saldo) e incluir (entrada nesta divisão).
+ * Diálogo ± de uma linha da lista de Materiais (material por quantidade numa divisão): escolhe entre remover
+ * (baixa/consumo, o padrão quando há saldo) e incluir (entrada nesta divisão). Aberto pelo `StockEditor`, que
+ * carrega os lotes da linha ao clicar (a lista não leva os lotes de cada linha no HTML).
  */
-export function RowStockButton({
+export function RowStockDialog({
   materialId,
   materialName,
   consumable,
   lots,
   locationId,
   locationPath,
+  onOpenChange,
 }: {
   materialId: string;
   materialName: string;
@@ -213,92 +214,74 @@ export function RowStockButton({
   lots: WithdrawLot[];
   locationId: string;
   locationPath: string;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [direction, setDirection] = useState<Direction>(lots.length > 0 ? 'remover' : 'incluir');
-  const label = `Incluir ou remover: ${materialName}`;
   const out = direction === 'remover';
   return (
-    <>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        aria-label={label}
-        title={label}
-        onClick={() => {
-          setDirection(lots.length > 0 ? 'remover' : 'incluir');
-          setOpen(true);
-        }}
+    <ActionDialog
+      open
+      onOpenChange={onOpenChange}
+      title={materialName}
+      action={moveStock}
+      submitLabel={out ? withdrawLabel(consumable) : 'Incluir'}
+      destructive={out && !consumable}
+      hidden={{ materialId, direction, ...(out ? {} : { locationId, origin: 'nao_informada' }) }}
+      description={
+        out ? (
+          WITHDRAW_HINT
+        ) : (
+          <>
+            Entrada de unidades em <strong>{locationPath || '—'}</strong>. Se já houver um lote igual, a quantidade
+            soma nele.
+          </>
+        )
+      }
+    >
+      <RadioGroup
+        value={direction}
+        onValueChange={(value) => setDirection(value as Direction)}
+        aria-label="Incluir ou remover"
+        className="grid grid-cols-2 gap-2 sm:col-span-2"
       >
-        <IconPlusMinus />
-      </Button>
-      {open && (
-        <ActionDialog
-          open
-          onOpenChange={setOpen}
-          title={materialName}
-          action={moveStock}
-          submitLabel={out ? withdrawLabel(consumable) : 'Incluir'}
-          destructive={out && !consumable}
-          hidden={{ materialId, direction, ...(out ? {} : { locationId, origin: 'nao_informada' }) }}
-          description={
-            out ? (
-              WITHDRAW_HINT
-            ) : (
-              <>
-                Entrada de unidades em <strong>{locationPath || '—'}</strong>. Se já houver um lote igual, a quantidade
-                soma nele.
-              </>
-            )
-          }
-        >
-          <RadioGroup
-            value={direction}
-            onValueChange={(value) => setDirection(value as Direction)}
-            aria-label="Incluir ou remover"
-            className="grid grid-cols-2 gap-2 sm:col-span-2"
+        {(
+          [
+            ['remover', 'Retirar', IconMinus, lots.length === 0],
+            ['incluir', 'Incluir', IconPlus, false],
+          ] as const
+        ).map(([value, title, Icon, disabled]) => (
+          <FieldLabel
+            key={value}
+            htmlFor={`stock-${value}`}
+            className={cn('has-data-checked:border-primary', disabled && 'opacity-50')}
           >
-            {(
-              [
-                ['remover', 'Retirar', IconMinus, lots.length === 0],
-                ['incluir', 'Incluir', IconPlus, false],
-              ] as const
-            ).map(([value, title, Icon, disabled]) => (
-              <FieldLabel
-                key={value}
-                htmlFor={`stock-${value}`}
-                className={cn('has-data-checked:border-primary', disabled && 'opacity-50')}
-              >
-                <ChoiceField orientation="horizontal">
-                  <FieldContent>
-                    <FieldTitle>
-                      <Icon className="size-4" aria-hidden /> {title}
-                    </FieldTitle>
-                  </FieldContent>
-                  <RadioGroupItem value={value} id={`stock-${value}`} disabled={disabled} />
-                </ChoiceField>
-              </FieldLabel>
-            ))}
-          </RadioGroup>
-          {out ? (
-            <WithdrawFields consumable={consumable} lots={lots} />
-          ) : (
-            <>
-              <QuantityField id="stock-in-quantity" defaultValue={1} />
-              <ConditionField id="stock-in-condition" defaultValue="bom" />
-              <VariantField id="stock-in-variant" />
-              <Field id="stock-in-expires" label="Validade">
-                <Input id="stock-in-expires" name="expiresOn" type="date" className="num" />
-              </Field>
-              <Field id="stock-in-value" label="Valor estimado (unidade)">
-                <Input id="stock-in-value" name="value" inputMode="decimal" placeholder="Ex.: 35,00" className="num" />
-              </Field>
-              <NotesField id="stock-in-notes" />
-            </>
-          )}
-        </ActionDialog>
+            <ChoiceField orientation="horizontal">
+              <FieldContent>
+                <FieldTitle>
+                  <Icon className="size-4" aria-hidden /> {title}
+                </FieldTitle>
+              </FieldContent>
+              <RadioGroupItem value={value} id={`stock-${value}`} disabled={disabled} />
+            </ChoiceField>
+          </FieldLabel>
+        ))}
+      </RadioGroup>
+      {out ? (
+        <WithdrawFields consumable={consumable} lots={lots} />
+      ) : (
+        <>
+          <QuantityField id="stock-in-quantity" defaultValue={1} />
+          <ConditionField id="stock-in-condition" defaultValue="bom" />
+          <VariantField id="stock-in-variant" />
+          <Field id="stock-in-expires" label="Validade">
+            <Input id="stock-in-expires" name="expiresOn" type="date" className="num" />
+          </Field>
+          <Field id="stock-in-value" label="Valor estimado (unidade)">
+            <Input id="stock-in-value" name="value" inputMode="decimal" placeholder="Ex.: 35,00" className="num" />
+          </Field>
+          <NotesField id="stock-in-notes" />
+        </>
       )}
-    </>
+    </ActionDialog>
   );
 }

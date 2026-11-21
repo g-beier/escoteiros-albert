@@ -25,15 +25,17 @@ test("convidar, mudar papel e remover um usuário", async ({ page }) => {
     expect(mail.text).toContain("/auth/");
   });
 
-  await test.step("mudar para consulta no Financeiro e chefe no Inventário", async () => {
+  await test.step("mudar para consulta no Financeiro, chefe no Inventário e secretaria no Associados", async () => {
     await chooseOption(page, `Papel no Financeiro de ${invited}`, "Consulta", row);
     await chooseOption(page, `Papel no Inventário de ${invited}`, "Chefe", row);
+    await chooseOption(page, `Papel no Associados de ${invited}`, "Secretaria", row);
     await row.getByRole("button", { name: `Salvar papéis de ${invited}` }).click();
     await expect(page.getByText(`Papéis de ${invited} salvos.`)).toBeVisible();
     await expect(async () => {
       await page.reload();
       await expect(row.getByRole("combobox", { name: `Papel no Financeiro de ${invited}` })).toContainText("Consulta", { timeout: 2_000 });
       await expect(row.getByRole("combobox", { name: `Papel no Inventário de ${invited}` })).toContainText("Chefe", { timeout: 2_000 });
+      await expect(row.getByRole("combobox", { name: `Papel no Associados de ${invited}` })).toContainText("Secretaria", { timeout: 2_000 });
     }).toPass();
   });
 

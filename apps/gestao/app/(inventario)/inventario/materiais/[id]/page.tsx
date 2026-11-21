@@ -22,7 +22,7 @@ import { ReviewDetails } from "@/components/inventory/review-details";
 import { reviewMovements } from "../../movimentacoes/actions";
 import { AddUnitButton, UnitsTable } from "@/components/inventory/materials/units-table";
 import { SetupNeeded } from "@/components/shell/setup-needed";
-import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
+import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import {
   CONDITION_LABELS, MOVEMENT_LABELS, REVIEW_LABELS, TRACKING_LABELS, WRITE_OFF_LABELS, timestampBR,
   type Condition, type ReviewStatus,
@@ -31,7 +31,7 @@ import { formatCents } from "@/lib/format";
 import { pageSession } from "@/lib/server/session";
 
 const REVIEW_TONES: Record<ReviewStatus, string> = {
-  para_revisar: "border-[#e5c45a] bg-[#f5eed1] text-[#725d0d]",
+  para_revisar: "border-caution-line bg-caution-soft text-caution",
   revisado: "text-muted-foreground",
 };
 

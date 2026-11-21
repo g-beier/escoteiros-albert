@@ -21,6 +21,9 @@ test("raiz de cada módulo (Financeiro: resumo; Inventário: materiais) e cada l
   await expect(page).toHaveURL(/\/inventario\/materiais$/);
   await expect(page.getByRole("heading", { name: "Materiais" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-app", "inventario");
+  await page.goto("/associados");
+  await expect(page.getByRole("heading", { name: "Associados", level: 1 })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("data-app", "associados");
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("data-app", "gestao");
 });

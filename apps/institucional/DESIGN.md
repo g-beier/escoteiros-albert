@@ -1,6 +1,6 @@
 # Design System — Grupo Escoteiro Albert Schweitzer
 
-Stack: Astro 6 + Tailwind CSS v4 (CSS-first config via `@theme`).
+Stack: Astro 7 + Tailwind CSS v4 (CSS-first config via `@theme`).
 
 ---
 

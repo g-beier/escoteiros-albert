@@ -12,11 +12,13 @@ export type EditableEntry = {
   totalCents: number;
   createdAt: string;
   updatedAt: string;
+  /** Veio do registro rápido e ainda não foi revisado (049). */
+  toReview?: boolean;
   splits: { categoryId: string; amountCents: number; description: string; associateId: string | null }[];
 };
 
 
-const LIST_KEYS = ["ordem", "de", "ate", "conta", "forma", "pasta", "conciliado", "associado", "rubrica", "q", "ofx"] as const;
+const LIST_KEYS = ["ordem", "dir", "de", "ate", "conta", "forma", "pasta", "conciliado", "associado", "divisao", "rubrica", "q", "ofx", "valor_de", "valor_ate", "revisao"] as const;
 
 /** Caminho de uma visão da lista (`/financeiro/lancamentos/movimentacoes` ou `/financeiro/lancamentos/detalhamento`), com a query dos filtros. */
 export function entriesPath(view: EntryView, query = "") {

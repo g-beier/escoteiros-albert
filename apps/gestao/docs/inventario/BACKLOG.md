@@ -5,9 +5,9 @@ Modelo e vocabulário em `docs/modelo.md`.
 ## Concluído (2026-11-13, passo 1 — cadastro)
 
 - Modelo recriado (`032_inventory_catalog.sql`): material por peça (etiqueta `GEAS-000-0000`) ou por lote, consumíveis com estoque mínimo, validade por lote, divisões em árvore, famílias com código, dados de entrada, baixa com motivo, movimentos com status de revisão. Escrita só pelas funções `inventory_*`, auditadas.
-- Papéis por app: administrador do grupo = gestor nos dois apps; papel do inventário (gestor, chefe, consulta) definido em Financeiro › Usuários.
+- Papéis por app: administrador do grupo = gestor nos dois apps; papel do inventário (gestor, chefe, consulta) definido em `/usuarios`.
 - Telas: Materiais (lista, cadastro, detalhe com lotes/peças e ações), Divisões, Famílias, Início (validade, mínimo, pendentes), Movimentações.
-- Carga de desenvolvimento da planilha "Doc 31 – Inventário" (`scripts/planilha-para-csv.mjs`, `scripts/importar-planilha.mjs`).
+- Carga de desenvolvimento da planilha "Doc 31 – Inventário" (`scripts/inventory/planilha-para-csv.mjs`, `scripts/inventory/importar-planilha.mjs`).
 
 ## Concluído (2026-11-13, ajustes)
 
@@ -31,7 +31,7 @@ Modelo e vocabulário em `docs/modelo.md`.
 ## Concluído (2026-11-19, passo 3 — revisão e registro rápido)
 
 - Revisão com dois status, **Para revisar** e **Revisado** (044; o antigo "pendente" virou "para revisar", e a recusa saiu). O gestor revisa em Movimentações › Para revisar (seleção em lote, nota opcional) ou no histórico do material; inconsistência é corrigida por fora, com um movimento normal.
-- Registro rápido para celular (`/inventario/rapido`, 045): busca, retirar/consumir, entrada, mudar condição, transferir, ajustar contagem e cadastro de material novo. Tudo fica para revisar, mesmo do gestor ou do administrador (`channel = 'rapido'`). Atalho no cabeçalho (raio) e no Resumo.
+- Registro rápido para celular (045; desde 049 parte do registro rápido comum `/rapido`, com lançamento financeiro e associado novo): busca, retirar/consumir, entrada, mudar condição, transferir, ajustar contagem e cadastro de material novo. Tudo fica para revisar, mesmo do gestor ou do administrador (`channel = 'rapido'`). Atalho no cabeçalho (raio) e no Resumo.
 
 ## Concluído (2026-11-19, entrada pelo Materiais)
 

@@ -1,4 +1,4 @@
-// Registro rápido (telas de celular, /inventario/rapido): ações, rótulos e mensagens. Tudo fica para revisar.
+// Registro rápido (telas de celular, /rapido › Inventário): ações, rótulos e mensagens. Tudo fica para revisar.
 
 export type QuickKind = "retirar" | "entrada" | "condicao" | "transferir" | "ajustar" | "novo";
 

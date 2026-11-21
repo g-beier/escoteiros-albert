@@ -12,6 +12,8 @@ import { loadEntryContext } from "../context";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { EntryAttachments } from "@/components/finance/entries/entry-attachments";
+import { ReviewEntryNotice } from "@/components/finance/entries/review-entry";
+import { ATTACHMENTS_ENABLED } from "@/lib/features";
 import { describeHistory, type HistoryItem, type HistoryNames } from "@/lib/finance/entry-history";
 import type { Catalogs } from "@/components/finance/entries/entry-form";
 
@@ -83,7 +85,7 @@ export default async function EntryDetailPage({ params, searchParams }: { params
   if (!z.uuid().safeParse(id).success) notFound();
   const { db, user, role, canEdit, catalogs } = await loadEntryContext();
   const [entry, statementLines, attachments, auditRows] = await Promise.all([
-    fetchEntry(db, id), linkedStatementLines(db, id), attachmentsData.listForEntry(db, id), entryHistory(db, id),
+    fetchEntry(db, id), linkedStatementLines(db, id), ATTACHMENTS_ENABLED ? attachmentsData.listForEntry(db, id) : Promise.resolve([]), entryHistory(db, id),
   ]);
   if (!entry) notFound();
   const backHref = listHref(voltar);
@@ -100,9 +102,10 @@ export default async function EntryDetailPage({ params, searchParams }: { params
           {" · "}criado em {dateTime.format(new Date(entry.createdAt))}{edited && <> · alterado em {dateTime.format(new Date(entry.updatedAt))}</>}
           {!canEdit && " · somente consulta"}
         </>} />
+      {entry.toReview && <ReviewEntryNotice entryId={id} canEdit={canEdit} />}
       {statementLines.length > 0 && <StatementLines lines={statementLines} />}
       <SectionCard className="p-5"><EntryForm entry={entry} catalogs={catalogs} canEdit={canEdit} backHref={backHref} /></SectionCard>
-      <EntryAttachments entryId={id} attachments={attachments} canEdit={canEdit} />
+      {ATTACHMENTS_ENABLED && <EntryAttachments entryId={id} attachments={attachments} canEdit={canEdit} />}
       <History items={history} />
     </PageBody>
   </div>;

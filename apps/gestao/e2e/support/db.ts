@@ -67,6 +67,9 @@ export function cleanupE2eGroup() {
     select public.delete_debt(d.id) from public.debts d where d.description like ${literal(`${E2E_PREFIX} %`)};
     select public.delete_ledger_entry(e.id) from public.ledger_entries e where e.name like ${literal(`${E2E_PREFIX} %`)};
     commit;
+    -- associados das medições (e2e/perf/mensalidades.perf.ts); não há função de exclusão de associado
+    delete from public.associates a using public.memberships m join auth.users u on u.id = m.user_id
+      where u.email = ${literal(E2E_ADMIN_EMAIL)} and a.group_id = m.group_id and a.name like ${literal(`${E2E_PREFIX} Perf %`)};
   `);
 }
 

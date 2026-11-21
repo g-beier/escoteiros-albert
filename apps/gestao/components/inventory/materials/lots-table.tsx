@@ -4,16 +4,16 @@ import { useState } from "react";
 import { IconDots, IconMinus, IconPlus } from "@tabler/icons-react";
 import { ConditionPill } from "@/components/inventory/condition-pill";
 import { Button } from "@geas/ui/components/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
 import { Input } from "@geas/ui/components/input";
 import type { Option } from "@geas/ui/components/option-controls";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { cn } from "@geas/ui/lib/utils";
 import { adjustLot, setLotCondition, transferLot, updateLot } from "@/app/(inventario)/inventario/materiais/actions";
-import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
+import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import { CONDITION_LABELS, EXPIRY_WARNING_DAYS, ORIGIN_LABELS, dateBR, daysUntil } from "@/lib/inventory/vocabulary";
 import { formatCents } from "@/lib/format";
-import { ActionDialog } from "./action-dialog";
+import { ActionDialog } from "@/components/shell/action-dialog";
 import { ConditionField, EntryFields, Field, LocationField, NotesField, QuantityField, VariantField } from "./fields";
 import { AddLotDialog, WithdrawDialog, withdrawLabel } from "./withdraw";
 
@@ -27,7 +27,7 @@ type Mode = "transfer" | "condition" | "adjust" | "writeOff" | "edit";
 export function Expiry({ date }: { date: string | null }) {
   if (!date) return <span className="text-muted-foreground">—</span>;
   const days = daysUntil(date);
-  const tone = days < 0 ? "text-destructive font-semibold" : days <= EXPIRY_WARNING_DAYS ? "text-[#725d0d] font-semibold" : "";
+  const tone = days < 0 ? "text-destructive font-semibold" : days <= EXPIRY_WARNING_DAYS ? "text-caution font-semibold" : "";
   return <span className={cn("num", tone)} title={days < 0 ? "Vencido" : `Vence em ${days} dias`}>{dateBR(date)}{days < 0 && " (vencido)"}</span>;
 }
 
@@ -80,12 +80,16 @@ export function LotsTable({ materialId, materialName, consumable, lots, location
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Mais ações do lote em ${row.path}`}><IconDots /></Button>} />
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setActive({ mode: "transfer", lot: row })}>Transferir</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActive({ mode: "condition", lot: row })}>Mudar condição</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setActive({ mode: "edit", lot: row })}>Editar dados de entrada</DropdownMenuItem>
-              {consumable && <DropdownMenuItem onClick={() => setActive({ mode: "writeOff", lot: row })}>Dar baixa (perda, descarte…)</DropdownMenuItem>}
+              <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => setActive({ mode: "transfer", lot: row })}>Transferir</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActive({ mode: "condition", lot: row })}>Mudar condição</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActive({ mode: "edit", lot: row })}>Editar dados de entrada</DropdownMenuItem>
+                {consumable && <DropdownMenuItem onClick={() => setActive({ mode: "writeOff", lot: row })}>Dar baixa (perda, descarte…)</DropdownMenuItem>}
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setActive({ mode: "adjust", lot: row })}>Corrigir contagem…</DropdownMenuItem>
+              <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => setActive({ mode: "adjust", lot: row })}>Corrigir contagem…</DropdownMenuItem>
+              </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         </span></TableCell>}

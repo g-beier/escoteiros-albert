@@ -10,11 +10,13 @@ import { Label } from "@geas/ui/components/label";
 import type { Option } from "@geas/ui/components/option-controls";
 import { RadioGroup, RadioGroupItem } from "@geas/ui/components/radio-group";
 import { useActionToast } from "@geas/ui/lib/use-action-toast";
-import { quickRecord } from "@/app/(inventario)/inventario/rapido/actions";
+import { cn } from "@geas/ui/lib/utils";
+import { quickRecord } from "@/app/(gestao)/rapido/actions";
 import { ConditionPill } from "@/components/inventory/condition-pill";
 import { ConditionField, Field, NotesField, SelectField } from "@/components/inventory/materials/fields";
 import type { QuickKind } from "@/lib/inventory/quick";
 import { conditionOptions, writeOffOptions, type Condition, type Tracking } from "@/lib/inventory/vocabulary";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 // Formulário do registro rápido: poucos campos, uma coluna, botões altos para o dedo. O item (lote ou peça) é
 // escolhido em cartões; a quantidade tem botões − e +.
@@ -35,7 +37,7 @@ export function QuickForm({ kind, material, items = [], locations, families = []
   const needsItem = kind !== "entrada" && kind !== "novo";
   const isLot = needsItem ? item?.kind === "lot" : tracking === "lot";
 
-  return <form action={formAction} className="grid gap-4">
+  return <ActionForm action={formAction} result={state} className="grid gap-4">
     <input type="hidden" name="kind" value={kind} />
     {material && <input type="hidden" name="materialId" value={material.id} />}
     {kind !== "novo" && <input type="hidden" name="tracking" value={tracking} />}
@@ -92,20 +94,20 @@ export function QuickForm({ kind, material, items = [], locations, families = []
     {kind === "condicao" && <SelectField id="quick-condition" name="condition" label="Nova condição" options={conditionOptions.filter((row) => row.value !== item?.condition)} />}
     {(kind === "entrada" || kind === "novo") && <ConditionField id="quick-condition" />}
     {(kind === "entrada" || kind === "novo") && tracking === "unit" && <Field id="quick-tag" label="Etiqueta (se já tiver)">
-      <Input id="quick-tag" name="tag" placeholder="Ex.: GEAS-001-0012" className={`${BIG} num`} />
+      <Input id="quick-tag" name="tag" placeholder="Ex.: GEAS-001-0012" className={cn(BIG, "num")} />
     </Field>}
     {kind === "entrada" && tracking === "lot" && <Field id="quick-variant" label="Variação (se for diferente dos outros)">
       <Input id="quick-variant" name="variant" maxLength={80} placeholder="Ex.: modelo antigo" className={BIG} />
     </Field>}
     {(kind === "entrada" || kind === "novo") && tracking === "lot" && <Field id="quick-expires" label="Validade (se houver)">
-      <Input id="quick-expires" name="expiresOn" type="date" className={`${BIG} num`} />
+      <Input id="quick-expires" name="expiresOn" type="date" className={cn(BIG, "num")} />
     </Field>}
 
     <NotesField id="quick-notes" label={kind === "ajustar" ? "Por que a contagem mudou?" : "Observação"} required={kind === "ajustar"} />
 
     <Button type="submit" size="lg" className={BIG} disabled={pending || (needsItem && !selected)}>{pending ? "Salvando…" : "Registrar"}</Button>
     <p className="m-0 text-center text-[11px] text-muted-foreground">Vale na hora e fica para revisar pelo gestor.</p>
-  </form>;
+  </ActionForm>;
 }
 
 /** Quantidade com − e + (o campo continua editável). */

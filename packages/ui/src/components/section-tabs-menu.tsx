@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
 import { cn } from "@geas/ui/lib/utils";
 
 type Tab = { href: string; label: string; active: boolean };
@@ -20,10 +20,10 @@ export function SectionTabsMenu({ tabs, label, className }: { tabs: Tab[]; label
         <span className="truncate">{current?.label ?? label}</span><IconChevronDown className="size-3.5 shrink-0" aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-48">
-        {tabs.map((tab) => <DropdownMenuItem key={tab.href} render={<Link href={tab.href} aria-current={tab.active ? "page" : undefined} />}
+        <DropdownMenuGroup>{tabs.map((tab) => <DropdownMenuItem key={tab.href} render={<Link href={tab.href} aria-current={tab.active ? "page" : undefined} />}
           className={cn(tab.active && "font-semibold")}>
           <IconCheck className={cn(!tab.active && "invisible")} aria-hidden />{tab.label}
-        </DropdownMenuItem>)}
+        </DropdownMenuItem>)}</DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   </div>;

@@ -1,7 +1,7 @@
 /*
  * Tema dos apps internos do GEAS (Tailwind v4 + shadcn/ui).
  * Cada app importa este arquivo no topo do seu globals.css, no lugar de `@import "tailwindcss"`,
- * e marca o <html> com `data-app="gestao" | "financeiro" | "inventario"` para a cor de destaque
+ * e marca o <html> com `data-app="gestao" | "financeiro" | "inventario" | "associados"` para a cor de destaque
  * (no Gestão, um layout raiz por módulo; "gestao" e "financeiro" usam o roxo padrão).
  * Estilos anteriores ao shadcn ficam em `@layer legacy`, abaixo de components/utilities.
  */
@@ -29,6 +29,7 @@
   --purple-soft: #ece6ff;
   --green: #1dd98a;
   --green-dark: #075c3b;
+  --green-app: #0b7a4b;
   --green-soft: #bdf4d8;
   --orange: #f15b2a;
   --orange-dark: #c64018;
@@ -40,10 +41,23 @@
   --amber-soft: #ffecc7;
   --blue-dark: #1f4a7a;
   --blue-soft: #e1ebf7;
+  /* Dourado do "pendente" (convite não aceito, indicador de aviso): mais claro que o âmbar de warning. */
+  --gold-dark: #725d0d;
+  --gold-soft: #f5eed1;
+  --gold-line: #e5c45a;
+  /* Âmbar de "atenção" (mensalidade em atenção, campo alterado, item novo, alerta): tons do âmbar do Tailwind. */
+  --attention: oklch(87.9% 0.169 91.605);
+  --attention-foreground: oklch(27.9% 0.077 45.635);
+  --attention-line: oklch(76.9% 0.188 70.08);
+  --attention-strong: oklch(66.6% 0.179 58.318);
+  --attention-soft: oklch(96.2% 0.059 95.617);
+  --attention-soft-foreground: oklch(47.3% 0.137 46.201);
+  /* Texto sobre preenchimento de status (verde de sucesso, vermelho destrutivo). */
+  --on-status: #ffffff;
   --shadow: 5px 6px 0 rgba(37, 35, 40, .09);
   --topbar-h: 60px;
 
-  /* Cor de destaque do app (Financeiro: roxo; Inventário: laranja, ver abaixo). */
+  /* Cor de destaque do app (Financeiro: roxo; Inventário: laranja; Associados: verde, ver abaixo). */
   --app: var(--purple);
   --app-soft: var(--purple-soft);
   --app-soft-foreground: #3a2690;
@@ -75,12 +89,34 @@
   --radius: 0.625rem;
 }
 
+/* Não há tema escuro completo; estes tokens de status já têm seus valores escuros para quando houver. */
+.dark {
+  --gold-dark: #e8d48a;
+  --gold-soft: rgb(114 93 13 / .35);
+  --gold-line: rgb(232 212 138 / .5);
+  --attention: oklch(66.6% 0.179 58.318);
+  --attention-foreground: oklch(98.7% 0.022 95.277);
+  --attention-line: oklch(76.9% 0.188 70.08);
+  --attention-strong: oklch(82.8% 0.189 84.429);
+  --attention-soft: oklch(41.4% 0.112 45.904 / .4);
+  --attention-soft-foreground: oklch(92.4% 0.12 95.746);
+}
+
 /* Laranja escuro: o laranja da marca não tem contraste suficiente com texto branco. */
 :root[data-app="inventario"] {
   --app: var(--orange-dark);
   --app-soft: var(--orange-soft);
   --app-soft-foreground: #8a2c10;
   --chart-3: var(--purple);
+}
+
+/* Verde escoteiro escurecido: o verde da marca não tem contraste com texto branco (#0b7a4b: 5,4:1 com branco,
+ * 5,1:1 sobre o papel; texto #075c3b sobre o fundo suave: 7,2:1). */
+:root[data-app="associados"] {
+  --app: var(--green-app);
+  --app-soft: #e3f6ec;
+  --app-soft-foreground: var(--green-dark);
+  --chart-2: var(--purple);
 }
 
 @theme inline {
@@ -117,6 +153,17 @@
   --color-warning-soft: var(--amber-soft);
   --color-info: var(--blue-dark);
   --color-info-soft: var(--blue-soft);
+  --color-caution: var(--gold-dark);
+  --color-caution-soft: var(--gold-soft);
+  --color-caution-line: var(--gold-line);
+  --color-attention: var(--attention);
+  --color-attention-foreground: var(--attention-foreground);
+  --color-attention-line: var(--attention-line);
+  --color-attention-strong: var(--attention-strong);
+  --color-attention-soft: var(--attention-soft);
+  --color-attention-soft-foreground: var(--attention-soft-foreground);
+  --color-success-foreground: var(--on-status);
+  --color-destructive-foreground: var(--on-status);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -137,6 +184,54 @@
   border-radius: var(--radius-xl);
   border: 1px solid var(--border);
   background-color: var(--card);
+}
+
+/*
+ * Tabelas longas renderizadas no servidor: janela por CSS. O navegador pula estilo, layout e pintura dos blocos fora
+ * da tela (`content-visibility: auto`) e tudo segue no DOM (Ctrl+F, leitores de tela, links). `content-visibility` não
+ * vale em `<tbody>`/`<tr>` com display de tabela (o Chrome ignora), por isso a tabela vira grade: `cv-table` no
+ * `<table>`, colunas em `--cv-cols` (larguras fixas e no máximo uma `minmax(<mín>, 1fr)`: cada bloco tem a sua grade,
+ * e trilhas pelo conteúdo desalinhariam), e cada `<tbody>` um bloco `cv-rows` de até ~25 linhas, com a altura
+ * estimada em `--cv-rows` linhas × `--cv-row-h` (depois o navegador lembra a real). O Chrome mantém a semântica de
+ * tabela. Célula com `colSpan` sozinha na linha ocupa a linha toda (outros `colSpan`/`rowSpan` precisam de
+ * `grid-column`/`grid-row` explícitos); `<colgroup>` sai (as larguras são `--cv-cols`); células centradas na vertical,
+ * como na tabela; a divisória entre linhas é a `border-b` da linha (zera a borda do `td` legado, que somaria outra).
+ */
+@utility cv-table {
+  display: grid;
+  grid-template-columns: var(--cv-cols);
+  & > :is(thead, tbody, tfoot) { display: grid; grid-column: 1 / -1; grid-template-columns: var(--cv-cols); }
+  & > * > tr { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; }
+  & > * > tr > :is(td, th) { align-content: center; border-top-width: 0; }
+  & > * > tr > [colspan]:only-child { grid-column: 1 / -1; }
+  & > colgroup { display: none; }
+  & > caption { grid-column: 1 / -1; }
+  /* `TableBody` tira a borda da última linha; entre blocos ela continua (`data-m`: linhas simples de Materiais). */
+  & > tbody:not(:last-of-type) > tr:is([data-slot="table-row"], [data-m]):last-child { border-bottom-width: 1px; }
+}
+@utility cv-rows {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto calc(var(--cv-rows, 25) * var(--cv-row-h, 2.5rem));
+}
+
+/*
+ * Área com rolagem horizontal que reserva a faixa da barra (tabelas largas, como a matriz do Controle): a barra fica
+ * sempre no lugar, mesmo sem rolagem, e não cobre a última linha. `::-webkit-scrollbar` estilizada força a barra
+ * clássica (com espaço próprio) no Chrome e no Safari, que no macOS usariam a barra sobreposta; o Firefox recebe a
+ * barra fina padrão (ele ignora as pseudo-classes).
+ */
+@utility scroll-x-reserved {
+  overflow-x: scroll;
+  overscroll-behavior-x: contain;
+  &::-webkit-scrollbar { height: 0.75rem; }
+  &::-webkit-scrollbar-track { background: var(--muted); border-top: 1px solid var(--border); }
+  &::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--muted-foreground) 45%, transparent);
+    border: 3px solid var(--muted);
+    border-radius: 999px;
+  }
+  &::-webkit-scrollbar-thumb:hover { background: color-mix(in oklab, var(--muted-foreground) 70%, transparent); }
+  @supports not selector(::-webkit-scrollbar) { scrollbar-width: thin; }
 }
 
 @layer base {

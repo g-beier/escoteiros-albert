@@ -5,16 +5,18 @@ Monorepo das aplicações do Grupo Escoteiro Albert Schweitzer, em Porto Alegre,
 ## Aplicações
 
 - `apps/institucional`: site público em Astro, publicado em [escoteirosalbert.com.br](https://escoteirosalbert.com.br).
-- `apps/financeiro`: aplicação de gestão financeira em Next.js, com Supabase.
-- `apps/inventario`: aplicação de patrimônio e materiais em Next.js, usando o mesmo Supabase do Financeiro.
+- `apps/gestao`: aplicação interna "Gestão" em Next.js com Supabase, com os módulos Financeiro (`/financeiro`) e Inventário (`/inventario`).
+- `packages/ui`: interface compartilhada da aplicação interna (`@geas/ui`).
+
+Mapa da arquitetura: [`docs/CODEBASE_MAP.md`](docs/CODEBASE_MAP.md).
 
 ## Desenvolvimento
 
 ```sh
 npm install
+npm run dev                    # gestão + site (a gestão precisa do Supabase local)
 npm run dev:institucional      # somente o site Astro
-npm run dev:financeiro         # somente a gestão financeira
-npm run dev:inventario        # somente o inventário
+npm run dev:gestao             # somente a gestão
 npm run build                  # build de todas as aplicações
 npm run lint
 npm test
@@ -26,7 +28,7 @@ Os comandos usam npm workspaces e também podem ser executados diretamente por a
 
 ```sh
 npm run build --workspace=@geas/institucional
-npm run test --workspace=@geas/financeiro
+npm run test --workspace=@geas/gestao
 ```
 
 ## Supabase local
@@ -38,7 +40,7 @@ npm run infra:reset
 npm run infra:stop
 ```
 
-O ambiente local é escrito em `apps/financeiro/.env.local` e não é versionado.
+O ambiente local é escrito em `apps/gestao/.env.local` e não é versionado.
 
 ## Conteúdo institucional
 

@@ -8,6 +8,7 @@ import { Input } from "@geas/ui/components/input";
 import { Label } from "@geas/ui/components/label";
 import { toast } from "sonner";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 // Revisão dos movimentos pelo gestor: seleção na tabela de Movimentações (caixa por linha + todas) e barra
 // "Marcar como revisado"; no histórico do material, um botão por linha. A action é `reviewMovements`.
@@ -54,9 +55,9 @@ export function ReviewSelection({ ids, action, children }: { ids: number[]; acti
 /** Barra acima da tabela: nota opcional e o botão com a contagem selecionada. */
 function ReviewBar({ action }: { action: ReviewAction }) {
   const { ids, selected, setAll } = useSelection();
-  const [, formAction, pending] = useActionState(withToast(action), {});
+  const [result, formAction, pending] = useActionState(withToast(action), {});
   const count = selected.size;
-  return <form action={formAction} className="surface flex flex-wrap items-end gap-3 px-4 py-3">
+  return <ActionForm action={formAction} result={result} className="surface flex flex-wrap items-end gap-3 px-4 py-3">
     {[...selected].map((id) => <input key={id} type="hidden" name="ids" value={id} />)}
     <div className="grid min-w-56 flex-1 gap-1.5">
       <Label htmlFor="review-notes">Nota da revisão (opcional)</Label>
@@ -70,7 +71,7 @@ function ReviewBar({ action }: { action: ReviewAction }) {
         <IconCheck data-icon="inline-start" /> {pending ? "Salvando…" : `Marcar como revisado${count ? ` (${count})` : ""}`}
       </Button>
     </div>
-  </form>;
+  </ActionForm>;
 }
 
 /** Caixa do cabeçalho: marca ou desmarca todos os movimentos para revisar. */

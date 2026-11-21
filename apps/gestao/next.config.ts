@@ -6,7 +6,15 @@ const nextConfig: NextConfig = {
   experimental: { globalNotFound: true },
   // rotas de antes da consolidação (app financeiro sem prefixo): favoritos e links antigos continuam valendo
   async redirects() {
-    return [{ source: "/:area(lancamentos|extrato|mensalidades|configuracoes|exportar)/:path*", destination: "/financeiro/:area/:path*", permanent: true }];
+    return [
+      // o cadastro de associados e seções passou para o módulo Associados (antes do redirect genérico abaixo)
+      { source: "/financeiro/configuracoes/associados", destination: "/associados", permanent: true },
+      { source: "/configuracoes/associados", destination: "/associados", permanent: true },
+      // o registro rápido do inventário passou a ser comum aos módulos (/rapido)
+      { source: "/inventario/rapido", destination: "/rapido", permanent: true },
+      { source: "/inventario/rapido/:path*", destination: "/rapido/inventario/:path*", permanent: true },
+      { source: "/:area(lancamentos|extrato|mensalidades|configuracoes|exportar)/:path*", destination: "/financeiro/:area/:path*", permanent: true },
+    ];
   },
   async headers() {
     return [{

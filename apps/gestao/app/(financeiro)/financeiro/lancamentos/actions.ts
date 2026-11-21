@@ -6,6 +6,7 @@ import { DataError } from "@/lib/server/db";
 import * as attachments from "@/lib/server/finance/attachments";
 import { financeEditorOrError } from "@/lib/server/session";
 import { attachmentProblem } from "@/lib/finance/attachments";
+import { ATTACHMENTS_DISABLED_MESSAGE, ATTACHMENTS_ENABLED } from "@/lib/features";
 
 type Result = { error?: string; success?: boolean };
 export type UploadTicket = { error: string } | { path: string; uploadUrl: string; contentType: string };
@@ -26,6 +27,7 @@ const failure = (error: unknown) => {
  * direto ao storage (o arquivo não passa pelo servidor do app).
  */
 export async function prepareAttachmentUpload(entryId: unknown, file: unknown): Promise<UploadTicket> {
+  if (!ATTACHMENTS_ENABLED) return { error: ATTACHMENTS_DISABLED_MESSAGE };
   const id = z.uuid().safeParse(entryId);
   const parsed = fileSchema.safeParse(file);
   if (!id.success || !parsed.success) return { error: "Dados inválidos." };
@@ -42,6 +44,7 @@ export async function prepareAttachmentUpload(entryId: unknown, file: unknown): 
 
 /** 2º passo: registra o arquivo já enviado. Se o registro falhar, o arquivo é apagado. */
 export async function registerAttachment(entryId: unknown, path: unknown, fileName: unknown): Promise<Result> {
+  if (!ATTACHMENTS_ENABLED) return { error: ATTACHMENTS_DISABLED_MESSAGE };
   const id = z.uuid().safeParse(entryId);
   const storagePath = z.string().min(1).max(300).safeParse(path);
   const name = z.string().min(1).max(500).safeParse(fileName);
@@ -59,6 +62,7 @@ export async function registerAttachment(entryId: unknown, path: unknown, fileNa
 }
 
 export async function removeAttachment(attachmentId: unknown): Promise<Result> {
+  if (!ATTACHMENTS_ENABLED) return { error: ATTACHMENTS_DISABLED_MESSAGE };
   const id = z.uuid().safeParse(attachmentId);
   if (!id.success) return { error: "Anexo inválido." };
   const ctx = await financeEditorOrError("Sem permissão para excluir comprovantes.");

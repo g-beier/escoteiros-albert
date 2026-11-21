@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@geas/ui/components/combobox";
 import { InputGroupAddon } from "@geas/ui/components/input-group";
 import { categoryLabel, depthOf, sortCategories, type CategoryItem, type CategoryKind } from "@/lib/finance/categories";
+import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
 
 type PickerItem = {
@@ -66,7 +67,7 @@ export function CategoryPicker({ id, value, onChange, categories, preferredKind,
     <ComboboxInput id={id} placeholder={placeholder} disabled={disabled} showClear={!disabled && Boolean(selected)}
       className={cn("w-full", selected && (selected.kind === "receita" ? "border-l-4 border-l-success" : selected.kind === "despesa" ? "border-l-4 border-l-destructive" : ""))}>
       {selected && <InputGroupAddon align="inline-start" className="pr-0">
-        <span className={cn("rounded px-1 text-[10px] font-semibold uppercase", selected.kind === "receita" ? "bg-success-soft text-success" : "bg-destructive/10 text-destructive")}>{selected.kind === "receita" ? "Receita" : selected.kind === "despesa" ? "Despesa" : "Antiga"}</span>
+        <Badge variant={selected.kind === "receita" ? "success" : "destructive"} className="h-auto rounded px-1 py-0 font-semibold uppercase">{selected.kind === "receita" ? "Receita" : selected.kind === "despesa" ? "Despesa" : "Antiga"}</Badge>
       </InputGroupAddon>}
     </ComboboxInput>
     <ComboboxContent className="w-[min(30rem,calc(100vw-2rem))]">

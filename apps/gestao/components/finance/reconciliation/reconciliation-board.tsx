@@ -9,6 +9,7 @@ import {
   setOutsideStatement, unlinkReconciliation, type ReconciliationResult,
 } from "@/app/(financeiro)/financeiro/extrato/conciliar/actions";
 import { OptionSelect, type Option } from "@geas/ui/components/option-controls";
+import { Alert, AlertDescription } from "@geas/ui/components/alert";
 import { Badge } from "@geas/ui/components/badge";
 import { Button, buttonVariants } from "@geas/ui/components/button";
 import { Checkbox } from "@geas/ui/components/checkbox";
@@ -148,7 +149,7 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
   const entryToggle = (id: string) => canEdit ? () => setSelectedEntries((s) => toggle(s, id)) : undefined;
 
   const lineActions = (line: OpenLine) => canEdit && <>
-    <Link href={`/financeiro/lancamentos/novo?linha=${line.id}&voltar=${encodeURIComponent(data.returnQuery)}`} className={buttonVariants({ variant: "ghost", size: "sm" })}><IconPlus /> Criar lançamento</Link>
+    <Link href={`/financeiro/lancamentos/novo?linha=${line.id}&voltar=${encodeURIComponent(data.returnQuery)}`} className={buttonVariants({ variant: "ghost", size: "sm" })}><IconPlus data-icon="inline-start" /> Criar lançamento</Link>
     <Button variant="ghost" size="sm" onClick={() => setIgnoring([line])} disabled={pending}>Ignorar</Button>
   </>;
   const entryActions = (entry: OpenEntry) => canEdit && <>
@@ -160,7 +161,9 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
   const allColumnLinesSelected = columnLines.length > 0 && columnLines.every((l) => selectedLines.has(l.id));
 
   return <div className="grid gap-4">
-    {data.truncated && <p className="m-0 rounded-lg bg-secondary px-3 py-2 text-xs">Período com muitas linhas: só as primeiras 5.000 de cada lado foram carregadas. Reduza o período.</p>}
+    {data.truncated && <Alert className="border-0 bg-secondary px-3 py-2">
+      <AlertDescription className="text-foreground">Período com muitas linhas: só as primeiras 5.000 de cada lado foram carregadas. Reduza o período.</AlertDescription>
+    </Alert>}
 
     {suggestionCount > 0 && <section aria-label="Sugestões" className="overflow-hidden surface border-primary/30!">
       <div className="flex flex-wrap items-center gap-2 border-b bg-primary/5 px-3 py-2">
@@ -177,8 +180,8 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
             <div className="flex items-center gap-2"><Badge variant="secondary" className="shrink-0">Sugestão</Badge><LineCell line={line} /></div>
             <EntryCell entry={entry} />
             {canEdit && <div className="flex gap-1 justify-self-end">
-              <Button size="sm" disabled={pending} onClick={() => run(() => linkReconciliation([line.id], [entry.id]))}><IconCheck /> Aceitar</Button>
-              <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => rejectSuggestion(line.id, entry.id))}><IconX /> Recusar</Button>
+              <Button size="sm" disabled={pending} onClick={() => run(() => linkReconciliation([line.id], [entry.id]))}><IconCheck data-icon="inline-start" /> Aceitar</Button>
+              <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => rejectSuggestion(line.id, entry.id))}><IconX data-icon="inline-start" /> Recusar</Button>
             </div>}
           </li>;
         })}
@@ -190,8 +193,8 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
             <div className="flex items-center gap-2"><Badge variant="outline" className="shrink-0" title="Mesmo valor, data diferente">{days} {days === 1 ? "dia" : "dias"} {s.days < 0 ? "antes" : "depois"}</Badge><LineCell line={line} /></div>
             <EntryCell entry={entry} />
             {canEdit && <div className="flex gap-1 justify-self-end">
-              <Button size="sm" disabled={pending} onClick={() => run(() => linkReconciliation([line.id], [entry.id]))}><IconCheck /> Aceitar</Button>
-              <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => rejectSuggestion(line.id, entry.id))}><IconX /> Recusar</Button>
+              <Button size="sm" disabled={pending} onClick={() => run(() => linkReconciliation([line.id], [entry.id]))}><IconCheck data-icon="inline-start" /> Aceitar</Button>
+              <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => rejectSuggestion(line.id, entry.id))}><IconX data-icon="inline-start" /> Recusar</Button>
             </div>}
           </li>;
         })}
@@ -242,18 +245,18 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
         {data.linked.map((set) => <li key={set.id} className="grid gap-2 border-b px-3 py-2 last:border-b-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-center md:gap-4">
           <div className="grid gap-1">{set.lines.map((line) => <LineCell key={line.id} line={line} />)}</div>
           <div className="grid gap-1">{set.entries.map((entry) => <EntryCell key={entry.id} entry={entry} />)}</div>
-          {canEdit && <Button size="sm" variant="ghost" className="justify-self-end" disabled={pending} onClick={() => run(() => unlinkReconciliation(set.lines[0].id))}><IconArrowBackUp /> Desfazer</Button>}
+          {canEdit && <Button size="sm" variant="ghost" className="justify-self-end" disabled={pending} onClick={() => run(() => unlinkReconciliation(set.lines[0].id))}><IconArrowBackUp data-icon="inline-start" /> Desfazer</Button>}
         </li>)}
       </Collapsible>
       <Collapsible title="Ignoradas" count={data.ignored.length}>
         {data.ignored.map((line) => <Row key={line.id} label={lineText(line)} hint={`Motivo: ${line.reason}`}
-          actions={canEdit && <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => reopenStatementLine(line.id))}><IconArrowBackUp /> Reabrir</Button>}>
+          actions={canEdit && <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => reopenStatementLine(line.id))}><IconArrowBackUp data-icon="inline-start" /> Reabrir</Button>}>
           <LineCell line={line} />
         </Row>)}
       </Collapsible>
       <Collapsible title="Fora do extrato" count={data.outside.length}>
         {data.outside.map((entry) => <Row key={entry.id} label={entry.name}
-          actions={canEdit && <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => setOutsideStatement(entry.id, false))}><IconArrowBackUp /> Desfazer</Button>}>
+          actions={canEdit && <Button size="sm" variant="ghost" disabled={pending} onClick={() => run(() => setOutsideStatement(entry.id, false))}><IconArrowBackUp data-icon="inline-start" /> Desfazer</Button>}>
           <EntryCell entry={entry} />
         </Row>)}
       </Collapsible>
@@ -272,9 +275,9 @@ export function ReconciliationBoard({ data, canEdit }: { data: BoardData; canEdi
           <Button variant="outline" onClick={clearSelection} disabled={pending}>Limpar</Button>
           {chosenLines.length > 0 && chosenEntries.length === 0 && <>
             <Button variant="outline" disabled={pending} onClick={() => setIgnoring(chosenLines)}>Ignorar ({chosenLines.length})</Button>
-            <Button variant="outline" disabled={pending} onClick={() => setCreating(chosenLines)}><IconPlus /> Criar lançamentos ({chosenLines.length})</Button>
+            <Button variant="outline" disabled={pending} onClick={() => setCreating(chosenLines)}><IconPlus data-icon="inline-start" /> Criar lançamentos ({chosenLines.length})</Button>
           </>}
-          <Button disabled={!summary.canLink || pending} onClick={() => run(() => linkReconciliation(chosenLines.map((l) => l.id), chosenEntries.map((e) => e.id)), clearSelection)}><IconLink /> Vincular</Button>
+          <Button disabled={!summary.canLink || pending} onClick={() => run(() => linkReconciliation(chosenLines.map((l) => l.id), chosenEntries.map((e) => e.id)), clearSelection)}><IconLink data-icon="inline-start" /> Vincular</Button>
         </div>
       </div>
     </div>}

@@ -10,11 +10,13 @@ import { Label } from "@geas/ui/components/label";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
+import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
 import { saveFamily, setFamilyActive } from "@/app/(inventario)/inventario/configuracoes/familias/actions";
-import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
+import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 
 import type { FamilyItem } from "@/lib/inventory/model";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 export type { FamilyItem };
 
@@ -58,7 +60,7 @@ function FamilyRow({ family, canManage, onEdit }: { family: FamilyItem; canManag
     <TableCell className={cn(CELL_CLASS, "num text-right text-muted-foreground")}>{family.tagged}</TableCell>
     <TableCell className={CELL_CLASS}>
       <div className="flex items-center gap-2">
-        <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", family.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{family.active ? "Ativa" : "Inativa"}</span>
+        <Badge size="md" variant={family.active ? "success" : "muted"}>{family.active ? "Ativa" : "Inativa"}</Badge>
         {canManage && <>
           <Button type="button" variant="ghost" size="icon-sm" aria-label={`Editar ${family.name}`} onClick={onEdit}><IconPencil /></Button>
           <form action={toggle}>
@@ -76,7 +78,7 @@ function FamilyForm({ family, onDone }: { family: FamilyItem | null; onDone: () 
   useActionToast(state);
   useEffect(() => { if (state.success) onDone(); }, [state, onDone]);
   const field = (id: string) => `family-${family?.id ?? "new"}-${id}`;
-  return <form action={action} className="grid gap-3">
+  return <ActionForm action={action} result={state} className="grid gap-3">
     <DialogHeader>
       <DialogTitle>{family ? `Editar ${family.name}` : "Nova família"}</DialogTitle>
       <DialogDescription>O código só é necessário quando as peças da família forem etiquetadas. Ele não muda depois que houver peças etiquetadas.</DialogDescription>
@@ -91,5 +93,5 @@ function FamilyForm({ family, onDone }: { family: FamilyItem | null; onDone: () 
       <Button type="button" variant="outline" onClick={onDone}>Cancelar</Button>
       <Button type="submit" disabled={pending}>{pending ? "Salvando…" : family ? "Salvar família" : "Cadastrar família"}</Button>
     </DialogFooter>
-  </form>;
+  </ActionForm>;
 }

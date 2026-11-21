@@ -60,7 +60,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ aba: 
   return <div className="shell">
     <AppHeader role={membership.finance.role} email={user.email} current="/financeiro/configuracoes" />
     <PageBody width="narrow" className="gap-4">
-      <PageHeader title="Configurações" crumbs={settingsCrumbs(tab, canEdit)} tabs={<SettingsTabs current={tab} canEdit={canEdit} />}
+      <PageHeader title="Configurações" crumbs={settingsCrumbs(tab)} tabs={<SettingsTabs current={tab} />}
         description={tab === "perfis" || tab === "mensalidades" ? TABS[tab] : `${TABS[tab]} Inativos saem dos novos lançamentos e continuam nos antigos.`} />
       {tab === "contas" && <AccountsManager accounts={accounts} canEdit={canEdit} />}
       {tab === "perfis" && <ProfilesManager profiles={profileItems} />}

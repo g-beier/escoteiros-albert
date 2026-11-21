@@ -6,7 +6,7 @@ import { LedgerCards, LedgerTable, SplitCards, SplitTable } from "@/components/f
 import { Button } from "@geas/ui/components/button";
 import { useEntryOverrides } from "@/components/finance/entries/entry-editor";
 import { PAGE_SIZE, type EntryPage, type SplitRow, type LedgerRow } from "@/lib/finance/entry-rows";
-import type { SortOrder } from "@/lib/finance/filters";
+import type { EntrySort, SortOrder } from "@/lib/finance/filters";
 import { cn } from "@geas/ui/lib/utils";
 
 type Status = "idle" | "loading" | "done" | "error";
@@ -33,7 +33,15 @@ function useNarrow() {
  * pedidas quando o fim da lista aparece na tela. O componente é recriado (via `key`)
  * quando filtros, visão ou ordem mudam.
  */
-export function InfiniteEntries({ initial, query, filtered, order, sortHref }: { initial: EntryPage; query: string; filtered: boolean; order: SortOrder; sortHref: string }) {
+const SORT_NAMES = { data: "data", historico: "histórico", conta: "conta", forma: "forma de pagamento", valor: "valor" } as const;
+
+/** Rodapé: a ordem da lista em palavras. */
+function sortLabel(order: SortOrder, sort?: EntrySort) {
+  if (!sort || sort.key === "data") return order === "desc" ? "Mais recentes primeiro" : "Mais antigos primeiro";
+  return `Por ${SORT_NAMES[sort.key]}, ${sort.dir === "asc" ? "crescente" : "decrescente"}`;
+}
+
+export function InfiniteEntries({ initial, query, filtered, order, sort, sortHref }: { initial: EntryPage; query: string; filtered: boolean; order: SortOrder; sort?: EntrySort; sortHref: string }) {
   const [pages, setPages] = useState<EntryPage[]>([initial]);
   const [status, setStatus] = useState<Status>(initial.error ? "error" : initial.rows.length < PAGE_SIZE ? "done" : "idle");
   const [error, setError] = useState(initial.error ?? "");
@@ -120,7 +128,7 @@ export function InfiniteEntries({ initial, query, filtered, order, sortHref }: {
           : `${number.format(rows.length)} ${rows.length === 1 ? unit[0] : unit[1]}`}
         {filtered ? " no filtro" : ""}
       </span>
-      <span>{order === "desc" ? "Mais recentes primeiro" : "Mais antigos primeiro"}</span>
+      <span>{sortLabel(order, sort)}</span>
     </footer>
   </>;
 }

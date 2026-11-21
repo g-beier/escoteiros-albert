@@ -14,12 +14,14 @@ import { DragHandle, DragHandleSpacer, DROP_CLASS, useTreeDrag, type DropPlace }
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { Textarea } from "@geas/ui/components/textarea";
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
+import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
 import { placeLocation, saveLocation, setLocationActive } from "@/app/(inventario)/inventario/configuracoes/divisoes/actions";
-import { CELL_CLASS, HEAD_CLASS } from "@/components/inventory/table-head";
+import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import { placeError, placeLocal } from "@/lib/inventory/locations";
 
 import type { LocationItem } from "@/lib/inventory/model";
+import { ActionForm } from "@geas/ui/components/action-form";
 
 export type { LocationItem };
 
@@ -99,7 +101,7 @@ function LocationRow({ location, canManage, draggable, dragging, drop, rowProps,
     <TableCell className={cn(CELL_CLASS, "num text-right text-muted-foreground")}>{location.total}</TableCell>
     <TableCell className={CELL_CLASS}>
       <div className="flex items-center gap-2">
-        <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", location.active ? "bg-success-soft text-success" : "bg-muted text-muted-foreground")}>{location.active ? "Ativa" : "Inativa"}</span>
+        <Badge size="md" variant={location.active ? "success" : "muted"}>{location.active ? "Ativa" : "Inativa"}</Badge>
         {canManage && <>
           <Button type="button" variant="ghost" size="icon-sm" aria-label={`Editar ${location.path}`} onClick={onEdit}><IconPencil /></Button>
           {location.active && <Button type="button" variant="ghost" size="icon-sm" aria-label={`Nova subdivisão em ${location.path}`} title="Nova subdivisão" onClick={onAddChild}><IconPlus /></Button>}
@@ -124,7 +126,7 @@ function LocationForm({ editing, locations, onDone }: { editing: Editing; locati
     .filter((item) => item.active && (!location || (item.id !== location.id && !item.ancestors.includes(location.id))))
     .map((item) => ({ value: item.id, label: item.path }));
   const field = (id: string) => `location-${location?.id ?? "new"}-${id}`;
-  return <form action={action} className="grid gap-3">
+  return <ActionForm action={action} result={state} className="grid gap-3">
     <DialogHeader>
       <DialogTitle>{location ? `Editar ${location.name}` : "Nova divisão"}</DialogTitle>
       <DialogDescription>Divisões são lugares na sede (armário, estante, prateleira, caixa de patrulha). Deixe a superior vazia para uma divisão de primeiro nível.</DialogDescription>
@@ -140,5 +142,5 @@ function LocationForm({ editing, locations, onDone }: { editing: Editing; locati
       <Button type="button" variant="outline" onClick={onDone}>Cancelar</Button>
       <Button type="submit" disabled={pending}>{pending ? "Salvando…" : location ? "Salvar divisão" : "Cadastrar divisão"}</Button>
     </DialogFooter>
-  </form>;
+  </ActionForm>;
 }

@@ -41,7 +41,7 @@ export async function search(page: Page, term: string) {
   const url = new RegExp(`[?&]q=${encodeURIComponent(term).replace(/%20/g, "(\\+|%20)")}`);
   // Digitado antes da hidratação, o texto fica no campo mas o React não vê a mudança (e repetir o mesmo
   // texto também não dispara onChange): a cada tentativa, limpa e digita de novo.
-  const box = page.getByRole("searchbox", { name: "Buscar por histórico, descrição ou ID OFX" });
+  const box = page.getByRole("searchbox", { name: "Buscar por histórico, descrição, associado ou ID OFX" });
   await expect(async () => {
     await box.fill("");
     await box.fill(term);

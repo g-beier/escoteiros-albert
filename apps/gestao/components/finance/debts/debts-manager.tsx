@@ -13,7 +13,7 @@ import { debtOpenCents, debtStatus, debtTotals, distributePayment, groupDebts, o
 import { Button } from "@geas/ui/components/button";
 import { Checkbox } from "@geas/ui/components/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
 import { Input } from "@geas/ui/components/input";
 import { Label } from "@geas/ui/components/label";
 import { OptionCombobox, OptionSelect } from "@geas/ui/components/option-controls";
@@ -21,14 +21,15 @@ import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/se
 import { StatCard } from "@geas/ui/components/stat-card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { Textarea } from "@geas/ui/components/textarea";
+import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
 
 type AssociateOption = { value: string; label: string; active: boolean };
 
-const STATUS_CLASS: Record<DebtStatus, string> = {
-  aberta: "bg-destructive/10 text-destructive",
-  parcial: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
-  quitada: "bg-success-soft text-success",
+const STATUS_VARIANT: Record<DebtStatus, "destructive" | "warning" | "success"> = {
+  aberta: "destructive",
+  parcial: "warning",
+  quitada: "success",
 };
 
 /**
@@ -70,7 +71,7 @@ export function DebtsManager({ debts, canEdit, associates }: { debts: Debt[]; ca
         <SectionCount>{totals.openCount} em aberto de {debts.length}</SectionCount>
         {groups.length > 1 && <Button variant="outline" onClick={() => setExpanded(allOpen ? new Set() : new Set(groups.map((group) => group.key)))}>
           {allOpen ? "Recolher todos" : "Expandir todos"}</Button>}
-        {canEdit && <Button onClick={() => setEditing({ associateId: "" })}><IconPlus /> Nova dívida</Button>}
+        {canEdit && <Button onClick={() => setEditing({ associateId: "" })}><IconPlus data-icon="inline-start" /> Nova dívida</Button>}
       </SectionHeader>
       {groups.length === 0
         ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">{debts.length ? "Nenhuma dívida em aberto." : "Nenhuma dívida anotada."}</p>
@@ -133,16 +134,18 @@ function DebtorRow({ group, canEdit, open, onToggle, onAdd, onPay }: { group: De
     <TableCell className="px-3 py-2 text-right num">{group.paidCents ? money(group.paidCents / 100) : <span className="text-muted-foreground">—</span>}</TableCell>
     <TableCell className="px-3 py-2">
       {status === "quitada"
-        ? <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", STATUS_CLASS.quitada)}>Quitado</span>
-        : <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold num", STATUS_CLASS[status])}>falta {money(group.openCents / 100)}</span>}
+        ? <Badge size="md" variant="success">Quitado</Badge>
+        : <Badge size="md" variant={STATUS_VARIANT[status]} className="num">falta {money(group.openCents / 100)}</Badge>}
       {group.creditCents > 0 && <div className="text-xs text-muted-foreground" title="Receita dos lançamentos vinculados ainda não usada em dívidas">crédito {money(group.creditCents / 100)}</div>}
     </TableCell>
     {canEdit && <TableCell className="px-3 py-1">
       {group.associateId && <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações de ${group.label}`} />}><IconDots /></DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
-          <DropdownMenuItem onClick={onPay}><IconCash /> Registrar pagamento</DropdownMenuItem>
-          <DropdownMenuItem onClick={onAdd}><IconPlus /> Nova dívida</DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem onClick={onPay}><IconCash /> Registrar pagamento</DropdownMenuItem>
+            <DropdownMenuItem onClick={onAdd}><IconPlus /> Nova dívida</DropdownMenuItem>
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>}
     </TableCell>}
@@ -174,14 +177,16 @@ function DebtRow({ debt, canEdit, onEdit, onRemove }: { debt: Debt; canEdit: boo
       {status === "parcial" && <div className="text-xs text-muted-foreground">falta {money(debtOpenCents(debt) / 100)}</div>}
     </TableCell>
     <TableCell className="px-3 py-1.5">
-      <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", STATUS_CLASS[status])}>{DEBT_STATUS_LABELS[status]}</span>
+      <Badge size="md" variant={STATUS_VARIANT[status]}>{DEBT_STATUS_LABELS[status]}</Badge>
     </TableCell>
     {canEdit && <TableCell className="px-3 py-1">
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações da dívida de ${dateBR(debt.date)}: ${debt.description}`} />}><IconDots /></DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onEdit}><IconPencil /> Editar</DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onClick={onRemove}><IconTrash /> Excluir</DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem onClick={onEdit}><IconPencil /> Editar</DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onClick={onRemove}><IconTrash /> Excluir</DropdownMenuItem>
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </TableCell>}
@@ -424,7 +429,7 @@ function PayDebtsForm({ label, associateId, debts, onDone }: { label: string; as
     </p>}
     <DialogFooter>
       <Button type="button" variant="outline" onClick={onDone}>Cancelar</Button>
-      <Button type="submit" disabled={saving || !option}><IconCash /> {saving ? "Salvando…" : "Registrar pagamento"}</Button>
+      <Button type="submit" disabled={saving || !option}><IconCash data-icon="inline-start" /> {saving ? "Salvando…" : "Registrar pagamento"}</Button>
     </DialogFooter>
   </form>;
 }
@@ -445,7 +450,7 @@ function RemoveDebt({ debt, onDone }: { debt: Debt; onDone: () => void }) {
         toast.success(result.success);
         onDone();
         router.refresh();
-      })}><IconTrash /> {pending ? "Excluindo…" : "Excluir"}</Button>
+      })}><IconTrash data-icon="inline-start" /> {pending ? "Excluindo…" : "Excluir"}</Button>
     </DialogFooter>
   </>;
 }

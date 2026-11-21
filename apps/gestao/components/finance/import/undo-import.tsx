@@ -21,7 +21,7 @@ export function UndoImport({ importId, fileName, lineCount }: { importId: string
     router.refresh();
   });
   return <>
-    <Button variant="ghost" size="sm" onClick={() => setOpen(true)}><IconArrowBackUp /> Desfazer</Button>
+    <Button variant="ghost" size="sm" onClick={() => setOpen(true)}><IconArrowBackUp data-icon="inline-start" /> Desfazer</Button>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent>
         <DialogHeader>

@@ -47,15 +47,15 @@ export function feeCrumbs(current: FeeTab): Crumb[] {
   return [{ label: "Mensalidades", href: "/financeiro/mensalidades/controle" }, { label: current === "controle" ? "Controle" : "Devedores" }];
 }
 
-export type SettingsTab = "contas" | "rubricas" | "formas" | "perfis" | "associados" | "mensalidades";
+export type SettingsTab = "contas" | "rubricas" | "formas" | "perfis" | "mensalidades";
 
 export const SETTINGS_LABELS: Record<SettingsTab, string> = {
-  contas: "Contas", rubricas: "Rubricas", formas: "Formas de pagamento", perfis: "Perfis de leitura", associados: "Associados", mensalidades: "Mensalidades",
+  contas: "Contas", rubricas: "Rubricas", formas: "Formas de pagamento", perfis: "Perfis de leitura", mensalidades: "Mensalidades",
 };
 
 /** Caminho das telas de Configurações: Início › Configurações › aba. */
-export function settingsCrumbs(current: SettingsTab, canEdit: boolean): Crumb[] {
-  return [{ label: "Configurações", href: canEdit ? "/financeiro/configuracoes" : "/financeiro/configuracoes/associados" }, { label: SETTINGS_LABELS[current] }];
+export function settingsCrumbs(current: SettingsTab): Crumb[] {
+  return [{ label: "Configurações", href: "/financeiro/configuracoes" }, { label: SETTINGS_LABELS[current] }];
 }
 
 /** Caminho das telas do Extrato: Início › Extrato › Conciliar/Importar. */
@@ -63,18 +63,10 @@ export function extratoCrumbs(current: "conciliar" | "importar"): Crumb[] {
   return [{ label: "Extrato", href: "/financeiro/extrato/conciliar" }, { label: current === "conciliar" ? "Conciliar" : "Importar" }];
 }
 
-/** Configurações: cadastros do grupo. Consulta vê só Associados. */
-export function SettingsTabs({ current, canEdit }: { current: SettingsTab; canEdit: boolean }) {
-  const tabs: Tab[] = [
-    ...(canEdit ? [
-      { href: "/financeiro/configuracoes/contas", label: "Contas", active: current === "contas" },
-      { href: "/financeiro/configuracoes/rubricas", label: "Rubricas", active: current === "rubricas" },
-      { href: "/financeiro/configuracoes/formas", label: "Formas de pagamento", active: current === "formas" },
-      { href: "/financeiro/configuracoes/perfis", label: "Perfis de leitura", active: current === "perfis" },
-    ] : []),
-    { href: "/financeiro/configuracoes/associados", label: "Associados", active: current === "associados" },
-    ...(canEdit ? [{ href: "/financeiro/configuracoes/mensalidades", label: "Mensalidades", active: current === "mensalidades" }] : []),
-  ];
+/** Configurações: cadastros do Financeiro, só para tesouraria e administração. Associados e seções são do módulo Associados. */
+export function SettingsTabs({ current }: { current: SettingsTab }) {
+  const tabs: Tab[] = (Object.keys(SETTINGS_LABELS) as SettingsTab[])
+    .map((tab) => ({ href: `/financeiro/configuracoes/${tab}`, label: SETTINGS_LABELS[tab], active: tab === current }));
   return <SectionTabs label="Configurações" tabs={tabs} />;
 }
 

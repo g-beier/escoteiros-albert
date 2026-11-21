@@ -8,10 +8,11 @@ import { IconDots, IconFileDescription, IconFolderCheck, IconFolderExclamation, 
 import { deleteEntry, setDocumentFiled } from "@/app/actions";
 import { Button, buttonVariants } from "@geas/ui/components/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
+import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
 
-export type EntryOverride = { filed?: boolean; deleted?: boolean; accountName?: string; reconciled?: boolean };
+export type EntryOverride = { filed?: boolean; deleted?: boolean; accountName?: string; reconciled?: boolean; reviewed?: boolean };
 /** Lançamento marcado para ação em lote, com o que a barra precisa mostrar. */
 export type SelectedEntry = { accountName: string; reconciled: boolean };
 
@@ -107,7 +108,7 @@ export function EntryListProvider({ canEdit, returnHref, children }: { canEdit: 
 }
 
 export function NewEntryButton({ returnHref }: { returnHref: string }) {
-  return <Link href={`/financeiro/lancamentos/novo${returnHref ? `?voltar=${encodeURIComponent(returnHref)}` : ""}`} className={buttonVariants({ size: "lg" })}><IconPlus /> Novo lançamento</Link>;
+  return <Link href={`/financeiro/lancamentos/novo${returnHref ? `?voltar=${encodeURIComponent(returnHref)}` : ""}`} className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo lançamento</Link>;
 }
 
 export function useEntryOverrides() {
@@ -142,7 +143,7 @@ export function EntryRow({ entryId, className, children, ...props }: { entryId: 
 }
 
 /** Cartão clicável (telas estreitas): mesmo comportamento da linha da tabela. */
-export function EntryCard({ entryId, className, children, ...props }: { entryId: string; className?: string; children: React.ReactNode } & React.HTMLAttributes<HTMLLIElement>) {
+export function EntryCard({ entryId, className, children, ...props }: { entryId: string; className?: string; children: React.ReactNode } & React.ComponentProps<"li">) {
   const open = useOpenOnClick(entryId);
   return <li {...props} className={cn("cursor-pointer transition-colors hover:bg-accent/50", className)} onClick={open}>{children}</li>;
 }
@@ -153,33 +154,54 @@ export function EntryLink({ entryId, children, className }: { entryId: string; c
   return <Link href={detailHref(entryId)} className={cn("font-medium underline-offset-2 hover:underline focus-visible:underline", className)}>{children}</Link>;
 }
 
+/** Marca do lançamento que veio do registro rápido e ainda não foi revisado (some ao marcar revisado na lista). */
+export function ReviewMark({ entryId, status }: { entryId: string; status?: string }) {
+  const { overrides } = useList();
+  if (status !== "para_revisar" || overrides[entryId]?.reviewed) return null;
+  return <Badge variant="caution" className="ml-1.5 align-middle" title="Veio do registro rápido: confira e marque como revisado">Revisar</Badge>;
+}
+
 export function FolderStatus({ entryId, filed, document }: { entryId: string; filed: boolean; document: string | null }) {
   const { canEdit, toggleFiled, busyEntryId } = useList();
   const label = filed ? "Arquivado" : "Pendente";
-  const className = cn("inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
-    filed ? "bg-success-soft text-success" : "bg-[#f5eed1] text-[#725d0d]");
+  const variant = filed ? "success" : "caution";
   const icon = filed ? <IconFolderCheck className="size-3.5" aria-hidden /> : <IconFolderExclamation className="size-3.5" aria-hidden />;
   const action = filed ? "Marcar documento como pendente" : "Marcar documento como arquivado";
   return <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
     {canEdit
-      ? <button type="button" className={cn(className, "cursor-pointer hover:ring-1 hover:ring-current disabled:opacity-50")} disabled={busyEntryId === entryId}
-          onClick={() => toggleFiled(entryId, !filed)} title={action} aria-label={`${label}${document ? `, ${document}` : ""}. ${action}`}>{icon}{label}</button>
-      : <span className={className}>{icon}{label}</span>}
+      ? <Badge size="md" variant={variant} className="cursor-pointer [&>svg]:size-3.5! hover:ring-1 hover:ring-current disabled:opacity-50"
+          render={<button type="button" disabled={busyEntryId === entryId} onClick={() => toggleFiled(entryId, !filed)} title={action}
+            aria-label={`${label}${document ? `, ${document}` : ""}. ${action}`} />}>{icon}{label}</Badge>
+      : <Badge size="md" variant={variant} className="[&>svg]:size-3.5!">{icon}{label}</Badge>}
     {document && <span className="max-w-32 truncate text-muted-foreground" title={document}>{document}</span>}
   </span>;
 }
 
+/**
+ * Menu ⋯ da linha/cartão. Até o primeiro clique é só o botão: o menu (Base UI) é montado aberto nessa hora, para as
+ * linhas e cartões montados durante a rolagem (listas virtualizadas) saírem baratos.
+ */
 export function EntryRowActions({ entryId, filed }: { entryId: string; filed: boolean }) {
+  const [active, setActive] = useState(false);
+  if (!active) return <Button variant="ghost" size="icon-sm" aria-label="Ações do lançamento" aria-haspopup="menu" aria-expanded={false} onClick={() => setActive(true)}><IconDots /></Button>;
+  return <EntryRowMenu entryId={entryId} filed={filed} />;
+}
+
+function EntryRowMenu({ entryId, filed }: { entryId: string; filed: boolean }) {
   const { canEdit, detailHref, requestDelete, toggleFiled } = useList();
   const router = useRouter();
-  return <DropdownMenu>
+  return <DropdownMenu defaultOpen>
     <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="Ações do lançamento" />}><IconDots /></DropdownMenuTrigger>
     <DropdownMenuContent align="end">
-      <DropdownMenuItem onClick={() => router.push(detailHref(entryId))}><IconFileDescription /> {canEdit ? "Detalhes e edição" : "Detalhes"}</DropdownMenuItem>
+      <DropdownMenuGroup>
+        <DropdownMenuItem onClick={() => router.push(detailHref(entryId))}><IconFileDescription /> {canEdit ? "Detalhes e edição" : "Detalhes"}</DropdownMenuItem>
+        {canEdit && <DropdownMenuItem onClick={() => toggleFiled(entryId, !filed)}>{filed ? <IconFolderExclamation /> : <IconFolderCheck />} {filed ? "Marcar documento como pendente" : "Marcar documento como arquivado"}</DropdownMenuItem>}
+      </DropdownMenuGroup>
       {canEdit && <>
-        <DropdownMenuItem onClick={() => toggleFiled(entryId, !filed)}>{filed ? <IconFolderExclamation /> : <IconFolderCheck />} {filed ? "Marcar documento como pendente" : "Marcar documento como arquivado"}</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive" onClick={() => requestDelete(entryId)}><IconTrash /> Excluir</DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuItem variant="destructive" onClick={() => requestDelete(entryId)}><IconTrash /> Excluir</DropdownMenuItem>
+        </DropdownMenuGroup>
       </>}
     </DropdownMenuContent>
   </DropdownMenu>;

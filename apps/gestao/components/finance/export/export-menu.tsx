@@ -6,9 +6,10 @@ import { toast } from "sonner";
 import { OptionSelect } from "@geas/ui/components/option-controls";
 import { Button } from "@geas/ui/components/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
 import { Input } from "@geas/ui/components/input";
 import { Label } from "@geas/ui/components/label";
+import { ToggleGroup, ToggleGroupItem } from "@geas/ui/components/toggle-group";
 import { describePeriod, MONTHS, periodBounds, type PeriodPreset } from "@/lib/finance/export/period";
 import { CSV_ENCODINGS, type CsvEncoding } from "@/lib/finance/export/csv";
 import type { Option } from "@geas/ui/components/option-controls";
@@ -103,11 +104,13 @@ export function ExportMenu({ view, from, to, years, accounts = [] }: { view: Vie
 
   return <>
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" size="lg"><IconDownload /> Exportar <IconChevronDown data-icon="inline-end" /></Button>} />
+      <DropdownMenuTrigger render={<Button variant="outline" size="lg"><IconDownload data-icon="inline-start" /> Exportar <IconChevronDown data-icon="inline-end" /></Button>} />
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => open("fluxo")}>Fluxo de caixa…</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => open("realizado")}>Realizado anual…</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => open("contabil")}>Contabilidade (CSV)…</DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuItem onClick={() => open("fluxo")}>Fluxo de caixa…</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => open("realizado")}>Realizado anual…</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => open("contabil")}>Contabilidade (CSV)…</DropdownMenuItem>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
 
@@ -128,11 +131,12 @@ export function ExportMenu({ view, from, to, years, accounts = [] }: { view: Vie
             <div className="grid gap-1.5"><Label htmlFor="export-encoding">Codificação</Label><OptionSelect id="export-encoding" value={encoding} onValueChange={(v) => setEncoding(v as CsvEncoding)} options={CSV_ENCODINGS} /></div>
           </div>}
           {(mode === "fluxo" || mode === "contabil") && <>
-            <div role="radiogroup" aria-label="Período" className="inline-flex w-fit rounded-full bg-secondary p-0.5">
+            <ToggleGroup aria-label="Período" value={[preset]} onValueChange={(next) => { if (next[0]) setPreset(next[0] as PresetKind); }}
+              className="gap-0 rounded-full bg-secondary p-0.5">
               {([["mes", "Mês"], ["ano", "Ano"], ["personalizado", "Personalizado"]] as const).map(([value, label]) =>
-                <button key={value} type="button" role="radio" aria-checked={preset === value} onClick={() => setPreset(value)}
-                  className={cn("rounded-full px-3 py-1 text-xs font-semibold transition-colors", preset === value ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground")}>{label}</button>)}
-            </div>
+                <ToggleGroupItem key={value} value={value}
+                  className="h-auto rounded-full px-3 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:bg-transparent hover:text-foreground aria-pressed:bg-foreground aria-pressed:text-background">{label}</ToggleGroupItem>)}
+            </ToggleGroup>
             {preset === "mes" && <div className="grid items-start gap-3 sm:grid-cols-2">
               <div className="grid gap-1.5"><Label htmlFor="export-month">Mês</Label><OptionSelect id="export-month" value={month} onValueChange={setMonth} options={monthOptions} /></div>
               <div className="grid gap-1.5"><Label htmlFor="export-year">Ano</Label><OptionSelect id="export-year" value={year} onValueChange={setYear} options={yearOptions} /></div>
@@ -151,7 +155,7 @@ export function ExportMenu({ view, from, to, years, accounts = [] }: { view: Vie
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setMode(null)}>Cancelar</Button>
-            <Button type="submit" disabled={pending || (mode !== "realizado" && !period)}><IconDownload /> {pending ? "Gerando…" : mode === "realizado" || (mode === "fluxo" && format === "xlsx") ? "Baixar planilha" : "Baixar CSV"}</Button>
+            <Button type="submit" disabled={pending || (mode !== "realizado" && !period)}><IconDownload data-icon="inline-start" /> {pending ? "Gerando…" : mode === "realizado" || (mode === "fluxo" && format === "xlsx") ? "Baixar planilha" : "Baixar CSV"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { ATTACHMENTS_ENABLED } from "@/lib/features";
 import { DataError } from "@/lib/server/db";
 import { downloadUrl } from "@/lib/server/finance/attachments";
 import { memberOrError } from "@/lib/server/session";
@@ -8,8 +9,10 @@ import { memberOrError } from "@/lib/server/session";
  * GET /financeiro/lancamentos/<id>/anexos/<anexoId>[?baixar=1]
  * Redireciona para uma URL assinada de curta duração do bucket privado. Qualquer membro do grupo
  * (inclusive consulta) pode abrir; a RLS de `entry_attachments` e a política do bucket conferem o grupo.
+ * Com os comprovantes desligados (`lib/features.ts`), responde 404.
  */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string; anexoId: string }> }) {
+  if (!ATTACHMENTS_ENABLED) return text("Anexo não encontrado.", 404);
   const { id, anexoId } = await params;
   if (!z.uuid().safeParse(id).success || !z.uuid().safeParse(anexoId).success) return text("Anexo não encontrado.", 404);
   const member = await memberOrError();

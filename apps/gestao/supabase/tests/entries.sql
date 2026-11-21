@@ -1,4 +1,4 @@
--- Lançamentos: histórico de alterações (023) e troca de conta em lote (024) sem alterar o banco local: rode, a partir de apps/financeiro,
+-- Lançamentos: histórico de alterações (023) e troca de conta em lote (024) sem alterar o banco local: rode, a partir de apps/gestao,
 --   cat supabase/tests/entries.sql \
 --     | docker exec -i supabase_db_geas-financeiro psql -U postgres -v ON_ERROR_STOP=1 -q
 -- (ou junto com os demais por `npm run test:db`). O arquivo abre e desfaz a própria transação e imprime TAP
@@ -20,6 +20,7 @@ select id as undefined_acc from public.accounts where group_id = :'gid' and name
 select id as pix from public.payment_methods where group_id = :'gid' and name = 'PIX' \gset
 select id as cat_d from public.categories where group_id = :'gid' and kind = 'despesa' and active order by code limit 1 \gset
 select id as cat_r from public.categories where group_id = :'gid' and kind = 'receita' and active order by code limit 1 \gset
+insert into public.associates(group_id, name, branch) values (:'gid', 'Zuleica Busca', 'lobinho') returning id as zu \gset
 
 -- como tesoureiro
 set role authenticated;
@@ -45,6 +46,22 @@ do $$ begin
   end if;
   if exists (select 1 from public.ledger_entry_history(current_setting('test.e1')::uuid) where actor_email is distinct from 'tes.lanc@escoteirosalbert.com.br') then
     raise exception 'FALHOU: autor errado';
+  end if;
+end $$;
+
+\echo '--- busca acha o nome do associado do rateio (047)'
+select public.create_ledger_entry(:'gid', '2026-05-19', 'Acampamento', :'pix', null, false, 1500,
+  jsonb_build_array(jsonb_build_object('category_id', :'cat_r', 'amount_cents', 1500, 'description', 'inscrição', 'associate_id', :'zu')), :'acc') as e4 \gset
+select set_config('test.e4', :'e4', true);
+do $$ begin
+  if not exists (select 1 from public.ledger_entry_rows where entry_id = current_setting('test.e4')::uuid and search_text ilike '%zuleica%') then
+    raise exception 'FALHOU: Movimentações não acha pelo associado';
+  end if;
+  if not exists (select 1 from public.entry_split_rows where entry_id = current_setting('test.e4')::uuid and search_text ilike '%zuleica busca%') then
+    raise exception 'FALHOU: Detalhamento não acha pelo associado';
+  end if;
+  if exists (select 1 from public.ledger_entry_rows where entry_id = current_setting('test.e1')::uuid and search_text ilike '%zuleica%') then
+    raise exception 'FALHOU: associado em lançamento alheio';
   end if;
 end $$;
 

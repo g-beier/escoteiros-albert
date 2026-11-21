@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { IconChevronDown, IconFilter, IconFilterFilled, IconSearch } from "@tabler/icons-react";
+import { IconSearch } from "@tabler/icons-react";
 import { Button } from "@geas/ui/components/button";
 import { Checkbox } from "@geas/ui/components/checkbox";
 import { Input } from "@geas/ui/components/input";
@@ -9,6 +9,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@geas/ui/components/pop
 import { decodeCategorySelection, encodeCategorySelection } from "@/lib/finance/categories";
 import { cn } from "@geas/ui/lib/utils";
 import { useDimension, useListParams, type FilterKey, type FilterOption } from "./filter-options";
+import { SortSection, useEntrySort, type ColumnSort } from "./sort-menu";
+import { TriggerContent, triggerElement, type FilterVariant } from "./filter-trigger";
 
 const normalize = (text: string) => text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 
@@ -19,7 +21,6 @@ function topLevel(selected: string[], descendants: Record<string, string[]> | un
   return selected.filter((value) => !covered.has(value));
 }
 
-/** Resumo do filtro para o rótulo do botão, ou null quando não há filtro. */
 /** Valores marcados na URL; nas listas hierárquicas, a seção compacta é expandida. */
 function useSelected(key: FilterKey) {
   const dimension = useDimension(key);
@@ -31,6 +32,7 @@ function useSelected(key: FilterKey) {
   };
 }
 
+/** Resumo do filtro para o rótulo do botão, ou null quando não há filtro. */
 export function useFilterSummary(key: FilterKey) {
   const dimension = useDimension(key);
   const selected = useSelected(key)();
@@ -42,8 +44,9 @@ export function useFilterSummary(key: FilterKey) {
 /**
  * Filtro por valores com seleção múltipla. Sem filtro, tudo aparece marcado (como na planilha);
  * desmarcar exclui. Aplicar com tudo marcado remove o filtro.
+ * `variant="head"`: cabeçalho de coluna, igual ao menu de coluna dos Materiais (rótulo, indicador de filtro e seta).
  */
-export function MultiFilter({ filterKey, variant = "button" }: { filterKey: FilterKey; variant?: "button" | "icon" }) {
+export function MultiFilter({ filterKey, variant = "button", label, align = "start", sort }: { filterKey: FilterKey; variant?: FilterVariant; label?: string; align?: "start" | "end"; sort?: ColumnSort }) {
   const dimension = useDimension(filterKey);
   const { apply } = useListParams();
   const selectedNow = useSelected(filterKey);
@@ -52,7 +55,8 @@ export function MultiFilter({ filterKey, variant = "button" }: { filterKey: Filt
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const all = useMemo(() => dimension.options.map((o) => o.value), [dimension.options]);
-  const active = summary !== null;
+  const order = useEntrySort(sort?.key ?? "data");
+  const sorted = Boolean(sort) && order.sorted;
 
   function onOpenChange(next: boolean) {
     if (next) {
@@ -96,21 +100,15 @@ export function MultiFilter({ filterKey, variant = "button" }: { filterKey: Filt
     setOpen(false);
   }
 
-  const trigger = variant === "icon"
-    ? <Button variant="ghost" size="icon-xs" className={cn("text-muted-foreground", active && "text-primary")} aria-label={`Filtrar ${dimension.label}${active ? ` (filtrado: ${summary})` : ""}`} title={active ? `${dimension.label}: ${summary}` : `Filtrar ${dimension.label}`} />
-    : <Button variant="outline" className={cn("max-w-72 justify-start font-normal", active && "border-primary bg-accent/60 text-accent-foreground")} />;
+  const trigger = { variant, label: variant === "head" ? label ?? dimension.label : dimension.label, summary, sorted, dir: order.dir };
 
   return <Popover open={open} onOpenChange={onOpenChange}>
-    <PopoverTrigger render={trigger}>
-      {variant === "icon"
-        ? (active ? <IconFilterFilled /> : <IconFilter />)
-        : <>
-            <span className={cn("shrink-0", active ? "font-semibold" : "text-muted-foreground")}>{dimension.label}{active && ":"}</span>
-            {active && <span className="truncate">{summary}</span>}
-            <IconChevronDown className="ml-auto text-muted-foreground" data-icon="inline-end" />
-          </>}
-    </PopoverTrigger>
-    <PopoverContent align="start" className="w-80 gap-0 p-0">
+    <PopoverTrigger render={triggerElement(trigger)}><TriggerContent {...trigger} /></PopoverTrigger>
+    <PopoverContent align={align} className="w-80 gap-0 p-0 text-sm font-normal tracking-normal normal-case">
+      {sort && <>
+        <div className="border-b px-3 py-2 text-sm font-semibold text-foreground">{label ?? dimension.label}</div>
+        <div className="border-b"><SortSection labels={sort.labels} sorted={sorted} dir={order.dir} onSort={(next) => { order.sortBy(next); setOpen(false); }} /></div>
+      </>}
       <div className="flex items-center justify-between border-b px-3 py-2">
         <span className="text-sm font-semibold">Filtrar {dimension.label.toLowerCase()}</span>
         <span className="text-xs text-muted-foreground num">{checked.size} de {all.length}</span>

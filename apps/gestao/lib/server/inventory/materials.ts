@@ -71,6 +71,13 @@ export async function openLots(db: Db, groupId: string): Promise<(Pick<Lot, "id"
     .eq("group_id", groupId).gt("quantity", 0)) as (Pick<Lot, "id" | "location_id" | "quantity" | "condition" | "expires_on" | "variant"> & { material_id: string })[];
 }
 
+/** Lotes com saldo de um material numa divisão (diálogo ± da lista de Materiais, carregado ao abrir). */
+export async function openLotsAt(db: Db, materialId: string, locationId: string): Promise<Pick<Lot, "id" | "location_id" | "quantity" | "condition" | "expires_on" | "variant">[]> {
+  return rowsOf(await sb(db).from("inventory_lots")
+    .select("id, location_id, quantity, condition, expires_on, variant")
+    .eq("material_id", materialId).eq("location_id", locationId).gt("quantity", 0)) as Pick<Lot, "id" | "location_id" | "quantity" | "condition" | "expires_on" | "variant">[];
+}
+
 /** Peças, inclusive as baixadas, pela etiqueta. */
 export async function units(db: Db, materialId: string): Promise<Unit[]> {
   return rowsOf(await sb(db).from("inventory_units")

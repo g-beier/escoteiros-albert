@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { ATTACHMENTS_ENABLED } from "../lib/features";
 import { expect, test, type Page } from "@playwright/test";
 import { cleanupE2eGroup } from "./support/db";
 import { E2E_ACCOUNTS } from "./support/env";
@@ -40,6 +41,8 @@ test("mover lançamentos selecionados para outra conta", async ({ page }) => {
 });
 
 test("anexar, abrir e excluir um comprovante", async ({ page }) => {
+  // comprovantes desligados por padrão (lib/features.ts); para testar: NEXT_PUBLIC_FEATURE_ATTACHMENTS=on npm run test:e2e
+  test.skip(!ATTACHMENTS_ENABLED, "comprovantes desligados");
   const name = uniqueName("Comprovante");
   await createEntry(page, { name, direction: "saida", total: "33,00", account: E2E_ACCOUNTS[0], category: "Telefone", description: "papelaria" });
   await page.goto("/financeiro/lancamentos/movimentacoes");

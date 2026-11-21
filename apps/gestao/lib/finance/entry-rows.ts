@@ -20,6 +20,8 @@ export type LedgerRow = {
   external_ids: string[];
   /** Comprovantes anexados (entry_attachments); preenchido por fetchEntryPage. */
   attachment_count?: number;
+  /** `para_revisar`: veio do registro rápido e ninguém conferiu ainda (049). */
+  review_status?: string;
 };
 
 export type SplitRow = {
@@ -42,11 +44,12 @@ export type SplitRow = {
   external_ids: string[];
   attachment_count?: number;
   reconciled?: boolean;
+  review_status?: string;
 };
 
 export type EntryPage =
   | { view: "movimentacoes"; rows: LedgerRow[]; total: number | null; error?: string }
   | { view: "detalhamento"; rows: SplitRow[]; total: number | null; error?: string };
 
-export const LEDGER_COLUMNS = "entry_id, entry_date, name, account_name, payment_method_name, document, document_filed, total_cents, reconciled, external_ids";
-export const SPLIT_COLUMNS = "split_id, entry_id, entry_date, entry_name, account_name, payment_method_name, document, document_filed, amount_cents, description, category_name, category_code, category_kind, associate_name, category_ledger_code, account_ledger_code, external_ids, reconciled";
+export const LEDGER_COLUMNS = "entry_id, entry_date, name, account_name, payment_method_name, document, document_filed, total_cents, reconciled, external_ids, review_status";
+export const SPLIT_COLUMNS = "split_id, entry_id, entry_date, entry_name, account_name, payment_method_name, document, document_filed, amount_cents, description, category_name, category_code, category_kind, associate_name, category_ledger_code, account_ledger_code, external_ids, reconciled, review_status";

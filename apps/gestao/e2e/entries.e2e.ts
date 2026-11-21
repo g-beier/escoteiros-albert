@@ -27,7 +27,7 @@ test("criar, filtrar, editar e excluir lançamentos", async ({ page }) => {
   });
 
   await test.step("filtrar por conta", async () => {
-    await filters(page).getByRole("button", { name: /^Conta/ }).click();
+    await entriesTable(page).getByRole("columnheader", { name: /^Conta/ }).getByRole("button").click();
     const panel = page.getByRole("dialog");
     await panel.getByRole("button", { name: "Limpar" }).click();
     await panel.getByRole("checkbox", { name: E2E_ACCOUNTS[0], exact: true }).click();
@@ -38,14 +38,18 @@ test("criar, filtrar, editar e excluir lançamentos", async ({ page }) => {
   });
 
   await test.step("filtrar por rubrica (só despesas)", async () => {
-    await page.getByRole("button", { name: "Limpar filtros" }).click();
+    await filters(page).getByRole("button", { name: "Limpar filtros" }).click();
     await expect(page).not.toHaveURL(/[?&]conta=/);
     await search(page, tag);
-    await filters(page).getByRole("button", { name: /^Rubrica/ }).click();
+    // a coluna Rubrica fica no Detalhamento; o filtro segue para Movimentações
+    await page.goto(page.url().replace("/movimentacoes", "/detalhamento"));
+    await page.getByRole("region", { name: "Detalhamento" }).getByRole("columnheader", { name: /^Rubrica/ }).getByRole("button").click();
     const panel = page.getByRole("dialog");
     await panel.getByRole("button", { name: "Só despesas" }).click();
     await panel.getByRole("button", { name: "Aplicar" }).click();
     await expect(page).toHaveURL(/[?&]rubrica=/);
+    await page.goto(page.url().replace("/detalhamento", "/movimentacoes"));
+    await expect(filters(page).getByRole("button", { name: /^Rubrica: / })).toBeVisible();
     await expect(entryRow(page, expense)).toBeVisible();
     await expect(entryRow(page, income)).toHaveCount(0);
   });
