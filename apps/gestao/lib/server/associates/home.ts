@@ -1,4 +1,4 @@
-import { expiringSoon, transitions, upcomingDates, type Transition, type UpcomingDate } from "@/lib/associates/alerts";
+import { registrationExpiries, transitions, upcomingDates, type Expiry, type Transition, type UpcomingDate } from "@/lib/associates/alerts";
 import { associateAudiences, matrixGroups, pendingCount, statusMap, type MatrixAudience, type MatrixPerson } from "@/lib/associates/controls";
 import { activeRelativeIds, linksByAssociate, relativeRows } from "@/lib/associates/relatives";
 import type { Db } from "@/lib/server/db";
@@ -11,8 +11,8 @@ export type AssociatesOverview = {
   transitions: Transition[];
   /** Pendências da matriz de controle (mesma conta da tela Controle), por aba. */
   pending: Record<MatrixAudience, number>;
-  /** Registros de associados ativos com validade nos próximos dias. */
-  expiringSoon: number;
+  /** Registros de associados ativos vencidos ou com validade nos próximos dias. */
+  expiries: Expiry[];
 };
 
 /** O que o Associados mostra no Início geral. */
@@ -39,6 +39,6 @@ export async function overview(db: Db, groupId: string, today: string): Promise<
     dates: upcomingDates(associates, today),
     transitions: transitions(associates, today),
     pending: { jovem: pendingFor("jovem"), adulto: pendingFor("adulto") },
-    expiringSoon: expiringSoon(statuses.filter((row) => row.status === "ok" && row.associate_id !== null && activeAssociates.has(row.associate_id)), today).length,
+    expiries: registrationExpiries(statuses, associates, allItems.filter((item) => item.active), today),
   };
 }

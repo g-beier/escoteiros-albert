@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ScoutBranch } from "./model";
-import { addMonths, expiringSoon, relativeDay, transitionOf, transitionRules, transitions, transitionWindow, upcomingDates } from "./alerts";
+import { addMonths, registrationExpiries, relativeDay, transitionOf, transitionRules, transitions, transitionWindow, upcomingDates } from "./alerts";
 
 const person = (over: Partial<{ id: string; name: string; active: boolean; branch: ScoutBranch; birth_date: string | null; promise_date: string | null }>) =>
   ({ id: "a", name: "Ana", active: true, branch: "lobinho" as const, birth_date: null, promise_date: null, ...over });
@@ -104,10 +104,17 @@ describe("transitions", () => {
   });
 });
 
-describe("expiringSoon e relativeDay", () => {
-  it("validades de hoje até 30 dias", () => {
-    const rows = [{ valid_until: "2026-11-18" }, { valid_until: "2026-11-19" }, { valid_until: "2026-12-19" }, { valid_until: "2026-12-20" }, { valid_until: null }];
-    expect(expiringSoon(rows, "2026-11-19").map((r) => r.valid_until)).toEqual(["2026-11-19", "2026-12-19"]);
+describe("registrationExpiries e relativeDay", () => {
+  it("vencidos e vencendo em 30 dias, de associados ativos com situação ok; vencidos primeiro", () => {
+    const people = [{ id: "a", name: "Ana", active: true }, { id: "b", name: "Bia", active: true }, { id: "c", name: "Caio", active: false }];
+    const items = [{ id: "v", name: "Validade do registro" }];
+    const row = (associate_id: string | null, valid_until: string | null, status = "ok") => ({ associate_id, item_id: "v", status, valid_until });
+    const list = registrationExpiries([
+      row("a", "2026-12-19"), row("b", "2026-11-10"), row("a", "2026-12-20"), row("b", null), row("c", "2026-11-01"),
+      row("b", "2026-11-20", "pendente"), row(null, "2026-11-20"), row("a", "2026-11-19"),
+    ], people, items, "2026-11-19");
+    expect(list.map((e) => `${e.name} ${e.validUntil} ${e.days}`)).toEqual(["Bia 2026-11-10 -9", "Ana 2026-11-19 0", "Ana 2026-12-19 30"]);
+    expect(list[0].item).toBe("Validade do registro");
   });
 
   it("texto relativo", () => {

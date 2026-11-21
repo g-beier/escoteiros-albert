@@ -6,7 +6,7 @@ import { ageInYearsMonths, type AssociateProfile, type ScoutBranch } from "./mod
 /** Janela das datas comemorativas: dias antes de hoje e depois de hoje. */
 export const DATES_BEFORE_DAYS = 5;
 export const DATES_AFTER_DAYS = 15;
-/** Registros (itens de controle com validade) que vencem nestes dias aparecem como alerta. */
+/** Registros (itens de controle com validade) que vencem nestes dias aparecem no Início, com os já vencidos. */
 export const VALIDITY_WARNING_DAYS = 30;
 
 /**
@@ -150,10 +150,26 @@ export function transitions(people: TransitionPerson[], today: string): Transiti
     .sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level] || a.criticalOn.localeCompare(b.criticalOn) || a.name.localeCompare(b.name, "pt-BR"));
 }
 
-/** Validades (`valid_until`) entre hoje e `days` dias à frente. */
-export function expiringSoon<T extends { valid_until: string | null }>(rows: T[], today: string, days = VALIDITY_WARNING_DAYS): T[] {
+/** Validade de registro (item de controle com data de validade) vencida ou vencendo, de um associado ativo. */
+export type Expiry = { associateId: string; name: string; item: string; validUntil: string; days: number };
+
+/**
+ * Vencimentos para o Início: situações "ok" de associados ativos com `valid_until` já passado ou até `days` dias à
+ * frente. Vencidos primeiro (o mais antigo antes), depois os que vencem antes; empate pelo nome.
+ */
+export function registrationExpiries(
+  rows: { associate_id: string | null; item_id: string; status: string; valid_until: string | null }[],
+  people: { id: string; name: string; active: boolean }[], items: { id: string; name: string }[], today: string, days = VALIDITY_WARNING_DAYS,
+): Expiry[] {
   const until = toISO(toTime(today) + days * DAY);
-  return rows.filter((row) => row.valid_until !== null && row.valid_until >= today && row.valid_until <= until);
+  const person = new Map(people.filter((p) => p.active).map((p) => [p.id, p.name]));
+  const itemName = new Map(items.map((i) => [i.id, i.name]));
+  return rows.flatMap((row) => {
+    const name = row.associate_id && person.get(row.associate_id);
+    const item = itemName.get(row.item_id);
+    if (row.status !== "ok" || !row.valid_until || row.valid_until > until || !name || !item) return [];
+    return [{ associateId: row.associate_id!, name, item, validUntil: row.valid_until, days: Math.round((toTime(row.valid_until) - toTime(today)) / DAY) }];
+  }).sort((a, b) => a.validUntil.localeCompare(b.validUntil) || a.name.localeCompare(b.name, "pt-BR"));
 }
 
 /** "hoje", "amanhã", "ontem", "em 3 dias", "há 2 dias". */

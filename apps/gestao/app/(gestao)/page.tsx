@@ -31,8 +31,8 @@ const TRANSITION_BADGE = { critico: "destructive", aviso: "caution", iniciada: "
 const dayMonth = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 
 /**
- * Início geral: o que precisa de atenção nos módulos (só o que tem algo a fazer), as datas e transições dos associados e
- * um cartão por módulo com os números principais. Os detalhes ficam no Resumo de cada módulo (/financeiro, /inventario).
+ * Início geral: o que precisa de atenção nos módulos (só o que tem algo a fazer), os vencimentos de registro, as datas e
+ * transições dos associados e um cartão por módulo com os números principais. Os detalhes ficam no Resumo de cada módulo (/financeiro, /inventario).
  */
 export default async function Home() {
   const { user, member } = await pageSession();
@@ -55,6 +55,8 @@ export default async function Home() {
 
   const plural = (count: number, one: string, many: string) => `${count === 1 ? one : many}`;
   const lateTransitions = associates.transitions.filter((t) => t.level === "critico").length;
+  const expired = associates.expiries.filter((e) => e.days < 0).length;
+  const expiring = associates.expiries.length - expired;
   const canQuick = member.finance.canEdit || member.inventory.canEdit || member.associates.canEdit;
   const alerts: Alert[] = ([
     { module: "financeiro", count: entriesReview, label: plural(entriesReview, "lançamento do registro rápido para revisar", "lançamentos do registro rápido para revisar"),
@@ -77,8 +79,9 @@ export default async function Home() {
       href: "/associados/controle?pendencias=1" },
     { module: "associados", count: associates.pending.adulto, label: plural(associates.pending.adulto, "pendência no controle dos adultos", "pendências no controle dos adultos"),
       href: "/associados/controle?publico=adultos&pendencias=1" },
-    { module: "associados", count: associates.expiringSoon, label: plural(associates.expiringSoon, `registro vencendo em ${VALIDITY_WARNING_DAYS} dias`, `registros vencendo em ${VALIDITY_WARNING_DAYS} dias`),
-      href: "/associados/controle" },
+    { module: "associados", count: expired, label: plural(expired, "registro vencido", "registros vencidos"), href: "/#expiries-title" },
+    { module: "associados", count: expiring, label: plural(expiring, `registro vencendo em ${VALIDITY_WARNING_DAYS} dias`, `registros vencendo em ${VALIDITY_WARNING_DAYS} dias`),
+      href: "/#expiries-title" },
     { module: "inventario", count: inventory.expiringSoon, label: plural(inventory.expiringSoon, `lote vencendo em ${EXPIRY_WARNING_DAYS} dias`, `lotes vencendo em ${EXPIRY_WARNING_DAYS} dias`), href: "/inventario/materiais?validade=valido&ordem=validade" },
   ] satisfies Alert[]).filter((alert) => alert.count > 0);
 
@@ -100,6 +103,21 @@ export default async function Home() {
             <span className={cn("shrink-0 text-[11px] font-bold tracking-wider uppercase", `geas-app--${alert.module}`)}>{MODULE_LABEL[alert.module]}</span>
           </Link>
         </li>)}</ul>}
+      </ListCard>
+
+      <ListCard title="Vencimentos de registro" titleId="expiries-title" href="/associados/controle" linkLabel="Controle"
+        empty={`Nenhum registro vencido nem vencendo nos próximos ${VALIDITY_WARNING_DAYS} dias.`}>
+        {associates.expiries.length > 0 && <ul className={cn("m-0 grid list-none p-0", associates.expiries.length > 1 && "md:grid-cols-2")}>
+          {associates.expiries.map((e) => <li key={`${e.associateId}-${e.item}-${e.validUntil}`} className={cn("border-t first:border-t-0", associates.expiries.length > 1 && "md:[&:nth-child(2)]:border-t-0 md:odd:border-r")}>
+            <Link href={`/associados/${e.associateId}`} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted">
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{e.name}</span>
+                <span className="block truncate text-xs text-muted-foreground">{e.item} · <span className="num">{dateBR(e.validUntil)}</span></span>
+              </span>
+              <Badge variant={e.days < 0 ? "destructive" : "caution"} className="shrink-0">{e.days < 0 ? `venceu ${relativeDay(e.days)}` : `vence ${relativeDay(e.days)}`}</Badge>
+            </Link>
+          </li>)}
+        </ul>}
       </ListCard>
 
       <div className="grid gap-5 lg:grid-cols-2">
