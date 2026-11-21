@@ -84,7 +84,7 @@ export function ControlMatrix({ groups, people, rows, canEdit, today, caption }:
   const firstItem = items[0]?.id;
   const edge = (item: ControlItem): Edge => item.id === firstItem ? "none" : firstOfGroup.has(item.id) ? "strong" : "soft";
 
-  const matrix = <div className="w-full max-w-full overflow-x-auto overscroll-x-contain" data-testid="control-matrix-scroll">
+  const matrix = <div className="w-full max-w-full scroll-x-reserved" data-testid="control-matrix-scroll">
       <table style={cvCols(["11rem", `repeat(${items.length}, 6rem)`])} className={cn("cv-table w-max border-separate [--grid:color-mix(in_oklab,var(--foreground)_10%,var(--card))] [--grid-strong:color-mix(in_oklab,var(--foreground)_28%,var(--card))] border-spacing-0 text-xs", BODY)} lang="pt-BR">
         <caption className="sr-only">{caption}</caption>
         <colgroup><col className="w-44" /></colgroup>
