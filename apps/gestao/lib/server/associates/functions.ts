@@ -1,6 +1,6 @@
 import type { AssociateFunction, FunctionKind } from "@/lib/associates/controls";
 import type { Db } from "@/lib/server/db";
-import { rowsOf, rpc, sb } from "@/lib/server/supabase/db";
+import { rows, rpc } from "@/lib/server/pg/db";
 
 // Funções dos adultos (041): leitura de `associate_function_rows`; escritas pelas funções auditadas associates_*_function.
 
@@ -8,13 +8,13 @@ const COLUMNS = "id, associate_id, kind, title, started_on, ended_on, section_id
 
 /** Funções do grupo (atuais e encerradas): base dos subgrupos Escotistas/Dirigentes e do público. */
 export async function list(db: Db, groupId: string): Promise<AssociateFunction[]> {
-  return rowsOf(await sb(db).from("associate_function_rows").select(COLUMNS).eq("group_id", groupId).limit(10000)) as AssociateFunction[];
+  return rows<AssociateFunction>(db, (sql) => sql`select ${sql.unsafe(COLUMNS)} from public.associate_function_rows where group_id = ${groupId} limit 10000`);
 }
 
 /** Funções de um associado, da mais recente para a mais antiga. */
 export async function listOf(db: Db, associateId: string): Promise<AssociateFunction[]> {
-  return rowsOf(await sb(db).from("associate_function_rows").select(COLUMNS).eq("associate_id", associateId)
-    .order("started_on", { ascending: false, nullsFirst: true })) as AssociateFunction[];
+  return rows<AssociateFunction>(db, (sql) => sql`
+    select ${sql.unsafe(COLUMNS)} from public.associate_function_rows where associate_id = ${associateId} order by started_on desc nulls first`);
 }
 
 /** Tipo, seção (só escotista, obrigatória: 052), cargo e datas da função. */

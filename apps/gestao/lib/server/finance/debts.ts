@@ -1,6 +1,6 @@
 import { groupPaymentOptions, type Debt, type DebtPayment, type PaymentOption } from "@/lib/finance/debts";
 import type { Db } from "@/lib/server/db";
-import { rowsOf, rpc, untyped } from "@/lib/server/supabase/db";
+import { rpc, run } from "@/lib/server/pg/db";
 
 // Devedores (Mensalidades › Devedores, 038/039): leitura pela função debt_rows.
 
@@ -11,8 +11,14 @@ type DebtRow = {
 };
 
 export async function fetchDebts(db: Db, groupId: string): Promise<{ debts: Debt[]; error?: string }> {
-  const { data, error } = await untyped(db).rpc("debt_rows", { p_group_id: groupId });
-  const debts = ((data ?? []) as DebtRow[]).map((row) => ({
+  let data: DebtRow[] = [];
+  let error: string | undefined;
+  try {
+    data = (await rpc(db, "debt_rows", { p_group_id: groupId })) as unknown as DebtRow[];
+  } catch (failure) {
+    error = (failure as Error).message;
+  }
+  const debts = data.map((row) => ({
     id: row.id, date: row.debt_date, amountCents: Number(row.amount_cents), paidCents: Number(row.paid_cents),
     description: row.description, agreement: row.agreement, associateId: row.associate_id, associateName: row.associate_name, debtorNumber: Number(row.debtor_number),
     payments: row.payments?.map((p) => ({
@@ -21,7 +27,7 @@ export async function fetchDebts(db: Db, groupId: string): Promise<{ debts: Debt
     })) ?? null,
     paymentMismatch: row.payment_mismatch,
   }));
-  return { debts, error: error?.message };
+  return { debts, error };
 }
 
 export type DebtInput = {
@@ -48,11 +54,13 @@ export async function pay(db: Db, groupId: string, associateId: string, entryId:
 
 /** Lançamentos com receita do associado (últimos 200 rateios), com o que cada um já paga de dívidas dele. */
 export async function paymentOptions(db: Db, groupId: string, associateId: string): Promise<PaymentOption[]> {
-  const supabase = untyped(db);
-  const [splits, allocations] = await Promise.all([
-    supabase.from("entry_split_rows").select("entry_id, entry_date, entry_name, amount_cents")
-      .eq("group_id", groupId).eq("associate_id", associateId).gt("amount_cents", 0).order("entry_date", { ascending: false }).limit(200).then(rowsOf),
-    supabase.from("debt_payments").select("entry_id, debt_id, amount_cents, debts!inner(associate_id)").eq("debts.associate_id", associateId).then(rowsOf),
-  ]);
-  return groupPaymentOptions(splits, allocations);
+  return run(db, async (sql) => {
+    const [splits, allocations] = await Promise.all([
+      sql`select entry_id, entry_date, entry_name, amount_cents from public.entry_split_rows
+          where group_id = ${groupId} and associate_id = ${associateId} and amount_cents > 0 order by entry_date desc limit 200`,
+      sql`select p.entry_id, p.debt_id, p.amount_cents from public.debt_payments p
+          join public.debts d on d.id = p.debt_id where d.associate_id = ${associateId}`,
+    ]);
+    return groupPaymentOptions([...splits] as never, [...allocations] as never);
+  });
 }

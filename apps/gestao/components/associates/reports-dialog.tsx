@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { IconAlertTriangle, IconDownload, IconFileTypePdf, IconReport } from "@tabler/icons-react";
 import { Button, buttonVariants } from "@geas/ui/components/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@geas/ui/components/dialog";

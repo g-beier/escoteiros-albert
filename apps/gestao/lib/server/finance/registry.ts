@@ -5,50 +5,55 @@ import { toAccountRpc } from "@/lib/finance/accounts";
 import type { CategoryItem } from "@/lib/finance/categories";
 import type { ProfileImport } from "@/lib/finance/import-flow";
 import type { Db } from "@/lib/server/db";
-import { rowsOf, rpc, untyped } from "@/lib/server/supabase/db";
+import { rows, rpc, run } from "@/lib/server/pg/db";
 
 // Cadastros do Financeiro: contas, formas de pagamento, rubricas e perfis de leitura. Escritas pelas funções
 // SQL auditadas (014, 026, 036); leituras com o número de usos de cada item.
 
 /** Cadastros usados pelo formulário de lançamento e pelos filtros (inclui os inativos, para os lançamentos antigos). */
 export async function entryCatalogs(db: Db, groupId: string): Promise<Catalogs> {
-  const supabase = untyped(db);
-  const [categories, paymentMethods, associates, accounts] = await Promise.all([
-    supabase.from("categories").select("id, name, active, code, kind, parent_id").eq("group_id", groupId).then(rowsOf),
-    supabase.from("payment_methods").select("id, name, active, default_account_id").eq("group_id", groupId).order("name").then(rowsOf),
-    supabase.from("associates").select("id, name, active").eq("group_id", groupId).order("name").then(rowsOf),
-    supabase.from("accounts").select("id, name, active").eq("group_id", groupId).order("name").then(rowsOf),
-  ]);
-  return { categories: categories as Catalogs["categories"], paymentMethods, associates, accounts } as Catalogs;
+  return run(db, async (sql) => {
+    const [categories, paymentMethods, associates, accounts] = await Promise.all([
+      sql`select id, name, active, code, kind, parent_id from public.categories where group_id = ${groupId}`,
+      sql`select id, name, active, default_account_id from public.payment_methods where group_id = ${groupId} order by name`,
+      sql`select id, name, active from public.associates where group_id = ${groupId} order by name`,
+      sql`select id, name, active from public.accounts where group_id = ${groupId} order by name`,
+    ]);
+    return { categories: [...categories], paymentMethods: [...paymentMethods], associates: [...associates], accounts: [...accounts] } as unknown as Catalogs;
+  });
 }
 
 export type CategoryWithUsage = CategoryItem & { ledger_code: string | null; usage: number };
 export type PaymentMethodItem = { id: string; name: string; active: boolean; usage: number; defaultAccountId: string | null };
 
-type Usage = { usage: { count: number }[] | null };
-const usageOf = (row: Usage) => row.usage?.[0]?.count ?? 0;
-
 /** Configurações: rubricas, formas de pagamento e contas, cada uma com quantos lançamentos ou rateios a usam. */
 export async function settingsCatalogs(db: Db, groupId: string) {
-  const supabase = untyped(db);
-  const [categories, paymentMethods, accounts] = await Promise.all([
-    supabase.from("categories").select("id, name, active, code, kind, parent_id, ledger_code, usage:entry_splits(count)").eq("group_id", groupId).then(rowsOf),
-    supabase.from("payment_methods").select("id, name, active, default_account_id, usage:ledger_entries(count)").eq("group_id", groupId)
-      .order("active", { ascending: false }).order("name").then(rowsOf),
-    supabase.from("accounts").select("id, name, kind, bank, branch, number, opening_balance_cents, opening_date, active, ledger_code, usage:ledger_entries(count)")
-      .eq("group_id", groupId).order("active", { ascending: false }).order("name").then(rowsOf),
-  ]);
-  return {
-    categories: (categories as (Omit<CategoryWithUsage, "usage"> & Usage)[]).map((row) => ({ ...row, usage: usageOf(row) })) as CategoryWithUsage[],
-    paymentMethods: (paymentMethods as ({ id: string; name: string; active: boolean; default_account_id: string | null } & Usage)[])
-      .map((row): PaymentMethodItem => ({ id: row.id, name: row.name, active: row.active, usage: usageOf(row), defaultAccountId: row.default_account_id })),
-    accounts: (accounts as (Omit<AccountItem, "usage"> & Usage)[]).map((row) => ({ ...row, usage: usageOf(row) })) as AccountItem[],
-  };
+  return run(db, async (sql) => {
+    const [categories, paymentMethods, accounts] = await Promise.all([
+      sql`select c.id, c.name, c.active, c.code, c.kind, c.parent_id, c.ledger_code,
+            (select count(*) from public.entry_splits s where s.category_id = c.id) as usage
+          from public.categories c where c.group_id = ${groupId}`,
+      sql`select p.id, p.name, p.active, p.default_account_id,
+            (select count(*) from public.ledger_entries e where e.payment_method_id = p.id) as usage
+          from public.payment_methods p where p.group_id = ${groupId} order by p.active desc, p.name`,
+      sql`select a.id, a.name, a.kind, a.bank, a.branch, a.number, a.opening_balance_cents, a.opening_date, a.active, a.ledger_code,
+            (select count(*) from public.ledger_entries e where e.account_id = a.id) as usage
+          from public.accounts a where a.group_id = ${groupId} order by a.active desc, a.name`,
+    ]);
+    return {
+      categories: [...categories] as unknown as CategoryWithUsage[],
+      paymentMethods: paymentMethods.map((row): PaymentMethodItem => ({
+        id: row.id, name: row.name, active: row.active, usage: Number(row.usage), defaultAccountId: row.default_account_id,
+      })),
+      accounts: [...accounts] as unknown as AccountItem[],
+    };
+  });
 }
 
 /** Importações com perfil: em quais contas cada perfil de leitura foi usado. */
 export async function profileImports(db: Db, groupId: string): Promise<ProfileImport[]> {
-  return rowsOf(await untyped(db).from("statement_imports").select("profile_id, account_id, imported_at").eq("group_id", groupId).not("profile_id", "is", null)) as ProfileImport[];
+  return rows<ProfileImport>(db, (sql) => sql`
+    select profile_id, account_id, imported_at from public.statement_imports where group_id = ${groupId} and profile_id is not null`);
 }
 
 // Formas de pagamento

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import type { ReactNode } from "react";
 import { IconArrowRight, IconBolt, IconCake, IconCircleCheck, IconPlus, IconStar } from "@tabler/icons-react";
 import { PageBody, PageHeader } from "@geas/ui";

@@ -112,15 +112,9 @@
 .geas-login__card h2 { margin:7px 0 8px; font-size:32px; line-height:1.1; letter-spacing:-.035em; }
 .geas-login__card>p { margin:0; color:#c3bec7; line-height:1.5; }
 .geas-login__form { display:grid; gap:17px; margin-top:26px; }
-.geas-login__field { display:grid; gap:7px; color:#ded9e1; font-size:12px; font-weight:750; }
-.geas-login__field input { width:100%; min-height:48px; padding:11px 13px; border:1.5px solid #8e8992; border-radius:10px; background:white; color:var(--geas-ink); font:500 16px/1.2 var(--geas-font); outline:none; }
-.geas-login__field input:focus-visible { border-color:var(--geas-yellow); box-shadow:0 0 0 3px color-mix(in srgb,var(--geas-yellow) 22%,transparent); }
-.geas-login__token { text-align:center; font-size:25px!important; letter-spacing:.3em; font-variant-numeric:tabular-nums; }
 .geas-login__button { display:inline-grid; min-height:48px; place-items:center; padding:11px 18px; border:1.5px solid var(--geas-ink); border-radius:999px; background:var(--geas-app-color); color:white; font:700 16px/1 var(--geas-font); text-decoration:none; box-shadow:2px 3px 0 var(--geas-ink); cursor:pointer; transition:background 140ms ease,transform 100ms ease,box-shadow 100ms ease; }
 .geas-login__button:hover { background:var(--geas-app-color-dark); }
 .geas-login__button:active { transform:translate(2px,2px); box-shadow:none; }
-.geas-login__button--secondary { border-color:#8e8992; background:transparent; box-shadow:none; }
-.geas-login__button--secondary:hover { background:#3a373d; }
 .geas-login__message { padding:11px 13px; border-radius:8px; background:#e7f2e9; color:#11633f; font-size:13px; }
 .geas-login__message--error { background:#fbecea; color:#892d27; }
 .geas-login__help { margin:0; color:#c3bec7; text-align:center; font-size:12px; }

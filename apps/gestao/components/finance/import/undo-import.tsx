@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconArrowBackUp } from "@tabler/icons-react";
 import { deleteStatementImport } from "@/app/(financeiro)/financeiro/extrato/importar/actions";
@@ -12,13 +11,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 export function UndoImport({ importId, fileName, lineCount }: { importId: string; fileName: string; lineCount: number }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const router = useRouter();
   const confirm = () => startTransition(async () => {
     const result = await deleteStatementImport(importId);
     if (result.error) { toast.error(result.error); return; }
     toast.success(result.success);
     setOpen(false);
-    router.refresh();
   });
   return <>
     <Button variant="ghost" size="sm" onClick={() => setOpen(true)}><IconArrowBackUp data-icon="inline-start" /> Desfazer</Button>

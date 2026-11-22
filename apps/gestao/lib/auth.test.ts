@@ -1,18 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { canManageEntries, isAllowedEmail } from "./auth";
+import { canManageEntries, isValidEmail } from "./auth";
 
-describe("isAllowedEmail", () => {
-  it("aceita o domínio institucional sem distinguir maiúsculas", () => {
-    expect(isAllowedEmail(" Pessoa@EscoteirosAlbert.com.br ")).toBe(true);
-  });
+describe("isValidEmail", () => {
+  it.each([" Pessoa@Example.com ", "nome.sobrenome@gmail.com", "x@sub.exemplo.org"])("aceita %s, de qualquer domínio", (email) =>
+    expect(isValidEmail(email)).toBe(true));
 
-  it.each([
-    "pessoa@example.com",
-    "pessoa@sub.escoteirosalbert.com.br",
-    "pessoa@escoteirosalbert.com.br.evil.test",
-    "@escoteirosalbert.com.br",
-    "duplo@@escoteirosalbert.com.br",
-  ])("rejeita %s", (email) => expect(isAllowedEmail(email)).toBe(false));
+  it.each(["@exemplo.org", "duplo@@exemplo.org", "sem-arroba", "nome@semponto", "com espaço@exemplo.org"])("rejeita %s", (email) =>
+    expect(isValidEmail(email)).toBe(false));
 });
 
 describe("canManageEntries", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { toast } from "sonner";
 import { IconCopy } from "@tabler/icons-react";
 import { ALL_DATES } from "@/lib/finance/filters";

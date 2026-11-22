@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
 import { cn } from "@geas/ui/lib/utils";

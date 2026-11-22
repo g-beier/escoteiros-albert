@@ -48,7 +48,7 @@ Checks obrigatórios (nomes dos jobs; renomear um job exige atualizar o ruleset)
 | Check | Workflow | O que roda |
 |---|---|---|
 | `Lint, types, unit tests, build` | `ci.yml` | `npm run lint`, `typecheck`, `test`, `build` |
-| `SQL tests (pgTAP) and e2e (Playwright)` | `ci.yml` | Supabase local, `supabase test db`, Playwright |
+| `SQL tests (pgTAP) and e2e (Playwright)` | `ci.yml` | Postgres + Azurite locais (Docker Compose), pgTAP, Playwright |
 | `Commit messages` | `commits.yml` | commitlint no título do PR (ou nos commits de um push na `main`) |
 
 Nada faz deploy a partir do GitHub: o site sobe por FTP manual e migrations de produção são

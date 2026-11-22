@@ -5,7 +5,7 @@ import { uniqueName } from "./support/entries";
 
 // Mensalidades › Devedores (038, 039): anotar, ver no grupo do devedor, editar o acordo, excluir e registrar
 // um pagamento que cobre duas dívidas.
-// A ocultação do associado para a consulta é coberta em supabase/tests/debts.sql.
+// A ocultação do associado para a consulta é coberta em db/tests/debts.sql.
 const associate = uniqueName("Devedor");
 const literal = (value: string) => `'${value.replaceAll("'", "''")}'`;
 

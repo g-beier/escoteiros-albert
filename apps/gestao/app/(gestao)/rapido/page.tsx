@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { redirect } from "next/navigation";
 import { IconChevronRight, IconCircleCheck, IconPlus, IconSearch } from "@tabler/icons-react";
 import { PageBody, PageHeader } from "@geas/ui";

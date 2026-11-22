@@ -1,6 +1,6 @@
 import { sortAudiences, type ControlItem, type ControlItemKind, type ControlStatus, type ControlStatusRow, type ControlValueKind, type Directorate, type ItemAudience } from "@/lib/associates/controls";
 import type { Db } from "@/lib/server/db";
-import { rowsOf, rpc, sb } from "@/lib/server/supabase/db";
+import { rows, rpc, run } from "@/lib/server/pg/db";
 
 // Controle de dados pessoais (041): leituras de `control_items`, `control_item_audiences` e `control_status_rows`;
 // escritas só pelas funções auditadas control_item_* e control_status_* (conferem `can_manage_associates`).
@@ -10,23 +10,29 @@ const STATUS_COLUMNS = "associate_id, relative_id, item_id, status, effective_st
 
 /** Itens de controle do grupo (ativos e inativos), na ordem escolhida, com os públicos e o valor inicial de cada um. */
 export async function items(db: Db, groupId: string): Promise<ControlItem[]> {
-  const [rows, audiences] = await Promise.all([
-    sb(db).from("control_items").select(ITEM_COLUMNS).eq("group_id", groupId).order("position").order("name").then(rowsOf),
-    sb(db).from("control_item_audiences").select("item_id, audience, initial_status").eq("group_id", groupId).limit(10000).then(rowsOf),
-  ]);
+  const { list, audiences } = await run(db, async (sql) => {
+    const [list, audiences] = await Promise.all([
+      sql`select ${sql.unsafe(ITEM_COLUMNS)} from public.control_items where group_id = ${groupId} order by position, name`,
+      sql`select item_id, audience, initial_status from public.control_item_audiences where group_id = ${groupId} limit 10000`,
+    ]);
+    return {
+      list: [...list] as unknown as Omit<ControlItem, "audiences">[],
+      audiences: [...audiences] as unknown as ({ item_id: string } & ItemAudience)[],
+    };
+  });
   const byItem = new Map<string, ItemAudience[]>();
   for (const a of audiences) byItem.set(a.item_id, [...(byItem.get(a.item_id) ?? []), { audience: a.audience, initial_status: a.initial_status }]);
-  return rows.map((row) => ({ ...row, audiences: sortAudiences(byItem.get(row.id) ?? []) }));
+  return list.map((row) => ({ ...row, audiences: sortAudiences(byItem.get(row.id) ?? []) }));
 }
 
 /** Situações registradas no grupo (com a efetiva, que considera a validade). */
 export async function statuses(db: Db, groupId: string): Promise<ControlStatusRow[]> {
-  return rowsOf(await sb(db).from("control_status_rows").select(STATUS_COLUMNS).eq("group_id", groupId).limit(100000)) as ControlStatusRow[];
+  return rows<ControlStatusRow>(db, (sql) => sql`select ${sql.unsafe(STATUS_COLUMNS)} from public.control_status_rows where group_id = ${groupId} limit 100000`);
 }
 
 /** Situações de um associado. */
 export async function statusesOf(db: Db, associateId: string): Promise<ControlStatusRow[]> {
-  return rowsOf(await sb(db).from("control_status_rows").select(STATUS_COLUMNS).eq("associate_id", associateId)) as ControlStatusRow[];
+  return rows<ControlStatusRow>(db, (sql) => sql`select ${sql.unsafe(STATUS_COLUMNS)} from public.control_status_rows where associate_id = ${associateId}`);
 }
 
 export type ItemInput = {

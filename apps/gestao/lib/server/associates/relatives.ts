@@ -1,6 +1,6 @@
 import type { Kinship, Relative, RelativeLink } from "@/lib/associates/relatives";
 import type { Db } from "@/lib/server/db";
-import { rowsOf, rpc, sb } from "@/lib/server/supabase/db";
+import { rows, rpc } from "@/lib/server/pg/db";
 
 // Responsáveis dos jovens (041): leituras de `relatives` e `relative_link_rows`; escritas só pelas funções auditadas
 // relatives_* (conferem `can_manage_associates`; só jovem, ramo ≠ adulto, tem responsável).
@@ -9,17 +9,17 @@ const LINK_COLUMNS = "id, associate_id, relative_id, relative_name, relative_ass
 
 /** Responsáveis do grupo, por nome (para vincular um existente a outro jovem). */
 export async function list(db: Db, groupId: string): Promise<Relative[]> {
-  return rowsOf(await sb(db).from("relatives").select("id, name, associate_id, notes").eq("group_id", groupId).order("name").limit(10000));
+  return rows<Relative>(db, (sql) => sql`select id, name, associate_id, notes from public.relatives where group_id = ${groupId} order by name limit 10000`);
 }
 
 /** Vínculos jovem × responsável do grupo (matriz da aba Jovens). */
 export async function links(db: Db, groupId: string): Promise<RelativeLink[]> {
-  return rowsOf(await sb(db).from("relative_link_rows").select(LINK_COLUMNS).eq("group_id", groupId).limit(20000)) as RelativeLink[];
+  return rows<RelativeLink>(db, (sql) => sql`select ${sql.unsafe(LINK_COLUMNS)} from public.relative_link_rows where group_id = ${groupId} limit 20000`);
 }
 
 /** Vínculos de um jovem. */
 export async function linksOf(db: Db, associateId: string): Promise<RelativeLink[]> {
-  return rowsOf(await sb(db).from("relative_link_rows").select(LINK_COLUMNS).eq("associate_id", associateId)) as RelativeLink[];
+  return rows<RelativeLink>(db, (sql) => sql`select ${sql.unsafe(LINK_COLUMNS)} from public.relative_link_rows where associate_id = ${associateId}`);
 }
 
 export type LinkInput = { kinship: Kinship; kinshipNote: string | null; legal: boolean; financial: boolean };

@@ -1,5 +1,5 @@
 # CI only: lint, types, tests and builds. Nothing deploys from here: the site goes up by manual
-# FTP and production migrations are applied by hand (see CLAUDE.md, CI/CD).
+# FTP and production migrations are applied by hand (`npm run db:migrate`, see CLAUDE.md, CI/CD).
 #
 # The jobs below are required status checks in the "main: PR e checks" ruleset (CONTRIBUTING.md):
 # renaming a job's `name` means updating the ruleset too.
@@ -45,25 +45,19 @@ jobs:
     defaults:
       run:
         working-directory: apps/gestao
-    env:
-      SUPABASE_BIN: supabase
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
-      - uses: supabase/setup-cli@v1
-        with:
-          version: 3.1.0
       - run: npm ci
         working-directory: .
-      - name: Start local Supabase
-        run: supabase start -x studio,postgres-meta,realtime,edge-runtime,logflare,vector,supavisor,imgproxy
+      # Postgres 17 + pgTAP and Azurite (db/compose.yaml); applies the migrations and writes .env.local
+      - name: Start local database and storage
+        run: npm run infra:start
       - name: SQL tests
-        run: supabase test db
-      - name: Write .env.local
-        run: npm run infra:env
+        run: npm run test:db
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: E2E tests

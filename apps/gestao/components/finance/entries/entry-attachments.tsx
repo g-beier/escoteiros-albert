@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconDownload, IconFileText, IconFileUpload, IconPhoto, IconTrash } from "@tabler/icons-react";
 import { prepareAttachmentUpload, registerAttachment, removeAttachment } from "@/app/(financeiro)/financeiro/lancamentos/actions";
@@ -13,18 +12,17 @@ import { ATTACHMENT_ACCEPT, attachmentProblem, fileSize, type Attachment } from 
 
 const dateTime = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
 
-/** Envia um arquivo: URL assinada (servidor) → PUT direto no Storage → registro auditado. */
+/** Envia um arquivo: URL assinada (servidor) → PUT direto no Blob Storage → registro auditado. */
 export async function upload(entryId: string, file: File): Promise<string | null> {
   const ticket = await prepareAttachmentUpload(entryId, { name: file.name, type: file.type, size: file.size });
   if ("error" in ticket) return ticket.error;
   const response = await fetch(ticket.uploadUrl, {
     method: "PUT",
     body: file,
-    headers: { "content-type": ticket.contentType, "x-upsert": "false", "cache-control": "max-age=3600" },
+    headers: { "content-type": ticket.contentType, "x-ms-blob-type": "BlockBlob", "x-ms-blob-content-type": ticket.contentType, "x-ms-blob-cache-control": "private, max-age=3600" },
   }).catch(() => null);
   if (!response?.ok) {
-    const body = await response?.json().catch(() => null) as { message?: string; error?: string } | null;
-    console.error("envio do anexo", response?.status, body);
+    console.error("envio do anexo", response?.status, await response?.text().catch(() => null));
     return `Não foi possível enviar “${file.name}”.`;
   }
   const result = await registerAttachment(entryId, ticket.path, file.name);
@@ -32,7 +30,6 @@ export async function upload(entryId: string, file: File): Promise<string | null
 }
 
 export function EntryAttachments({ entryId, attachments, canEdit }: { entryId: string; attachments: Attachment[]; canEdit: boolean }) {
-  const router = useRouter();
   const [uploading, setUploading] = useState<string | null>(null);
   const [toRemove, setToRemove] = useState<Attachment | null>(null);
   const [removing, startRemove] = useTransition();
@@ -50,7 +47,7 @@ export function EntryAttachments({ entryId, attachments, canEdit }: { entryId: s
       if (error) toast.error(error); else sent++;
     }
     setUploading(null);
-    if (sent) { toast.success(sent === 1 ? "Comprovante anexado." : `${sent} comprovantes anexados.`); router.refresh(); }
+    if (sent) { toast.success(sent === 1 ? "Comprovante anexado." : `${sent} comprovantes anexados.`); }
   }
 
   function remove() {
@@ -60,7 +57,6 @@ export function EntryAttachments({ entryId, attachments, canEdit }: { entryId: s
       setToRemove(null);
       if (result.error) { toast.error(result.error); return; }
       toast.info("Comprovante excluído.");
-      router.refresh();
     });
   }
 

@@ -1,5 +1,5 @@
 import type { Db } from "@/lib/server/db";
-import { rpc, untyped, unwrap } from "@/lib/server/supabase/db";
+import { one, rows, rpc } from "@/lib/server/pg/db";
 import type { ImportProfile } from "@/app/(financeiro)/financeiro/extrato/importar/actions";
 
 export type RecentImport = {
@@ -13,53 +13,52 @@ export type RecentImport = {
   profile_name: string | null;
 };
 
-type RecentImportRow = Omit<RecentImport, "profile_name"> & { profile: { name: string } | { name: string }[] | null };
-
 /** Importações mais recentes de uma conta, para a lista em `/financeiro/extrato/importar`. */
 export async function fetchRecentImports(db: Db, groupId: string, accountId: string, limit = 10) {
-  const supabase = untyped(db);
-  const { data, error } = await supabase.from("statement_imports")
-    .select("id, file_name, imported_at, period_from, period_to, line_count, duplicate_count, profile:import_profiles(name)")
-    .eq("group_id", groupId).eq("account_id", accountId)
-    .order("imported_at", { ascending: false }).limit(limit);
-  const rows = ((data ?? []) as unknown as RecentImportRow[]).map(({ profile, ...row }) => ({
-    ...row,
-    profile_name: (Array.isArray(profile) ? profile[0]?.name : profile?.name) ?? null,
-  }));
-  return { rows, error: error?.message };
+  try {
+    return { rows: await rows<RecentImport>(db, (sql) => sql`
+      select i.id, i.file_name, i.imported_at, i.period_from, i.period_to, i.line_count, i.duplicate_count, p.name as profile_name
+      from public.statement_imports i left join public.import_profiles p on p.id = i.profile_id
+      where i.group_id = ${groupId} and i.account_id = ${accountId}
+      order by i.imported_at desc limit ${limit}`) };
+  } catch (error) {
+    return { rows: [] as RecentImport[], error: (error as Error).message };
+  }
 }
 
 /** Perfil usado na última importação de cada conta: a leitura fica lembrada por banco/conta. */
 export async function fetchLastProfileByAccount(db: Db, groupId: string) {
-  const supabase = untyped(db);
-  const { data } = await supabase.from("statement_imports").select("account_id, profile_id")
-    .eq("group_id", groupId).not("profile_id", "is", null).order("imported_at", { ascending: false }).limit(500);
+  const data = await rows<{ account_id: string; profile_id: string }>(db, (sql) => sql`
+    select account_id, profile_id from public.statement_imports
+    where group_id = ${groupId} and profile_id is not null order by imported_at desc limit 500`);
   const last: Record<string, string> = {};
-  for (const row of (data ?? []) as { account_id: string; profile_id: string }[]) last[row.account_id] ??= row.profile_id;
+  for (const row of data) last[row.account_id] ??= row.profile_id;
   return last;
 }
 
 /** Perfis de importação do grupo, mais recentes primeiro. */
 export async function fetchImportProfiles(db: Db, groupId: string) {
-  const supabase = untyped(db);
-  const { data, error } = await supabase.from("import_profiles")
-    .select("id, name, format, header_signature, settings, updated_at")
-    .eq("group_id", groupId).order("updated_at", { ascending: false });
-  return { profiles: (data ?? []) as ImportProfile[], error: error?.message };
+  try {
+    return { profiles: await rows<ImportProfile>(db, (sql) => sql`
+      select id, name, format, header_signature, settings, updated_at from public.import_profiles
+      where group_id = ${groupId} order by updated_at desc`) };
+  } catch (error) {
+    return { profiles: [] as ImportProfile[], error: (error as Error).message };
+  }
 }
 
 export type StatementLine = { id: string; account_id: string; line_date: string; description: string; kind: string | null; counterparty: string | null; amount_cents: number; status: string; trn_type: string | null };
 
 /** Uma linha do extrato ("Criar lançamento" na conciliação preenche o formulário com ela). */
 export async function statementLine(db: Db, id: string): Promise<StatementLine | null> {
-  return unwrap(await untyped(db).from("statement_lines")
-    .select("id, account_id, line_date, description, kind, counterparty, amount_cents, status, trn_type").eq("id", id).maybeSingle()) as StatementLine | null;
+  return one<StatementLine>(db, (sql) => sql`
+    select id, account_id, line_date, description, kind, counterparty, amount_cents, status, trn_type from public.statement_lines where id = ${id}`);
 }
 
 /** Contas que recebem extrato (ativas, menos caixa). */
 export async function importAccounts(db: Db, groupId: string) {
-  return (unwrap(await untyped(db).from("accounts").select("id, name, bank").eq("group_id", groupId).eq("active", true).neq("kind", "caixa").order("name")) ?? []) as
-    { id: string; name: string; bank: string | null }[];
+  return rows<{ id: string; name: string; bank: string | null }>(db, (sql) => sql`
+    select id, name, bank from public.accounts where group_id = ${groupId} and active and kind <> 'caixa' order by name`);
 }
 
 export type ProfileInput = { id?: string | null; name: string; format: string; headerSignature?: string | null; settings: Record<string, unknown> };

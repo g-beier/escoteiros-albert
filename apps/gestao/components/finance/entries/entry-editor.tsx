@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useTransition } from "react";
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconDots, IconFileDescription, IconFolderCheck, IconFolderExclamation, IconPlus, IconTrash } from "@tabler/icons-react";

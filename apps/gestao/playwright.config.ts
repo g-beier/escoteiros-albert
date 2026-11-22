@@ -2,8 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 import { ADMIN_STATE, E2E_PORT } from "./e2e/support/env";
 
 /**
- * Testes de ponta a ponta contra o Supabase local (Docker) e um `next dev` próprio na porta E2E_PORT (3210).
- * Só desktop Chromium. Ver "Testes" no README.
+ * Testes de ponta a ponta contra o banco local (Docker, db/compose.yaml) e um `next dev` próprio na porta E2E_PORT
+ * (3210), com o login de teste ligado (E2E_LOGIN=1). Só desktop Chromium. Ver "Testes" no README.
  */
 export default defineConfig({
   testDir: "./e2e",
@@ -39,5 +39,6 @@ export default defineConfig({
     timeout: 180_000,
     stdout: "ignore",
     stderr: "pipe",
+    env: { E2E_LOGIN: "1", APP_URL: `http://localhost:${E2E_PORT}` },
   },
 });

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { Fragment } from "react";
 import { IconBolt, IconPlus, IconX } from "@tabler/icons-react";
 import { PageBody, PageHeader, SectionTabs } from "@geas/ui";

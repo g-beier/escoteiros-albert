@@ -1,6 +1,6 @@
 // Camada de dados do Gestão (docs/consolidacao-gestao.md, seção 4): só lib/server/** fala com o banco.
 // Quem chama recebe um `Db` opaco (o da sessão, sob RLS, ou o de serviço) e usa as funções por caso de uso de
-// lib/server/<módulo>/*.ts; nunca monta consulta. Trocar o Supabase é reimplementar lib/server/supabase.
+// lib/server/<módulo>/*.ts; nunca monta consulta. A implementação (Postgres, papéis por transação) fica em lib/server/pg.
 
 declare const brand: unique symbol;
 

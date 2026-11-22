@@ -43,7 +43,7 @@ A tela mostra quanto entrou de mensalidade, sem abrir os lançamentos: **Recebid
 
 ## Banco (`018_fees.sql`)
 
-`fee_settings`, `fee_records` (único por associado/ano/mês), `fee_record_splits` (N:N com `entry_splits`), `fee_exemptions`; visão `fee_split_candidates`. Escrita só por `set_fee_record`, `confirm_fee_suggestions`, `set_fee_exemption`, `set_fee_settings` (auditadas). Teste: `supabase/tests/fees.sql`.
+`fee_settings`, `fee_records` (único por associado/ano/mês), `fee_record_splits` (N:N com `entry_splits`), `fee_exemptions`; visão `fee_split_candidates`. Escrita só por `set_fee_record`, `confirm_fee_suggestions`, `set_fee_exemption`, `set_fee_settings` (auditadas). Teste: `db/tests/fees.sql`.
 
 ## Início
 

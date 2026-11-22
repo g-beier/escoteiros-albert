@@ -1,17 +1,12 @@
 import type { Browser, Page } from "@playwright/test";
 import type { InventoryRole } from "@geas/ui/lib/roles";
-import { adminClient, findUser, psql } from "./db";
+import { ensureUser, literal, psql } from "./db";
 import { E2E_ADMIN_EMAIL } from "./env";
-import { loginWithOtp } from "./login";
+import { loginAs } from "./login";
 
-const literal = (value: string) => `'${value.replaceAll("'", "''")}'`;
-
-/** Pessoa do grupo E2E com consulta no Financeiro e o papel pedido no Inventário (cria no Auth se faltar). */
+/** Pessoa do grupo E2E com consulta no Financeiro e o papel pedido no Inventário (cadastra se faltar). */
 export async function ensureInventoryMember(email: string, inventoryRole: InventoryRole) {
-  if (!(await findUser(email))) {
-    const { error } = await adminClient().auth.admin.createUser({ email, email_confirm: true });
-    if (error) throw error;
-  }
+  ensureUser(email);
   psql(`
     insert into public.memberships(group_id, user_id, role, inventory_role)
     select m.group_id, u.id, 'viewer', ${literal(inventoryRole)}
@@ -21,10 +16,10 @@ export async function ensureInventoryMember(email: string, inventoryRole: Invent
   `);
 }
 
-/** Página numa sessão própria (sem a do administrador), já logada por OTP. */
+/** Página numa sessão própria (sem a do administrador), já logada pelo login de teste. */
 export async function pageAs(browser: Browser, email: string): Promise<Page> {
   const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
   const page = await context.newPage();
-  await loginWithOtp(page, email);
+  await loginAs(page, email);
   return page;
 }

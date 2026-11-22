@@ -7,8 +7,8 @@ import { memberOrError } from "@/lib/server/session";
 
 /**
  * GET /financeiro/lancamentos/<id>/anexos/<anexoId>[?baixar=1]
- * Redireciona para uma URL assinada de curta duração do bucket privado. Qualquer membro do grupo
- * (inclusive consulta) pode abrir; a RLS de `entry_attachments` e a política do bucket conferem o grupo.
+ * Redireciona para uma URL assinada (SAS) de curta duração do contêiner privado. Qualquer membro do grupo
+ * (inclusive consulta) pode abrir; a RLS de `entry_attachments` e `can_read_attachment_object` conferem o grupo.
  * Com os comprovantes desligados (`lib/features.ts`), responde 404.
  */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string; anexoId: string }> }) {

@@ -4,8 +4,7 @@ import type { AssociatesRole, GroupRole, InventoryRole } from "@geas/ui/lib/role
 import { associatesRoleOf, canManageEntries, inventoryRoleOf } from "@/lib/auth";
 import { currentUser, type SessionUser } from "@/lib/server/auth";
 import type { Db } from "@/lib/server/db";
-import { createClient } from "@/lib/server/supabase/client";
-import { asDb, rowsOf } from "@/lib/server/supabase/db";
+import { one, userDb } from "@/lib/server/pg/db";
 
 /** Usuário logado que pertence a um grupo, com o papel em cada módulo do Gestão. */
 export type Member = {
@@ -42,10 +41,11 @@ type Session =
 
 /** Sessão e vínculo com o grupo, lidos uma vez por requisição. Único lugar que lê `memberships`. */
 export const getSession = cache(async (): Promise<Session> => {
-  const supabase = await createClient();
   const user = await currentUser();
   if (!user) return { user: null, member: null };
-  const [data] = rowsOf(await supabase.from("memberships").select("group_id, role, inventory_role, associates_role").eq("user_id", user.id).limit(1));
+  const db = userDb(user.id);
+  const data = await one<{ group_id: string; role: string; inventory_role: string | null; associates_role: string | null }>(db, (sql) => sql`
+    select group_id, role, inventory_role, associates_role from public.memberships where user_id = ${user.id} order by created_at limit 1`);
   if (!data) return { user, member: null };
   const role = data.role as GroupRole;
   const inventoryRole = inventoryRoleOf(role, data.inventory_role as InventoryRole | null);
@@ -54,7 +54,7 @@ export const getSession = cache(async (): Promise<Session> => {
   return {
     user,
     member: {
-      db: asDb(supabase), user, groupId: data.group_id as string, isAdmin: role === "admin",
+      db, user, groupId: data.group_id, isAdmin: role === "admin",
       finance: { role, canEdit: financeCanEdit },
       inventory: { role: inventoryRole, canEdit: inventoryRole !== "viewer", canManage: inventoryRole === "manager" },
       associates: { role: associatesRole, canEdit: associatesRole === "manager" || financeCanEdit },

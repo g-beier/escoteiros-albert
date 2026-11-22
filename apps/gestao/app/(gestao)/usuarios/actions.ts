@@ -15,8 +15,7 @@ function read<T>(value: T | string): T {
 
 export async function inviteUser(_previous: ActionResult, formData: FormData) {
   return runAction(adminOrError, async ({ db, groupId }) => {
-    const message = await users.inviteUser(db, groupId, read(users.readInvite(formData)),
-      `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/confirm`);
+    const message = await users.inviteUser(db, groupId, read(users.readInvite(formData)));
     revalidatePath("/usuarios");
     return message;
   });

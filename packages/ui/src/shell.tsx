@@ -1,4 +1,6 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
+import logo from "./assets/logo.svg";
+import logoDark from "./assets/logo-dark.svg";
 import type { CSSProperties, ReactNode } from "react";
 import { cn } from "./lib/utils";
 import { AppNavMenu } from "./components/app-nav-menu";
@@ -49,7 +51,7 @@ export function AppBrand({
   return <div className="geas-brand" data-theme={light ? "dark" : "light"}>
     <Link href={homeHref} className="geas-brand__logo" aria-label="Grupo Escoteiro Albert Schweitzer — Início">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={light ? "/images/logo-dark.svg" : "/images/logo.svg"} alt="Grupo Escoteiro Albert Schweitzer" width="210" height="60" />
+      <img src={(light ? logoDark : logo).src} alt="Grupo Escoteiro Albert Schweitzer" width="210" height="60" />
     </Link>
     <div className="geas-brand__apps" aria-label="Trocar de módulo">
       <Link href={currentHref} className={cn("geas-brand__static", `geas-app--${current}`)}>{APPS[current].label}</Link>
@@ -89,28 +91,16 @@ export function AppLogin({ eyebrow, headline, description, protectedText = "Aces
   </main>;
 }
 
-/** Formulário de acesso por código (OTP) enviado ao e-mail institucional, comum aos apps. */
-export function AppLoginForm({ email, error, message, requestOtp, verifyOtp }: {
-  email?: string; error?: string; message?: string;
-  requestOtp: (formData: FormData) => Promise<void>; verifyOtp: (formData: FormData) => Promise<void>;
-}) {
+/** Acesso com a conta Google do e-mail cadastrado pelo administrador do grupo, comum aos apps. */
+export function AppLoginForm({ error, googleHref }: { error?: string; googleHref: string }) {
   return <>
     <span className="geas-login__card-eyebrow">Área restrita</span><h2>Boas-vindas</h2>
-    <p>{email ? "Digite o código recebido. Ele expira em poucos minutos." : "Receba um código de acesso no seu e-mail institucional."}</p>
-    <form className="geas-login__form" action={email ? verifyOtp : requestOtp}>
+    <p>Entre com a conta Google do e-mail que o administrador do grupo cadastrou para você.</p>
+    <div className="geas-login__form">
       {error && <div className="geas-login__message geas-login__message--error" role="alert">{error}</div>}
-      {message && <div className="geas-login__message" role="status">{message}</div>}
-      {email ? <>
-        <input type="hidden" name="email" value={email} />
-        <label className="geas-login__field">Código de acesso<input className="geas-login__token" name="token" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" maxLength={8} autoFocus required /></label>
-        <button className="geas-login__button" type="submit">Confirmar código</button>
-        <a className="geas-login__button geas-login__button--secondary" href="/login">Usar outro e-mail</a>
-      </> : <>
-        <label className="geas-login__field">E-mail<input name="email" type="email" pattern=".+@escoteirosalbert\.com\.br" placeholder="nome@escoteirosalbert.com.br" autoComplete="email" required /></label>
-        <button className="geas-login__button" type="submit">Enviar código de acesso</button>
-      </>}
-      <p className="geas-login__help">Ainda não possui acesso? Solicite um convite ao administrador do grupo.</p>
-    </form>
+      <a className="geas-login__button" href={googleHref}>Entrar com Google</a>
+      <p className="geas-login__help">Ainda não possui acesso? Peça ao administrador do grupo para cadastrar seu e-mail.</p>
+    </div>
   </>;
 }
 

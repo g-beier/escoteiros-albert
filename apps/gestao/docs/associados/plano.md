@@ -28,7 +28,7 @@ Testes: pgTAP `associates.test.sql`, `associates_controls.test.sql`, `associates
 - Início geral (`/`): cartão do Associados com pendências por diretoria (`pendingByDirectorate` já existe).
 
 ### B — Carga das planilhas (desenvolvimento)
-- Scripts locais (como o do Inventário) para Docs 10, 13, 14 e 22: CSV fora do repo, só contra o Supabase local.
+- Scripts locais (como o do Inventário) para Docs 10, 13, 14 e 22: CSV fora do repo, só contra o banco local.
 - Doc 22: NÃO → pendente, OK → ok, DESAT./ANTIGA → desatualizado, VER/TEM? → a verificar, CONV. → convidado,
   XXX → não se aplica, cinza → item fora do público; anos e datas nas colunas de registro; `*` → parentesco "outro".
 

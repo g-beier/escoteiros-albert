@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { IconAlertTriangle, IconCircleCheck, IconInfoCircle } from "@tabler/icons-react";
 import { accountBalanceBefore } from "@/app/(financeiro)/financeiro/extrato/importar/actions";
 import { dateBR, money } from "@/lib/format";

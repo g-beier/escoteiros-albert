@@ -5,7 +5,7 @@ Monorepo das aplicações do Grupo Escoteiro Albert Schweitzer, em Porto Alegre,
 ## Aplicações
 
 - `apps/institucional`: site público em Astro, publicado em [escoteirosalbert.com.br](https://escoteirosalbert.com.br).
-- `apps/gestao`: aplicação interna "Gestão" em Next.js com Supabase, com os módulos Financeiro (`/financeiro`) e Inventário (`/inventario`).
+- `apps/gestao`: aplicação interna "Gestão" em Next.js com PostgreSQL (Azure em produção) e login Google, com os módulos Financeiro (`/financeiro`), Inventário (`/inventario`) e Associados (`/associados`).
 - `packages/ui`: interface compartilhada da aplicação interna (`@geas/ui`).
 
 Mapa da arquitetura: [`docs/CODEBASE_MAP.md`](docs/CODEBASE_MAP.md).
@@ -14,7 +14,7 @@ Mapa da arquitetura: [`docs/CODEBASE_MAP.md`](docs/CODEBASE_MAP.md).
 
 ```sh
 npm install
-npm run dev                    # gestão + site (a gestão precisa do Supabase local)
+npm run dev                    # gestão + site (a gestão precisa da infra local: npm run infra:start)
 npm run dev:institucional      # somente o site Astro
 npm run dev:gestao             # somente a gestão
 npm run build                  # build de todas as aplicações
@@ -31,7 +31,7 @@ npm run build --workspace=@geas/institucional
 npm run test --workspace=@geas/gestao
 ```
 
-## Supabase local
+## Infra local da gestão (Docker: Postgres + Azurite)
 
 ```sh
 npm run infra:start
@@ -40,7 +40,7 @@ npm run infra:reset
 npm run infra:stop
 ```
 
-O ambiente local é escrito em `apps/gestao/.env.local` e não é versionado.
+O ambiente local é escrito em `apps/gestao/.env.local` e não é versionado. Detalhes em `apps/gestao/README.md` e `apps/gestao/db/README.md`.
 
 ## Conteúdo institucional
 

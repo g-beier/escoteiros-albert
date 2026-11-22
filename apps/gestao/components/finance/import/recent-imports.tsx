@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { dateBR } from "@/lib/format";
 import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { cookies } from "next/headers";
 import { Fragment } from "react";
 import { IconAlertTriangle, IconArrowsSort, IconBolt, IconClipboardCheck, IconPlus, IconPlusMinus } from "@tabler/icons-react";

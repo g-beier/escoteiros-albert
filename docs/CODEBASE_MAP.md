@@ -36,11 +36,11 @@ graph TB
 
     UI["packages/ui (@geas/ui)<br/>shell, shadcn base-mira, theme.css"]
 
-    subgraph Supabase["Supabase (local: Docker)"]
-        PG[(Postgres 17<br/>RLS + audited SQL functions)]
-        Auth[Auth OTP<br/>@escoteirosalbert.com.br]
-        Store[(Storage: comprovantes)]
+    subgraph Azure["Azure (local: Docker Compose)"]
+        PG[(PostgreSQL 17<br/>RLS + audited SQL functions<br/>auth.users / auth.sessions)]
+        Store[(Blob Storage: comprovantes<br/>local: Azurite)]
     end
+    Google[Google OIDC login]
 
     Proxy --> Routes
     Routes --> Comps --> UI
@@ -48,9 +48,9 @@ graph TB
     Comps --> Actions --> Server
     Comps --> Domain
     Server --> Domain
-    Server -->|rpc / views as user| PG
-    Server --> Auth
-    Server -->|signed URLs| Store
+    Server -->|SQL / rpc as user<br/>set role authenticated| PG
+    Server -->|code + PKCE| Google
+    Server -->|SAS URLs| Store
     Script --> Server
     Script -->|prebuild writes| JSON --> Transp
 ```
@@ -69,7 +69,8 @@ graph TB
 ├── docs/
 │   ├── CODEBASE_MAP.md       this file
 │   ├── consolidacao-gestao.md   merge plan for financeiro+inventario → gestao (done)
-│   └── migracao-saida-supabase.md  plan to leave Supabase (evaluation only)
+│   ├── estimativa-azure.md     Azure services, usage and cost estimate from 2027 (for volunteers)
+│   └── migracao-saida-supabase.md  plan to leave Supabase (phase 1 done: local base without Supabase)
 ├── packages/ui/              @geas/ui — shared shell + primitives, TS source, no build
 │   └── src/{shell.tsx, shell.css, theme.css, components/*, lib/*}
 ├── apps/institucional/       public site
@@ -89,13 +90,14 @@ graph TB
 │       └── utils/            blog.ts, financial-reports.ts, permalinks, images, frontmatter.mjs
 └── apps/gestao/
     ├── proxy.ts              Next 16 proxy (ex-middleware)
+    ├── instrumentation.ts    production: coalesces gzip flushes (lib/server/response-compression.ts)
     ├── next.config.ts        legacy redirects, globalNotFound, security headers
-    ├── eslint.config.mjs     bans @supabase/* outside lib/server, e2e, scripts
+    ├── eslint.config.mjs     bans postgres, @azure/* and lib/server/pg outside lib/server, e2e, scripts
     ├── app/                  routes (see Route table)
     ├── components/           shell/, finance/, inventory/, associates/
     ├── lib/                  shared root files + finance/ + inventory/ + associates/ + server/
     ├── scripts/              export-transparency.ts, write-local-env.mjs, inventory/*.mjs
-    ├── supabase/             config.toml, migrations 001–041, tests/, templates/magic_link.html
+    ├── db/                   compose.yaml (Postgres+pgTAP, Azurite), migrations 000_roles + 001_schema, tests/, README (Azure)
     ├── e2e/                  Playwright specs + support/
     ├── docs/                 modelo.md, contabilidade.md, mensalidades.md, importacao-conciliacao.md,
     │                         inventario/, associados/ (modelo.md, plano.md)
@@ -112,7 +114,7 @@ graph TB
 
 | File | Purpose |
 |------|---------|
-| `src/shell.tsx` | `AppBrand` (module switcher, plain `<a>` to force full reload), `AppLogin`, `AppLoginForm` (OTP), `AppHeader` (nav menu below 1024px), `UserMenu`, `PageHeader` (prepends Início crumb), `PageBody`, `SectionTabs` |
+| `src/shell.tsx` | `AppBrand` (module switcher, plain `<a>` to force full reload), `AppLogin`, `AppLoginForm` ("Entrar com Google"), `AppHeader` (nav menu below 1024px), `UserMenu`, `PageHeader` (prepends Início crumb), `PageBody`, `SectionTabs` |
 | `src/theme.css` | layer order `theme, base, legacy, components, utilities`; tokens; `--app` accent per `html[data-app]` (purple; inventario = dark orange); `surface` and `num` utilities; legacy global `table {min-width:720px}` |
 | `src/shell.css` | `.geas-*` classes for brand, header, login, breadcrumbs |
 | `components/option-controls.tsx` | `OptionSelect`, `OptionCombobox` — string value, `""` = unset, **no `name`**: forms add a hidden input |
@@ -132,7 +134,7 @@ No `app/layout.tsx`. Three root layouts, each `RootHtml module=...` (`components
 | URL | File | Guard | Notes |
 |-----|------|-------|-------|
 | `/` | `gst/page.tsx` | `pageSession` (no group → `SetupNeeded`) | Início: attention list + module cards (`finance/home`, `inventory/overview`) |
-| `/login`, `/auth/confirm` | `gst/login/*`, `gst/auth/confirm/route.ts` | public | OTP code; links land on `/auth/confirm` |
+| `/login`, `/auth/google`, `/auth/callback`, `/auth/e2e` | `gst/login/*`, `gst/auth/*/route.ts` | public | Google OIDC (PKCE, state, nonce); `/auth/e2e` only with `E2E_LOGIN=1` on `next dev` |
 | `/usuarios` | `gst/usuarios/*` | `notFound()` unless admin | actions `runAction(adminOrError)` |
 | `/financeiro` | `fin/page.tsx` | `pageSession` | Resumo |
 | `/financeiro/lancamentos/{movimentacoes,detalhamento}` | shared `fin/lancamentos/entries-screen.tsx` | `pageSession` | infinite list (`loadEntryPage`) |
@@ -188,46 +190,28 @@ Redirects: area roots → first tab; `/financeiro/configuracoes/associados` → 
 | `lib/finance/reconciliation.ts` | exact / near (±3 days) suggestions, `closingCheck`, `reconciliationHref` |
 | `lib/finance/statement-import/` | OFX reader (SGML + XML), profiles, `decodeBytes`, fixtures `itau.ofx`, `nubank.ofx` |
 | `lib/finance/import-flow.ts`, `import-schema.ts` | import screen rules; server zod + `fromRpc*` converters |
-| `lib/finance/attachments.ts` | bucket `comprovantes`, 10 MB, path `<group>/<entry>/<uuid>.<ext>` |
+| `lib/finance/attachments.ts` | container `comprovantes`, 10 MB, path `<group>/<entry>/<uuid>.<ext>` |
 | `lib/finance/export/` | `columns.ts`, `csv.ts` (CP1252 encoder), `accounting.ts`, `period.ts`, `realized.ts`, `xlsx.ts` (ExcelJS), `route-helpers.ts`, `transparency.ts` |
 | `lib/inventory/vocabulary.ts`, `model.ts`, `locations.ts` | enums + labels, `TAG_PATTERN`; types only; `treeOrder`, `placeError`, `placeLocal` |
 | `lib/server/db.ts` | opaque `Db`, `DataError` |
-| `lib/server/supabase/` | `db.ts` (`sb`, `untyped`, `rpc`, `unwrap`, `rowsOf`), `client.ts`, `service.ts` (`serviceDb`), `paged.ts` (`fetchPaged`, 1000/page), `proxy.ts`, `env.ts`, `database.types.ts` (generated) |
+| `lib/server/pg/` | `client.ts` (pool, `DATABASE_URL`, date/int8 parsers), `db.ts` (`userDb`, `authDb`, `ownerDb`, `run`, `rows`, `one`, `value`, `count`, `where`, `rpc` with catalog lookup), `schema.ts` (generated by `scripts/db-types.mjs`) |
 | `lib/server/session.ts` | `Member`, `getSession` (React `cache`), all guards; only reader of `memberships` |
-| `lib/server/auth.ts`, `files.ts`, `users.ts` | OTP/link/sign-out; signed URLs; invite/roles/remove (service client) |
+| `lib/server/auth.ts`, `files.ts`, `users.ts` | Google OIDC + sessions (+ E2E login); Blob SAS after DB permission; register/roles/remove via 056 functions |
 | `lib/server/finance/*.ts` | `registry`, `associates` (picker only), `entries`, `attachments`, `reconciliation`, `statements`, `fees`, `debts`, `reports`, `home` |
-| `lib/server/inventory/*.ts` | `locations`, `families`, `materials`, `movements`, `overview` (typed `sb()`) |
-| `lib/server/associates/*.ts` | `associates` (list, profile, create/update/move/leave/rejoin, import), `sections`, `functions`, `relatives`, `controls` (items, audiences, statuses of associates and relatives) (typed `sb()`) |
+| `lib/server/inventory/*.ts` | `locations`, `families`, `materials`, `movements`, `overview` |
+| `lib/server/associates/*.ts` | `associates` (list, profile, create/update/move/leave/rejoin, import), `sections`, `functions`, `relatives`, `controls` (items, audiences, statuses of associates and relatives) |
 
-### apps/gestao — database (`supabase/`)
+### apps/gestao — database (`db/`)
 
-**Config**: project id `geas-financeiro` (container `supabase_db_geas-financeiro`), Postgres 17, `enable_signup=false`, email OTP 6 digits, `before_user_created` hook `restrict_auth_domain`. API `max_rows` 1000.
+**Config**: Docker Compose `db/compose.yaml` (service `db`, Postgres 17 + pgTAP, `127.0.0.1:54330`, database `geas`; service `blob`, Azurite `:10000`). `scripts/db.mjs` applies migrations (`geas_meta.migrations`), resets and runs pg_prove. Roles in `000_platform.sql`: `authenticated`, `anon`, `geas_auth`; login role `geas_app` (NOINHERIT).
 
-**Migration timeline (key ones)**
-
-| # | What |
-|---|------|
-| 001 | groups, memberships, categories, entries, splits, `is_group_member`, `can_edit_group` |
-| 003 | one group per user, `audit_events`, admin RPCs, `admin_bootstrap_group` (postgres only) |
-| 004 | payment methods, associates (**wiped entries**) |
-| 006 | entry `name`, view `ledger_entry_rows` |
-| 008–009 | category tree + kind; mixed-sign splits allowed |
-| 011 | accounts, "A definir"/"Caixa" |
-| 012–015 | statement import, reconciliation, accounting `ledger_code` (drops direct-write policies), import scenarios |
-| 018–022, 029 | fees, prices, exemptions, associate movements |
-| 023–026 | entry history, bulk move account, `account_balance_before`, profile admin |
-| 027 | attachments + storage policies |
-| 028, 030 | sections and patrols |
-| 031→032 | inventory (031 dropped by 032), `memberships.inventory_role` |
-| 033–035, 037 | stock by location, location order/drag (`inventory_place_location`), counts |
-| 036 | category editing: `renumber_categories`, `save_category_tree` |
-| 038–039 | debts and allocations, `pay_debts` |
+**Migrations**: `000_roles.sql` (cluster roles) and `001_schema.sql` (baseline consolidated on 2026-11-21 from the 56 development migrations; history in git). New changes go in `002_…` onward. Numbers in parentheses elsewhere in the docs (e.g. "(049)") are tags of the pre-baseline history, searchable in git log.
 
 **Views** (all `security_invoker`): `ledger_entry_rows`, `entry_split_rows`, `reconciliation_link_rows`, `fee_split_candidates`, `associate_rows`, `inventory_location_paths` (`sort_key int[]`), `inventory_material_rows`, `inventory_stock_by_location`. `debt_rows(group)` is a definer **function** so it can hide debtor identity from viewers.
 
 **RLS**: reads `is_group_member`; no direct write policies except `associates`. Writes = security-definer RPCs that also insert `audit_events` (`{before, after}` snapshots). Inventory: `inventory_role_of` (admin → manager), `can_manage_inventory` (manager), `can_edit_inventory` (manager|chief); chief movements born `pendente`.
 
-**Tests** (`supabase/tests/`, each in a rolled-back transaction): pgTAP `audit`, `rls_roles`, `rls_direct_writes`, `rls_isolation`, `sections`, `inventory` + fixture `_fixture.psql` (groups A/B, admin/treasurer/viewer); legacy plain `do $$` files for balances, accounting, categories, debts, entries, attachments, fees, import, reconciliation.
+**Tests** (`db/tests/`, each in a rolled-back transaction): pgTAP `audit`, `rls_roles`, `rls_direct_writes`, `rls_isolation`, `sections`, `inventory` + fixture `_fixture.psql` (groups A/B, admin/treasurer/viewer); legacy plain `do $$` files for balances, accounting, categories, debts, entries, attachments, fees, import, reconciliation.
 
 ### apps/institucional
 
@@ -246,8 +230,8 @@ Collections: `post` (glob md/mdx), `store`, `volunteers`, `testimonials` (JSON `
 
 ### Root tooling and CI
 
-- Scripts: see `CLAUDE.md` Commands. `test:db`/`db:types` use `npm exec --package=supabase` because `npx supabase` fails inside a workspace.
-- CI `ci.yml`: job "Lint, types, unit tests, build" (`TRANSPARENCY_SKIP=1`) and "SQL tests (pgTAP) and e2e (Playwright)" (Supabase CLI 3.1.0, slim `supabase start -x ...`). `commits.yml`: "Commit messages". These job names are required checks.
+- Scripts: see `CLAUDE.md` Commands. `infra:*`, `test:db`, `db:migrate` run `apps/gestao/scripts/db.mjs`; `db:types` runs `scripts/db-types.mjs`.
+- CI `ci.yml`: job "Lint, types, unit tests, build" (`TRANSPARENCY_SKIP=1`) and "SQL tests (pgTAP) and e2e (Playwright)" (`npm run infra:start`, `npm run test:db`, Playwright). `commits.yml`: "Commit messages". These job names are required checks.
 - `.prettierrc.cjs` is the Astro site's style (single quotes); gestao code uses double quotes and has no format script.
 
 ## Data Flow
@@ -294,13 +278,13 @@ Browser reads the file (`decodeBytes` → `readOfx` → `applyOfxProfile`) → `
 
 ### Transparency export → public site
 
-`npm run build --workspace=@geas/institucional` → `prebuild` → `apps/gestao/scripts/export-transparency.ts` (reads `apps/gestao/.env.local`, `serviceDb()`) → `buildTransparencyReport(fetchRealizedModel(...))` per year → `apps/institucional/src/data/prestacao-contas/<year>.json` → validated by `src/utils/financial-reports.ts` (invalid file breaks the build) → `RealizedReport.astro`. Fails the build without DB; `TRANSPARENCY_SKIP=1` skips; local Supabase URL is refused unless `TRANSPARENCY_ALLOW_LOCAL=1`. Then manual FTP upload of `dist/`.
+`npm run build --workspace=@geas/institucional` → `prebuild` → `apps/gestao/scripts/export-transparency.ts` (reads `DATABASE_ADMIN_URL` from `apps/gestao/.env.local`, `ownerDb()`) → `buildTransparencyReport(fetchRealizedModel(...))` per year → `apps/institucional/src/data/prestacao-contas/<year>.json` → validated by `src/utils/financial-reports.ts` (invalid file breaks the build) → `RealizedReport.astro`. Fails the build without DB; `TRANSPARENCY_SKIP=1` skips; local database URL is refused unless `TRANSPARENCY_ALLOW_LOCAL=1`. Then manual FTP upload of `dist/`.
 
 ## Conventions
 
 - Money: integer cents everywhere; `money()` takes reais, `formatCents()` takes cents. Dates: `YYYY-MM-DD` strings; "today" is São Paulo.
 - Data access only via `lib/server/<module>` with `member.db`; data modules don't import `next/*`; validation, `revalidatePath`, `redirect` stay in the action.
-- New queries use typed `sb(db)` and `rpc()`; finance code moved as-is uses `untyped(db)`.
+- Reads: SQL with bound parameters via `rows`/`one`/`count`/`run` (`lib/server/pg/db.ts`), row types declared per query; writes: `rpc()` (named args checked against `schema.ts`). Dates come back as strings (`date` = `YYYY-MM-DD`, `timestamptz` = ISO), `bigint`/`numeric` as numbers.
 - Writes only through audited SQL functions; changing a function signature means drop + create, then `npm run db:types --workspace=@geas/gestao`.
 - Forms: visible `<Label htmlFor>`; IDs namespaced per entity (`account-${id}-name`); `OptionSelect` needs a hidden input; dialogs keyed by entity id.
 - Toasts: `useActionState` + `useActionToast`; when the component unmounts on success (dialogs, removed rows), toast inside the action wrapper.
@@ -322,8 +306,7 @@ Browser reads the file (`decodeBytes` → `readOfx` → `applyOfxProfile`) → `
 - Views can only append columns with `create or replace`; reordering requires drop + recreate (014, 017).
 - Migrations 004 and 032 were destructive (dev data only).
 - `debt_rows` nulls associate data for non-editors; never add client joins that reveal debtors.
-- PostgREST silently truncates `.limit()` above 1000; use `fetchPaged` with a total order.
-- Mirrors to keep in sync with SQL: ledger-code mask (014 ↔ `lib/finance/ledger-code.ts`), `placeError` (037), attachment bucket/path (027), transparency JSON (`lib/finance/export/transparency.ts` ↔ `apps/institucional/src/utils/financial-reports.ts`), `fromRpc*` shapes.
+- Mirrors to keep in sync with SQL: ledger-code mask (014 ↔ `lib/finance/ledger-code.ts`), `placeError` (037), attachment container/path (027), transparency JSON (`lib/finance/export/transparency.ts` ↔ `apps/institucional/src/utils/financial-reports.ts`), `fromRpc*` shapes.
 
 **App**
 - `createEntry`/`updateEntry`/`deleteEntry` guard only `memberOrError`; the SQL function enforces the role. Export routes allow any member.
@@ -333,15 +316,14 @@ Browser reads the file (`decodeBytes` → `readOfx` → `applyOfxProfile`) → `
 - Action return shapes are not unified (`Result`, `FeeResult`, `ReconciliationResult`, `ActionResult`); some files hand-roll `runAction`.
 - `lib/server` imports types from `components/` and `app/` (e.g. `statements.ts` ← `extrato/importar/actions` `ImportProfile`).
 - `fetchDebts`, `board()`, `fetchEntryPage` return `{error}` instead of throwing; `reports.ts` throws.
-- `inviteUser` is not atomic past the membership insert; `removeUser` bans first, unbans on RPC failure.
+- `inviteUser`/`removeUser` are single audited SQL calls (`admin_add_member`, `admin_remove_member`).
 - `CategoriesManager` initialises `draft` once from props; unsaved edits only guarded by `beforeunload`.
 - `InfiniteEntries` must be re-keyed on query/view/order changes.
 - `@geas/ui` root (`shell.tsx`) is a server module; Base UI → `render={}`, not `asChild`; raw `<table>` gets the legacy 720px min-width.
 - Next 16: `proxy.ts` replaces middleware; `params`/`searchParams` are Promises; `experimental.globalNotFound`.
 
 **Tests / tooling**
-- E2E needs Docker (`docker exec` psql), local Supabase and Mailpit; `workers:1`, shared E2E group, port 3210 by default.
-- `npx supabase` doesn't work inside a workspace; use `npm exec --package=supabase -- supabase ...`.
+- E2E needs the local infra (`docker compose exec` psql); login through `/auth/e2e` (`E2E_LOGIN=1`, set by `playwright.config.ts`); `workers:1`, shared E2E group, port 3210 by default.
 - No unit tests for `lib/server` or `lib/inventory`; DB covered by pgTAP, flows by e2e.
 - `scripts/inventory/importar-planilha.mjs` **wipes** the group's inventory (refuses non-local URLs). CSVs are group data: never commit.
 
@@ -351,13 +333,13 @@ Browser reads the file (`decodeBytes` → `readOfx` → `applyOfxProfile`) → `
 
 **Add an inventory screen**: `app/(inventario)/inventario/...`, data in `lib/server/inventory/`, components in `components/inventory/`, types in `lib/inventory/model.ts`.
 
-**Add a write operation**: new migration `apps/gestao/supabase/migrations/0NN_*.sql` with a security-definer function that checks role + inserts `audit_events`; pgTAP in `supabase/tests/`; `npm run db:types --workspace=@geas/gestao`; wrapper in `lib/server/<module>/` via `rpc()`; action using `runAction(guard, ...)` + `revalidatePath`; add the table to `rls_direct_writes.test.sql` if new.
+**Add a write operation**: new migration `apps/gestao/db/migrations/0NN_*.sql` with a security-definer function that checks role + inserts `audit_events`; pgTAP in `db/tests/`; `npm run db:types --workspace=@geas/gestao`; wrapper in `lib/server/<module>/` via `rpc()`; action using `runAction(guard, ...)` + `revalidatePath`; add the table to `rls_direct_writes.test.sql` if new.
 
 **Add a shared UI component**: `npx shadcn@latest add <name>` inside `packages/ui`, or a file in `packages/ui/src/components/`; import as `@geas/ui/components/<name>`.
 
 **Change roles/permissions**: `lib/server/session.ts` (guards), `lib/auth.ts`, `packages/ui/src/lib/roles.ts`, SQL helpers (`can_edit_group`, `inventory_role_of`), `lib/server/users.ts`, `packages/ui/src/components/users-manager.tsx`.
 
-**Change auth**: `lib/server/auth.ts`, `lib/server/supabase/proxy.ts`, `app/(gestao)/login/`, `supabase/config.toml` + `templates/magic_link.html`.
+**Change auth**: `lib/server/auth.ts`, `proxy.ts`, `app/(gestao)/login/`, `app/(gestao)/auth/{google,callback,e2e}/route.ts`, `db/migrations/001_schema.sql` (schema `auth`).
 
 **Change exports**: `lib/finance/export/*` + routes in `app/(financeiro)/financeiro/exportar/*/route.ts`; accounting rules in `apps/gestao/docs/contabilidade.md`.
 

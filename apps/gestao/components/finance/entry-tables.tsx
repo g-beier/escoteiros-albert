@@ -4,7 +4,7 @@ import { Checkbox } from "@geas/ui/components/checkbox";
 import { Label } from "@geas/ui/components/label";
 import { dateBR, money } from "@/lib/format";
 import { cn } from "@geas/ui/lib/utils";
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { memo, useLayoutEffect, useRef, useState } from "react";
 import { useVirtualizer, useWindowVirtualizer } from "@tanstack/react-virtual";
 import { IconArrowDown, IconArrowUp, IconPaperclip } from "@tabler/icons-react";

@@ -1,6 +1,29 @@
 # Saída do Supabase: avaliação e plano de migração
 
-Status: **avaliação** (nada implementado). Data: 2026-11-16.
+Status: **fase 1 feita** (2026-11-21): base local sem Supabase. Avaliação original: 2026-11-16.
+
+> **Atualização de 2026-11-21: decisões e o que foi feito.**
+>
+> - **Nuvem:** Azure (crédito Nonprofit). Estrutura mínima: Container Apps (consumo, 0–1 réplica) + PostgreSQL
+>   Flexible Server B1ms + Blob Storage. Passo a passo em `apps/gestao/db/README.md`.
+> - **Login:** Google OAuth para **qualquer conta** (sem a restrição `@escoteirosalbert.com.br`): entra quem o
+>   administrador cadastrou em Usuários, com `email_verified`; a conta Google (`sub`) fica presa no primeiro login.
+>   Sessão própria (`auth.sessions`, só o hash do token). Sem Better Auth/Auth.js: `lib/server/auth.ts` com `jose`.
+> - **Banco:** rebaseline. As 56 migrations de desenvolvimento viraram `000_roles.sql` (papéis
+>   `authenticated`/`anon`/`geas_auth`) e `001_schema.sql` (schema `auth` com `auth.uid()` lendo `request.jwt.claims`,
+>   todo o `public`, sem `storage.*`, sem `pgcrypto`, usuários sem chave de serviço). Pasta `db/`; histórico no git.
+>   Runner próprio (`scripts/db.mjs`), tipos próprios (`scripts/db-types.mjs`).
+> - **Dados:** `lib/server/pg` com o driver `postgres` (v4): cada chamada abre uma transação e faz
+>   `set_config('role', 'authenticated')` + claims, então RLS e funções auditadas valem como antes. O app conecta
+>   como `geas_app` (NOINHERIT) e **nenhum caminho ignora a RLS**.
+> - **Arquivos:** Blob Storage com SAS curta (delegação de usuário em produção, identidade gerenciada), emitida só
+>   depois de `can_*_attachment_object`; Azurite localmente.
+> - **Dev/CI:** Docker Compose (`apps/gestao/db/compose.yaml`: Postgres 17 + pgTAP, Azurite); CI sem o CLI do Supabase.
+>   E2E com login de teste (`/auth/e2e`, só `next dev` com `E2E_LOGIN=1`), sem Mailpit.
+> - **Custos e uso previstos:** `docs/estimativa-azure.md`. Sem produção; todos os dados começam em 2027 (a cópia
+>   de dados e o corte da avaliação original não se aplicam).
+> - **Próximas fases:** Dockerfile (`output: "standalone"`), Bicep/azd dos recursos, deploy por OIDC, cliente OAuth de
+>   produção e corte (seção 5). O resto deste documento é a avaliação original.
 
 > **Atualização de 2026-11-17: consolidação feita.** Financeiro e inventário são agora `apps/gestao`, e todo
 > acesso ao banco passa por `apps/gestao/lib/server/` (`docs/consolidacao-gestao.md`). A hospedagem não será

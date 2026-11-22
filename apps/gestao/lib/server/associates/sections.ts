@@ -1,7 +1,7 @@
 import { scouterCounts, type AssociateFunction } from "@/lib/associates/controls";
 import { todayISO, type PatrolItem, type ScoutBranch, type SectionItem } from "@/lib/associates/model";
 import type { Db } from "@/lib/server/db";
-import { rowsOf, rpc, sb } from "@/lib/server/supabase/db";
+import { rpc, run } from "@/lib/server/pg/db";
 
 // Seções e equipes (028–030): gravadas pelas funções auditadas, que conferem `can_manage_associates` (040).
 
@@ -9,10 +9,16 @@ export type Catalog = { sections: SectionItem[]; patrols: PatrolItem[] };
 
 /** Seções e equipes do grupo (ativas e inativas), por nome. */
 export async function catalog(db: Db, groupId: string): Promise<Catalog> {
-  const [sections, patrols] = await Promise.all([
-    sb(db).from("sections").select("id, branch, name, active").eq("group_id", groupId).order("name").then(rowsOf),
-    sb(db).from("patrols").select("id, section_id, name, active").eq("group_id", groupId).order("name").then(rowsOf),
-  ]);
+  const { sections, patrols } = await run(db, async (sql) => {
+    const [sections, patrols] = await Promise.all([
+      sql`select id, branch, name, active from public.sections where group_id = ${groupId} order by name`,
+      sql`select id, section_id, name, active from public.patrols where group_id = ${groupId} order by name`,
+    ]);
+    return {
+      sections: [...sections] as unknown as { id: string; branch: ScoutBranch; name: string; active: boolean }[],
+      patrols: [...patrols] as unknown as { id: string; section_id: string; name: string; active: boolean }[],
+    };
+  });
   return {
     sections: sections.map((s): SectionItem => ({ id: s.id, branch: s.branch, name: s.name, active: s.active })),
     patrols: patrols.map((p): PatrolItem => ({ id: p.id, sectionId: p.section_id, name: p.name, active: p.active })),
@@ -28,11 +34,17 @@ export type SectionCounts = {
 
 /** Efetivo de cada seção: jovens (e por equipe) e escotistas. */
 export async function activeCounts(db: Db, groupId: string): Promise<SectionCounts> {
-  const [rows, functions] = await Promise.all([
-    sb(db).from("associates").select("id, section_id, patrol_id").eq("group_id", groupId).eq("active", true).limit(10000).then(rowsOf),
-    sb(db).from("associate_function_rows").select("id, associate_id, kind, title, started_on, ended_on, section_id, section, elected")
-      .eq("group_id", groupId).eq("kind", "escotista").not("section_id", "is", null).limit(10000).then(rowsOf),
-  ]);
+  const { rows, functions } = await run(db, async (sql) => {
+    const [rows, functions] = await Promise.all([
+      sql`select id, section_id, patrol_id from public.associates where group_id = ${groupId} and active limit 10000`,
+      sql`select id, associate_id, kind, title, started_on, ended_on, section_id, section, elected from public.associate_function_rows
+          where group_id = ${groupId} and kind = 'escotista' and section_id is not null limit 10000`,
+    ]);
+    return {
+      rows: [...rows] as unknown as { id: string; section_id: string | null; patrol_id: string | null }[],
+      functions: [...functions] as unknown as AssociateFunction[],
+    };
+  });
   const youth: Record<string, number> = {};
   for (const row of rows) for (const key of [row.section_id, row.patrol_id]) if (key) youth[key] = (youth[key] ?? 0) + 1;
   return { youth, scouters: scouterCounts(functions as AssociateFunction[], new Set(rows.map((row) => row.id)), todayISO()) };

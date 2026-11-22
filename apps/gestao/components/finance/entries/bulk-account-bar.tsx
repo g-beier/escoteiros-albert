@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconArrowsExchange, IconChecks, IconX } from "@tabler/icons-react";
 import { moveEntriesAccount, reviewEntries } from "@/app/actions";
@@ -23,7 +22,6 @@ export function BulkAccountBar({ accounts }: { accounts: Option[] }) {
   const [accountId, setAccountId] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
-  const router = useRouter();
   if (!canEdit || selected.size === 0) return null;
 
   const target = accounts.find((account) => account.value === accountId);
@@ -44,7 +42,6 @@ export function BulkAccountBar({ accounts }: { accounts: Option[] }) {
       setConfirming(false);
       clearSelection();
       setAccountId("");
-      router.refresh();
     });
   }
 
@@ -55,7 +52,6 @@ export function BulkAccountBar({ accounts }: { accounts: Option[] }) {
       for (const [id] of entries) override(id, { reviewed: true });
       toast.success(result.reviewed ? `${plural(result.reviewed, "lançamento marcado", "lançamentos marcados")} como revisado.` : "Nenhum dos selecionados estava para revisar.");
       clearSelection();
-      router.refresh();
     });
   }
 
