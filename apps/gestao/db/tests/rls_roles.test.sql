@@ -2,7 +2,7 @@
 -- lançamentos, cadastros, extrato e associados, mas não administra usuários nem lê a auditoria;
 -- administração faz tudo, inclusive papéis e remoções. Rode com `npm run test:db` (pg_prove no container, `scripts/db.mjs test`).
 begin;
-select plan(68);
+select plan(69);
 \ir _fixture.psql
 
 -- ================================================================ consulta (viewer)
@@ -65,10 +65,10 @@ select ok(not public.can_write_attachment_object(:'gid_a' || '/' || :'entry_a' |
 select ok(not public.can_delete_attachment_object(:'path_a'), 'consulta não apaga arquivo');
 select throws_like(format($$select public.admin_add_member(%L, 'rls.novo.a@exemplo.org', 'viewer')$$, :'gid_a'),
   'Apenas administradores%', 'consulta não cadastra usuário');
-select throws_like(format($$select public.admin_change_member_role(%L, '00000000-0000-0000-0000-00000000f0a3', 'admin')$$, :'gid_a'),
-  'Apenas administradores%', 'consulta não se promove');
+select throws_like(format($$select public.admin_set_module_role(%L, '00000000-0000-0000-0000-00000000f0a3', 'finance', 'admin')$$, :'gid_a'),
+  'Apenas o administrador do módulo%', 'consulta não se promove');
 
--- ================================================================ tesouraria (treasurer)
+-- ================================================================ tesouraria (Editor no Financeiro)
 select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
 select is((select count(*)::int from public.audit_events), 0, 'tesouraria não lê audit_events');
 select lives_ok(format($$select public.create_ledger_entry(%L, '2026-03-15', 'Tesouraria', %L, null, false, 100,
@@ -87,25 +87,25 @@ select is(tests.affected(format($$update public.associates set name = name where
 select lives_ok(format($$select public.set_fee_record(%L, 2026, 4, 'atencao', 'metade', '{}')$$, :'assoc_a'), 'tesouraria registra mensalidade');
 select throws_like(format($$select public.admin_add_member(%L, 'rls.novo.a@exemplo.org', 'viewer')$$, :'gid_a'),
   'Apenas administradores%', 'tesouraria não cadastra usuário');
-select throws_like(format($$select public.admin_change_member_role(%L, '00000000-0000-0000-0000-00000000f0a2', 'admin')$$, :'gid_a'),
-  'Apenas administradores%', 'tesouraria não se promove');
+select throws_like(format($$select public.admin_set_module_role(%L, '00000000-0000-0000-0000-00000000f0a2', 'finance', 'admin')$$, :'gid_a'),
+  'Apenas o administrador do módulo%', 'tesouraria não se promove');
 select throws_like(format($$select public.admin_remove_member(%L, '00000000-0000-0000-0000-00000000f0a3')$$, :'gid_a'),
   'Apenas administradores%', 'tesouraria não remove membro');
 select lives_ok(format($$select public.rename_import_profile(%L, 'Perfil RLS A renomeado')$$, :'profile_a'), 'tesouraria renomeia perfil de importação');
 
--- ================================================================ administração (admin)
+-- ================================================================ administração (Administrador nos três módulos)
 select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
 select ok((select count(*) from public.audit_events where group_id = :'gid_a') > 0, 'administração lê audit_events do grupo');
 select lives_ok(format($$select public.admin_add_member(%L, 'rls.novo.a@exemplo.org', 'viewer')$$, :'gid_a'),
   'administração cadastra usuário');
-select lives_ok(format($$select public.admin_change_member_role(%L, '00000000-0000-0000-0000-00000000f0a3', 'treasurer')$$, :'gid_a'),
+select lives_ok(format($$select public.admin_set_module_role(%L, '00000000-0000-0000-0000-00000000f0a3', 'finance', 'editor')$$, :'gid_a'),
   'administração muda papel');
-select is((select role::text from public.memberships where user_id = '00000000-0000-0000-0000-00000000f0a3'), 'treasurer', 'papel mudou');
-select throws_like(format($$select public.admin_change_member_role(%L, '00000000-0000-0000-0000-00000000f0a1', 'viewer')$$, :'gid_a'),
-  'Você não pode remover sua própria função%', 'administração não rebaixa a si mesma');
+select is((select finance_role::text from public.memberships where user_id = '00000000-0000-0000-0000-00000000f0a3'), 'editor', 'papel mudou');
+select throws_like(format($$select public.admin_set_module_role(%L, '00000000-0000-0000-0000-00000000f0a1', 'finance', 'viewer')$$, :'gid_a'),
+  'Você não pode tirar sua própria função%', 'administração não rebaixa a si mesma');
 select throws_like(format($$select public.admin_remove_member(%L, '00000000-0000-0000-0000-00000000f0a1')$$, :'gid_a'),
   'Você não pode remover seu próprio acesso', 'administração não remove a si mesma');
-select throws_like(format($$select public.admin_change_member_role(%L, '00000000-0000-0000-0000-00000000f0b1', 'viewer')$$, :'gid_a'),
+select throws_like(format($$select public.admin_set_module_role(%L, '00000000-0000-0000-0000-00000000f0b1', 'finance', 'viewer')$$, :'gid_a'),
   'Usuário não encontrado no grupo', 'administração não muda papel de quem não é do grupo');
 select lives_ok(format($$select public.delete_import_profile(%L)$$, :'profile_a'), 'administração exclui perfil de importação');
 select lives_ok(format($$select public.admin_remove_member(%L, '00000000-0000-0000-0000-00000000f0a3')$$, :'gid_a'),
@@ -124,9 +124,11 @@ select tests.logout() \gset
 select is((select count(*)::int from public.audit_events where group_id = :'gid_a' and action = 'user.invited'
   and actor_id = '00000000-0000-0000-0000-00000000f0a1'), 1, 'convite auditado');
 select is((select details from public.audit_events where group_id = :'gid_a' and action = 'user.role_changed'),
-  '{"from": "viewer", "to": "treasurer"}'::jsonb, 'mudança de papel auditada com de/para');
-select is((select details->>'role' from public.audit_events where group_id = :'gid_a' and action = 'user.removed'),
-  'treasurer', 'remoção auditada');
+  '{"module": "finance", "from": "viewer", "to": "editor"}'::jsonb, 'mudança de papel auditada com módulo e de/para');
+select is((select details->>'finance_role' from public.audit_events where group_id = :'gid_a' and action = 'user.access_removed'),
+  'editor', 'remoção auditada com os papéis anteriores');
+select is((select count(*)::int from public.audit_events where group_id = :'gid_a' and action = 'user.removed'), 1,
+  'sem acesso a nenhum módulo, a pessoa sai do grupo');
 
 select * from finish();
 rollback;

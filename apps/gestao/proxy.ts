@@ -4,7 +4,7 @@ import { SESSION_DAYS } from "@/lib/auth";
 // Checagem otimista: sem o cookie de sessão, vai para o login. A sessão é validada no banco por cada página e
 // action (lib/server/session.ts); aqui não há consulta. A cada página aberta o cookie ganha mais SESSION_DAYS: quem
 // decide se a sessão vale continua sendo o banco. Só em GET de documento, para não desfazer o "Sair" (POST).
-const PUBLIC = ["/login", "/auth/"];
+const PUBLIC = ["/login", "/auth/", "/privacidade"];
 const SESSION_COOKIES = ["__Host-geas_session", "geas_session"];
 
 export function proxy(request: NextRequest) {

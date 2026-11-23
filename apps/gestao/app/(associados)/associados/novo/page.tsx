@@ -11,10 +11,10 @@ import { pageSession } from "@/lib/server/session";
 export default async function NewAssociate() {
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
-  if (!member.associates.canEdit) redirect("/associados");
+  if (!member.associates.canWrite) redirect("/associados");
   const catalog = await sections.catalog(member.db, member.groupId);
   return <div className="shell">
-    <AppHeader current="/associados/novo" email={user.email} role={member.associates.role} isAdmin={member.isAdmin} />
+    <AppHeader current="/associados/novo" member={member} />
     <PageBody width="narrow">
       <PageHeader title="Novo associado" crumbs={[{ label: "Associados", href: "/associados" }, { label: "Novo associado" }]}
         description="Nome, divisão e datas. Documentos e contatos ficam no Paxtu." />

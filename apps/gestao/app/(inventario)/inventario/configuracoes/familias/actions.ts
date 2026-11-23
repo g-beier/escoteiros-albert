@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { runAction } from "@/lib/action";
 import * as families from "@/lib/server/inventory/families";
-import { inventoryManagerOrError } from "@/lib/server/session";
+import { inventoryEditorOrError } from "@/lib/server/session";
 
 const text = (formData: FormData, name: string) => String(formData.get(name) ?? "").trim();
-const managerOnly = () => inventoryManagerOrError("Apenas o gestor do inventário altera famílias.");
+const managerOnly = () => inventoryEditorOrError("Apenas editores do Inventário alteram famílias.");
 
 /** Cria (sem `id`) ou edita uma família: nome e código de etiqueta (3 dígitos, opcional). */
 export async function saveFamily(_previous: ActionResult, formData: FormData): Promise<ActionResult> {

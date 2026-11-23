@@ -2,7 +2,7 @@
 -- logo depois do `begin;`. A extensão .psql impede que o pg_prove rode este arquivo sozinho.
 --
 -- Dois grupos:
---   A: admin (…f0a1), tesouraria (…f0a2), consulta (…f0a3) — com um exemplar de cada tabela.
+--   A: admin nos três módulos (…f0a1), tesouraria = Editor no Financeiro e no Associados (…f0a2), consulta (…f0a3) — com um exemplar de cada tabela.
 --   B: admin (…f0b1) — o "intruso"; também tem um lançamento próprio.
 -- Variáveis psql: gid_a, gid_b, acc_a, acc_b, pix_a, pix_b, cat_a, cat_b, assoc_a, entry_a, entry_b,
 -- split_a, line_a, line_a2, import_a, profile_a, attach_a, path_a, fee_rec_a.
@@ -45,9 +45,9 @@ insert into auth.users(id, email) values
   ('00000000-0000-0000-0000-00000000f0b1', 'rls.admin.b@escoteirosalbert.com.br');
 select public.admin_bootstrap_group('rls.admin.a@escoteirosalbert.com.br', 'Grupo RLS A') as gid_a \gset
 select public.admin_bootstrap_group('rls.admin.b@escoteirosalbert.com.br', 'Grupo RLS B') as gid_b \gset
-insert into public.memberships(group_id, user_id, role) values
-  (:'gid_a', '00000000-0000-0000-0000-00000000f0a2', 'treasurer'),
-  (:'gid_a', '00000000-0000-0000-0000-00000000f0a3', 'viewer');
+insert into public.memberships(group_id, user_id, finance_role, associates_role) values
+  (:'gid_a', '00000000-0000-0000-0000-00000000f0a2', 'editor', 'editor'),
+  (:'gid_a', '00000000-0000-0000-0000-00000000f0a3', 'viewer', 'viewer');
 select id as pix_a from public.payment_methods where group_id = :'gid_a' and name = 'PIX' \gset
 select id as pix_b from public.payment_methods where group_id = :'gid_b' and name = 'PIX' \gset
 select id as cat_a from public.categories where group_id = :'gid_a' and code = '1.1' \gset

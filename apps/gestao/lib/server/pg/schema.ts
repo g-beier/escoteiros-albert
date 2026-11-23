@@ -7,7 +7,6 @@ export type Enums = {
   associate_function_kind: "escotista" | "dirigente" | "honorifico" | "comissao_fiscal" | "colaborador" | "contribuinte";
   associate_movement_kind: "entrada" | "saida";
   associate_registration: "provisorio" | "definitivo";
-  associates_role: "manager" | "viewer";
   category_kind: "receita" | "despesa";
   control_audience: "jovem" | "adulto" | "responsavel";
   control_item_kind: "documento" | "sistema" | "canal" | "etapa";
@@ -20,10 +19,9 @@ export type Enums = {
   inventory_movement_kind: "entrada" | "transferencia" | "condicao" | "ajuste" | "baixa" | "edicao";
   inventory_origin: "compra" | "doacao" | "fabricacao" | "nao_informada";
   inventory_review_status: "para_revisar" | "revisado";
-  inventory_role: "manager" | "chief" | "viewer";
   inventory_tracking: "unit" | "lot";
   inventory_write_off_reason: "perda" | "extravio" | "descarte" | "doacao" | "consumo";
-  member_role: "admin" | "treasurer" | "viewer";
+  module_role: "none" | "viewer" | "contributor" | "editor" | "admin";
   relative_kinship: "mae" | "pai" | "outro";
   scout_branch: "filhote" | "lobinho" | "escoteiro" | "senior" | "pioneiro" | "adulto";
   statement_line_status: "aberta" | "conciliada" | "ignorada";
@@ -568,10 +566,11 @@ export type Tables = {
   memberships: {
     group_id: string;
     user_id: string;
-    role: Enums["member_role"];
     created_at: string;
-    inventory_role: Enums["inventory_role"];
-    associates_role: Enums["associates_role"];
+    inventory_role: Enums["module_role"];
+    associates_role: Enums["module_role"];
+    associate_id: string | null;
+    finance_role: Enums["module_role"];
   };
   patrols: {
     id: string;
@@ -714,12 +713,11 @@ export type Functions = {
   account_snapshot: { Args: { p_account_id: string }; Returns: Json };
   add_associate_movement: { Args: { p_associate_id: string; p_date: string; p_kind: Enums["associate_movement_kind"]; p_reason: string }; Returns: string };
   add_entry_attachment: { Args: { p_entry_id: string; p_storage_path: string; p_file_name: string; p_content_type: string; p_size_bytes: number }; Returns: string };
-  admin_add_member: { Args: { p_group_id: string; p_email: string; p_role: Enums["member_role"]; p_inventory_role?: Enums["inventory_role"]; p_associates_role?: Enums["associates_role"] }; Returns: string };
+  admin_add_member: { Args: { p_group_id: string; p_email: string; p_finance_role?: Enums["module_role"]; p_inventory_role?: Enums["module_role"]; p_associates_role?: Enums["module_role"] }; Returns: string };
   admin_bootstrap_group: { Args: { p_admin_email: string; p_group_name: string }; Returns: string };
-  admin_change_associates_role: { Args: { p_group_id: string; p_user_id: string; p_role: Enums["associates_role"] }; Returns: undefined };
-  admin_change_inventory_role: { Args: { p_group_id: string; p_user_id: string; p_role: Enums["inventory_role"] }; Returns: undefined };
-  admin_change_member_role: { Args: { p_group_id: string; p_user_id: string; p_role: Enums["member_role"] }; Returns: undefined };
-  admin_remove_member: { Args: { p_group_id: string; p_user_id: string }; Returns: undefined };
+  admin_link_member_associate: { Args: { p_group_id: string; p_user_id: string; p_associate_id: string }; Returns: undefined };
+  admin_remove_member: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean };
+  admin_set_module_role: { Args: { p_group_id: string; p_user_id: string; p_module: string; p_role: Enums["module_role"] }; Returns: undefined };
   associate_audience_of: { Args: { p_associate_id: string }; Returns: Enums["control_audience"] };
   associate_function_snapshot: { Args: { p_function_id: string }; Returns: Json };
   associate_snapshot: { Args: { p_associate_id: string }; Returns: Json };
@@ -737,7 +735,8 @@ export type Functions = {
   associates_next_branch: { Args: { p_branch: Enums["scout_branch"] }; Returns: Enums["scout_branch"] };
   associates_rejoin: { Args: { p_associate_id: string; p_date: string; p_reason: string }; Returns: undefined };
   associates_review: { Args: { p_group_id: string; p_associate_ids: string[] }; Returns: number };
-  associates_role_of: { Args: { p_group_id: string }; Returns: Enums["associates_role"] };
+  associates_role_of: { Args: { p_group_id: string }; Returns: Enums["module_role"] };
+  associates_section_alert_rows: { Args: { p_group_id: string }; Returns: { id: string; name: string; active: boolean; branch: Enums["scout_branch"]; birth_date: string; promise_date: string; transition_started_on: string }[] };
   associates_seed_control_items: { Args: { p_group_id: string }; Returns: number };
   associates_set_transition: { Args: { p_associate_id: string; p_date: string }; Returns: undefined };
   associates_update: { Args: { p_associate_id: string; p_name: string; p_birth_date: string; p_promise_date: string; p_joined_on: string; p_notes: string; p_registration: Enums["associate_registration"]; p_nickname: string; p_branch?: Enums["scout_branch"]; p_section_id?: string; p_patrol_id?: string }; Returns: undefined };
@@ -748,8 +747,13 @@ export type Functions = {
   can_edit_inventory: { Args: { p_group_id: string }; Returns: boolean };
   can_manage_associates: { Args: { p_group_id: string }; Returns: boolean };
   can_manage_inventory: { Args: { p_group_id: string }; Returns: boolean };
+  can_read_associates: { Args: { p_group_id: string }; Returns: boolean };
   can_read_attachment_object: { Args: { p_name: string }; Returns: boolean };
+  can_read_finance: { Args: { p_group_id: string }; Returns: boolean };
+  can_read_inventory: { Args: { p_group_id: string }; Returns: boolean };
+  can_write_associates: { Args: { p_group_id: string }; Returns: boolean };
   can_write_attachment_object: { Args: { p_name: string }; Returns: boolean };
+  can_write_finance: { Args: { p_group_id: string }; Returns: boolean };
   category_code_key: { Args: { p_code: string }; Returns: number[] };
   category_snapshot: { Args: { p_category_id: string }; Returns: Json };
   category_subtree: { Args: { p_category_id: string }; Returns: { id: string; depth: number }[] };
@@ -798,7 +802,8 @@ export type Functions = {
   fallback_account: { Args: { p_group_id: string }; Returns: string };
   fee_category_ids: { Args: { p_group_id: string }; Returns: string[] };
   fee_record_snapshot: { Args: { p_record_id: string }; Returns: Json };
-  group_users: { Args: { p_group_id: string }; Returns: { user_id: string; email: string; last_sign_in_at: string; role: Enums["member_role"]; inventory_role: Enums["inventory_role"]; associates_role: Enums["associates_role"] }[] };
+  finance_role_of: { Args: { p_group_id: string }; Returns: Enums["module_role"] };
+  group_users: { Args: { p_group_id: string }; Returns: { user_id: string; email: string; last_sign_in_at: string; finance_role: Enums["module_role"]; inventory_role: Enums["module_role"]; associates_role: Enums["module_role"]; associate_id: string }[] };
   ignore_statement_line: { Args: { p_id: string; p_reason: string }; Returns: undefined };
   ignore_statement_lines: { Args: { p_ids: string[]; p_reason: string }; Returns: number };
   import_associates: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
@@ -821,7 +826,7 @@ export type Functions = {
   inventory_quick: { Args: { p_action: string; p_args: Json }; Returns: Json };
   inventory_record_count: { Args: { p_material_id: string; p_location_id: string; p_year: number; p_quantity: number; p_notes: string }; Returns: string };
   inventory_review_movements: { Args: { p_group_id: string; p_ids: number[]; p_notes: string }; Returns: number };
-  inventory_role_of: { Args: { p_group_id: string }; Returns: Enums["inventory_role"] };
+  inventory_role_of: { Args: { p_group_id: string }; Returns: Enums["module_role"] };
   inventory_save_family: { Args: { p_group_id: string; p_id: string; p_name: string; p_code: string; p_active?: boolean }; Returns: string };
   inventory_save_location: { Args: { p_group_id: string; p_id: string; p_parent_id: string; p_name: string; p_description: string; p_active?: boolean }; Returns: string };
   inventory_save_material: { Args: { p_group_id: string; p_id: string; p_family_id: string; p_name: string; p_tracking: Enums["inventory_tracking"]; p_consumable: boolean; p_minimum_quantity: number; p_description: string; p_active?: boolean }; Returns: string };
@@ -835,10 +840,13 @@ export type Functions = {
   inventory_update_unit: { Args: { p_unit_id: string; p_tag: string; p_legacy_code: string; p_description: string; p_unit_value_cents: number; p_acquired_on: string; p_origin: Enums["inventory_origin"]; p_supplier: string; p_invoice: string; p_notes: string }; Returns: undefined };
   inventory_write_off_lot: { Args: { p_lot_id: string; p_quantity: number; p_reason: Enums["inventory_write_off_reason"]; p_notes: string }; Returns: undefined };
   inventory_write_off_unit: { Args: { p_unit_id: string; p_reason: Enums["inventory_write_off_reason"]; p_notes: string }; Returns: undefined };
+  is_any_module_admin: { Args: { p_group_id: string }; Returns: boolean };
   is_group_member: { Args: { requested_group_id: string }; Returns: boolean };
   ledger_entry_history: { Args: { p_entry_id: string }; Returns: { id: number; created_at: string; action: string; actor_email: string; details: Json }[] };
   ledger_entry_snapshot: { Args: { p_entry_id: string }; Returns: Json };
   link_reconciliation: { Args: { p_statement_line_ids: string[]; p_ledger_entry_ids: string[] }; Returns: string };
+  members_drop_if_empty: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean };
+  module_role_of: { Args: { p_group_id: string; p_module: string }; Returns: Enums["module_role"] };
   move_ledger_entries_account: { Args: { p_entry_ids: string[]; p_account_id: string }; Returns: Json };
   next_category_position: { Args: { p_parent_id: string }; Returns: number };
   patrol_snapshot: { Args: { p_patrol_id: string }; Returns: Json };

@@ -10,8 +10,8 @@ insert into auth.users(id, email) values
   ('00000000-0000-0000-0000-0000000000f1', 'tes.rubricas@escoteirosalbert.com.br'),
   ('00000000-0000-0000-0000-0000000000f2', 'consulta.rubricas@escoteirosalbert.com.br');
 select public.admin_bootstrap_group('tes.rubricas@escoteirosalbert.com.br', 'Grupo Teste Rubricas') as gid \gset
-update public.memberships set role = 'treasurer' where user_id = '00000000-0000-0000-0000-0000000000f1';
-insert into public.memberships(group_id, user_id, role) values (:'gid', '00000000-0000-0000-0000-0000000000f2', 'viewer');
+update public.memberships set finance_role = 'editor' where user_id = '00000000-0000-0000-0000-0000000000f1';
+insert into public.memberships(group_id, user_id, finance_role) values (:'gid', '00000000-0000-0000-0000-0000000000f2', 'viewer');
 select id as pix from public.payment_methods where group_id = :'gid' and name = 'PIX' \gset
 select public.fallback_account(:'gid') as acc \gset
 select id as acampamento from public.categories where group_id = :'gid' and code = '2.2.2' \gset

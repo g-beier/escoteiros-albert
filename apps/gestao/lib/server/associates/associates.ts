@@ -55,7 +55,7 @@ export async function create(db: Db, groupId: string, input: CreateInput): Promi
   });
 }
 
-/** Cadastro pelo registro rápido (049): o mesmo de `create`, para a Secretaria revisar. */
+/** Cadastro pelo registro rápido (049): o mesmo de `create`, para a Diretoria revisar. */
 export async function createQuick(db: Db, groupId: string, input: CreateInput): Promise<string> {
   return rpc(db, "associates_create_quick", {
     p_group_id: groupId, p_name: input.name, p_branch: input.branch, p_section_id: input.sectionId, p_patrol_id: input.patrolId,

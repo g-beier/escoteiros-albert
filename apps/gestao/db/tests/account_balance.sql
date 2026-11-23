@@ -11,7 +11,7 @@ insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000d1'
 insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000d2', 'tes.intruso@escoteirosalbert.com.br');
 select public.admin_bootstrap_group('tes.saldo@escoteirosalbert.com.br', 'Grupo Teste Saldo') as gid \gset
 select public.admin_bootstrap_group('tes.intruso@escoteirosalbert.com.br', 'Grupo Teste Intruso') as gid2 \gset
-update public.memberships set role = 'treasurer' where user_id = '00000000-0000-0000-0000-0000000000d1';
+update public.memberships set finance_role = 'editor' where user_id = '00000000-0000-0000-0000-0000000000d1';
 select id as pix from public.payment_methods where group_id = :'gid' and name = 'PIX' \gset
 select id as cat_r from public.categories where group_id = :'gid' and code = '1.1' \gset
 select id as cat_d from public.categories where group_id = :'gid' and code like '2.%' order by code limit 1 \gset

@@ -88,11 +88,11 @@ export default async function ControlPage({ searchParams }: { searchParams: Prom
     return `/associados/controle?${next}`;
   };
   const tabs = MATRIX_AUDIENCES.map((a) => ({ href: hrefFor(audienceSlugs[a]), label: audienceLabels[a], active: a === audience }));
-  const canEdit = member.associates.canEdit;
+  const canEdit = member.associates.canWrite;
   const audienceText = audienceLabels[audience].toLowerCase();
 
   return <div className="shell">
-    <AppHeader current="/associados/controle" email={user.email} role={member.associates.role} isAdmin={member.isAdmin} />
+    <AppHeader current="/associados/controle" member={member} />
     <PageBody>
       <PageHeader title="Controle de dados" crumbs={[{ label: "Associados", href: "/associados" }, { label: "Controle de dados" }]}
         tabs={<SectionTabs label="Público" tabs={tabs} />}

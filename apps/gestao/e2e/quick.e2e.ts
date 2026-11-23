@@ -66,7 +66,7 @@ test("lançamento rápido: entra para revisar e sai da lista ao revisar", async 
   await expect(entryRow(page, name)).toHaveCount(0);
 });
 
-test("associado rápido: cadastrado para a Secretaria revisar", async ({ page }) => {
+test("associado rápido: cadastrado para um editor revisar", async ({ page }) => {
   await page.goto("/rapido");
   await page.getByRole("link", { name: /Associado novo/ }).click();
   await page.getByLabel("Nome").fill(person);

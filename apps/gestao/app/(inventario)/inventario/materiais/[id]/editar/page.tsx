@@ -16,18 +16,18 @@ export default async function EditMaterial({ params, searchParams }: { params: P
   const detailHref = withBack(`/inventario/materiais/${id}`, back);
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
-  if (!member.inventory.canEdit) redirect(detailHref);
+  if (!member.inventory.canWrite) redirect(detailHref);
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const found = await materials.getForEdit(member.db, member.groupId, id);
   if (!found) notFound();
   const { material, hasStock } = found;
   const familyOptions = await families.listOptions(member.db, member.groupId, material.family_id);
   return <div className="shell">
-    <AppHeader current={`/inventario/materiais/${id}`} email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
+    <AppHeader current={`/inventario/materiais/${id}`} member={member} />
     <PageBody width="narrow">
       <PageHeader title={`Editar ${material.name}`}
         crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais", href: back }, { label: material.name, href: detailHref }, { label: "Editar" }]} />
-      {!member.inventory.canManage && <ReviewNotice />}
+      {!member.inventory.canReview && <ReviewNotice />}
       <SectionCard>
         <SectionHeader title="Material" />
         <div className="p-4"><MaterialForm families={familyOptions} material={material} hasStock={hasStock} back={back} /></div>

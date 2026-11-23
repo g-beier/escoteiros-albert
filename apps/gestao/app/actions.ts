@@ -11,7 +11,7 @@ import * as entries from "@/lib/server/finance/entries";
 import { financeEditorOrError, memberOrError, type Member } from "@/lib/server/session";
 
 // Lançamentos (formulário, lista e ações em lote). As regras de quem pode o quê ficam nas funções SQL:
-// aqui qualquer membro chama, e o banco recusa quem não é tesouraria/administração.
+// aqui qualquer membro chama; o banco recusa quem não é Colaborador ou mais (Editor para conta e revisão).
 
 type Result = { error?: string; success?: boolean; id?: string };
 

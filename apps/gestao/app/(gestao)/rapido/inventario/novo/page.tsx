@@ -13,10 +13,10 @@ import { pageSession } from "@/lib/server/session";
 export default async function QuickNewMaterial() {
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
-  if (!member.inventory.canEdit) redirect("/rapido");
+  if (!member.inventory.canWrite) redirect("/rapido");
   const [familyOptions, paths] = await Promise.all([families.listOptions(member.db, member.groupId), locations.listPaths(member.db, member.groupId)]);
   return <div className="shell">
-    <GestaoHeader current="/rapido/inventario/novo" email={user.email} role={member.finance.role} isAdmin={member.isAdmin} quick />
+    <GestaoHeader current="/rapido/inventario/novo" member={member} quick />
     <PageBody width="narrow">
       <PageHeader title="Cadastrar material" crumbs={[{ label: "Registro rápido", href: "/rapido" }, { label: "Cadastrar material" }]}
         description="Só o essencial: nome, controle, onde está e quanto tem. Valor, origem e os demais dados ficam para o gestor completar." />

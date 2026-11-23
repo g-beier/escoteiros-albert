@@ -15,7 +15,7 @@ import { dateBR, formatCents } from "@/lib/format";
 import { EXPIRY_WARNING_DAYS } from "@/lib/inventory/vocabulary";
 import { DATES_AFTER_DAYS, DATES_BEFORE_DAYS, relativeDay, VALIDITY_WARNING_DAYS } from "@/lib/associates/alerts";
 import { ageYearsMonthsLabel } from "@/lib/associates/model";
-import { overview as associatesOverview } from "@/lib/server/associates/home";
+import { overview as associatesOverview, sectionOverview } from "@/lib/server/associates/home";
 import { REVIEW_HREF } from "@/lib/quick";
 import { countToReview as associatesToReview } from "@/lib/server/associates/associates";
 import { countToReview as entriesToReview } from "@/lib/server/finance/entries";
@@ -41,13 +41,19 @@ export default async function Home() {
   const year = currentYear();
   const today = todayInSaoPaulo();
 
+  // Sem acesso a um módulo: nada dele. Sem acesso ao Associados (chefes): só os avisos dos jovens da própria seção.
+  const finance = member.finance.canRead;
+  const associatesFull = member.associates.canRead;
   const [months, pendingDocs, accounts, overdue, openLines, inventory, associates, entriesReview, associatesReview] = await Promise.all([
-    financeHome.yearMonths(db, groupId, year), financeHome.pendingDocuments(db, groupId), financeHome.accountBalances(db, groupId, today),
-    financeHome.overdueFees(db, groupId, year),
-    member.finance.canEdit ? financeHome.openStatementLines(db, groupId) : Promise.resolve(0),
-    inventoryOverview(db, groupId, today, member.inventory.canManage), associatesOverview(db, groupId, today),
-    member.finance.canEdit ? entriesToReview(db, groupId) : Promise.resolve(0),
-    member.associates.canEdit ? associatesToReview(db, groupId) : Promise.resolve(0),
+    finance ? financeHome.yearMonths(db, groupId, year) : Promise.resolve([]),
+    finance ? financeHome.pendingDocuments(db, groupId) : Promise.resolve(0),
+    finance ? financeHome.accountBalances(db, groupId, today) : Promise.resolve([]),
+    finance ? financeHome.overdueFees(db, groupId, year) : Promise.resolve([]),
+    member.finance.canReview ? financeHome.openStatementLines(db, groupId) : Promise.resolve(0),
+    inventoryOverview(db, groupId, today, member.inventory.canReview),
+    associatesFull ? associatesOverview(db, groupId, today) : sectionOverview(db, groupId, today),
+    member.finance.canReview ? entriesToReview(db, groupId) : Promise.resolve(0),
+    member.associates.canReview ? associatesToReview(db, groupId) : Promise.resolve(0),
   ]);
   const income = months.reduce((sum, m) => sum + m.income, 0);
   const expense = months.reduce((sum, m) => sum + m.expense, 0);
@@ -57,9 +63,9 @@ export default async function Home() {
   const lateTransitions = associates.transitions.filter((t) => t.level === "critico").length;
   const expired = associates.expiries.filter((e) => e.days < 0).length;
   const expiring = associates.expiries.length - expired;
-  const canQuick = member.finance.canEdit || member.inventory.canEdit || member.associates.canEdit;
+  const canQuick = member.finance.canWrite || member.inventory.canWrite || member.associates.canWrite;
   const alerts: Alert[] = ([
-    { module: "financeiro", count: entriesReview, label: plural(entriesReview, "lançamento do registro rápido para revisar", "lançamentos do registro rápido para revisar"),
+    { module: "financeiro", count: entriesReview, label: plural(entriesReview, "lançamento para revisar", "lançamentos para revisar"),
       href: REVIEW_HREF.financeiro },
     { module: "financeiro", count: pendingDocs, label: plural(pendingDocs, "lançamento sem documento na pasta", "lançamentos sem documento na pasta"),
       href: `/financeiro/lancamentos/movimentacoes?pasta=pendente&de=${ALL_DATES}` },
@@ -86,12 +92,12 @@ export default async function Home() {
   ] satisfies Alert[]).filter((alert) => alert.count > 0);
 
   return <div className="shell">
-    <GestaoHeader current="/" email={user.email} role={member.finance.role} isAdmin={member.isAdmin} quick={canQuick} />
+    <GestaoHeader current="/" member={member} quick={canQuick} />
     <PageBody>
       <PageHeader title="Início" hideTitle actions={<>
         {canQuick && <Link href="/rapido" className={buttonVariants({ variant: "outline", size: "lg" })}><IconBolt data-icon="inline-start" /> Registro rápido</Link>}
-        {member.finance.canEdit && <NewEntryButton returnHref="" />}
-        {member.inventory.canEdit && <Link href="/inventario/materiais/novo" className={buttonVariants({ variant: "outline", size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}
+        {member.finance.canWrite && <NewEntryButton returnHref="" />}
+        {member.inventory.canWrite && <Link href="/inventario/materiais/novo" className={buttonVariants({ variant: "outline", size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}
       </>} />
 
       <ListCard title="Precisa de atenção" titleId="attention-title"
@@ -105,7 +111,7 @@ export default async function Home() {
         </li>)}</ul>}
       </ListCard>
 
-      <ListCard title="Vencimentos de registro" titleId="expiries-title" href="/associados/controle" linkLabel="Controle"
+      {associatesFull && <ListCard title="Vencimentos de registro" titleId="expiries-title" href="/associados/controle" linkLabel="Controle"
         empty={`Nenhum registro vencido nem vencendo nos próximos ${VALIDITY_WARNING_DAYS} dias.`}>
         {associates.expiries.length > 0 && <ul className={cn("m-0 grid list-none p-0", associates.expiries.length > 1 && "md:grid-cols-2")}>
           {associates.expiries.map((e) => <li key={`${e.associateId}-${e.item}-${e.validUntil}`} className={cn("border-t first:border-t-0", associates.expiries.length > 1 && "md:[&:nth-child(2)]:border-t-0 md:odd:border-r")}>
@@ -118,51 +124,56 @@ export default async function Home() {
             </Link>
           </li>)}
         </ul>}
-      </ListCard>
+      </ListCard>}
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <ListCard title="Aniversários e promessas" titleId="dates-title" href="/associados" linkLabel="Associados"
+        <ListCard title="Aniversários e promessas" titleId="dates-title" href={associatesFull ? "/associados" : undefined} linkLabel="Associados"
           empty={`Nenhum aniversário nem promessa entre ${DATES_BEFORE_DAYS} dias atrás e ${DATES_AFTER_DAYS} dias à frente.`}>
           {associates.dates.length > 0 && <ul className="m-0 list-none p-0">{associates.dates.map((date) => <li key={`${date.associateId}-${date.kind}`} className="border-t first:border-t-0">
-            <Link href={`/associados/${date.associateId}`} className={cn("flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted", date.days < 0 && "text-muted-foreground")}>
+            <PersonLink href={associatesFull ? `/associados/${date.associateId}` : undefined} className={cn("flex items-center gap-3 px-4 py-2 text-sm", date.days < 0 && "text-muted-foreground")}>
               {date.kind === "aniversario" ? <IconCake className="size-4 shrink-0 text-primary" aria-hidden /> : <IconStar className="size-4 shrink-0 text-primary" aria-hidden />}
               <span className="min-w-0 flex-1 truncate">{date.name}</span>
               <span className="shrink-0 text-xs">{date.kind === "aniversario" ? `${date.years} anos` : `${date.years} ${date.years === 1 ? "ano" : "anos"} de promessa`}</span>
               <span className={cn("w-24 shrink-0 text-right text-xs num", date.days === 0 && "font-semibold text-primary")}>{dayMonth(date.on)} · {relativeDay(date.days)}</span>
-            </Link>
+            </PersonLink>
           </li>)}</ul>}
         </ListCard>
-        <ListCard title="Transição de ramo" titleId="transitions-title" href="/associados" linkLabel="Associados"
+        <ListCard title="Transição de ramo" titleId="transitions-title" href={associatesFull ? "/associados" : undefined} linkLabel="Associados"
           empty="Nenhum jovem em período de transição.">
           {associates.transitions.length > 0 && <ul className="m-0 list-none p-0">{associates.transitions.map((t) => <li key={t.associateId} className="border-t first:border-t-0">
-            <Link href={`/associados/${t.associateId}`} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted">
+            <PersonLink href={associatesFull ? `/associados/${t.associateId}` : undefined} className="flex items-center gap-3 px-4 py-2 text-sm">
               <span className="min-w-0 flex-1">
                 <span className="block truncate">{t.name}</span>
                 <span className="block truncate text-xs text-muted-foreground">{t.label}</span>
               </span>
               <Badge variant={TRANSITION_BADGE[t.level]} className="shrink-0" title={`Até ${dateBR(t.criticalOn)}`}>{t.text}</Badge>
               <span className="w-32 shrink-0 text-right text-xs num">{ageYearsMonthsLabel(t.age)}</span>
-            </Link>
+            </PersonLink>
           </li>)}</ul>}
         </ListCard>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <ModuleCard module="financeiro" href="/financeiro" linkLabel="Resumo do financeiro">
+        {finance && <ModuleCard module="financeiro" href="/financeiro" linkLabel="Resumo do financeiro">
           <StatCard label="Saldo nas contas hoje" value={formatCents(inAccounts)} tone={inAccounts < 0 ? "destructive" : "neutral"} />
           <StatCard label={`Saldo de ${year}`} value={formatCents(income - expense)} tone={income - expense < 0 ? "destructive" : "neutral"} />
           <StatCard label={`Receitas em ${year}`} value={formatCents(income)} tone="success" />
           <StatCard label={`Despesas em ${year}`} value={formatCents(expense)} tone="destructive" />
-        </ModuleCard>
-        <ModuleCard module="inventario" href="/inventario/materiais" linkLabel="Materiais do inventário">
+        </ModuleCard>}
+        {member.inventory.canRead && <ModuleCard module="inventario" href="/inventario/materiais" linkLabel="Materiais do inventário">
           <StatCard label="Materiais" value={inventory.materials} href="/inventario/materiais" />
           <StatCard label="Valor estimado" value={formatCents(inventory.estimatedValueCents)} />
           <StatCard label="Abaixo do mínimo" value={inventory.belowMinimum} tone={inventory.belowMinimum > 0 ? "warning" : "neutral"} />
           <StatCard label="Lotes vencidos" value={inventory.expired} tone={inventory.expired > 0 ? "destructive" : "neutral"} href={inventory.expired > 0 ? "/inventario/materiais?validade=vencido" : undefined} />
-        </ModuleCard>
+        </ModuleCard>}
       </div>
     </PageBody>
   </div>;
+}
+
+/** Linha de uma pessoa: link para o cadastro, ou só o texto para quem não vê o Associados. */
+function PersonLink({ href, className, children }: { href?: string; className: string; children: ReactNode }) {
+  return href ? <Link href={href} className={cn(className, "hover:bg-muted")}>{children}</Link> : <div className={className}>{children}</div>;
 }
 
 /** Cartão de um módulo: nome na cor do módulo, quatro indicadores e o link para o Resumo dele. */

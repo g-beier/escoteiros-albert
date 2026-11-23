@@ -29,7 +29,7 @@ export function Field({ id, label, hint, className, children }: { id: string; la
  * Cadastro e edição do associado, com a divisão (ramo, seção, equipe). Na edição ela é corrigida sem histórico (055):
  * a passagem de ramo, cerimônia registrada, fica no detalhe. Datas opcionais; sem data de entrada, a entrada fica
  * registrada na data do cadastro.
- * `quick`: cadastro pelo registro rápido (/rapido/associado), que fica para a Secretaria revisar.
+ * `quick`: cadastro pelo registro rápido (/rapido/associado), que fica para a Diretoria revisar.
  * Registro e apelido (054) só na edição: o cadastro novo começa com registro provisório.
  */
 

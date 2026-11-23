@@ -5,30 +5,30 @@ begin;
 select plan(149);
 \ir _fixture.psql
 
--- Chefe (…f0a4) e gestor (…f0a5) do grupo A: no Financeiro são só consulta.
+-- Chefe = Colaborador (…f0a4) e gestor = Editor (…f0a5) do grupo A: no Financeiro são só consulta.
 insert into auth.users(id, email) values
   ('00000000-0000-0000-0000-00000000f0a4', 'rls.chefe.a@escoteirosalbert.com.br'),
   ('00000000-0000-0000-0000-00000000f0a5', 'rls.gestor.a@escoteirosalbert.com.br');
-insert into public.memberships(group_id, user_id, role) values
+insert into public.memberships(group_id, user_id, finance_role) values
   (:'gid_a', '00000000-0000-0000-0000-00000000f0a4', 'viewer'),
   (:'gid_a', '00000000-0000-0000-0000-00000000f0a5', 'viewer');
 
 -- Papéis -------------------------------------------------------------------------------------
 select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
-select ok(public.can_manage_inventory(:'gid_a'), 'administrador do grupo é gestor do Inventário');
-select lives_ok(format($$select public.admin_change_inventory_role(%L, '00000000-0000-0000-0000-00000000f0a4', 'chief')$$, :'gid_a'), 'admin define chefe');
-select lives_ok(format($$select public.admin_change_inventory_role(%L, '00000000-0000-0000-0000-00000000f0a5', 'manager')$$, :'gid_a'), 'admin define gestor');
-select is((select inventory_role::text from public.memberships where user_id = '00000000-0000-0000-0000-00000000f0a4'), 'chief', 'papel do chefe gravado');
-select is((select role::text from public.memberships where user_id = '00000000-0000-0000-0000-00000000f0a5'), 'viewer', 'papel no Financeiro não muda');
+select ok(public.can_manage_inventory(:'gid_a'), 'administrador do Inventário também é editor');
+select lives_ok(format($$select public.admin_set_module_role(%L, '00000000-0000-0000-0000-00000000f0a4', 'inventory', 'contributor')$$, :'gid_a'), 'admin define colaborador');
+select lives_ok(format($$select public.admin_set_module_role(%L, '00000000-0000-0000-0000-00000000f0a5', 'inventory', 'editor')$$, :'gid_a'), 'admin define editor');
+select is((select inventory_role::text from public.memberships where user_id = '00000000-0000-0000-0000-00000000f0a4'), 'contributor', 'papel do chefe gravado');
+select is((select finance_role::text from public.memberships where user_id = '00000000-0000-0000-0000-00000000f0a5'), 'viewer', 'papel no Financeiro não muda');
 
 select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
-select ok(not public.can_edit_inventory(:'gid_a'), 'tesouraria sem papel no Inventário não edita');
+select ok(not public.can_edit_inventory(:'gid_a'), 'tesouraria com consulta no Inventário não edita');
 select throws_like(format($$select public.inventory_save_location(%L, null, null, 'Tesouraria', null)$$, :'gid_a'), 'Sem permissão%', 'tesouraria não cria divisão');
-select throws_like(format($$select public.admin_change_inventory_role(%L, '00000000-0000-0000-0000-00000000f0a4', 'manager')$$, :'gid_a'), 'Apenas administradores%', 'tesouraria não altera papéis');
+select throws_like(format($$select public.admin_set_module_role(%L, '00000000-0000-0000-0000-00000000f0a4', 'inventory', 'editor')$$, :'gid_a'), 'Apenas o administrador do módulo%', 'tesouraria não altera papéis');
 
 select tests.login('00000000-0000-0000-0000-00000000f0a5') \gset
 select ok(public.can_manage_inventory(:'gid_a'), 'gestor gerencia o Inventário');
-select throws_like(format($$select public.admin_change_inventory_role(%L, '00000000-0000-0000-0000-00000000f0a4', 'manager')$$, :'gid_a'), 'Apenas administradores%', 'gestor não altera papéis');
+select throws_like(format($$select public.admin_set_module_role(%L, '00000000-0000-0000-0000-00000000f0a4', 'inventory', 'editor')$$, :'gid_a'), 'Apenas o administrador do módulo%', 'gestor não altera papéis');
 
 -- Divisões (gestor) ---------------------------------------------------------------------------
 select public.inventory_save_location(:'gid_a', null, null, 'Cozinha', null) as coz \gset

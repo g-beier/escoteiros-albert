@@ -11,7 +11,7 @@ import { isKinship, kinshipNoteError } from "@/lib/associates/relatives";
 import * as associates from "@/lib/server/associates/associates";
 import * as functions from "@/lib/server/associates/functions";
 import * as relatives from "@/lib/server/associates/relatives";
-import { associatesEditorOrError } from "@/lib/server/session";
+import { associatesEditorOrError, associatesWriterOrError } from "@/lib/server/session";
 
 // Validação dos formulários aqui; as regras (datas, ramo × seção × equipe, já desligado) ficam nas funções
 // associates_* (040), que respondem em português.
@@ -40,7 +40,7 @@ function revalidate() {
 /** Cadastro (sem `id`) e edição; ao salvar, vai para o detalhe. */
 export async function saveAssociate(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   let savedId = "";
-  const result = await runAction(associatesEditorOrError, async ({ db, groupId }) => {
+  const result = await runAction(associatesWriterOrError, async ({ db, groupId }) => {
     const editing = optionalId(formData, "id");
     if (editing) {
       const registration = text(formData, "registration");
@@ -69,7 +69,7 @@ export async function reviewAssociate(_previous: ActionResult, formData: FormDat
 
 /** Transição de ramo: marca o início (hoje ou na data informada) ou desmarca (`clear`). */
 export async function setTransition(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
-  return runAction(associatesEditorOrError, async ({ db }) => {
+  return runAction(associatesWriterOrError, async ({ db }) => {
     const clear = text(formData, "clear") === "1";
     await associates.setTransition(db, id(formData, "id"), clear ? null : date(formData, "date", "a data de início", true));
     revalidate();
@@ -80,7 +80,7 @@ export async function setTransition(_previous: ActionResult, formData: FormData)
 
 /** Passagem: ramo seguinte (com seção e equipe dele) a partir de uma data. */
 export async function moveAssociate(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
-  return runAction(associatesEditorOrError, async ({ db }) => {
+  return runAction(associatesWriterOrError, async ({ db }) => {
     const associateId = id(formData, "associateId");
     await associates.move(db, { id: associateId, date: date(formData, "date", "a data da passagem", true), ...placement(formData) });
     revalidate();
@@ -89,7 +89,7 @@ export async function moveAssociate(_previous: ActionResult, formData: FormData)
 }
 
 export async function leaveAssociate(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
-  return runAction(associatesEditorOrError, async ({ db }) => {
+  return runAction(associatesWriterOrError, async ({ db }) => {
     const associateId = id(formData, "associateId");
     await associates.leave(db, associateId, date(formData, "date", "a data do desligamento", true), notes(formData, "reason", 120));
     revalidate();
@@ -98,7 +98,7 @@ export async function leaveAssociate(_previous: ActionResult, formData: FormData
 }
 
 export async function rejoinAssociate(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
-  return runAction(associatesEditorOrError, async ({ db }) => {
+  return runAction(associatesWriterOrError, async ({ db }) => {
     const associateId = id(formData, "associateId");
     await associates.rejoin(db, associateId, date(formData, "date", "a data do reingresso", true), notes(formData, "reason", 120));
     revalidate();
@@ -117,7 +117,7 @@ function functionInput(data: FormData): functions.FunctionInput {
 }
 
 export async function addFunction(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
-  return runAction(associatesEditorOrError, async ({ db }) => {
+  return runAction(associatesWriterOrError, async ({ db }) => {
     await functions.add(db, id(formData, "associateId"), functionInput(formData));
     revalidate();
     return "Função adicionada.";
@@ -126,7 +126,7 @@ export async function addFunction(_previous: ActionResult, formData: FormData): 
 
 /** Edita tipo, seção, cargo e datas; fim vazio = em exercício. */
 export async function updateFunction(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
-  return runAction(associatesEditorOrError, async ({ db }) => {
+  return runAction(associatesWriterOrError, async ({ db }) => {
     await functions.update(db, id(formData, "functionId"), { ...functionInput(formData), endedOn: date(formData, "endedOn", "o fim da função") });
     revalidate();
     return "Função salva.";
@@ -134,7 +134,7 @@ export async function updateFunction(_previous: ActionResult, formData: FormData
 }
 
 export async function endFunction(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
-  return runAction(associatesEditorOrError, async ({ db }) => {
+  return runAction(associatesWriterOrError, async ({ db }) => {
     await functions.end(db, id(formData, "functionId"), date(formData, "endedOn", "o fim da função", true));
     revalidate();
     return { success: "Função encerrada.", tone: "neutral" };
@@ -142,7 +142,7 @@ export async function endFunction(_previous: ActionResult, formData: FormData): 
 }
 
 export async function deleteFunction(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
-  return runAction(associatesEditorOrError, async ({ db }) => {
+  return runAction(associatesWriterOrError, async ({ db }) => {
     await functions.remove(db, id(formData, "functionId"));
     revalidate();
     return { success: "Função apagada.", tone: "neutral" };
@@ -162,7 +162,7 @@ function linkInput(data: FormData): relatives.LinkInput {
 }
 
 export async function addRelative(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
-  return runAction(associatesEditorOrError, async ({ db }) => {
+  return runAction(associatesWriterOrError, async ({ db }) => {
     const associateId = id(formData, "associateId");
     const input = linkInput(formData);
     const existing = optionalId(formData, "relativeId");
@@ -180,7 +180,7 @@ export async function addRelative(_previous: ActionResult, formData: FormData): 
 
 /** Edita o vínculo (parentesco, legal, financeiro) e o responsável (nome, associado, observações). */
 export async function updateRelative(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
-  return runAction(associatesEditorOrError, async ({ db }) => {
+  return runAction(associatesWriterOrError, async ({ db }) => {
     const input = linkInput(formData);
     const relativeName = name(formData);
     await relatives.updateLink(db, id(formData, "linkId"), input);
@@ -191,7 +191,7 @@ export async function updateRelative(_previous: ActionResult, formData: FormData
 }
 
 export async function unlinkRelative(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
-  return runAction(associatesEditorOrError, async ({ db }) => {
+  return runAction(associatesWriterOrError, async ({ db }) => {
     await relatives.unlink(db, id(formData, "linkId"));
     revalidate();
     return { success: "Responsável desvinculado.", tone: "neutral" };

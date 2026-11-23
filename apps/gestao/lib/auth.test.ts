@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { canManageEntries, isValidEmail } from "./auth";
+import { MODULE_ROLES, roleAtLeast } from "@geas/ui/lib/roles";
+import { isValidEmail } from "./auth";
 
 describe("isValidEmail", () => {
   it.each([" Pessoa@Example.com ", "nome.sobrenome@gmail.com", "x@sub.exemplo.org"])("aceita %s, de qualquer domínio", (email) =>
@@ -9,11 +10,12 @@ describe("isValidEmail", () => {
     expect(isValidEmail(email)).toBe(false));
 });
 
-describe("canManageEntries", () => {
-  it("permite administrador e tesoureiro", () => {
-    expect(canManageEntries("admin")).toBe(true);
-    expect(canManageEntries("treasurer")).toBe(true);
+describe("roleAtLeast", () => {
+  it("segue a ordem Sem acesso < Consulta < Colaborador < Editor < Administrador", () => {
+    expect(MODULE_ROLES).toEqual(["none", "viewer", "contributor", "editor", "admin"]);
+    expect(roleAtLeast("contributor", "viewer")).toBe(true);
+    expect(roleAtLeast("contributor", "editor")).toBe(false);
+    expect(roleAtLeast("admin", "editor")).toBe(true);
+    expect(roleAtLeast("none", "viewer")).toBe(false);
   });
-
-  it("mantém consulta somente leitura", () => expect(canManageEntries("viewer")).toBe(false));
 });

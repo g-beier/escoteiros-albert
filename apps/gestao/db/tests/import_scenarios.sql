@@ -9,7 +9,7 @@
 begin;
 insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000c1', 'tes.cenarios@escoteirosalbert.com.br');
 select public.admin_bootstrap_group('tes.cenarios@escoteirosalbert.com.br', 'Grupo Teste Cenários') as gid \gset
-update public.memberships set role = 'treasurer' where user_id = '00000000-0000-0000-0000-0000000000c1';
+update public.memberships set finance_role = 'editor' where user_id = '00000000-0000-0000-0000-0000000000c1';
 select id as pix from public.payment_methods where group_id = :'gid' and name = 'PIX' \gset
 select id as cat_r from public.categories where group_id = :'gid' and code = '1.1' \gset
 select id as root_r from public.categories where group_id = :'gid' and code = '1' \gset

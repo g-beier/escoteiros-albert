@@ -22,7 +22,7 @@ const literal = (value: string) => `'${value.replaceAll("'", "''")}'`;
 const group = `(select m.group_id from public.memberships m join auth.users u on u.id = m.user_id where u.email = ${literal(E2E_ADMIN_EMAIL)})`;
 
 test.beforeAll(async () => {
-  await ensureInventoryMember(CHIEF, "chief");
+  await ensureInventoryMember(CHIEF, "contributor");
   await ensureInventoryMember(VIEWER, "viewer");
 });
 

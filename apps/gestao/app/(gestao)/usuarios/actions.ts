@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { InputError, runAction } from "@/lib/action";
-import { adminOrError } from "@/lib/server/session";
+import { usersAdminOrError } from "@/lib/server/session";
 import * as users from "@/lib/server/users";
 
-// Usuários do grupo (comum aos módulos): só o administrador; as regras ficam em lib/server/users.ts.
+// Usuários do grupo (comum aos módulos): quem administra algum módulo; as regras ficam em lib/server/users.ts e no banco.
 
 function read<T>(value: T | string): T {
   if (typeof value === "string") throw new InputError(value);
@@ -14,7 +14,7 @@ function read<T>(value: T | string): T {
 }
 
 export async function inviteUser(_previous: ActionResult, formData: FormData) {
-  return runAction(adminOrError, async ({ db, groupId }) => {
+  return runAction(usersAdminOrError, async ({ db, groupId }) => {
     const message = await users.inviteUser(db, groupId, read(users.readInvite(formData)));
     revalidatePath("/usuarios");
     return message;
@@ -22,18 +22,19 @@ export async function inviteUser(_previous: ActionResult, formData: FormData) {
 }
 
 export async function saveUserRoles(_previous: ActionResult, formData: FormData) {
-  return runAction(adminOrError, async ({ db, groupId, user }) => {
+  return runAction(usersAdminOrError, async ({ db, groupId, user }) => {
     const roles = read(users.readRoles(formData));
     const changed = await users.saveUserRoles(db, groupId, user.id, roles);
     revalidatePath("/usuarios");
-    return changed ? { success: `Papéis de ${roles.email} salvos.` } : { success: "Nada mudou.", tone: "neutral" };
+    return changed ? { success: `Acesso de ${roles.email} salvo.` } : { success: "Nada mudou.", tone: "neutral" };
   });
 }
 
 export async function removeUser(_previous: ActionResult, formData: FormData) {
-  return runAction(adminOrError, async ({ db, groupId, user }) => {
-    await users.removeUser(db, groupId, user.id, String(formData.get("userId") ?? ""));
+  return runAction(usersAdminOrError, async ({ db, groupId, user }) => {
+    const left = await users.removeUser(db, groupId, user.id, String(formData.get("userId") ?? ""));
     revalidatePath("/usuarios");
-    return { success: `Acesso de ${String(formData.get("email") ?? "")} removido.`, tone: "neutral" };
+    const email = String(formData.get("email") ?? "");
+    return { success: left ? `${email} saiu do grupo.` : `Acesso de ${email} aos seus módulos removido.`, tone: "neutral" };
   });
 }

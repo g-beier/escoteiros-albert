@@ -12,8 +12,8 @@ insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000e2'
 insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000e3', 'tes.outro.perfis@escoteirosalbert.com.br');
 select public.admin_bootstrap_group('tes.perfis@escoteirosalbert.com.br', 'Grupo Teste Perfis') as gid \gset
 select public.admin_bootstrap_group('tes.outro.perfis@escoteirosalbert.com.br', 'Grupo Teste Outro') as gid2 \gset
-update public.memberships set role = 'treasurer' where user_id = '00000000-0000-0000-0000-0000000000e1';
-insert into public.memberships(group_id, user_id, role) values (:'gid', '00000000-0000-0000-0000-0000000000e2', 'viewer');
+update public.memberships set finance_role = 'editor' where user_id = '00000000-0000-0000-0000-0000000000e1';
+insert into public.memberships(group_id, user_id, finance_role) values (:'gid', '00000000-0000-0000-0000-0000000000e2', 'viewer');
 
 set role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000e1","role":"authenticated"}', true);

@@ -14,8 +14,8 @@ grant select on tests.targets to authenticated;
 insert into tests.targets values
   ('groups', $$insert into public.groups(name) values ('Grupo direto')$$,
     format('id = %L', :'gid_a'), 'name'),
-  ('memberships', format($$insert into public.memberships(group_id, user_id, role) values (%L, '00000000-0000-0000-0000-00000000f0b1', 'admin')$$, :'gid_a'),
-    format('group_id = %L', :'gid_a'), 'role'),
+  ('memberships', format($$insert into public.memberships(group_id, user_id, finance_role) values (%L, '00000000-0000-0000-0000-00000000f0b1', 'admin')$$, :'gid_a'),
+    format('group_id = %L', :'gid_a'), 'finance_role'),
   ('accounts', format($$insert into public.accounts(group_id, name) values (%L, 'Conta direta')$$, :'gid_a'),
     format('group_id = %L', :'gid_a'), 'name'),
   ('categories', format($$insert into public.categories(group_id, name, code, kind) values (%L, 'Rubrica direta', '1.99', 'receita')$$, :'gid_a'),

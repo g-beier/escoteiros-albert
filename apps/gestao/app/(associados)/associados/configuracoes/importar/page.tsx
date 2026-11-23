@@ -12,11 +12,11 @@ import { pageSession } from "@/lib/server/session";
 export default async function ImportPage() {
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
-  if (!member.associates.canEdit) redirect("/associados/configuracoes/secoes");
+  if (!member.associates.canReview) redirect("/associados/configuracoes/secoes");
   const [existing, catalog] = await Promise.all([associates.existingForImport(member.db, member.groupId), sections.catalog(member.db, member.groupId)]);
 
   return <div className="shell">
-    <AppHeader current="/associados/configuracoes/importar" email={user.email} role={member.associates.role} isAdmin={member.isAdmin} />
+    <AppHeader current="/associados/configuracoes/importar" member={member} />
     <PageBody width="narrow">
       <PageHeader title="Configurações" tabs={<SettingsTabs current="importar" canEdit />} crumbs={settingsCrumbs("importar")}
         description="Cadastro em massa por planilha (CSV), com conferência antes de gravar." />

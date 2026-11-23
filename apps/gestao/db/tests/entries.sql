@@ -13,8 +13,8 @@ insert into auth.users(id, email) values
   ('00000000-0000-0000-0000-0000000000c3', 'outro.lanc@escoteirosalbert.com.br');
 select public.admin_bootstrap_group('tes.lanc@escoteirosalbert.com.br', 'Grupo Teste Lançamentos') as gid \gset
 select public.admin_bootstrap_group('outro.lanc@escoteirosalbert.com.br', 'Outro Grupo Lançamentos') as gid2 \gset
-update public.memberships set role = 'treasurer' where user_id = '00000000-0000-0000-0000-0000000000c1';
-insert into public.memberships(group_id, user_id, role) values (:'gid', '00000000-0000-0000-0000-0000000000c2', 'viewer');
+update public.memberships set finance_role = 'editor' where user_id = '00000000-0000-0000-0000-0000000000c1';
+insert into public.memberships(group_id, user_id, finance_role) values (:'gid', '00000000-0000-0000-0000-0000000000c2', 'viewer');
 insert into public.accounts(group_id, name, kind) values (:'gid', 'Cora', 'corrente') returning id as acc \gset
 select id as undefined_acc from public.accounts where group_id = :'gid' and name = 'A definir' \gset
 select id as pix from public.payment_methods where group_id = :'gid' and name = 'PIX' \gset

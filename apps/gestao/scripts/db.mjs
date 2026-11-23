@@ -1,6 +1,6 @@
 // Banco do Gestão sem o CLI do Supabase. Uso (de apps/gestao):
 //   node scripts/db.mjs start     sobe a infra local (db/compose.yaml), cria o papel do app, aplica as migrations,
-//                                 prepara o Azurite e grava .env.local
+//                                 prepara o Azurite e grava o bloco gerado de .env.local (o resto do arquivo fica)
 //   node scripts/db.mjs stop      para a infra local (os dados ficam nos volumes)
 //   node scripts/db.mjs migrate   aplica as migrations novas em DATABASE_ADMIN_URL (local ou Azure)
 //   node scripts/db.mjs reset     recria o banco LOCAL do zero (apaga os dados) e aplica tudo
@@ -146,21 +146,54 @@ async function setupBlob() {
 const azuriteConnectionString = () =>
   `DefaultEndpointsProtocol=http;AccountName=${AZURITE_ACCOUNT};AccountKey=${AZURITE_KEY};BlobEndpoint=http://127.0.0.1:${LOCAL.blobPort}/${AZURITE_ACCOUNT};`;
 
+// .env.local = bloco gerado (entre os marcadores, reescrito a cada `infra:start`) + o resto, que é de quem desenvolve
+// (segredos do Google, E2E_LOGIN, toggles) e é mantido como está. Modelo comentado em .env.example.
+const BLOCK_START = "# >>> gerado por `npm run infra:start` (não edite: é reescrito) >>>";
+const BLOCK_END = "# <<< fim do bloco gerado; abaixo, as suas variáveis (ver .env.example) <<<";
+const USER_TEMPLATE = [
+  "",
+  "# Login com Google (README › Ambiente local e segredos). Sem isso, use E2E_LOGIN=1.",
+  "# GOOGLE_CLIENT_ID=",
+  "# GOOGLE_CLIENT_SECRET=",
+  "# E2E_LOGIN=1",
+];
+
+function userLines(text, managed) {
+  const lines = text.split("\n");
+  const start = lines.indexOf(BLOCK_START);
+  const end = lines.indexOf(BLOCK_END);
+  // Arquivo de antes dos marcadores: tudo menos o cabeçalho antigo.
+  const rest = start >= 0 && end > start ? [...lines.slice(0, start), ...lines.slice(end + 1)] : lines.filter((line) => !line.startsWith("# Gerado por"));
+  // Uma chave gerada repetida fora do bloco valeria por cima dele: sai.
+  const kept = rest.filter((line) => !managed.has(line.split("=")[0].trim()));
+  while (kept.length && !kept.at(-1).trim()) kept.pop();
+  return kept;
+}
+
 function writeLocalEnv() {
-  const kept = existsSync(envFile)
-    ? readFileSync(envFile, "utf8").split("\n").filter((line) => /^(GOOGLE_|E2E_|NEXT_PUBLIC_FEATURE_)/.test(line))
-    : [];
-  const lines = [
-    "# Gerado por `npm run infra:start`; as linhas GOOGLE_*, E2E_* e NEXT_PUBLIC_FEATURE_* são mantidas.",
-    `DATABASE_URL=postgres://${LOCAL.appRole}:${LOCAL.appPassword}@127.0.0.1:${LOCAL.port}/${LOCAL.database}`,
-    `DATABASE_ADMIN_URL=${localAdminUrl()}`,
-    `AZURE_STORAGE_CONNECTION_STRING=${azuriteConnectionString()}`,
-    "NEXT_PUBLIC_SITE_URL=http://localhost:4321",
-    ...kept,
-    "",
-  ];
+  const generated = {
+    DATABASE_URL: `postgres://${LOCAL.appRole}:${LOCAL.appPassword}@127.0.0.1:${LOCAL.port}/${LOCAL.database}`,
+    DATABASE_ADMIN_URL: localAdminUrl(),
+    AZURE_STORAGE_CONNECTION_STRING: azuriteConnectionString(),
+    NEXT_PUBLIC_SITE_URL: "http://localhost:4321",
+  };
+  const user = existsSync(envFile) ? userLines(readFileSync(envFile, "utf8"), new Set(Object.keys(generated))) : USER_TEMPLATE;
+  const lines = [BLOCK_START, ...Object.entries(generated).map(([key, value]) => `${key}=${value}`), BLOCK_END, ...user, ""];
   writeFileSync(envFile, lines.join("\n"), { mode: 0o600 });
   console.log(`Configuração local gravada em ${envFile}`);
+  warnMissingLogin();
+}
+
+function warnMissingLogin() {
+  const values = Object.fromEntries(
+    readFileSync(envFile, "utf8").split("\n").filter((line) => /^[A-Z_0-9]+=/.test(line)).map((line) => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1).trim()]),
+  );
+  if (values.GOOGLE_CLIENT_ID && values.GOOGLE_CLIENT_SECRET) return;
+  console.warn(
+    values.E2E_LOGIN === "1"
+      ? "Login: só o de teste (E2E_LOGIN=1). Para entrar com Google, preencha GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET em .env.local."
+      : "⚠️  Sem login configurado: preencha GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET em .env.local, ou E2E_LOGIN=1 para o login de teste (README › Ambiente local e segredos).",
+  );
 }
 
 async function start() {

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { memberOrError } from "@/lib/server/session";
+import { financeReaderOrError } from "@/lib/server/session";
 import { XLSX_MIME } from "./xlsx";
 
-/** Cliente e grupo do usuário logado; qualquer papel pode exportar (é leitura, sob RLS). */
+/** Cliente e grupo do usuário logado; quem vê o Financeiro pode exportar (é leitura, sob RLS). */
 export async function exportContext() {
-  const member = await memberOrError();
+  const member = await financeReaderOrError();
   if ("error" in member) return { error: errorResponse(member.error, 403) };
   return { db: member.db, groupId: member.groupId };
 }

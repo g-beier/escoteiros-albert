@@ -26,3 +26,10 @@ test("cookie de sessão inventado não entra", async ({ page, context, baseURL }
   await page.goto("/financeiro/lancamentos");
   await expect(page).toHaveURL(/\/login/);
 });
+
+test("a política de privacidade abre sem sessão e o login leva a ela", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("link", { name: "Política de privacidade" }).click();
+  await expect(page).toHaveURL((url) => url.pathname === "/privacidade");
+  await expect(page.getByRole("heading", { level: 1, name: "Política de privacidade" })).toBeVisible();
+});

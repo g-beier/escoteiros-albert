@@ -3,7 +3,7 @@ import { z } from "zod";
 import { ATTACHMENTS_ENABLED } from "@/lib/features";
 import { DataError } from "@/lib/server/db";
 import { downloadUrl } from "@/lib/server/finance/attachments";
-import { memberOrError } from "@/lib/server/session";
+import { financeReaderOrError } from "@/lib/server/session";
 
 /**
  * GET /financeiro/lancamentos/<id>/anexos/<anexoId>[?baixar=1]
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!ATTACHMENTS_ENABLED) return text("Anexo não encontrado.", 404);
   const { id, anexoId } = await params;
   if (!z.uuid().safeParse(id).success || !z.uuid().safeParse(anexoId).success) return text("Anexo não encontrado.", 404);
-  const member = await memberOrError();
+  const member = await financeReaderOrError();
   if ("error" in member) return text(member.error, 401);
   let url: string | null;
   try {

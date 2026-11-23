@@ -53,7 +53,7 @@ export default async function MaterialDetail({ params, searchParams }: { params:
     isLot ? materials.lots(db, id) : Promise.resolve([] as Lot[]),
     isLot ? Promise.resolve([] as Unit[]) : materials.units(db, id),
     movementsData.forMaterial(db, id, 100),
-    !isLot && material.family_id && member.inventory.canEdit ? materials.nextTag(db, material.family_id) : Promise.resolve(null),
+    !isLot && material.family_id && member.inventory.canWrite ? materials.nextTag(db, material.family_id) : Promise.resolve(null),
   ]);
   const pathOf = new Map(paths.map((row) => [row.id, row.path]));
   const withPath = <T extends { location_id: string }>(rows: T[]) => rows
@@ -66,11 +66,11 @@ export default async function MaterialDetail({ params, searchParams }: { params:
   const pending = movements.filter((row) => row.review_status === "para_revisar").length;
 
   return <div className="shell">
-    <AppHeader current={`/inventario/materiais/${id}`} email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
+    <AppHeader current={`/inventario/materiais/${id}`} member={member} />
     <PageBody width="narrow">
       <PageHeader title={material.name} crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais", href: back }, { label: material.name }]}
         description={material.description ?? undefined}
-        actions={member.inventory.canEdit && <Link href={withBack(`/inventario/materiais/${id}/editar`, back)} className={buttonVariants({ variant: "outline", size: "lg" })}><IconPencil data-icon="inline-start" /> Editar material</Link>}>
+        actions={member.inventory.canWrite && <Link href={withBack(`/inventario/materiais/${id}/editar`, back)} className={buttonVariants({ variant: "outline", size: "lg" })}><IconPencil data-icon="inline-start" /> Editar material</Link>}>
         <dl className="m-0 flex flex-wrap gap-x-6 gap-y-2 text-xs">
           <Fact label="Controle">{TRACKING_LABELS[material.tracking]}{material.consumable && " · consumível"}</Fact>
           <Fact label="Família">{material.family_name ? <>{material.family_name}{material.family_code && <span className="num text-muted-foreground"> ({material.family_code})</span>}</> : "—"}</Fact>
@@ -85,20 +85,20 @@ export default async function MaterialDetail({ params, searchParams }: { params:
           {!material.active && <Fact label="Situação"><Badge variant="outline">Inativo</Badge></Fact>}
         </dl>
       </PageHeader>
-      {member.inventory.canEdit && !member.inventory.canManage && <ReviewNotice />}
+      {member.inventory.canWrite && !member.inventory.canReview && <ReviewNotice />}
 
       <SectionCard>
         <SectionHeader title={isLot ? "Lotes" : "Peças"} description={isLot
           ? "Cada lote é uma quantidade numa divisão, com condição, valor e validade próprios."
           : "Cada peça tem divisão, condição e etiqueta próprias."}>
           <SectionCount>{isLot ? `${lots.length} ${lots.length === 1 ? "lote" : "lotes"}` : `${units.filter((row) => !row.written_off_at).length} ${units.length === 1 ? "peça" : "peças"}`}</SectionCount>
-          {member.inventory.canEdit && material.active && (isLot
+          {member.inventory.canWrite && material.active && (isLot
             ? <AddLotButton materialId={id} locations={locations} />
             : <AddUnitButton materialId={id} locations={locations} nextTag={nextTag} familyCode={material.family_code} />)}
         </SectionHeader>
         {isLot
-          ? <LotsTable materialId={id} materialName={material.name} consumable={material.consumable} lots={lots} locations={locations} canEdit={member.inventory.canEdit} />
-          : <UnitsTable materialId={id} units={units} locations={locations} canEdit={member.inventory.canEdit} nextTag={nextTag} familyCode={material.family_code} />}
+          ? <LotsTable materialId={id} materialName={material.name} consumable={material.consumable} lots={lots} locations={locations} canEdit={member.inventory.canWrite} />
+          : <UnitsTable materialId={id} units={units} locations={locations} canEdit={member.inventory.canWrite} nextTag={nextTag} familyCode={material.family_code} />}
       </SectionCard>
 
       <SectionCard>
@@ -129,7 +129,7 @@ export default async function MaterialDetail({ params, searchParams }: { params:
                   <Badge variant="outline" className={REVIEW_TONES[row.review_status]}>{REVIEW_LABELS[row.review_status]}</Badge>
                   <ReviewDetails status={row.review_status} channel={row.channel} byYou={row.created_by === user.id} reviewedByYou={row.reviewed_by === user.id}
                     reviewedAt={row.reviewed_at} notes={row.review_notes} />
-                  {member.inventory.canManage && row.review_status === "para_revisar" && <ReviewButton id={row.id} action={reviewMovements} />}
+                  {member.inventory.canReview && row.review_status === "para_revisar" && <ReviewButton id={row.id} action={reviewMovements} />}
                 </div>
               </TableCell>
             </TableRow>)}</TableBody>

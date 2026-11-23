@@ -31,8 +31,8 @@ export default async function SettingsPage({ params }: { params: Promise<{ aba: 
   if (!(aba in TABS)) notFound();
   const tab = aba as Tab;
   const membership = await pageMember();
-  const { db, groupId, user } = membership;
-  const canEdit = membership.finance.canEdit;
+  const { db, groupId } = membership;
+  const canEdit = membership.finance.canReview;
   if (!canEdit) notFound();
 
   const [{ categories, paymentMethods: paymentMethodItems, accounts }, feeSettings, feePrices] = await Promise.all([
@@ -58,7 +58,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ aba: 
   const categoriesVersion = savedCategories.map((c) => [c.id, c.parent_id, c.code, c.name, c.ledger_code, c.active, c.usage].join("|")).join(";");
 
   return <div className="shell">
-    <AppHeader role={membership.finance.role} email={user.email} current="/financeiro/configuracoes" />
+    <AppHeader member={membership} current="/financeiro/configuracoes" />
     <PageBody width="narrow" className="gap-4">
       <PageHeader title="Configurações" crumbs={settingsCrumbs(tab)} tabs={<SettingsTabs current={tab} />}
         description={tab === "perfis" || tab === "mensalidades" ? TABS[tab] : `${TABS[tab]} Inativos saem dos novos lançamentos e continuam nos antigos.`} />

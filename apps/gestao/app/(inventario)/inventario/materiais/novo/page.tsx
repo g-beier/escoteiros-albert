@@ -15,14 +15,14 @@ export default async function NewMaterial({ searchParams }: { searchParams: Prom
   const back = materialsBackHref((await searchParams).voltar);
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
-  if (!member.inventory.canEdit) redirect(back);
+  if (!member.inventory.canWrite) redirect(back);
   const [familyOptions, paths] = await Promise.all([families.listOptions(member.db, member.groupId), locations.listPaths(member.db, member.groupId)]);
   return <div className="shell">
-    <AppHeader current="/inventario/materiais/novo" email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
+    <AppHeader current="/inventario/materiais/novo" member={member} />
     <PageBody width="narrow">
       <PageHeader title="Novo material" crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais", href: back }, { label: "Novo material" }]}
         description="Cadastre o material e, se quiser, já registre a primeira entrada. Depois, no detalhe, adicione mais lotes ou peças." />
-      {!member.inventory.canManage && <ReviewNotice />}
+      {!member.inventory.canReview && <ReviewNotice />}
       <SectionCard>
         <SectionHeader title="Material" />
         <div className="p-4"><MaterialForm families={familyOptions} locations={locationOptions(paths)} back={back} /></div>
