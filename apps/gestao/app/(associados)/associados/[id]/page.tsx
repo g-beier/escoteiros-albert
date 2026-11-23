@@ -56,13 +56,13 @@ export default async function AssociateDetail({ params }: { params: Promise<{ id
   const patrolName = new Map(catalog.patrols.map((p) => [p.id, p.name]));
   const where = (branch: AssociateMove["from_branch"], sectionId: string | null, patrolId?: string | null) =>
     [branchLabels[branch], sectionId && (sectionName.get(sectionId) ?? "seção removida"), patrolId && patrolName.get(patrolId)].filter(Boolean).join(" › ");
-  const canEdit = member.associates.canEdit;
+  const canEdit = member.associates.canWrite;
   const transition = transitionOf(associate, today);
   const span = youth ? transitionWindow(associate) : null;
   const scouterOf = youth ? [] : scouterSections(functions, today).get(id) ?? [];
 
   return <div className="shell">
-    <AppHeader current={`/associados/${id}`} email={user.email} role={member.associates.role} isAdmin={member.isAdmin} />
+    <AppHeader current={`/associados/${id}`} member={member} />
     <PageBody width="narrow">
       <PageHeader title={associate.name} crumbs={[{ label: "Associados", href: "/associados" }, { label: associate.name }]}
         description={associate.notes ?? undefined}
@@ -88,7 +88,7 @@ export default async function AssociateDetail({ params }: { params: Promise<{ id
         </dl>
       </PageHeader>
 
-      {associate.review_status === "para_revisar" && <ReviewNotice associateId={id} canEdit={canEdit} />}
+      {associate.review_status === "para_revisar" && <ReviewNotice associateId={id} canEdit={member.associates.canReview} />}
       {transition && <TransitionNotice associateId={id} transition={transition} branch={associate.branch} canEdit={canEdit} today={today} />}
 
       {!youth && <AssociateFunctions associateId={id} associateName={associate.name} functions={functions} sections={catalog.sections}

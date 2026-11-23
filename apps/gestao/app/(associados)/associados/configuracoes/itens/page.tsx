@@ -10,10 +10,10 @@ export default async function ControlItemsPage() {
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
   const items = await controls.items(member.db, member.groupId);
-  const canEdit = member.associates.canEdit;
+  const canEdit = member.associates.canReview;
 
   return <div className="shell">
-    <AppHeader current="/associados/configuracoes/itens" email={user.email} role={member.associates.role} isAdmin={member.isAdmin} />
+    <AppHeader current="/associados/configuracoes/itens" member={member} />
     <PageBody width="narrow">
       <PageHeader title="Configurações" tabs={<SettingsTabs current="itens" canEdit={canEdit} />} crumbs={settingsCrumbs("itens")}
         description={canEdit

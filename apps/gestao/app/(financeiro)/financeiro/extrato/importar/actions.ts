@@ -26,7 +26,7 @@ type ActionResult<T = undefined> = { error?: string; success?: string; data?: T 
 async function withDb<T>(denied: string | null, work: (db: Db, groupId: string) => Promise<ActionResult<T>>): Promise<ActionResult<T>> {
   const ctx = await memberOrError();
   if ("error" in ctx) return { error: ctx.error };
-  if (denied && !ctx.finance.canEdit) return { error: denied };
+  if (denied && !ctx.finance.canReview) return { error: denied };
   try {
     return await work(ctx.db, ctx.groupId);
   } catch (error) {

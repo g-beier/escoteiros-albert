@@ -70,10 +70,11 @@ O app conecta como `geas_app` (`DATABASE_URL`), um papel de login sem privilégi
 
 ### Login com Google
 
-1. No Google Cloud Console, crie um cliente OAuth do tipo **Aplicativo da Web** (tela de consentimento **Externo**,
-   escopos `openid` e `email`) com o URI de redirecionamento `http://localhost:3000/auth/callback`.
-2. Em `apps/gestao/.env.local`, acrescente `GOOGLE_CLIENT_ID=…` e `GOOGLE_CLIENT_SECRET=…` (o `infra:start`
-   preserva as linhas `GOOGLE_*`). `APP_URL` vale `http://localhost:3000` por padrão fora de produção.
+Passo a passo do cliente OAuth e dos segredos em "Ambiente local e segredos" no [README da raiz](../../README.md);
+modelo das variáveis em [`.env.example`](.env.example). Em resumo: cliente **Aplicativo da Web** com o redirect
+`http://localhost:3000/auth/callback`, e `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` em `apps/gestao/.env.local`, abaixo
+do bloco gerado (o `infra:start` mantém tudo o que está fora dele). `APP_URL` vale `http://localhost:3000` por padrão
+fora de produção.
 
 Entra quem tiver uma conta Google com o e-mail cadastrado em Usuários (qualquer domínio; o e-mail precisa estar
 verificado no Google). No primeiro login a conta Google fica presa ao cadastro; para trocar de conta, remova e cadastre de novo. Para usar o app local sem Google,
@@ -88,13 +89,16 @@ rode o servidor com `E2E_LOGIN=1` (só em `next dev`): a tela de login mostra um
    select public.admin_bootstrap_group('administrador@example.org', 'Grupo Escoteiro Albert Schweitzer');
    ```
 
-   A função cria o grupo, torna o usuário administrador e cadastra rubricas e formas de pagamento iniciais.
+   A função cria o grupo, torna o usuário administrador dos três módulos e cadastra rubricas e formas de pagamento iniciais.
    Só o dono do banco a executa, nunca a aplicação. Atalho: `docker compose -f apps/gestao/db/compose.yaml exec db psql -U postgres -d geas`.
 2. **Entre** em http://localhost:3000/login com a conta Google desse e-mail (ou pelo login de teste).
-3. **Cadastre as demais pessoas** em `/usuarios` (só administradores), com o papel em cada módulo:
-   - **Administrador**: tudo, inclusive usuários;
-   - **Tesoureiro**: lançamentos, associados e cadastros;
-   - **Consulta**: somente leitura.
+3. **Cadastre as demais pessoas** em `/usuarios` (administradores de algum módulo), com o papel em cada módulo; os
+   níveis são os mesmos nos três:
+   - **Sem acesso**: não vê o módulo;
+   - **Consulta**: somente leitura;
+   - **Colaborador**: faz o dia a dia, que fica para revisar;
+   - **Editor**: também revisa e mantém as configurações;
+   - **Administrador**: também gerencia os usuários do módulo.
 
 ### Banco de dados local
 

@@ -10,7 +10,7 @@ import { errorResponse } from "@/lib/finance/export/route-helpers";
 import type { Db } from "@/lib/server/db";
 import * as reports from "@/lib/server/associates/reports";
 import { pdfResponse, renderReport } from "@/lib/server/reports";
-import { memberOrError } from "@/lib/server/session";
+import { associatesReaderOrError } from "@/lib/server/session";
 
 type Context = { db: Db; groupId: string; report: ReportInfo; issuedOn: string };
 type Builder = (context: Context) => Promise<ReactElement<DocumentProps>>;
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const report = reportBySlug((await params).relatorio);
   const build = report && BUILDERS[report.slug];
   if (!report || !build) return errorResponse("Relatório não encontrado.", 404);
-  const member = await memberOrError();
+  const member = await associatesReaderOrError();
   if ("error" in member) return errorResponse(member.error, 403);
 
   const issuedOn = todayISO();

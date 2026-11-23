@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { InputError, runAction } from "@/lib/action";
 import * as movements from "@/lib/server/inventory/movements";
-import { inventoryManagerOrError } from "@/lib/server/session";
+import { inventoryEditorOrError } from "@/lib/server/session";
 
 /** Até quantos movimentos de uma vez (a lista mostra no máximo 200). */
 const MAX_IDS = 200;
@@ -14,7 +14,7 @@ const MAX_IDS = 200;
  * Movimento errado não é recusado: o gestor corrige com uma ação normal e revisa o original com uma nota.
  */
 export async function reviewMovements(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
-  return runAction(() => inventoryManagerOrError("Apenas o gestor do inventário revisa movimentos."), async ({ db, groupId }) => {
+  return runAction(() => inventoryEditorOrError("Apenas editores do Inventário revisam movimentos."), async ({ db, groupId }) => {
     const ids = formData.getAll("ids").map(String).filter((id) => /^\d+$/.test(id)).map(Number);
     if (ids.length === 0) throw new InputError("Escolha os movimentos a revisar.");
     if (ids.length > MAX_IDS) throw new InputError(`Revise até ${MAX_IDS} movimentos de uma vez.`);

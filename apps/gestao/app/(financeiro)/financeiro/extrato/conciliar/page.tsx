@@ -24,14 +24,14 @@ export default async function ReconciliationPage({ searchParams }: { searchParam
   const { user, member: membership } = await pageSession();
   if (!membership) return <SetupNeeded email={user.email} />;
   const { db, groupId } = membership;
-  const canEdit = membership.finance.canEdit;
+  const canEdit = membership.finance.canReview;
   const period = parsePeriod(first(params.de), first(params.ate));
 
   const { accounts, error: accountError } = await reconciliation.accounts(db, groupId);
   const requested = first(params.conta);
   const account = accounts.find((a) => a.id === requested) ?? accounts.find((a) => a.active && a.kind !== "outro") ?? accounts.find((a) => a.active) ?? accounts[0];
 
-  const header = <AppHeader role={membership.finance.role} email={user.email} current="/financeiro/extrato/conciliar" />;
+  const header = <AppHeader member={membership} current="/financeiro/extrato/conciliar" />;
   if (!account) {
     return <div className="shell">{header}<main className={PAGE_BODY}>
       <PageHeader title="Extrato" crumbs={extratoCrumbs("conciliar")} tabs={<ExtratoTabs current="conciliar" />}

@@ -35,7 +35,7 @@ export default async function QuickHome({ searchParams }: { searchParams: Promis
   const { q = "", feito, id } = await searchParams;
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
-  const can = { financeiro: member.finance.canEdit, inventario: member.inventory.canEdit, associados: member.associates.canEdit };
+  const can = { financeiro: member.finance.canWrite, inventario: member.inventory.canWrite, associados: member.associates.canWrite };
   if (!can.financeiro && !can.inventario && !can.associados) redirect("/");
   const search = can.inventario ? q.trim() : "";
   const rows = search ? (await materials.list(member.db, member.groupId, { includeInactive: false, search }))
@@ -44,7 +44,7 @@ export default async function QuickHome({ searchParams }: { searchParams: Promis
   const link = done && doneLink(done, id);
 
   return <div className="shell">
-    <GestaoHeader current="/rapido" email={user.email} role={member.finance.role} isAdmin={member.isAdmin} quick />
+    <GestaoHeader current="/rapido" member={member} quick />
     <PageBody width="narrow">
       <PageHeader title="Registro rápido" crumbs={[{ label: "Registro rápido" }]}
         description="Para usar no celular, na hora. Tudo o que for registrado aqui entra já e fica para revisar na lista do módulo." />
@@ -64,7 +64,7 @@ export default async function QuickHome({ searchParams }: { searchParams: Promis
           </Link></li>}
           {can.associados && <li className="border-t first:border-t-0"><Link href="/rapido/associado" className={BIG_LINK}>
             <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">Associado novo</span>
-              <span className="block text-xs text-muted-foreground">Nome, ramo e datas; a Secretaria completa.</span></span>
+              <span className="block text-xs text-muted-foreground">Nome, ramo e datas; a Diretoria completa.</span></span>
             <IconChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           </Link></li>}
         </ul>

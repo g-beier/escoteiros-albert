@@ -4,10 +4,12 @@ import { E2E_PREFIX } from "./env";
 /** Histórico único por teste/execução: "E2E <rótulo> <sufixo>". */
 export const uniqueName = (label: string) => `${E2E_PREFIX} ${label} ${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
 
-/** Escolhe uma opção num select (Base UI) pelo rótulo do campo. */
+/** Escolhe uma opção num select (Base UI) pelo rótulo do campo. Espera a lista fechar: selects vizinhos com as mesmas
+ * opções (ex.: os papéis de cada módulo) não podem achar a lista anterior ainda na animação de saída. */
 export async function chooseOption(page: Page, label: string | RegExp, option: string | RegExp, scope: Page | Locator = page) {
   await scope.getByLabel(label, { exact: typeof label === "string" }).click();
   await page.getByRole("option", { name: option, exact: typeof option === "string" }).click();
+  await expect(page.getByRole("listbox")).toHaveCount(0);
 }
 
 export type NewEntry = { name: string; direction: "entrada" | "saida"; total: string; account: string; category: string; description: string; date?: string };

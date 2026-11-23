@@ -21,7 +21,7 @@ O regulamento patrimonial do grupo está para ser aprovado em assembleia. Até l
 | **Valor estimado** | Quanto vale cada unidade da peça ou do lote para o patrimônio; lotes do mesmo material podem ter valores diferentes. Diferente do **preço de venda** dos produtos da Lojinha. | *(proposto)* |
 | **Baixa** | Saída definitiva do patrimônio, com motivo: perda, extravio, descarte, doação ou consumo. Sem anexos (no máximo poucos, se o regulamento exigir). | movimento do tipo baixa *(proposto)* |
 | **Movimento** | Registro de toda mudança: entrada, troca de divisão, mudança de condição, ajuste de quantidade, baixa, venda e entrega da Lojinha. É o histórico e a base da revisão. | `inventory_movements` (a ampliar) |
-| **Revisão** | Dois status: **Para revisar** e **Revisado**. Todo movimento do chefe, e todo movimento do **registro rápido** (mesmo do gestor ou do administrador), vale na hora e fica **para revisar**; os do gestor e do administrador nas telas normais já nascem revisados. Qualquer gestor revisa, inclusive os próprios registros rápidos (Movimentações › Para revisar, em lote, com nota opcional; ou no histórico do material). Não há recusa: se algo estiver errado, o gestor conversa com quem registrou, corrige com um movimento normal (ajuste, condição, transferência, baixa) e marca o original como revisado com uma nota. | `inventory_movements.review_status`, `review_notes`; `inventory_review_movements` (044) |
+| **Revisão** | Dois status: **Para revisar** e **Revisado**. Todo movimento do colaborador (chefe), e todo movimento do **registro rápido** (mesmo do editor ou do administrador), vale na hora e fica **para revisar**; os do gestor e do administrador nas telas normais já nascem revisados. Qualquer gestor revisa, inclusive os próprios registros rápidos (Movimentações › Para revisar, em lote, com nota opcional; ou no histórico do material). Não há recusa: se algo estiver errado, o gestor conversa com quem registrou, corrige com um movimento normal (ajuste, condição, transferência, baixa) e marca o original como revisado com uma nota. | `inventory_movements.review_status`, `review_notes`; `inventory_review_movements` (044) |
 | **Registro rápido** | Parte do registro rápido comum aos módulos (`/rapido`, telas de celular) para registrar na hora, com poucos campos: retirar/consumir, entrada, mudar condição, transferir, ajustar contagem e cadastrar material novo (com a primeira entrada; valor e origem o gestor completa). Feitas rapidamente e sujeitas a erro: tudo fica para revisar. | `inventory_movements.channel = 'rapido'`; `inventory_quick` (045) |
 | **Contagem anual** | Quantidade contada de um material numa divisão num ano (uma por ano). A planilha trouxe 2024 a 2026; a conferência registra as próximas. A lista de materiais mostra a do ano anterior. Só o gestor registra. | `inventory_counts` |
 | **Conferência** | Processo anual (no mínimo), aberto pelo diretor no começo do ano ("Conferência 2027"): os chefes, com as seções, conferem as divisões e lançam as **divergências** de quantidade e de condição; as divergências viram ajustes. | `inventory_audits` *(proposto)* |
@@ -32,18 +32,19 @@ O regulamento patrimonial do grupo está para ser aprovado em assembleia. Até l
 
 ## Papéis
 
-**Administrador** é um papel do grupo e vale nos dois apps: administra o Financeiro e o Inventário (e os usuários). Os demais papéis são **por app**: o papel no Financeiro (tesoureiro, consulta) não vale para o Inventário, e vice-versa. Hoje o papel é um só por pessoa (`memberships.role`), e por isso o Inventário só trata administrador e tesoureiro como editores; uma conta da diretoria que é Consulta no Financeiro aparece como Consulta também no Inventário, quando deveria ser Gestor.
+Os níveis são os mesmos nos três módulos (`memberships.inventory_role`, migration 003; `docs/plano-go-live.md` §1):
 
 | Papel no Inventário | Pode |
 |---|---|
-| **Administrador** (do grupo) | Tudo o que o gestor pode, mais gerenciar usuários e acessos. Vale também no Financeiro. |
-| **Gestor** (ex.: diretor de patrimônio) | Cadastra e movimenta sem passar por revisão nas telas normais (no registro rápido, fica para revisar); revisa os movimentos dos chefes e os do registro rápido; abre e fecha a conferência; cadastra produtos da Lojinha. Não gerencia usuários. |
-| **Chefe** (usuário normal) | Cadastra e movimenta material (telas normais ou registro rápido): vale na hora e fica para revisar; lança divergências na conferência. |
+| **Administrador** | Tudo o que o editor pode, mais gerenciar os usuários do Inventário. |
+| **Editor** (ex.: diretor de patrimônio) | Cadastra e movimenta sem passar por revisão nas telas normais (no registro rápido, fica para revisar); revisa os movimentos dos colaboradores e os do registro rápido; mantém divisões e famílias; abre e fecha a conferência; cadastra produtos da Lojinha. |
+| **Colaborador** (o chefe) | Cadastra e movimenta material (telas normais ou registro rápido): vale na hora e fica para revisar; lança divergências na conferência. |
 | **Consulta** | Só vê. |
+| **Sem acesso** | Não vê o Inventário. |
 
-Movimentos do gestor e do administrador nas telas normais já nascem revisados; no registro rápido, ficam para revisar.
+Movimentos do editor e do administrador nas telas normais já nascem revisados; no registro rápido, ficam para revisar.
 
-A tesouraria lança vendas e compras da Lojinha no Financeiro e também cadastra produtos no Inventário; para isso, quem é da tesouraria precisa de um papel no Inventário (gestor, ou chefe com revisão).
+A tesouraria lança vendas e compras da Lojinha no Financeiro e também cadastra produtos no Inventário; para isso, quem é da tesouraria precisa de um papel no Inventário (Editor, ou Colaborador com revisão).
 
 ## Fora do escopo por enquanto
 
@@ -56,7 +57,7 @@ A tesouraria lança vendas e compras da Lojinha no Financeiro e também cadastra
 
 1. **Cadastro**: material por peça ou por quantidade, consumíveis, divisões em árvore, etiquetas, dados de entrada, baixa. Papéis por app.
 2. **Lojinha**: produtos e variações; venda pelo Financeiro (rubrica Lojinha) gerando a saída; entrega gratuita no Inventário.
-3. **Revisão** pelo gestor e **registro rápido** (celular).
+3. **Revisão** pelo editor e **registro rápido** (celular).
 4. **Conferência** anual.
 
 ## Carga inicial

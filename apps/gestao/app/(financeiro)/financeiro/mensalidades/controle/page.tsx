@@ -44,13 +44,13 @@ export default async function FeesPage({ searchParams }: { searchParams: Promise
 
   // No desktop a página não rola: a grade ocupa o resto da tela e só as linhas rolam, com cabeçalho e totais fixos.
   return <div className="shell flex min-h-dvh flex-col overflow-clip md:h-dvh md:min-h-0 md:overflow-hidden">
-    <AppHeader role={member.finance.role} email={user.email} current="/financeiro/mensalidades/controle" />
+    <AppHeader member={member} current="/financeiro/mensalidades/controle" />
     <PageBody width="narrow" className="md:flex md:min-h-0 md:flex-1 md:flex-col">
       <PageHeader title="Mensalidades" tabs={<FeeTabs current="controle" />} crumbs={feeCrumbs("controle")}
         actions={<YearSelect year={year} links={years.map((y) => ({ year: y, href: href({ ano: y === thisYear ? undefined : String(y) }) }))} />}
-        description={<>Março a dezembro. Vencimento {rule.toLowerCase()}; depois disso, sem registro, fica atrasado. Pagamentos lançados na rubrica de mensalidade com o associado aparecem como sugestão.{member.finance.canEdit && " Regra e rubrica em Configurações › Mensalidades."}</>} />
+        description={<>Março a dezembro. Vencimento {rule.toLowerCase()}; depois disso, sem registro, fica atrasado. Pagamentos lançados na rubrica de mensalidade com o associado aparecem como sugestão.{member.finance.canReview && " Regra e rubrica em Configurações › Mensalidades."}</>} />
       {data.error && <p role="alert" className="m-0 rounded-lg bg-destructive/10 px-3 py-2 text-destructive">Não foi possível carregar as mensalidades: {data.error}</p>}
-      <FeeGrid key={year} year={year} rows={rows} suggestions={suggestions} splitsByAssociate={data.splitsByAssociate} canEdit={member.finance.canEdit} price={data.price} individualPrices={data.individualPrices} onlyOverdue={params.atrasados === "1"}
+      <FeeGrid key={year} year={year} rows={rows} suggestions={suggestions} splitsByAssociate={data.splitsByAssociate} canEdit={member.finance.canReview} price={data.price} individualPrices={data.individualPrices} onlyOverdue={params.atrasados === "1"}
         sectionOptions={sections.length > 1 ? sections.map((section) => ({ value: section ?? NO_SECTION_PARAM, label: section ?? NO_SECTION })) : []} />
     </PageBody>
   </div>;

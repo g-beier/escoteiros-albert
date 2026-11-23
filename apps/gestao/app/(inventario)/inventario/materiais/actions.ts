@@ -10,7 +10,7 @@ import type { EntryInput } from "@/lib/inventory/model";
 import type { Condition, Origin, Tracking, WriteOffReason } from "@/lib/inventory/vocabulary";
 import { parseMoneyToCents } from "@/lib/money";
 import * as materials from "@/lib/server/inventory/materials";
-import { inventoryEditorOrError } from "@/lib/server/session";
+import { inventoryWriterOrError } from "@/lib/server/session";
 
 // Validação dos formulários aqui; as escritas são as funções inventory_* (lib/server/inventory/materials.ts),
 // auditadas, e as do chefe ficam para revisar.
@@ -70,7 +70,7 @@ const entry = (data: FormData): EntryInput => ({
 
 /** Registra para chefe, gestor ou administrador e atualiza a lista, o material e o resumo. */
 function record(data: FormData, work: (db: Parameters<typeof materials.addLot>[0]) => Promise<string>) {
-  return runAction(inventoryEditorOrError, async ({ db }) => {
+  return runAction(inventoryWriterOrError, async ({ db }) => {
     const message = await work(db);
     const materialId = text(data, "materialId");
     revalidatePath("/inventario/materiais");
@@ -99,7 +99,7 @@ function firstEntry(formData: FormData, tracking: Tracking) {
  */
 export async function saveMaterial(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   let savedId = "";
-  const result = await runAction(inventoryEditorOrError, async ({ db, groupId }) => {
+  const result = await runAction(inventoryWriterOrError, async ({ db, groupId }) => {
     const tracking = oneOf<Tracking>(formData, "tracking", ["unit", "lot"]);
     if (!tracking) throw new InputError("Escolha se o material é controlado por peça ou por quantidade.");
     const id = optionalId(formData, "id");
@@ -194,7 +194,7 @@ export async function adjustLot(_previous: ActionResult, formData: FormData) {
  * Leitura: devolve os lotes ou a mensagem de erro.
  */
 export async function loadRowLots(materialId: unknown, locationId: unknown): Promise<{ lots: Awaited<ReturnType<typeof materials.openLotsAt>> } | { error: string }> {
-  const member = await inventoryEditorOrError();
+  const member = await inventoryWriterOrError();
   if ("error" in member) return member;
   const uuid = /^[0-9a-f-]{36}$/i;
   if (typeof materialId !== "string" || typeof locationId !== "string" || !uuid.test(materialId) || !uuid.test(locationId)) return { error: "Registro inválido. Recarregue a página." };

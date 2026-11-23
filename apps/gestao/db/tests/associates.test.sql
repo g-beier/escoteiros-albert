@@ -4,30 +4,30 @@ begin;
 select plan(77);
 \ir _fixture.psql
 
--- Secretaria (…f0a6): no Financeiro é só consulta.
+-- Editor do Associados (…f0a6): no Financeiro é só consulta.
 insert into auth.users(id, email) values ('00000000-0000-0000-0000-00000000f0a6', 'rls.secretaria.a@escoteirosalbert.com.br');
-insert into public.memberships(group_id, user_id, role) values (:'gid_a', '00000000-0000-0000-0000-00000000f0a6', 'viewer');
+insert into public.memberships(group_id, user_id, finance_role) values (:'gid_a', '00000000-0000-0000-0000-00000000f0a6', 'viewer');
 
 -- Papéis -------------------------------------------------------------------------------------
 select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
-select is(public.associates_role_of(:'gid_a')::text, 'manager', 'administrador do grupo é secretaria');
+select is(public.associates_role_of(:'gid_a')::text, 'admin', 'quem criou o grupo administra o Associados');
 select ok(public.can_manage_associates(:'gid_a'), 'administrador gerencia associados');
-select lives_ok(format($$select public.admin_change_associates_role(%L, '00000000-0000-0000-0000-00000000f0a6', 'manager')$$, :'gid_a'), 'admin define secretaria');
-select is((select associates_role::text from public.memberships where user_id = '00000000-0000-0000-0000-00000000f0a6'), 'manager', 'papel gravado');
-select is((select role::text from public.memberships where user_id = '00000000-0000-0000-0000-00000000f0a6'), 'viewer', 'papel no Financeiro não muda');
-select throws_like(format($$select public.admin_change_associates_role(%L, gen_random_uuid(), 'manager')$$, :'gid_a'), 'Usuário não encontrado%', 'usuário fora do grupo');
+select lives_ok(format($$select public.admin_set_module_role(%L, '00000000-0000-0000-0000-00000000f0a6', 'associates', 'editor')$$, :'gid_a'), 'admin define editor');
+select is((select associates_role::text from public.memberships where user_id = '00000000-0000-0000-0000-00000000f0a6'), 'editor', 'papel gravado');
+select is((select finance_role::text from public.memberships where user_id = '00000000-0000-0000-0000-00000000f0a6'), 'viewer', 'papel no Financeiro não muda');
+select throws_like(format($$select public.admin_set_module_role(%L, gen_random_uuid(), 'associates', 'editor')$$, :'gid_a'), 'Usuário não encontrado%', 'usuário fora do grupo');
 
 select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
-select is(public.associates_role_of(:'gid_a')::text, 'viewer', 'tesouraria tem papel de consulta no Associados');
-select ok(public.can_manage_associates(:'gid_a'), 'tesouraria ainda gerencia associados (transição)');
-select throws_like(format($$select public.admin_change_associates_role(%L, '00000000-0000-0000-0000-00000000f0a3', 'manager')$$, :'gid_a'), 'Apenas administradores%', 'tesouraria não altera papéis');
+select is(public.associates_role_of(:'gid_a')::text, 'editor', 'tesouraria é editora no Associados');
+select ok(public.can_manage_associates(:'gid_a'), 'tesouraria gerencia associados');
+select throws_like(format($$select public.admin_set_module_role(%L, '00000000-0000-0000-0000-00000000f0a3', 'associates', 'editor')$$, :'gid_a'), 'Apenas o administrador do módulo%', 'tesouraria não altera papéis');
 
 select tests.login('00000000-0000-0000-0000-00000000f0a3') \gset
 select ok(not public.can_manage_associates(:'gid_a'), 'consulta não gerencia');
 
 select tests.login('00000000-0000-0000-0000-00000000f0a6') \gset
-select ok(public.can_manage_associates(:'gid_a'), 'secretaria gerencia');
-select throws_like(format($$select public.admin_change_associates_role(%L, '00000000-0000-0000-0000-00000000f0a3', 'manager')$$, :'gid_a'), 'Apenas administradores%', 'secretaria não altera papéis');
+select ok(public.can_manage_associates(:'gid_a'), 'editor gerencia');
+select throws_like(format($$select public.admin_set_module_role(%L, '00000000-0000-0000-0000-00000000f0a3', 'associates', 'editor')$$, :'gid_a'), 'Apenas o administrador do módulo%', 'editor não altera papéis');
 
 -- Seções e equipes pela secretaria ------------------------------------------------------------
 select public.create_section(:'gid_a', 'lobinho', 'Alcateia Assoc') as alcateia \gset
@@ -135,7 +135,7 @@ select throws_like(format($$select public.associates_leave(%L, '2026-09-01', nul
 select tests.logout() \gset
 
 select is((select count(*)::int from public.audit_events where group_id = :'gid_a'
-  and action in ('associate.created', 'associate.updated', 'associate.moved', 'associate.left', 'associate.rejoined', 'user.associates_role_changed')), 14,
+  and action in ('associate.created', 'associate.updated', 'associate.moved', 'associate.left', 'associate.rejoined', 'user.role_changed')), 14,
   'cadastros, passagens, saídas e papéis auditados');
 
 select * from finish();

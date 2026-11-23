@@ -40,7 +40,8 @@ export async function EntriesScreen({ view, searchParams }: { view: EntryView; s
   const { user, member: membership } = await pageSession();
   if (!membership) return <SetupNeeded email={user.email} />;
   const { db, groupId } = membership;
-  const canEdit = membership.finance.canEdit;
+  const canEdit = membership.finance.canReview;
+  const canWrite = membership.finance.canWrite;
 
   const [{ categories, paymentMethods, accounts }, firstPage, { pendingDocs, firstDate, lastDate }, associates] = await Promise.all([
     entryCatalogs(db, groupId), fetchEntryPage(db, groupId, view, filters, sort, 0, true), listStats(db, groupId), associateFilterData(db, groupId),
@@ -83,7 +84,7 @@ export async function EntriesScreen({ view, searchParams }: { view: EntryView; s
   // No desktop a página não rola; só as linhas da tabela rolam, sob cabeçalhos fixos.
   // No celular (cartões) a página inteira rola; overflow-clip mantém o cabeçalho e o rodapé fixos funcionando.
   return <div className="shell flex min-h-dvh flex-col overflow-clip before:hidden after:hidden md:h-dvh md:min-h-0 md:overflow-hidden">
-    <AppHeader role={membership.finance.role} email={user.email} current={`/financeiro/lancamentos/${view}`} />
+    <AppHeader member={membership} current={`/financeiro/lancamentos/${view}`} />
     <main className="flex flex-1 flex-col gap-2.5 px-4 pt-4 pb-3 md:min-h-0">
       <FilterOptionsProvider dimensions={dimensions} associates={associates}>
       <EntryListProvider canEdit={canEdit} returnHref={returnHref}>
@@ -96,7 +97,7 @@ export async function EntriesScreen({ view, searchParams }: { view: EntryView; s
             {(pendingDocs ?? 0) > 0 && filters.folder !== "pendente" && <Link href={entriesPath(view, `pasta=pendente&de=${ALL_DATES}`)} className="inline-flex items-center gap-1.5 rounded-full bg-caution-soft px-3 py-1 text-xs font-semibold text-caution hover:ring-1 hover:ring-current"><IconFolderExclamation className="size-4" aria-hidden /> {pendingDocs} {pendingDocs === 1 ? "documento pendente" : "documentos pendentes"}</Link>}
             <ExportMenu view={view} from={filters.from} to={filters.to} years={years} accounts={toOptions(accounts)} />
             {undefinedAccount && (undefinedCount ?? 0) > 0 && !onlyUndefined && <Link href={entriesPath("movimentacoes", `conta=${undefinedAccount.id}&de=${ALL_DATES}`)} className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-semibold text-foreground hover:ring-1 hover:ring-current" title="Lançamentos sem conta definida; marque-os e escolha a conta certa"><IconHelpCircle className="size-4" aria-hidden /> {undefinedCount} em “{PLACEHOLDER_ACCOUNT_NAME}”</Link>}
-            {canEdit && <NewEntryButton returnHref={returnHref} />}
+            {canWrite && <NewEntryButton returnHref={returnHref} />}
           </>} />
         <EntryFilters view={view} />
         {canEdit && !byCategory && <BulkAccountBar accounts={(accounts ?? []).filter((account) => account.active).map((account) => ({ value: account.id, label: account.name }))} />}

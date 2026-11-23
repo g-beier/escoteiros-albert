@@ -12,8 +12,8 @@ insert into auth.users(id, email) values
   ('00000000-0000-0000-0000-0000000000d3', 'intruso.devedores@escoteirosalbert.com.br');
 select public.admin_bootstrap_group('tes.devedores@escoteirosalbert.com.br', 'Grupo Teste Devedores') as gid \gset
 select public.admin_bootstrap_group('intruso.devedores@escoteirosalbert.com.br', 'Grupo Intruso Devedores') as gid_b \gset
-update public.memberships set role = 'treasurer' where user_id = '00000000-0000-0000-0000-0000000000d1';
-insert into public.memberships(group_id, user_id, role) values (:'gid', '00000000-0000-0000-0000-0000000000d2', 'viewer');
+update public.memberships set finance_role = 'editor' where user_id = '00000000-0000-0000-0000-0000000000d1';
+insert into public.memberships(group_id, user_id, finance_role) values (:'gid', '00000000-0000-0000-0000-0000000000d2', 'viewer');
 select id as pix from public.payment_methods where group_id = :'gid' and name = 'PIX' \gset
 select id as cat_rec from public.categories where group_id = :'gid' and code = '1.2' \gset
 select id as cat_desp from public.categories where group_id = :'gid' and code = '2.1' \gset

@@ -1,6 +1,5 @@
 // Vocabulário do Inventário (apps/gestao/docs/inventario/modelo.md): valores do banco → rótulos da interface.
 
-export type InventoryRole = "manager" | "chief" | "viewer";
 export type Condition = "novo" | "bom" | "regular" | "ruim" | "manutencao" | "inservivel";
 export type Tracking = "unit" | "lot";
 export type Origin = "compra" | "doacao" | "fabricacao" | "nao_informada";
@@ -9,7 +8,6 @@ export type MovementKind = "entrada" | "transferencia" | "condicao" | "ajuste" |
 export type ReviewStatus = "para_revisar" | "revisado";
 export type MovementChannel = "web" | "rapido";
 
-export const ROLE_LABELS: Record<InventoryRole, string> = { manager: "Gestor", chief: "Chefe", viewer: "Consulta" };
 export const CONDITION_LABELS: Record<Condition, string> = {
   novo: "Novo", bom: "Bom", regular: "Regular", ruim: "Ruim", manutencao: "Em manutenção", inservivel: "Inservível",
 };
@@ -27,7 +25,6 @@ export const conditionOptions = options(CONDITION_LABELS);
 export const trackingOptions = options(TRACKING_LABELS);
 export const originOptions = options(ORIGIN_LABELS);
 export const writeOffOptions = options(WRITE_OFF_LABELS);
-export const roleOptions = options(ROLE_LABELS);
 
 /** Formato da etiqueta: GEAS-<família, 3 dígitos>-<contagem, 4 dígitos>. */
 export const TAG_PATTERN = /^GEAS-\d{3}-\d{4}$/;

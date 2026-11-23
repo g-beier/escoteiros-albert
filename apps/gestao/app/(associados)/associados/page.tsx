@@ -64,7 +64,7 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
   const tab = BRANCH_TABS.find((t) => t.value === branch) ?? BRANCH_TABS[0];
 
   return <div className="shell">
-    <AppHeader current="/associados" email={user.email} role={member.associates.role} isAdmin={member.isAdmin} />
+    <AppHeader current="/associados" member={member} />
     <PageBody width="narrow">
       <PageHeader title="Associados" crumbs={[{ label: "Associados" }]}
         description={<>Efetivo hoje: <strong className="num">{active.length}</strong> {active.length === 1 ? "ativo" : "ativos"} (<span className="num">{youth}</span> {youth === 1 ? "jovem" : "jovens"} e <span className="num">{active.length - youth}</span> {active.length - youth === 1 ? "adulto" : "adultos"}).</>}
@@ -73,7 +73,7 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
             ? <Link href={reviewToggle(params, false)} className={PILL} title="Mostrar todos os associados"><IconBolt className="size-4" aria-hidden /> Só os para revisar <IconX className="size-3.5" aria-label="tirar o filtro" /></Link>
             : toReview > 0 && <Link href={reviewToggle(params, true)} className={PILL} title="Cadastros do registro rápido ainda não conferidos"><IconBolt className="size-4" aria-hidden /> {toReview} para revisar</Link>}
           <ReportsDialog toReview={toReview} />
-          {member.associates.canEdit && <Link href="/associados/novo" className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo associado</Link>}
+          {member.associates.canWrite && <Link href="/associados/novo" className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo associado</Link>}
         </>}>
         <SectionTabs label="Ramos" tabs={BRANCH_TABS.map((t) => ({ href: hrefFor(t.value), label: t.label, active: t.value === branch }))} />
         <AssociateFilters />

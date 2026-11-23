@@ -16,7 +16,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function NewEntryPage({ searchParams }: { searchParams: Promise<{ voltar?: string; linha?: string }> }) {
   const { voltar, linha } = await searchParams;
-  const { db, user, role, canEdit, catalogs } = await loadEntryContext();
+  const { member, db, canEdit, catalogs } = await loadEntryContext();
   if (!canEdit) notFound();
 
   // "Criar lançamento" na conciliação: a linha do extrato preenche data, histórico, valor, conta e forma provável
@@ -32,7 +32,7 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
   } : undefined;
 
   return <div className="shell">
-    <AppHeader role={role} email={user.email} current="/financeiro/lancamentos/novo" />
+    <AppHeader member={member} current="/financeiro/lancamentos/novo" />
     <PageBody>
       <PageHeader title="Novo lançamento"
         crumbs={line ? [{ label: "Extrato", href: "/financeiro/extrato/conciliar" }, { label: "Conciliar", href: backHref }, { label: "Novo lançamento" }] : [{ label: "Lançamentos", href: backHref }, { label: "Novo lançamento" }]}

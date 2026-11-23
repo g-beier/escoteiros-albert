@@ -83,7 +83,7 @@ export const metadata = { title: "Lançamento · GEAS Financeiro" };
 export default async function EntryDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ voltar?: string }> }) {
   const [{ id }, { voltar }] = await Promise.all([params, searchParams]);
   if (!z.uuid().safeParse(id).success) notFound();
-  const { db, user, role, canEdit, catalogs } = await loadEntryContext();
+  const { member, db, canEdit, catalogs } = await loadEntryContext();
   const [entry, statementLines, attachments, auditRows] = await Promise.all([
     fetchEntry(db, id), linkedStatementLines(db, id), ATTACHMENTS_ENABLED ? attachmentsData.listForEntry(db, id) : Promise.resolve([]), entryHistory(db, id),
   ]);
@@ -93,7 +93,7 @@ export default async function EntryDetailPage({ params, searchParams }: { params
   const edited = entry.updatedAt.slice(0, 19) !== entry.createdAt.slice(0, 19);
 
   return <div className="shell">
-    <AppHeader role={role} email={user.email} current={`/financeiro/lancamentos/${id}`} />
+    <AppHeader member={member} current={`/financeiro/lancamentos/${id}`} />
     <PageBody>
       <PageHeader title={entry.name} crumbs={[{ label: "Lançamentos", href: backHref }, { label: entry.name }]}
         description={<>
@@ -102,7 +102,7 @@ export default async function EntryDetailPage({ params, searchParams }: { params
           {" · "}criado em {dateTime.format(new Date(entry.createdAt))}{edited && <> · alterado em {dateTime.format(new Date(entry.updatedAt))}</>}
           {!canEdit && " · somente consulta"}
         </>} />
-      {entry.toReview && <ReviewEntryNotice entryId={id} canEdit={canEdit} />}
+      {entry.toReview && <ReviewEntryNotice entryId={id} canEdit={member.finance.canReview} />}
       {statementLines.length > 0 && <StatementLines lines={statementLines} />}
       <SectionCard className="p-5"><EntryForm entry={entry} catalogs={catalogs} canEdit={canEdit} backHref={backHref} /></SectionCard>
       {ATTACHMENTS_ENABLED && <EntryAttachments entryId={id} attachments={attachments} canEdit={canEdit} />}

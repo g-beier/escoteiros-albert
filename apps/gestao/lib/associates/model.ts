@@ -102,7 +102,7 @@ export type AssociateProfile = {
   id: string; name: string; branch: ScoutBranch; active: boolean;
   section_id: string | null; section: string | null; patrol_id: string | null; patrol: string | null;
   birth_date: string | null; promise_date: string | null; joined_on: string | null; notes: string | null; left_on: string | null;
-  /** `para_revisar`: cadastrado pelo registro rápido e ainda não conferido pela Secretaria (049). */
+  /** `para_revisar`: cadastrado pelo registro rápido e ainda não conferido pela Diretoria (049). */
   review_status?: string;
   /** Transição de ramo iniciada (ou partida programada) neste ramo, em `AAAA-MM-DD` (050). */
   transition_started_on?: string | null;

@@ -21,7 +21,7 @@ export default async function FinanceSummary() {
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
   const { db, groupId } = member;
-  const canEdit = member.finance.canEdit;
+  const canEdit = member.finance.canWrite;
   const year = currentYear();
   const today = todayInSaoPaulo();
 
@@ -42,7 +42,7 @@ export default async function FinanceSummary() {
   const yearRange = `de=${year}-01-01&ate=${year}-12-31`;
 
   return <div className="shell">
-    <AppHeader role={member.finance.role} email={user.email} current="/financeiro" />
+    <AppHeader member={member} current="/financeiro" />
     <main className={PAGE_BODY}>
       <PageHeader title={`Resumo de ${year}`} crumbs={[{ label: `Resumo de ${year}` }]} actions={<>
         <Link href="/financeiro/lancamentos/movimentacoes" className={buttonVariants({ variant: "outline", size: "lg" })}>Ver lançamentos <IconArrowRight data-icon="inline-end" /></Link>

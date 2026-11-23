@@ -50,12 +50,12 @@ export default async function Movements({ searchParams }: { searchParams: Promis
     locations.listPaths(member.db, member.groupId),
   ]);
   const pathOf = new Map(paths.map((p) => [p.id, p.path]));
-  const canReview = member.inventory.canManage;
+  const canReview = member.inventory.canReview;
   const toReview = canReview ? rows.filter((m) => m.review_status === "para_revisar").map((m) => m.id) : [];
   const dash = <span className="text-muted-foreground">—</span>;
 
   return <div className="shell">
-    <AppHeader current="/inventario/movimentacoes" email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
+    <AppHeader current="/inventario/movimentacoes" member={member} />
     <PageBody>
       <PageHeader title="Movimentações" crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Movimentações" }]}
         description="Toda mudança no inventário: entradas, transferências, condição, ajustes, baixas e edições. O que os chefes registram e tudo o que vem do registro rápido fica para revisar pelo gestor; se algo estiver errado, corrija no material e marque como revisado com uma nota.">

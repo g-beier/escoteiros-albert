@@ -13,12 +13,12 @@ export default async function EditAssociate({ params }: { params: Promise<{ id: 
   const { id } = await params;
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
-  if (!member.associates.canEdit) redirect(`/associados/${id}`);
+  if (!member.associates.canWrite) redirect(`/associados/${id}`);
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const [associate, catalog] = await Promise.all([associates.get(member.db, member.groupId, id), sections.catalog(member.db, member.groupId)]);
   if (!associate) notFound();
   return <div className="shell">
-    <AppHeader current={`/associados/${id}`} email={user.email} role={member.associates.role} isAdmin={member.isAdmin} />
+    <AppHeader current={`/associados/${id}`} member={member} />
     <PageBody width="narrow">
       <PageHeader title={`Editar ${associate.name}`}
         crumbs={[{ label: "Associados", href: "/associados" }, { label: associate.name, href: `/associados/${id}` }, { label: "Editar" }]}

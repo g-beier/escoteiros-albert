@@ -1,84 +1,108 @@
 import {
-  ASSOCIATES_ROLES, GROUP_ROLES, INVENTORY_ROLES, isValidEmail,
-  type AssociatesRole, type GroupRole, type GroupUser, type InventoryRole,
+  ROLE_MODULES, isModuleRole, isValidEmail,
+  type GroupUser, type ModuleRole, type ModuleRoles,
 } from "@geas/ui/lib/roles";
 import { DataError, type Db } from "@/lib/server/db";
-import { rpc } from "@/lib/server/pg/db";
+import { rows, rpc } from "@/lib/server/pg/db";
 
-// Usuários do grupo (tela comum /usuarios). Tudo pelas funções SQL auditadas (056), como o administrador da sessão:
-// cadastro do e-mail, papéis e remoção. A pessoa entra com a conta Google desse e-mail (lib/server/auth.ts).
+// Usuários do grupo (tela comum /usuarios). Tudo pelas funções SQL auditadas (003), como quem está logado: cada
+// administrador de módulo cadastra e muda só o papel nos módulos que administra; quem fica sem acesso em todos sai do
+// grupo. A pessoa entra com a conta Google desse e-mail (lib/server/auth.ts).
 
 export async function listGroupUsers(db: Db, groupId: string): Promise<GroupUser[]> {
   const rows = await rpc(db, "group_users", { p_group_id: groupId });
   return rows.map((row) => ({
     userId: row.user_id, email: row.email, signedIn: row.last_sign_in_at !== null,
-    role: row.role as GroupRole, inventoryRole: row.inventory_role as InventoryRole, associatesRole: row.associates_role as AssociatesRole,
+    roles: { finance: row.finance_role as ModuleRole, inventory: row.inventory_role as ModuleRole, associates: row.associates_role as ModuleRole },
+    associateId: row.associate_id ?? null,
   }));
 }
 
-const parseRole = (value: FormDataEntryValue | null) => GROUP_ROLES.find((role) => role === value);
-const parseInventoryRole = (value: FormDataEntryValue | null) => INVENTORY_ROLES.find((role) => role === value);
-const parseAssociatesRole = (value: FormDataEntryValue | null) => ASSOCIATES_ROLES.find((role) => role === value);
+/** Adultos que podem ser ligados a um acesso (o administrador do Associados lê o módulo), por nome; desligados no fim. */
+export async function linkableAssociates(db: Db, groupId: string): Promise<{ value: string; label: string }[]> {
+  const adults = await rows<{ id: string; name: string; active: boolean }>(db, (sql) => sql`
+    select id, name, active from public.associates where group_id = ${groupId} and branch = 'adulto' order by active desc, name`);
+  return adults.map((a) => ({ value: a.id, label: a.active ? a.name : `${a.name} (desligado)` }));
+}
 
-export type UserInvite = { email: string; role: GroupRole; inventoryRole: InventoryRole; associatesRole: AssociatesRole };
+/** Papel de cada módulo no formulário (`role-<módulo>`); ausente = "Sem acesso" (módulo que quem cadastra não administra). */
+function readModuleRoles(formData: FormData, prefix: string): ModuleRoles | string {
+  const roles = {} as ModuleRoles;
+  for (const mod of ROLE_MODULES) {
+    const value = formData.get(`${prefix}-${mod}`) ?? "none";
+    if (!isModuleRole(value)) return "Papel inválido.";
+    roles[mod] = value;
+  }
+  return roles;
+}
+
+export type UserInvite = { email: string; roles: ModuleRoles };
 export type UserRoles = {
-  userId: string; email: string; role: GroupRole; inventoryRole: InventoryRole; associatesRole: AssociatesRole;
-  previousRole: string; previousInventoryRole: string; previousAssociatesRole: string;
+  userId: string; email: string; roles: ModuleRoles; previousRoles: ModuleRoles;
+  /** Associado ligado ao acesso ("" = nenhum); nulo quando quem salva não pode mudá-lo. */
+  associateId: string | null; previousAssociateId: string;
 };
 
 /** Lê o formulário de cadastro da tela de Usuários; `string` = mensagem de erro. */
 export function readInvite(formData: FormData): UserInvite | string {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const role = parseRole(formData.get("role"));
-  const inventoryRole = parseInventoryRole(formData.get("inventoryRole")) ?? "viewer";
-  const associatesRole = parseAssociatesRole(formData.get("associatesRole")) ?? "viewer";
   if (!isValidEmail(email)) return "Informe um e-mail válido.";
-  if (!role) return "Papel inválido.";
-  return { email, role, inventoryRole, associatesRole };
+  const roles = readModuleRoles(formData, "role");
+  if (typeof roles === "string") return roles;
+  if (ROLE_MODULES.every((mod) => roles[mod] === "none")) return "Dê acesso a pelo menos um módulo.";
+  return { email, roles };
 }
 
-/** Lê o formulário de papéis de uma linha da tela de Usuários; `string` = mensagem de erro. */
+/** Lê o formulário de papéis de uma linha da tela de Usuários; `string` = mensagem de erro. Os módulos que quem salva
+ * não administra vêm com o papel anterior. */
 export function readRoles(formData: FormData): UserRoles | string {
-  const role = parseRole(formData.get("role"));
-  const inventoryRole = parseInventoryRole(formData.get("inventoryRole"));
-  const associatesRole = parseAssociatesRole(formData.get("associatesRole"));
-  if (!role || !inventoryRole || !associatesRole) return "Papel inválido.";
+  const previousRoles = readModuleRoles(formData, "previous");
+  if (typeof previousRoles === "string") return previousRoles;
+  const roles = { ...previousRoles };
+  for (const mod of ROLE_MODULES) {
+    const value = formData.get(`role-${mod}`);
+    if (value === null) continue;
+    if (!isModuleRole(value)) return "Papel inválido.";
+    roles[mod] = value;
+  }
+  const associateId = formData.get("associateId");
   return {
-    userId: String(formData.get("userId") ?? ""), email: String(formData.get("email") ?? ""), role, inventoryRole, associatesRole,
-    previousRole: String(formData.get("previousRole") ?? ""), previousInventoryRole: String(formData.get("previousInventoryRole") ?? ""),
-    previousAssociatesRole: String(formData.get("previousAssociatesRole") ?? ""),
+    userId: String(formData.get("userId") ?? ""), email: String(formData.get("email") ?? ""), roles, previousRoles,
+    associateId: associateId === null ? null : String(associateId), previousAssociateId: String(formData.get("previousAssociateId") ?? ""),
   };
 }
 
-/** Cadastra o e-mail com os papéis de cada módulo (auditado); a pessoa já pode entrar com o Google. */
+/** Cadastra o e-mail com o papel de cada módulo (auditado); a pessoa já pode entrar com o Google. */
 export async function inviteUser(db: Db, groupId: string, invite: UserInvite): Promise<string> {
   await rpc(db, "admin_add_member", {
-    p_group_id: groupId, p_email: invite.email, p_role: invite.role, p_inventory_role: invite.inventoryRole, p_associates_role: invite.associatesRole,
+    p_group_id: groupId, p_email: invite.email,
+    p_finance_role: invite.roles.finance, p_inventory_role: invite.roles.inventory, p_associates_role: invite.roles.associates,
   });
   return `${invite.email} cadastrado. Já pode entrar com a conta Google desse e-mail.`;
 }
 
-/** Salva os papéis de uma pessoa em cada módulo (só o que mudou); `false` = nada mudou. */
+/** Salva o papel em cada módulo e o associado ligado (só o que mudou); `false` = nada mudou. O associado é ligado antes
+ * dos papéis: se a pessoa ficar sem acesso a todos os módulos, ela sai do grupo. */
 export async function saveUserRoles(db: Db, groupId: string, currentUserId: string, roles: UserRoles): Promise<boolean> {
-  if (roles.userId === currentUserId && roles.role !== "admin") throw new DataError("Você não pode remover sua própria função de administrador.");
   let changed = false;
-  if (roles.role !== roles.previousRole) {
-    await rpc(db, "admin_change_member_role", { p_group_id: groupId, p_user_id: roles.userId, p_role: roles.role });
+  if (roles.associateId !== null && roles.associateId !== roles.previousAssociateId) {
+    await rpc(db, "admin_link_member_associate", { p_group_id: groupId, p_user_id: roles.userId, p_associate_id: roles.associateId || null });
     changed = true;
   }
-  if (roles.role !== "admin" && roles.inventoryRole !== roles.previousInventoryRole) {
-    await rpc(db, "admin_change_inventory_role", { p_group_id: groupId, p_user_id: roles.userId, p_role: roles.inventoryRole });
-    changed = true;
-  }
-  if (roles.role !== "admin" && roles.associatesRole !== roles.previousAssociatesRole) {
-    await rpc(db, "admin_change_associates_role", { p_group_id: groupId, p_user_id: roles.userId, p_role: roles.associatesRole });
+  for (const mod of ROLE_MODULES) {
+    if (roles.roles[mod] === roles.previousRoles[mod]) continue;
+    if (roles.userId === currentUserId && roles.previousRoles[mod] === "admin") {
+      throw new DataError("Você não pode tirar sua própria função de administrador.");
+    }
+    await rpc(db, "admin_set_module_role", { p_group_id: groupId, p_user_id: roles.userId, p_module: mod, p_role: roles.roles[mod] });
     changed = true;
   }
   return changed;
 }
 
-/** Remove o vínculo com o grupo; sem outro grupo, a conta fica bloqueada e as sessões abertas caem (056). */
-export async function removeUser(db: Db, groupId: string, currentUserId: string, userId: string): Promise<void> {
+/** Tira o acesso aos módulos que quem está logado administra; `true` = a pessoa ficou sem nenhum e saiu do grupo (sem
+ * outro grupo, a conta fica bloqueada e as sessões abertas caem). */
+export async function removeUser(db: Db, groupId: string, currentUserId: string, userId: string): Promise<boolean> {
   if (userId === currentUserId) throw new DataError("Você não pode remover seu próprio acesso.");
-  await rpc(db, "admin_remove_member", { p_group_id: groupId, p_user_id: userId });
+  return (await rpc(db, "admin_remove_member", { p_group_id: groupId, p_user_id: userId })) === true;
 }

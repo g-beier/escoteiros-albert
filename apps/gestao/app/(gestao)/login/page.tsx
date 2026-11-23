@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AppLogin, AppLoginForm } from "@geas/ui";
+import { Link } from "@geas/ui/components/link";
 import { currentUser, e2eLoginEnabled, safeNext } from "@/lib/server/auth";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ erro?: string; next?: string }> }) {
@@ -16,5 +17,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <input id="e2e-email" name="email" type="email" placeholder="e2e@exemplo.org" required />
       <button type="submit">Entrar (teste)</button>
     </form>}
+    <p className="geas-login__help"><Link href="/privacidade">Política de privacidade</Link></p>
   </AppLogin>;
 }

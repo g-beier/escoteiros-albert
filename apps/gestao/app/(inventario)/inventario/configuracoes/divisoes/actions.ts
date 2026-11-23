@@ -5,10 +5,10 @@ import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { runAction } from "@/lib/action";
 import type { DropPlace } from "@/lib/inventory/locations";
 import * as locations from "@/lib/server/inventory/locations";
-import { inventoryManagerOrError } from "@/lib/server/session";
+import { inventoryEditorOrError } from "@/lib/server/session";
 
 const text = (formData: FormData, name: string) => String(formData.get(name) ?? "").trim();
-const managerOnly = () => inventoryManagerOrError("Apenas o gestor do inventário altera divisões.");
+const managerOnly = () => inventoryEditorOrError("Apenas editores do Inventário alteram divisões.");
 
 /** Cria (sem `id`) ou edita uma divisão: nome, descrição e divisão superior (vazio = raiz). */
 export async function saveLocation(_previous: ActionResult, formData: FormData): Promise<ActionResult> {

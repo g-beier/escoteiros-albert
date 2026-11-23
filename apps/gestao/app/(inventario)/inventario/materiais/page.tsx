@@ -56,7 +56,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
     families.listOptions(db, groupId),
     materialsData.countsOfYears(db, groupId, [...years]),
     cookies(),
-    member.inventory.canManage ? movementsData.pendingCount(db, groupId) : Promise.resolve(0),
+    member.inventory.canReview ? movementsData.pendingCount(db, groupId) : Promise.resolve(0),
   ]);
 
   // Colunas: as que existem (anos com contagem) menos as que o usuário ocultou.
@@ -129,7 +129,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
     ...roots.map((row) => ({ href: hrefFor(row.id), label: row.name, active: root?.id === row.id })),
   ];
   const heading = showAll ? "Todos os locais" : selected && selected.depth > 0 ? selected.path : root?.name ?? "Materiais";
-  const canEdit = member.inventory.canEdit;
+  const canEdit = member.inventory.canWrite;
   const span = columns.length + 1 + (canEdit ? 1 : 0);
   // Botão ± das linhas (material por quantidade): os lotes vêm do servidor ao clicar (StockEditor), não no HTML.
   const pathOf = new Map(paths.map((row) => [row.id, row.path]));
@@ -147,15 +147,15 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   ];
 
   return <div className="shell">
-    <AppHeader current="/inventario/materiais" email={user.email} role={member.inventory.role} isAdmin={member.isAdmin} />
+    <AppHeader current="/inventario/materiais" member={member} />
     <PageBody width="narrow">
       <PageHeader title="Materiais" crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais" }]}
         description="Tudo o que o grupo tem, por local: um material em várias divisões aparece em cada uma, com a quantidade de lá."
         actions={<>
           {toReview > 0 && <Link href="/inventario/movimentacoes?revisao=para_revisar" className="inline-flex items-center gap-1.5 rounded-full bg-caution-soft px-3 py-1 text-xs font-semibold text-caution hover:ring-1 hover:ring-current">
             <IconClipboardCheck className="size-4" aria-hidden /> {toReview} para revisar</Link>}
-          {member.inventory.canEdit && <Link href="/rapido" className={buttonVariants({ variant: "outline", size: "lg" })}><IconBolt data-icon="inline-start" /> Registro rápido</Link>}
-          {member.inventory.canEdit && <Link href={withBack("/inventario/materiais/novo", here)} className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}
+          {member.inventory.canWrite && <Link href="/rapido" className={buttonVariants({ variant: "outline", size: "lg" })}><IconBolt data-icon="inline-start" /> Registro rápido</Link>}
+          {member.inventory.canWrite && <Link href={withBack("/inventario/materiais/novo", here)} className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}
         </>}>
         <SectionTabs label="Locais" tabs={tabs} />
         <MaterialFilters families={familyOptions} columns={available} hidden={[...hidden]} />

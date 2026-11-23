@@ -57,7 +57,7 @@ select is(tests.affected(format($$delete from public.ledger_entries where id = %
 select is(tests.affected(format($$update public.entry_splits set amount_cents = 1 where entry_id = %L$$, :'entry_a')), 0, 'B não altera rateio de A');
 select is(tests.affected(format($$update public.statement_lines set status = 'ignorada' where group_id = %L$$, :'gid_a')), 0, 'B não altera extrato de A');
 select is(tests.affected(format($$delete from public.memberships where group_id = %L$$, :'gid_a')), 0, 'B não remove membros de A');
-select throws_ok(format($$insert into public.memberships(group_id, user_id, role) values (%L, '00000000-0000-0000-0000-00000000f0b1', 'admin')$$, :'gid_a'),
+select throws_ok(format($$insert into public.memberships(group_id, user_id, finance_role) values (%L, '00000000-0000-0000-0000-00000000f0b1', 'admin')$$, :'gid_a'),
   '42501', null, 'B não se insere como membro de A');
 select ok(not public.can_write_attachment_object(:'gid_a' || '/' || :'entry_a' || '/' || gen_random_uuid() || '.pdf'), 'B não envia arquivo para a pasta de A');
 select ok(not public.can_write_attachment_object(:'gid_b' || '/' || :'entry_a' || '/' || gen_random_uuid() || '.pdf'), 'B não envia arquivo de um lançamento de A pela própria pasta');
@@ -104,7 +104,7 @@ select throws_like(format($$select public.set_fee_record(%L, 2026, 4, 'pago', nu
 select throws_like(format($$select public.set_fee_settings(%L, 'dia_fixo', 5, null)$$, :'gid_a'), '%permissão%', 'B não configura mensalidades de A');
 select throws_like(format($$select public.save_import_profile(%L, null, 'Intruso', 'ofx', null, '{}')$$, :'gid_a'), '%permissão%',
   'B não cria perfil de importação em A');
-select throws_like(format($$select public.admin_change_member_role(%L, '00000000-0000-0000-0000-00000000f0a3', 'admin')$$, :'gid_a'), 'Apenas administradores%',
+select throws_like(format($$select public.admin_set_module_role(%L, '00000000-0000-0000-0000-00000000f0a3', 'finance', 'admin')$$, :'gid_a'), 'Apenas o administrador do módulo%',
   'admin de B não muda papel em A');
 select throws_like(format($$select public.admin_remove_member(%L, '00000000-0000-0000-0000-00000000f0a3')$$, :'gid_a'), 'Apenas administradores%',
   'admin de B não remove membro de A');

@@ -10,28 +10,28 @@ test.afterAll(() => deleteUsers([invited]));
 test("cadastrar, mudar papel e remover um usuário", async ({ page }) => {
   const row = page.getByRole("row").filter({ hasText: invited });
 
-  await test.step("cadastrar como tesoureiro", async () => {
+  await test.step("cadastrar como Editor no Financeiro", async () => {
     await page.goto("/usuarios");
     await expect(page.getByRole("heading", { name: "Usuários" })).toBeVisible();
     await page.getByLabel("E-mail da conta Google").fill(invited);
-    await chooseOption(page, "Papel no Financeiro", "Tesoureiro");
+    await chooseOption(page, "Papel no Financeiro", "Editor");
     await page.getByRole("button", { name: "Cadastrar" }).click();
     await expect(page.getByText(`${invited} cadastrado.`)).toBeVisible();
     await expect(row).toContainText("Ainda não entrou");
-    await expect(row.getByRole("combobox", { name: `Papel no Financeiro de ${invited}` })).toContainText("Tesoureiro");
+    await expect(row.getByRole("combobox", { name: `Papel no Financeiro de ${invited}` })).toContainText("Editor");
   });
 
-  await test.step("mudar para consulta no Financeiro, chefe no Inventário e secretaria no Associados", async () => {
+  await test.step("mudar para Consulta no Financeiro, Colaborador no Inventário e Editor no Associados", async () => {
     await chooseOption(page, `Papel no Financeiro de ${invited}`, "Consulta", row);
-    await chooseOption(page, `Papel no Inventário de ${invited}`, "Chefe", row);
-    await chooseOption(page, `Papel no Associados de ${invited}`, "Secretaria", row);
-    await row.getByRole("button", { name: `Salvar papéis de ${invited}` }).click();
-    await expect(page.getByText(`Papéis de ${invited} salvos.`)).toBeVisible();
+    await chooseOption(page, `Papel no Inventário de ${invited}`, "Colaborador", row);
+    await chooseOption(page, `Papel no Associados de ${invited}`, "Editor", row);
+    await row.getByRole("button", { name: `Salvar acesso de ${invited}` }).click();
+    await expect(page.getByText(`Acesso de ${invited} salvo.`)).toBeVisible();
     await expect(async () => {
       await page.reload();
       await expect(row.getByRole("combobox", { name: `Papel no Financeiro de ${invited}` })).toContainText("Consulta", { timeout: 2_000 });
-      await expect(row.getByRole("combobox", { name: `Papel no Inventário de ${invited}` })).toContainText("Chefe", { timeout: 2_000 });
-      await expect(row.getByRole("combobox", { name: `Papel no Associados de ${invited}` })).toContainText("Secretaria", { timeout: 2_000 });
+      await expect(row.getByRole("combobox", { name: `Papel no Inventário de ${invited}` })).toContainText("Colaborador", { timeout: 2_000 });
+      await expect(row.getByRole("combobox", { name: `Papel no Associados de ${invited}` })).toContainText("Editor", { timeout: 2_000 });
     }).toPass();
   });
 

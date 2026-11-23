@@ -16,9 +16,10 @@ type AppBrandProps = {
   currentHref?: string;
   /** Destino do logo: o Início geral. */
   homeHref?: string;
-  financeiroHref: string;
-  inventarioHref: string;
-  associadosHref: string;
+  /** Início de cada módulo; sem o link, o módulo não aparece no seletor (pessoa sem acesso a ele). */
+  financeiroHref?: string;
+  inventarioHref?: string;
+  associadosHref?: string;
   light?: boolean;
 };
 
@@ -44,8 +45,9 @@ export function AppBrand({
   associadosHref,
   light = false,
 }: AppBrandProps) {
-  const hrefs: Record<GeasModule, string> = { financeiro: financeiroHref, inventario: inventarioHref, associados: associadosHref };
-  const options = current === "gestao" ? MODULES : [current, ...MODULES.filter((app) => app !== current)];
+  const hrefs: Record<GeasModule, string | undefined> = { financeiro: financeiroHref, inventario: inventarioHref, associados: associadosHref };
+  const available = MODULES.filter((app) => hrefs[app] !== undefined);
+  const options = current === "gestao" ? available : [current, ...available.filter((app) => app !== current)];
   const middle = (options.length - 1) / 2;
 
   return <div className="geas-brand" data-theme={light ? "dark" : "light"}>
@@ -56,7 +58,7 @@ export function AppBrand({
     <div className="geas-brand__apps" aria-label="Trocar de módulo">
       <Link href={currentHref} className={cn("geas-brand__static", `geas-app--${current}`)}>{APPS[current].label}</Link>
       <div className="geas-brand__options">
-        {options.map((app, index) => <a key={app} href={hrefs[app]} aria-current={app === current ? "page" : undefined}
+        {options.map((app, index) => <a key={app} href={hrefs[app] ?? currentHref} aria-current={app === current ? "page" : undefined}
           style={{ "--geas-brand-shift": `${(index - middle) * OPTION_STEP}px` } as CSSProperties}
           className={cn("geas-brand__option", `geas-app--${app}`)}>{APPS[app].label}</a>)}
       </div>
@@ -133,20 +135,18 @@ export function AppHeader({ brand, navigation, utilities = [], account }: {
   </header>;
 }
 
-const ROLE_LABELS: Record<string, string> = { admin: "Administração", treasurer: "Tesouraria", viewer: "Consulta" };
-
 export function userInitials(email: string) {
   const parts = (email.split("@")[0] ?? "").split(/[._-]+/).filter(Boolean);
   return ((parts[0]?.[0] ?? "?") + (parts[1]?.[0] ?? "")).toUpperCase();
 }
 
 export function UserMenu({ email, role, logoutAction, usersHref, active = false }: {
-  email: string; role: string; logoutAction: () => Promise<void>; usersHref?: string; active?: boolean;
+  email: string; /** Rótulo do papel (ex.: "Editor"). */ role?: string; logoutAction: () => Promise<void>; usersHref?: string; active?: boolean;
 }) {
   return <details className="geas-user-menu" data-active={active || undefined}>
     <summary aria-label={`Conta de ${email}`} title={email}><span>{userInitials(email)}</span></summary>
     <div className="geas-user-menu__content">
-      <div className="geas-user-menu__identity"><strong>{email}</strong><small>{ROLE_LABELS[role] ?? role}</small></div>
+      <div className="geas-user-menu__identity"><strong>{email}</strong>{role && <small>{role}</small>}</div>
       {usersHref && <Link href={usersHref}>Usuários</Link>}
       <form action={logoutAction}><button type="submit">Sair</button></form>
     </div>

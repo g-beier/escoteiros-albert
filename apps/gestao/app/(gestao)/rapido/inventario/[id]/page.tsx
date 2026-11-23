@@ -18,7 +18,7 @@ export default async function QuickMaterial({ params, searchParams }: { params: 
   const [{ id }, { acao }] = await Promise.all([params, searchParams]);
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
-  if (!member.inventory.canEdit) redirect(`/inventario/materiais/${id}`);
+  if (!member.inventory.canWrite) redirect(`/inventario/materiais/${id}`);
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const { db, groupId } = member;
   const material = await materials.get(db, groupId, id);
@@ -42,7 +42,7 @@ export default async function QuickMaterial({ params, searchParams }: { params: 
   const crumbs = [{ label: "Registro rápido", href: "/rapido" }];
 
   return <div className="shell">
-    <GestaoHeader current={`/rapido/inventario/${id}`} email={user.email} role={member.finance.role} isAdmin={member.isAdmin} quick />
+    <GestaoHeader current={`/rapido/inventario/${id}`} member={member} quick />
     <PageBody width="narrow">
       <PageHeader title={chosen ? chosen.label : material.name}
         crumbs={chosen ? [...crumbs, { label: material.name, href: `/rapido/inventario/${id}` }, { label: chosen.label }] : [...crumbs, { label: material.name }]}

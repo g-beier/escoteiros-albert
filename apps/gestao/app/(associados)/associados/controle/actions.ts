@@ -5,7 +5,7 @@ import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { InputError, runAction } from "@/lib/action";
 import { isControlStatus, statusLabels } from "@/lib/associates/controls";
 import * as controls from "@/lib/server/associates/controls";
-import { associatesEditorOrError } from "@/lib/server/session";
+import { associatesWriterOrError } from "@/lib/server/session";
 import { date, id, notes, text } from "../form-data";
 
 // Situação de um item para um associado ou um responsável (041). Item inativo e público que não se aplica: recusados
@@ -14,7 +14,7 @@ import { date, id, notes, text } from "../form-data";
 /** Pessoa da situação: `relativeId` (responsável) ou `associateId`. */
 const person = (data: FormData) => (text(data, "relativeId") ? { id: id(data, "relativeId"), relative: true } : { id: id(data, "associateId"), relative: false });
 
-const editor = () => associatesEditorOrError("Sem permissão para alterar o controle de dados.");
+const editor = () => associatesWriterOrError("Sem permissão para alterar o controle de dados.");
 
 export async function setControlStatus(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   return runAction(editor, async ({ db }) => {

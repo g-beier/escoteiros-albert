@@ -12,7 +12,7 @@ import { CONDITION_LABELS, WRITE_OFF_LABELS, type Condition, type Tracking, type
 import * as associates from "@/lib/server/associates/associates";
 import * as entries from "@/lib/server/finance/entries";
 import * as quick from "@/lib/server/inventory/quick";
-import { associatesEditorOrError, financeEditorOrError, inventoryEditorOrError } from "@/lib/server/session";
+import { associatesWriterOrError, financeWriterOrError, inventoryWriterOrError } from "@/lib/server/session";
 
 // Registro rápido comum (/rapido, celular): validação aqui; gravação por inventory_quick (045),
 // create_quick_ledger_entry e associates_create_quick (049). Tudo fica para revisar, mesmo do gestor ou do
@@ -107,7 +107,7 @@ export async function quickRecord(_previous: ActionResult, formData: FormData): 
   const kind = text(formData, "kind") as QuickKind;
   if (!(kind in QUICK_DONE)) return { error: "Ação inválida. Recarregue a página." };
   let materialId = text(formData, "materialId");
-  const result = await runAction(() => inventoryEditorOrError(), async ({ db, groupId }) => {
+  const result = await runAction(() => inventoryWriterOrError(), async ({ db, groupId }) => {
     const created = await quick.record(db, build(kind, formData, groupId));
     if (kind === "novo" && created) materialId = created;
     revalidatePath("/inventario", "layout");
@@ -135,7 +135,7 @@ export async function quickEntry(payload: unknown): Promise<{ error?: string; id
   const parsed = quickEntrySchema.safeParse(payload);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   let id = "";
-  const result = await runAction(() => financeEditorOrError("Sem permissão para registrar lançamentos."), async ({ db, groupId }) => {
+  const result = await runAction(() => financeWriterOrError("Sem permissão para registrar lançamentos."), async ({ db, groupId }) => {
     const input = parsed.data;
     id = await entries.createQuick(db, groupId, { ...input, description: input.description || null, notes: input.notes || null });
     revalidatePath("/", "layout");
@@ -143,10 +143,10 @@ export async function quickEntry(payload: unknown): Promise<{ error?: string; id
   return result.error ? { error: result.error } : { id };
 }
 
-/** Associados: o cadastro do formulário normal, para a Secretaria revisar. */
+/** Associados: o cadastro do formulário normal, para a Diretoria revisar. */
 export async function quickAssociate(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   let savedId = "";
-  const result = await runAction(associatesEditorOrError, async ({ db, groupId }) => {
+  const result = await runAction(associatesWriterOrError, async ({ db, groupId }) => {
     const name = text(formData, "name");
     if (name.length < 2 || name.length > 120) throw new InputError("Informe o nome (2 a 120 caracteres).");
     const branch = text(formData, "branch");

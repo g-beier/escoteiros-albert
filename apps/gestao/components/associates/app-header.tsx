@@ -1,8 +1,8 @@
 import { IconSettings } from "@tabler/icons-react";
 import { AppHeader as SharedHeader, UserMenu } from "@geas/ui";
-import { ASSOCIATES_ROLE_LABELS, type AssociatesRole } from "@geas/ui/lib/roles";
 import { logout } from "@/app/(gestao)/login/actions";
 import { Brand } from "@/components/shell/brand";
+import { roleLabel, type Member } from "@/lib/server/session";
 
 /** Configurações do módulo (engrenagem): seções e equipes, itens de controle, importação. */
 export const ASSOCIATES_SETTINGS_HOME = "/associados/configuracoes/secoes";
@@ -15,9 +15,9 @@ const sections = [
   { href: "/associados/controle", label: "Controle de dados", match: isControlPath },
 ];
 
-export function AppHeader({ current, email, role, isAdmin }: { current: string; email: string; role: AssociatesRole; isAdmin: boolean }) {
+export function AppHeader({ current, member }: { current: string; member: Member }) {
   return <SharedHeader brand={<Brand module="associados" />} navigation={sections.map((item) => ({ href: item.href, label: item.label, active: item.match(current) }))}
     utilities={[{ href: ASSOCIATES_SETTINGS_HOME, label: "Configurações", icon: <IconSettings size={18} />, active: isSettingsPath(current) }]}
-    account={<UserMenu email={email} role={isAdmin ? "admin" : ASSOCIATES_ROLE_LABELS[role]} logoutAction={logout}
-      usersHref={isAdmin ? "/usuarios" : undefined} active={current === "/usuarios"} />} />;
+    account={<UserMenu email={member.user.email} role={roleLabel(member.associates)} logoutAction={logout}
+      usersHref={member.managesUsers ? "/usuarios" : undefined} active={current === "/usuarios"} />} />;
 }

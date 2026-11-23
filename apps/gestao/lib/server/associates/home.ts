@@ -2,6 +2,7 @@ import { registrationExpiries, transitions, upcomingDates, type Expiry, type Tra
 import { associateAudiences, matrixGroups, pendingCount, statusMap, type MatrixAudience, type MatrixPerson } from "@/lib/associates/controls";
 import { activeRelativeIds, linksByAssociate, relativeRows } from "@/lib/associates/relatives";
 import type { Db } from "@/lib/server/db";
+import { rpc } from "@/lib/server/pg/db";
 import { list as listAssociates } from "./associates";
 import { items as listItems, statuses as listStatuses } from "./controls";
 import { links as listLinks } from "./relatives";
@@ -41,4 +42,13 @@ export async function overview(db: Db, groupId: string, today: string): Promise<
     pending: { jovem: pendingFor("jovem"), adulto: pendingFor("adulto") },
     expiries: registrationExpiries(statuses, associates, allItems.filter((item) => item.active), today),
   };
+}
+
+/**
+ * Para quem não vê o Associados (chefes): só aniversários, promessas e transições dos jovens das seções em que a
+ * pessoa é escotista (associado ligado ao acesso em /usuarios). Sem controle nem vencimentos de registro.
+ */
+export async function sectionOverview(db: Db, groupId: string, today: string): Promise<AssociatesOverview> {
+  const people = await rpc(db, "associates_section_alert_rows", { p_group_id: groupId });
+  return { dates: upcomingDates(people, today), transitions: transitions(people, today), pending: { jovem: 0, adulto: 0 }, expiries: [] };
 }
