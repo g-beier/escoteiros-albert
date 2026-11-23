@@ -39,7 +39,7 @@ Valores em dólar, por mês.
 | Container Registry | Guarda as versões do sistema | Básico | 5,07 |
 | **Total fixo** | | | **63,66** |
 | Container Apps | Executa o sistema e desliga quando ninguém usa | 0,5 processador, 1 GB | 0 dentro da franquia |
-| Log Analytics e Application Insights | Registro de erros e funcionamento | Limitado à franquia de 5 GB | 0 dentro da franquia |
+| Log Analytics | Registro de erros e funcionamento | Teto de 0,15 GB por dia, dentro da franquia de 5 GB | 0 dentro da franquia |
 | Key Vault | Cofre das senhas do sistema | Padrão | centavos |
 | Blob Storage | Comprovantes, recurso hoje desligado | Cerca de 1 GB por ano, se ligado | centavos |
 | **Total previsto** | | | **cerca de 63,76** |

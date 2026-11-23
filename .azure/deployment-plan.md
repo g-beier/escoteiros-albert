@@ -109,9 +109,9 @@ Não inclui impostos, câmbio nem plano de suporte (o crédito não paga suporte
 | migrations e manutenção | Container Apps Job manual, imagem própria | 0,25 vCPU / 0,5 GiB, por execução |
 | banco | PostgreSQL Flexible 17 | B1ms, 32 GB, sem HA, backup 7 dias, pool 5 |
 | comprovantes | StorageV2 | Standard LRS, sem chave compartilhada |
-| imagem | Container Registry | Basic, sem pull anônimo, guardar 5 versões |
+| imagem | Container Registry | Basic, sem pull anônimo; versões antigas apagadas à mão (retenção automática só no Premium) |
 | segredos | Key Vault | Standard, purge protection |
-| observabilidade | Log Analytics + Application Insights | teto de 0,15 GB/dia, sem dados pessoais |
+| observabilidade | Log Analytics (Application Insights quando o app tiver instrumentação) | teto de 0,15 GB/dia, sem dados pessoais |
 | identidades | Managed Identity | uma do app e uma do Job: só o Job lê a credencial de administrador do banco |
 | rede | VNet `10.20.0.0/24` | `/27` Container Apps, `/28` Postgres, zona DNS privada |
 
