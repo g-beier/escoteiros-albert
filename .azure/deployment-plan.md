@@ -187,7 +187,7 @@ Nenhum teste foi escrito nem executado para estes ajustes, por decisão do usuá
 ### Etapa 1: preparar artefatos (fora do escopo atual)
 - [ ] `output: "standalone"` e Dockerfile linux/amd64 com estáticos, `public` e fontes, usuário não root
 - [ ] Imagem do Job: `db.mjs`, migrations, criação do papel, bootstrap e dump
-- [ ] Redirects com `appUrl()` no lugar de `request.url` (atrás do proxy a origem muda)
+- [x] Redirects com `appUrl()` no lugar de `request.url` (atrás do proxy a origem muda; feito em 2026-11-22)
 - [ ] Identidade gerenciada do Blob com `AZURE_CLIENT_ID`
 - [ ] `azure.yaml` e Bicep, validados com `az bicep build`
 - [ ] Testar a imagem com 1 GiB e 0,5 CPU no Docker, como `geas_app`, repetindo a carga da seção 4.2

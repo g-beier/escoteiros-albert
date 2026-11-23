@@ -29,10 +29,6 @@ test-results/
 test-results-perf/
 playwright-report/
 
-# Supabase local state
-**/supabase/.branches/
-**/supabase/.temp/
-
 # macOS-specific files
 .DS_Store
 
