@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { PageBody, PageHeader, SectionTabs } from "@geas/ui";
 import { Badge } from "@geas/ui/components/badge";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";

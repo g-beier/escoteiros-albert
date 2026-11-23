@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition, type ChangeEvent } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconDownload, IconFileUpload, IconUpload } from "@tabler/icons-react";
 import { importAssociates } from "@/app/(associados)/associados/configuracoes/importar/actions";
@@ -22,7 +21,6 @@ const TEMPLATE_HREF = `data:text/csv;charset=utf-8,${encodeURIComponent(`﻿${AS
 
 /** Importação de associados por CSV (nome, ramo, seção, patrulha, status), com conferência antes de gravar. */
 export function AssociatesImport({ existing, sections, patrols }: { existing: ExistingAssociate[]; sections: SectionItem[]; patrols: PatrolItem[] }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [file, setFile] = useState<{ name: string; text: string } | null>(null);
   const [updateExisting, setUpdateExisting] = useState(true);
@@ -49,7 +47,6 @@ export function AssociatesImport({ existing, sections, patrols }: { existing: Ex
       if (result.error) { toast.error(result.error); return; }
       toast.success(result.success);
       setFile(null);
-      router.refresh();
     });
   }
 

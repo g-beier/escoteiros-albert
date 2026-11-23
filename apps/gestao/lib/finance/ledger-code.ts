@@ -1,6 +1,6 @@
 /**
  * Conta contábil: código do plano de contas do sistema contábil de destino.
- * A mesma máscara está no domínio `public.ledger_code` (014_accounting.sql); mude as duas juntas.
+ * A mesma máscara está no domínio `public.ledger_code` (db/migrations/001_schema.sql); mude as duas juntas.
  */
 export const LEDGER_CODE_MASK = "0.0.0.0.0000";
 const PATTERN = /^\d\.\d\.\d\.\d\.\d{4}$/;

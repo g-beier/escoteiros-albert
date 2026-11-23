@@ -1,21 +1,23 @@
 import type { Db } from "@/lib/server/db";
-import { rowsOf, sb, untyped } from "@/lib/server/supabase/db";
+import { rows, run } from "@/lib/server/pg/db";
 import { buildAssociateFilterData, type AssociateFilterData } from "@/lib/finance/associate-filter";
 
 // O Financeiro só lê os associados: o cadastro é do módulo Associados (lib/server/associates/).
 
 /** Associados para os seletores (Devedores): nome, seção e se está ativo. */
 export async function listForPicker(db: Db, groupId: string) {
-  return rowsOf(await untyped(db).from("associate_rows").select("id, name, section, active").eq("group_id", groupId).order("name").limit(5000)) as
-    { id: string; name: string; section: string | null; active: boolean }[];
+  return rows<{ id: string; name: string; section: string | null; active: boolean }>(db, (sql) => sql`
+    select id, name, section, active from public.associate_rows where group_id = ${groupId} order by name limit 5000`);
 }
 
 /** Dados do filtro de associado das listas de lançamentos (divisões Ramo › Seção › Equipe e pessoas, `buildAssociateFilterData`). */
 export async function associateFilterData(db: Db, groupId: string): Promise<AssociateFilterData> {
-  const [associates, sections, patrols] = await Promise.all([
-    sb(db).from("associates").select("id, name, active, branch, section_id, patrol_id").eq("group_id", groupId).limit(10000).then(rowsOf),
-    sb(db).from("sections").select("id, branch, name").eq("group_id", groupId).then(rowsOf),
-    sb(db).from("patrols").select("id, section_id, name").eq("group_id", groupId).then(rowsOf),
-  ]);
-  return buildAssociateFilterData({ associates, sections, patrols });
+  return run(db, async (sql) => {
+    const [associates, sections, patrols] = await Promise.all([
+      sql`select id, name, active, branch, section_id, patrol_id from public.associates where group_id = ${groupId} limit 10000`,
+      sql`select id, branch, name from public.sections where group_id = ${groupId}`,
+      sql`select id, section_id, name from public.patrols where group_id = ${groupId}`,
+    ]);
+    return buildAssociateFilterData({ associates: [...associates], sections: [...sections], patrols: [...patrols] } as Parameters<typeof buildAssociateFilterData>[0]);
+  });
 }

@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+# Gestão no Azure (plano: .azure/deployment-plan.md). Infra em infra/ (Bicep). Antes de provisionar:
+# `azd provision --preview` revisado. As senhas (postgresAdminPassword, appDbPassword) e o googleClientSecret são
+# pedidos pelo azd na primeira vez e ficam só na configuração local do ambiente (.azure/<ambiente>/, fora do git).
+name: geas-gestao
+infra:
+  provider: bicep
+  path: infra
+services:
+  gestao:
+    project: ./apps/gestao
+    host: containerapp
+    language: js
+    docker:
+      path: ./Dockerfile
+      # monorepo: o build precisa do lockfile da raiz e de packages/ui
+      context: ../..
+      target: app
+      platform: linux/amd64
+      # toggles NEXT_PUBLIC_* entram no build (ver apps/gestao/Dockerfile)
+      buildArgs:
+        - NEXT_PUBLIC_FEATURE_ATTACHMENTS=${NEXT_PUBLIC_FEATURE_ATTACHMENTS}
+        - NEXT_PUBLIC_FEATURE_FILHOTES=${NEXT_PUBLIC_FEATURE_FILHOTES}
+hooks:
+  # imagem do Job de manutenção (target `job`), publicada no mesmo registro e gravada em JOB_IMAGE
+  postdeploy:
+    posix:
+      shell: sh
+      run: ./infra/hooks/job-image.sh
+      interactive: false
+      continueOnError: false

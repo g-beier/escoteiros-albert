@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { useActionState, useEffect, useOptimistic, useState, useTransition } from "react";
 import { IconPencil, IconPlus } from "@tabler/icons-react";
 import { toast } from "sonner";

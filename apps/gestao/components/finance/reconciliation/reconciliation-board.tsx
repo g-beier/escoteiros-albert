@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { toast } from "sonner";
 import { IconArrowBackUp, IconCheck, IconChevronRight, IconLink, IconPlus, IconSparkles, IconX } from "@tabler/icons-react";
 import {

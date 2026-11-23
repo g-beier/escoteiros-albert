@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// Carga de DESENVOLVIMENTO: importa os CSV gerados por planilha-para-csv.mjs no Supabase LOCAL.
+// Carga de DESENVOLVIMENTO: importa os CSV gerados por planilha-para-csv.mjs no Postgres LOCAL (db/compose.yaml).
 // Apaga o inventário do grupo antes (repetível) e cadastra tudo pelas funções inventory_*, como o
 // administrador do grupo (mesmo caminho da interface: auditoria e movimentos de entrada).
-// Recusa rodar se apps/gestao/.env.local não apontar para um Supabase local.
+// Recusa rodar se apps/gestao/.env.local não apontar para o banco local.
 //
 // Uso: node apps/gestao/scripts/inventory/importar-planilha.mjs <pasta com inventario-lotes.csv e inventario-pecas.csv> [--grupo "Nome do grupo"]
 //
@@ -27,14 +27,15 @@ if (!dir) { console.error("Uso: node importar-planilha.mjs <pasta dos CSV> [--gr
 
 // Só banco local -------------------------------------------------------------------------------
 const env = readFileSync(join(here, "..", "..", ".env.local"), "utf8");
-const url = env.match(/^NEXT_PUBLIC_SUPABASE_URL=(.*)$/m)?.[1]?.trim().replace(/^["']|["']$/g, "") ?? "";
-if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/.test(url)) {
-  console.error(`Recusado: apps/gestao/.env.local aponta para ${url || "(sem URL)"}. A carga da planilha é só para o Supabase local.`);
+const url = env.match(/^DATABASE_ADMIN_URL=(.*)$/m)?.[1]?.trim().replace(/^["']|["']$/g, "") ?? "";
+if (!/^postgres(ql)?:\/\/[^@]+@(127\.0\.0\.1|localhost)(:\d+)?\//.test(url)) {
+  console.error("Recusado: DATABASE_ADMIN_URL em apps/gestao/.env.local não é o banco local. A carga da planilha é só para o banco local.");
   process.exit(1);
 }
-const container = execFileSync("docker", ["ps", "--format", "{{.Names}}"], { encoding: "utf8" }).split("\n").find((n) => n.startsWith("supabase_db"));
-if (!container) { console.error("Supabase local não está rodando (npm run infra:start)."); process.exit(1); }
-const psql = (sql, extra = []) => execFileSync("docker", ["exec", "-i", container, "psql", "-U", "postgres", "-X", "-q", "-v", "ON_ERROR_STOP=1", ...extra], { input: sql, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+const compose = ["compose", "-f", join(here, "..", "..", "db", "compose.yaml")];
+const running = execFileSync("docker", [...compose, "ps", "--services", "--status", "running"], { encoding: "utf8" }).split("\n").includes("db");
+if (!running) { console.error("Banco local não está rodando (npm run infra:start)."); process.exit(1); }
+const psql = (sql, extra = []) => execFileSync("docker", [...compose, "exec", "-T", "db", "psql", "-U", "postgres", "-d", "geas", "-X", "-q", "-v", "ON_ERROR_STOP=1", ...extra], { input: sql, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
 const query = (sql) => psql(sql, ["-A", "-t", "-F", "\t"]).trim();
 
 // CSV (;, aspas, BOM) --------------------------------------------------------------------------

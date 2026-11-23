@@ -10,7 +10,7 @@ import { OptionSelect } from "@geas/ui/components/option-controls";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import {
-  ALLOWED_EMAIL_DOMAIN, ASSOCIATES_ROLE_LABELS, GROUP_ROLE_LABELS, INVENTORY_ROLE_LABELS,
+  ASSOCIATES_ROLE_LABELS, GROUP_ROLE_LABELS, INVENTORY_ROLE_LABELS,
   type AssociatesRole, type GroupRole, type GroupUser, type InventoryRole,
 } from "@geas/ui/lib/roles";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
@@ -41,7 +41,7 @@ function withToast(action: Action): Action {
 export function UsersManager({ users, currentUserId, actions }: { users: GroupUser[]; currentUserId: string; actions: UsersActions }) {
   return <>
     <SectionCard>
-      <SectionHeader title="Convidar usuário"><Badge variant="outline">@{ALLOWED_EMAIL_DOMAIN}</Badge></SectionHeader>
+      <SectionHeader title="Cadastrar usuário" description="A pessoa entra com a conta Google deste e-mail." />
       <div className="p-4"><InviteForm invite={actions.invite} /></div>
     </SectionCard>
     <SectionCard>
@@ -63,14 +63,14 @@ export function UsersManager({ users, currentUserId, actions }: { users: GroupUs
 }
 
 function InviteForm({ invite }: { invite: Action }) {
-  // `sent` conta os convites: muda a key dos campos e os limpa depois de cada sucesso.
+  // `sent` conta os cadastros: muda a key dos campos e os limpa depois de cada sucesso.
   const [state, action, pending] = useActionState(async (previous: ActionResult & { sent: number }, formData: FormData) => {
     const result = await withToast(invite)(previous, formData);
     return { ...result, sent: previous.sent + (result.success ? 1 : 0) };
   }, { sent: 0 });
   return <ActionForm action={action} result={state} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(240px,1fr)_170px_170px_170px_auto] sm:items-end">
     <InviteFields key={state.sent} />
-    <Button type="submit" disabled={pending}>{pending ? "Enviando…" : "Enviar convite"}</Button>
+    <Button type="submit" disabled={pending}>{pending ? "Cadastrando…" : "Cadastrar"}</Button>
   </ActionForm>;
 }
 
@@ -79,8 +79,8 @@ function InviteFields() {
   const [inventoryRole, setInventoryRole] = useState<string>("viewer");
   const [associatesRole, setAssociatesRole] = useState<string>("viewer");
   return <>
-    <div className="grid gap-1.5"><Label htmlFor="invite-email">E-mail institucional</Label>
-      <Input id="invite-email" name="email" type="email" pattern=".+@escoteirosalbert\.com\.br" placeholder={`nome@${ALLOWED_EMAIL_DOMAIN}`} required /></div>
+    <div className="grid gap-1.5"><Label htmlFor="invite-email">E-mail da conta Google</Label>
+      <Input id="invite-email" name="email" type="email" placeholder="nome@gmail.com" autoComplete="off" required /></div>
     <div className="grid gap-1.5"><Label htmlFor="invite-role">Papel no Financeiro</Label>
       <OptionSelect id="invite-role" value={role} onValueChange={setRole} options={roleOptions} /><input type="hidden" name="role" value={role} /></div>
     <div className="grid gap-1.5"><Label htmlFor="invite-inventory-role">Papel no Inventário</Label>
@@ -106,7 +106,7 @@ function UserRow({ user, self, actions }: { user: GroupUser; self: boolean; acti
   const id = (name: string) => `${name}-${user.userId}`;
   return <TableRow>
     <TableCell className={CELL}><span className="font-semibold">{user.email}</span>{self && <span className="text-muted-foreground"> (você)</span>}</TableCell>
-    <TableCell className={CELL}><Badge variant={user.confirmed ? "success" : "caution"}>{user.confirmed ? "Ativo" : "Convite pendente"}</Badge></TableCell>
+    <TableCell className={CELL}><Badge variant={user.signedIn ? "success" : "caution"}>{user.signedIn ? "Ativo" : "Ainda não entrou"}</Badge></TableCell>
     <TableCell className={CELL}>
       {self
         ? <span className="text-xs text-muted-foreground" title="Você não pode mudar o próprio papel de administrador">{GROUP_ROLE_LABELS[role]}</span>

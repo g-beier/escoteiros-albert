@@ -4,7 +4,7 @@ import type {
 import { searchTerms } from "@/lib/inventory/search";
 import type { Condition, WriteOffReason } from "@/lib/inventory/vocabulary";
 import type { Db } from "@/lib/server/db";
-import { rowsOf, rpc, sb, unwrap } from "@/lib/server/supabase/db";
+import { one, rows, rpc, value } from "@/lib/server/pg/db";
 
 // Materiais, lotes (por quantidade) e peças (por unidade). Escritas pelas funções inventory_* (032): o chefe
 // grava na hora e o movimento fica para revisar.
@@ -15,74 +15,76 @@ export type MaterialFilters = { includeInactive: boolean; familyId?: string; sea
 
 /** Materiais com os totais de todas as divisões. */
 export async function list(db: Db, groupId: string, filters: MaterialFilters): Promise<MaterialRow[]> {
-  let query = sb(db).from("inventory_material_rows")
-    .select("id, name, tracking, consumable, minimum_quantity, active, quantity, next_expiry, below_minimum")
-    .eq("group_id", groupId);
-  if (!filters.includeInactive) query = query.eq("active", true);
-  if (filters.familyId) query = query.eq("family_id", filters.familyId);
   // Busca ampliada (043): cada palavra precisa aparecer em algum campo (nome, descrição, família, lotes, peças).
-  for (const term of searchTerms(filters.search)) query = query.ilike("search_text", `%${term.replace(/[%_\\]/g, (c) => `\\${c}`)}%`);
-  return rowsOf(await query) as MaterialRow[];
+  const patterns = searchTerms(filters.search).map((term) => `%${term.replace(/[%_\\]/g, (c) => `\\${c}`)}%`);
+  return rows<MaterialRow>(db, (sql) => sql`
+    select id, name, tracking, consumable, minimum_quantity, active, quantity, next_expiry, below_minimum
+    from public.inventory_material_rows where group_id = ${groupId}
+      ${filters.includeInactive ? sql`` : sql`and active`}
+      ${filters.familyId ? sql`and family_id = ${filters.familyId}` : sql``}
+      ${patterns.length ? sql`and ${sql`and`.join(patterns.map((pattern) => sql`search_text ilike ${pattern}`))}` : sql``}`);
 }
 
 /** Quantidade, valor e validade de cada material em cada divisão. */
 export async function stockByLocation(db: Db, groupId: string): Promise<StockRow[]> {
-  return rowsOf(await sb(db).from("inventory_stock_by_location")
-    .select("material_id, location_id, quantity, value_cents, next_expiry, worst_condition, conditions, min_unit_cents, max_unit_cents")
-    .eq("group_id", groupId)) as StockRow[];
+  return rows<StockRow>(db, (sql) => sql`
+    select material_id, location_id, quantity, value_cents, next_expiry, worst_condition, conditions, min_unit_cents, max_unit_cents
+    from public.inventory_stock_by_location where group_id = ${groupId}`);
 }
 
 /** Contagens de alguns anos (conferência / planilha): ano → `material|divisão` → quantidade. */
 export async function countsOfYears(db: Db, groupId: string, years: number[]): Promise<Map<number, Map<string, number>>> {
-  const rows = rowsOf(await sb(db).from("inventory_counts").select("year, material_id, location_id, quantity").eq("group_id", groupId).in("year", years));
+  const list = await rows<{ year: number; material_id: string; location_id: string; quantity: number }>(db, (sql) => sql`
+    select year, material_id, location_id, quantity from public.inventory_counts where group_id = ${groupId} and year = any(${years}::int[])`);
   const byYear = new Map(years.map((year) => [year, new Map<string, number>()]));
-  for (const row of rows) byYear.get(row.year)?.set(`${row.material_id}|${row.location_id}`, row.quantity);
+  for (const row of list) byYear.get(row.year)?.set(`${row.material_id}|${row.location_id}`, row.quantity);
   return byYear;
 }
 
 export async function get(db: Db, groupId: string, id: string): Promise<Material | null> {
-  return unwrap(await sb(db).from("inventory_material_rows")
-    .select("id, name, tracking, consumable, minimum_quantity, description, active, family_id, family_name, family_code, quantity, estimated_value_cents, next_expiry, below_minimum")
-    .eq("id", id).eq("group_id", groupId).maybeSingle()) as Material | null;
+  return one<Material>(db, (sql) => sql`
+    select id, name, tracking, consumable, minimum_quantity, description, active, family_id, family_name, family_code, quantity,
+      estimated_value_cents, next_expiry, below_minimum
+    from public.inventory_material_rows where id = ${id} and group_id = ${groupId}`);
 }
 
 /** Campos editáveis e se já há lotes ou peças (o controle não muda depois disso). */
 export async function getForEdit(db: Db, groupId: string, id: string): Promise<{ material: MaterialDefaults; hasStock: boolean } | null> {
-  const [material, lots, units] = await Promise.all([
-    sb(db).from("inventory_materials").select("id, name, family_id, tracking, consumable, minimum_quantity, description, active").eq("id", id).eq("group_id", groupId).maybeSingle().then(unwrap),
-    sb(db).from("inventory_lots").select("id", { count: "exact", head: true }).eq("material_id", id),
-    sb(db).from("inventory_units").select("id", { count: "exact", head: true }).eq("material_id", id),
-  ]);
+  const material = await one<MaterialDefaults & { has_stock: boolean }>(db, (sql) => sql`
+    select m.id, m.name, m.family_id, m.tracking, m.consumable, m.minimum_quantity, m.description, m.active,
+      exists (select 1 from public.inventory_lots l where l.material_id = m.id)
+        or exists (select 1 from public.inventory_units u where u.material_id = m.id) as has_stock
+    from public.inventory_materials m where m.id = ${id} and m.group_id = ${groupId}`);
   if (!material) return null;
-  return { material: material as MaterialDefaults, hasStock: (lots.count ?? 0) + (units.count ?? 0) > 0 };
+  const { has_stock: hasStock, ...defaults } = material;
+  return { material: defaults as MaterialDefaults, hasStock };
 }
 
 /** Lotes com saldo, na ordem de entrada. */
 export async function lots(db: Db, materialId: string): Promise<Lot[]> {
-  return rowsOf(await sb(db).from("inventory_lots")
-    .select("id, location_id, quantity, condition, unit_value_cents, expires_on, acquired_on, origin, supplier, invoice, notes, variant")
-    .eq("material_id", materialId).gt("quantity", 0).order("created_at")) as Lot[];
+  return rows<Lot>(db, (sql) => sql`
+    select id, location_id, quantity, condition, unit_value_cents, expires_on, acquired_on, origin, supplier, invoice, notes, variant
+    from public.inventory_lots where material_id = ${materialId} and quantity > 0 order by created_at`);
 }
 
 /** Lotes com saldo do grupo (botões de saída e entrada da lista de Materiais). */
 export async function openLots(db: Db, groupId: string): Promise<(Pick<Lot, "id" | "location_id" | "quantity" | "condition" | "expires_on" | "variant"> & { material_id: string })[]> {
-  return rowsOf(await sb(db).from("inventory_lots")
-    .select("id, material_id, location_id, quantity, condition, expires_on, variant")
-    .eq("group_id", groupId).gt("quantity", 0)) as (Pick<Lot, "id" | "location_id" | "quantity" | "condition" | "expires_on" | "variant"> & { material_id: string })[];
+  return rows(db, (sql) => sql`
+    select id, material_id, location_id, quantity, condition, expires_on, variant from public.inventory_lots where group_id = ${groupId} and quantity > 0`);
 }
 
 /** Lotes com saldo de um material numa divisão (diálogo ± da lista de Materiais, carregado ao abrir). */
 export async function openLotsAt(db: Db, materialId: string, locationId: string): Promise<Pick<Lot, "id" | "location_id" | "quantity" | "condition" | "expires_on" | "variant">[]> {
-  return rowsOf(await sb(db).from("inventory_lots")
-    .select("id, location_id, quantity, condition, expires_on, variant")
-    .eq("material_id", materialId).eq("location_id", locationId).gt("quantity", 0)) as Pick<Lot, "id" | "location_id" | "quantity" | "condition" | "expires_on" | "variant">[];
+  return rows(db, (sql) => sql`
+    select id, location_id, quantity, condition, expires_on, variant from public.inventory_lots
+    where material_id = ${materialId} and location_id = ${locationId} and quantity > 0`);
 }
 
 /** Peças, inclusive as baixadas, pela etiqueta. */
 export async function units(db: Db, materialId: string): Promise<Unit[]> {
-  return rowsOf(await sb(db).from("inventory_units")
-    .select("id, location_id, tag, legacy_code, description, condition, unit_value_cents, acquired_on, origin, supplier, invoice, notes, written_off_at, write_off_reason")
-    .eq("material_id", materialId).order("tag", { nullsFirst: false }).order("created_at")) as Unit[];
+  return rows<Unit>(db, (sql) => sql`
+    select id, location_id, tag, legacy_code, description, condition, unit_value_cents, acquired_on, origin, supplier, invoice, notes, written_off_at, write_off_reason
+    from public.inventory_units where material_id = ${materialId} order by tag nulls last, created_at`);
 }
 
 /** Próxima etiqueta livre da família (GEAS-000-0000), se ela tiver código. */
@@ -92,16 +94,18 @@ export async function nextTag(db: Db, familyId: string): Promise<string | null> 
 
 /** Resumo: materiais ativos com quantidade, mínimo e valor. */
 export async function summary(db: Db, groupId: string): Promise<MaterialSummary[]> {
-  return rowsOf(await sb(db).from("inventory_material_rows")
-    .select("id, name, quantity, minimum_quantity, estimated_value_cents, below_minimum")
-    .eq("group_id", groupId).eq("active", true).order("name")) as MaterialSummary[];
+  return rows<MaterialSummary>(db, (sql) => sql`
+    select id, name, quantity, minimum_quantity, estimated_value_cents, below_minimum
+    from public.inventory_material_rows where group_id = ${groupId} and active order by name`);
 }
 
 /** Lotes com saldo vencidos ou vencendo até `until` (yyyy-mm-dd), do mais próximo ao mais distante. */
 export async function expiringLots(db: Db, groupId: string, until: string, limit = 100): Promise<ExpiringLot[]> {
-  const rows = rowsOf(await sb(db).from("inventory_lots").select("id, quantity, expires_on, location_id, material_id, inventory_materials(name)")
-    .eq("group_id", groupId).gt("quantity", 0).not("expires_on", "is", null).lte("expires_on", until).order("expires_on").limit(limit));
-  return rows.map(({ inventory_materials: material, ...row }) => ({ ...row, expires_on: row.expires_on!, material_name: material?.name ?? "" }));
+  return rows<ExpiringLot>(db, (sql) => sql`
+    select l.id, l.quantity, l.expires_on, l.location_id, l.material_id, coalesce(m.name, '') as material_name
+    from public.inventory_lots l left join public.inventory_materials m on m.id = l.material_id
+    where l.group_id = ${groupId} and l.quantity > 0 and l.expires_on is not null and l.expires_on <= ${until}
+    order by l.expires_on limit ${limit}`);
 }
 
 // Escritas --------------------------------------------------------------------------------------
@@ -130,8 +134,8 @@ export async function addLot(db: Db, input: EntryInput & {
     p_material_id: input.materialId, p_location_id: input.locationId, p_quantity: input.quantity, p_condition: input.condition, p_expires_on: input.expiresOn,
     p_variant: input.variant ?? null, ...entry(input),
   });
-  const lot = unwrap(await sb(db).from("inventory_lots").select("quantity").eq("id", lotId).maybeSingle());
-  return { merged: (lot?.quantity ?? 0) > input.quantity };
+  const quantity = await value<number>(db, (sql) => sql`select quantity from public.inventory_lots where id = ${lotId}`);
+  return { merged: (quantity ?? 0) > input.quantity };
 }
 
 export async function addUnit(db: Db, input: EntryInput & { materialId: string; locationId: string | null; tag: string | null; legacyCode: string | null; description: string | null; condition: Condition | null }) {

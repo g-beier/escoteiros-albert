@@ -1,8 +1,7 @@
 import type { EntryInput } from "@/lib/finance/entry-schema";
 import { toRpcSplits } from "@/lib/finance/entry-schema";
 import type { Db } from "@/lib/server/db";
-import { rpc, untyped } from "@/lib/server/supabase/db";
-import { fetchPaged } from "@/lib/server/supabase/paged";
+import { rows, rpc, run } from "@/lib/server/pg/db";
 
 // Extrato › Conciliar (013): linhas do extrato × lançamentos de uma conta e período, vínculos e recusas.
 // Escritas pelas funções auditadas de conciliação.
@@ -18,8 +17,12 @@ export const LIMIT = 5000;
 
 /** Contas do grupo para escolher a da conciliação. */
 export async function accounts(db: Db, groupId: string): Promise<{ accounts: ReconAccount[]; error?: string }> {
-  const { data, error } = await untyped(db).from("accounts").select("id, name, active, kind, opening_balance_cents, opening_date").eq("group_id", groupId).order("name");
-  return { accounts: (data ?? []) as ReconAccount[], error: error?.message };
+  try {
+    return { accounts: await rows<ReconAccount>(db, (sql) => sql`
+      select id, name, active, kind, opening_balance_cents, opening_date from public.accounts where group_id = ${groupId} order by name`) };
+  } catch (error) {
+    return { accounts: [], error: (error as Error).message };
+  }
 }
 
 /**
@@ -27,28 +30,38 @@ export async function accounts(db: Db, groupId: string): Promise<{ accounts: Rec
  * conciliados (da conta e de `entryAccountIds`, como "A definir"), vínculos, recusas, importações e formas.
  */
 export async function board(db: Db, groupId: string, accountId: string, entryAccountIds: string[], period: { from: string; to: string }) {
-  const supabase = untyped(db);
-  const [lines, entries, links, rejections, imports, methods] = await Promise.all([
-    fetchPaged<LineRow>((from, to) => supabase.from("statement_lines").select("id, line_date, description, kind, counterparty, amount_cents, status, ignored_reason, external_id, trn_type")
-      .eq("account_id", accountId).gte("line_date", period.from).lte("line_date", period.to)
-      .order("line_date").order("amount_cents").order("id").range(from, to), LIMIT),
-    fetchPaged<EntryRow>((from, to) => supabase.from("ledger_entry_rows").select("entry_id, entry_date, name, payment_method_name, total_cents, reconciled, outside_statement, account_id")
-      .eq("group_id", groupId).in("account_id", entryAccountIds).eq("reconciled", false).gte("entry_date", period.from).lte("entry_date", period.to)
-      .order("entry_date").order("total_cents").order("entry_id").range(from, to), LIMIT),
-    fetchPaged<LinkRow>((from, to) => supabase.from("reconciliation_link_rows").select("link_set_id, statement_line_id, line_date, line_description, line_kind, line_counterparty, line_amount_cents, ledger_entry_id, entry_date, entry_name, entry_total_cents, created_at")
-      .eq("account_id", accountId).gte("line_date", period.from).lte("line_date", period.to)
-      .order("line_date").order("link_id").range(from, to), LIMIT),
-    fetchPaged<{ statement_line_id: string; ledger_entry_id: string }>((from, to) => supabase.from("reconciliation_rejections").select("statement_line_id, ledger_entry_id, statement_lines!inner(account_id)")
-      .eq("statement_lines.account_id", accountId).order("statement_line_id").order("ledger_entry_id").range(from, to), LIMIT * 5),
-    supabase.from("statement_imports").select("period_from, period_to, opening_balance_cents, closing_balance_cents")
-      .eq("account_id", accountId).lte("period_from", period.to).gte("period_to", period.from),
-    supabase.from("payment_methods").select("id, name, active").eq("group_id", groupId).order("name"),
-  ]);
-  return {
-    lines: lines.data, entries: entries.data, links: links.data, rejections: rejections.data,
-    imports: (imports.data ?? []) as ImportRow[], methods: (methods.data ?? []) as { id: string; name: string; active: boolean }[],
-    error: [lines, entries, links, rejections, imports].map((r) => r.error?.message).find(Boolean),
-  };
+  const empty = { lines: [] as LineRow[], entries: [] as EntryRow[], links: [] as LinkRow[], rejections: [] as { statement_line_id: string; ledger_entry_id: string }[], imports: [] as ImportRow[], methods: [] as { id: string; name: string; active: boolean }[] };
+  try {
+    return await run(db, async (sql) => {
+      const [lines, entries, links, rejections, imports, methods] = await Promise.all([
+        sql`select id, line_date, description, kind, counterparty, amount_cents, status, ignored_reason, external_id, trn_type
+            from public.statement_lines where account_id = ${accountId} and line_date between ${period.from} and ${period.to}
+            order by line_date, amount_cents, id limit ${LIMIT}`,
+        sql`select entry_id, entry_date, name, payment_method_name, total_cents, reconciled, outside_statement, account_id
+            from public.ledger_entry_rows where group_id = ${groupId} and account_id = any(${entryAccountIds}::uuid[]) and not reconciled
+              and entry_date between ${period.from} and ${period.to}
+            order by entry_date, total_cents, entry_id limit ${LIMIT}`,
+        sql`select link_set_id, statement_line_id, line_date, line_description, line_kind, line_counterparty, line_amount_cents, ledger_entry_id,
+              entry_date, entry_name, entry_total_cents, created_at
+            from public.reconciliation_link_rows where account_id = ${accountId} and line_date between ${period.from} and ${period.to}
+            order by line_date, link_id limit ${LIMIT}`,
+        sql`select r.statement_line_id, r.ledger_entry_id from public.reconciliation_rejections r
+            join public.statement_lines l on l.id = r.statement_line_id where l.account_id = ${accountId}
+            order by r.statement_line_id, r.ledger_entry_id limit ${LIMIT * 5}`,
+        sql`select period_from, period_to, opening_balance_cents, closing_balance_cents from public.statement_imports
+            where account_id = ${accountId} and period_from <= ${period.to} and period_to >= ${period.from}`,
+        sql`select id, name, active from public.payment_methods where group_id = ${groupId} order by name`,
+      ]);
+      return {
+        lines: [...lines] as unknown as LineRow[], entries: [...entries] as unknown as EntryRow[], links: [...links] as unknown as LinkRow[],
+        rejections: [...rejections] as unknown as { statement_line_id: string; ledger_entry_id: string }[],
+        imports: [...imports] as unknown as ImportRow[], methods: [...methods] as unknown as { id: string; name: string; active: boolean }[],
+        error: undefined as string | undefined,
+      };
+    });
+  } catch (error) {
+    return { ...empty, error: (error as Error).message };
+  }
 }
 
 // Escritas

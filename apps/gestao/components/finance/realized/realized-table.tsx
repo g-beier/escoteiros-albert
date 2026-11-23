@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { IconChevronDown, IconChevronRight } from "@tabler/icons-react";
 import { Button } from "@geas/ui/components/button";
 import { money } from "@/lib/format";

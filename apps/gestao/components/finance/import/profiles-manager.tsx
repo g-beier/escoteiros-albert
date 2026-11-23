@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { IconPencil, IconTrash } from "@tabler/icons-react";
 import { deleteImportProfile, renameImportProfile, type CatalogFormState } from "@/app/(financeiro)/financeiro/configuracoes/actions";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";

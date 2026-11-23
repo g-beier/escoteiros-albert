@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { notFound } from "next/navigation";
 import { IconAlertTriangle, IconPencil } from "@tabler/icons-react";
 import { PageBody, PageHeader } from "@geas/ui";

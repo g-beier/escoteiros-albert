@@ -1,41 +1,35 @@
 import { execFileSync } from "node:child_process";
-import { createClient } from "@supabase/supabase-js";
-import { DB_CONTAINER, E2E_ACCOUNTS, E2E_ADMIN_EMAIL, E2E_GROUP_NAME, E2E_PREFIX, SUPABASE_SECRET_KEY, SUPABASE_URL } from "./env";
+import { DB_COMPOSE, E2E_ACCOUNTS, E2E_ADMIN_EMAIL, E2E_GROUP_NAME, E2E_PREFIX } from "./env";
 
-/** SQL como postgres no banco local (docker exec + psql). Só para preparar e limpar o grupo E2E. */
+/** SQL como postgres no banco local (psql dentro do container `db`). Só para preparar e limpar o grupo E2E. */
 export function psql(sql: string): string {
-  return execFileSync("docker", ["exec", "-i", DB_CONTAINER, "psql", "-U", "postgres", "-tAq", "-v", "ON_ERROR_STOP=1"], {
+  return execFileSync("docker", ["compose", "-f", DB_COMPOSE, "exec", "-T", "db", "psql", "-U", "postgres", "-d", "geas", "-tAq", "-v", "ON_ERROR_STOP=1"], {
     input: sql,
     encoding: "utf8",
   }).trim();
 }
 
-const literal = (value: string) => `'${value.replaceAll("'", "''")}'`;
+export const literal = (value: string) => `'${value.replaceAll("'", "''")}'`;
 
-export function adminClient() {
-  if (!SUPABASE_SECRET_KEY) throw new Error("SUPABASE_SECRET_KEY ausente: rode `npm run infra:env` (gera apps/gestao/.env.local).");
-  return createClient(SUPABASE_URL, SUPABASE_SECRET_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+/** Cadastro em auth.users (id, bloqueio), ou nulo. */
+export function findUser(email: string): { id: string; banned: boolean } | null {
+  const row = psql(`select id || '|' || (coalesce(banned_until > now(), false))::text from auth.users where email = ${literal(email)};`);
+  if (!row) return null;
+  const [id, banned] = row.split("|");
+  return { id, banned: banned === "true" };
 }
 
-export async function findUser(email: string) {
-  const { data, error } = await adminClient().auth.admin.listUsers({ page: 1, perPage: 1000 });
-  if (error) throw error;
-  return data.users.find((user) => user.email === email) ?? null;
+/** Cadastra (ou desbloqueia) o e-mail em auth.users, como o administrador faria em Usuários. */
+export function ensureUser(email: string) {
+  psql(`insert into auth.users(email) values (${literal(email)}) on conflict (email) do update set banned_until = null;`);
 }
 
 /**
- * Garante o administrador E2E (Auth), o grupo E2E (admin_bootstrap_group) e as contas usadas nos testes.
+ * Garante o administrador E2E (auth.users), o grupo E2E (admin_bootstrap_group) e as contas usadas nos testes.
  * Idempotente: roda a cada execução e só cria o que falta.
  */
 export async function ensureE2eGroup() {
-  const admin = adminClient();
-  const existing = await findUser(E2E_ADMIN_EMAIL);
-  if (!existing) {
-    const { error } = await admin.auth.admin.createUser({ email: E2E_ADMIN_EMAIL, email_confirm: true });
-    if (error) throw error;
-  } else if (existing.banned_until) {
-    await admin.auth.admin.updateUserById(existing.id, { ban_duration: "none" });
-  }
+  ensureUser(E2E_ADMIN_EMAIL);
   const email = literal(E2E_ADMIN_EMAIL);
   psql(`
     do $$ begin
@@ -73,14 +67,7 @@ export function cleanupE2eGroup() {
   `);
 }
 
-/** Remove de vez usuários convidados pelos testes (Auth), com qualquer vínculo que tenha sobrado. */
+/** Remove de vez pessoas cadastradas pelos testes (os vínculos e sessões saem em cascata). */
 export async function deleteUsers(emails: string[]) {
-  const admin = adminClient();
-  for (const email of emails) {
-    const user = await findUser(email);
-    if (user) {
-      const { error } = await admin.auth.admin.deleteUser(user.id);
-      if (error) throw error;
-    }
-  }
+  if (emails.length) psql(`delete from auth.users where email in (${emails.map(literal).join(", ")});`);
 }

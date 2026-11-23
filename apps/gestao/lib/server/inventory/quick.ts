@@ -1,7 +1,7 @@
 import type { Condition, Tracking, WriteOffReason } from "@/lib/inventory/vocabulary";
 import type { Db } from "@/lib/server/db";
-import type { Json } from "@/lib/server/supabase/database.types";
-import { rpc } from "@/lib/server/supabase/db";
+import { rpc } from "@/lib/server/pg/db";
+import type { Json } from "@/lib/server/pg/schema";
 
 // Registro rápido (telas de celular, /rapido › Inventário): tudo passa por inventory_quick (045), que marca o movimento
 // como 'rapido' e o deixa para revisar, mesmo do gestor. Os nomes dos argumentos (jsonb) ficam só aqui.

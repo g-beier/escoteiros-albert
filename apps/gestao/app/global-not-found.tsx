@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import type { Metadata } from "next";
 import { RootHtml } from "@/components/shell/root-layout";
 import "./globals.css";

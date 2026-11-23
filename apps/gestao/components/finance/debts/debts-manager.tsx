@@ -1,8 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link } from "@geas/ui/components/link";
 import { toast } from "sonner";
 import { IconAlertTriangle, IconCash, IconChevronRight, IconDots, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 import { debtPaymentOptions, deleteDebt, payDebts, saveDebt } from "@/app/(financeiro)/financeiro/mensalidades/actions";
@@ -227,7 +226,6 @@ function linkedOptions(debt: Debt | null): PaymentOption[] {
 const cents = (value: string) => parseMoneyToCents(value) ?? 0;
 
 function DebtForm({ debt, initialAssociateId, associates, onDone }: { debt: Debt | null; initialAssociateId: string; associates: AssociateOption[]; onDone: () => void }) {
-  const router = useRouter();
   const [saving, startSaving] = useTransition();
   const [associateId, setAssociateId] = useState(debt?.associateId ?? initialAssociateId);
   const [date, setDate] = useState(debt?.date ?? todayInSaoPaulo());
@@ -264,7 +262,6 @@ function DebtForm({ debt, initialAssociateId, associates, onDone }: { debt: Debt
       if (result.error) { toast.error(result.error); return; }
       toast.success(result.success);
       onDone();
-      router.refresh();
     });
   };
   const field = (name: string) => `debt-${debt?.id ?? "new"}-${name}`;
@@ -349,7 +346,6 @@ function PaymentChoices({ options, debtId, payments, field, onToggle, onAmount }
  * da mais antiga para a mais nova (editável). Grava só as alocações deste lançamento (`pay_debts`).
  */
 function PayDebtsForm({ label, associateId, debts, onDone }: { label: string; associateId: string; debts: Debt[]; onDone: () => void }) {
-  const router = useRouter();
   const [saving, startSaving] = useTransition();
   const options = usePaymentOptions(associateId);
   const [entryId, setEntryId] = useState("");
@@ -387,7 +383,6 @@ function PayDebtsForm({ label, associateId, debts, onDone }: { label: string; as
       if (result.error) { toast.error(result.error); return; }
       toast.success(result.success);
       onDone();
-      router.refresh();
     });
   };
 
@@ -435,7 +430,6 @@ function PayDebtsForm({ label, associateId, debts, onDone }: { label: string; as
 }
 
 function RemoveDebt({ debt, onDone }: { debt: Debt; onDone: () => void }) {
-  const router = useRouter();
   const [pending, start] = useTransition();
   return <>
     <DialogHeader>
@@ -449,7 +443,6 @@ function RemoveDebt({ debt, onDone }: { debt: Debt; onDone: () => void }) {
         if (result.error) { toast.error(result.error); return; }
         toast.success(result.success);
         onDone();
-        router.refresh();
       })}><IconTrash data-icon="inline-start" /> {pending ? "Excluindo…" : "Excluir"}</Button>
     </DialogFooter>
   </>;

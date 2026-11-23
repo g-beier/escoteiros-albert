@@ -1,28 +1,24 @@
 import { expect, test } from "@playwright/test";
 import { deleteUsers, findUser } from "./support/db";
 import { chooseOption } from "./support/entries";
-import { waitForMail } from "./support/mail";
 
-// Gestão de usuários do grupo E2E: convidar, mudar papel e remover. O convidado tem e-mail único
-// (e2e.convite.*) e é apagado do Auth no fim, mesmo se o teste falhar no meio.
-const invited = `e2e.convite.${Date.now().toString(36)}@escoteirosalbert.com.br`;
+// Gestão de usuários do grupo E2E: cadastrar, mudar papel e remover. O cadastrado tem e-mail único
+// (e2e.convite.*) e é apagado de auth.users no fim, mesmo se o teste falhar no meio.
+const invited = `e2e.convite.${Date.now().toString(36)}@example.org`;
 test.afterAll(() => deleteUsers([invited]));
 
-test("convidar, mudar papel e remover um usuário", async ({ page }) => {
+test("cadastrar, mudar papel e remover um usuário", async ({ page }) => {
   const row = page.getByRole("row").filter({ hasText: invited });
 
-  await test.step("convidar como tesoureiro", async () => {
+  await test.step("cadastrar como tesoureiro", async () => {
     await page.goto("/usuarios");
     await expect(page.getByRole("heading", { name: "Usuários" })).toBeVisible();
-    await page.getByLabel("E-mail institucional").fill(invited);
+    await page.getByLabel("E-mail da conta Google").fill(invited);
     await chooseOption(page, "Papel no Financeiro", "Tesoureiro");
-    const since = new Date();
-    await page.getByRole("button", { name: "Enviar convite" }).click();
-    await expect(page.getByText(`Convite enviado para ${invited}.`)).toBeVisible();
-    await expect(row).toContainText("Convite pendente");
+    await page.getByRole("button", { name: "Cadastrar" }).click();
+    await expect(page.getByText(`${invited} cadastrado.`)).toBeVisible();
+    await expect(row).toContainText("Ainda não entrou");
     await expect(row.getByRole("combobox", { name: `Papel no Financeiro de ${invited}` })).toContainText("Tesoureiro");
-    const mail = await waitForMail(invited, since);
-    expect(mail.text).toContain("/auth/");
   });
 
   await test.step("mudar para consulta no Financeiro, chefe no Inventário e secretaria no Associados", async () => {
@@ -46,8 +42,8 @@ test("convidar, mudar papel e remover um usuário", async ({ page }) => {
     });
     await row.getByRole("button", { name: `Remover acesso de ${invited}` }).click();
     await expect(row).toHaveCount(0);
-    // a conta fica bloqueada no Auth (o vínculo com o grupo some)
-    await expect.poll(async () => Boolean((await findUser(invited))?.banned_until)).toBe(true);
+    // sem outro grupo, o cadastro fica bloqueado (o vínculo com o grupo some)
+    await expect.poll(() => findUser(invited)?.banned).toBe(true);
   });
 });
 

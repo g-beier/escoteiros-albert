@@ -28,7 +28,7 @@ export function nextBranch(branch: ScoutBranch): ScoutBranch | null {
 
 const byName = (a: string, b: string) => a.localeCompare(b, "pt-BR", { sensitivity: "base", numeric: true });
 
-// Seções e patrulhas cadastradas (028_sections.sql): Ramo › Seção › Patrulha ------------------
+// Seções e patrulhas cadastradas (db/migrations/001_schema.sql): Ramo › Seção › Patrulha ------------------
 
 export type SectionItem = { id: string; branch: ScoutBranch; name: string; active: boolean };
 export type PatrolItem = { id: string; sectionId: string; name: string; active: boolean };

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { cn } from "@geas/ui/lib/utils";
 import {
   cellStatusLabel, cellValue, directorateLabels, itemKindLabels, matrixCell, statusMap, statusShortLabels, statusTone, validityLabel,

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { IconArrowRight, IconFolderExclamation } from "@tabler/icons-react";
 import { buttonVariants } from "@geas/ui/components/button";
 import { StatCard as Stat } from "@geas/ui/components/stat-card";

@@ -16,8 +16,8 @@ const family = uniqueName("Barracas");
 const code = String(900 + Math.floor(Math.random() * 100));
 const lotMaterial = uniqueName("Caneca");
 const unitMaterial = uniqueName("Barraca iglu");
-const CHIEF = "e2e.chefe.inventario@escoteirosalbert.com.br";
-const VIEWER = "e2e.consulta.inventario@escoteirosalbert.com.br";
+const CHIEF = "e2e.chefe.inventario@example.org";
+const VIEWER = "e2e.consulta.inventario@example.org";
 const literal = (value: string) => `'${value.replaceAll("'", "''")}'`;
 const group = `(select m.group_id from public.memberships m join auth.users u on u.id = m.user_id where u.email = ${literal(E2E_ADMIN_EMAIL)})`;
 

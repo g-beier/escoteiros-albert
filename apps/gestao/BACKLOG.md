@@ -61,7 +61,7 @@
 
 - **Tela de importação** (`/importacao`, menu "Importar extrato"): conta + arquivo (CSV ou OFX, detectado pelo conteúdo), perfil do grupo reconhecido pela assinatura do cabeçalho ou novo perfil com sugestões (`sniffCsv` + papéis pelo nome das colunas), grade com papel por coluna, natureza C/D, prefixos de tipo, linhas a ignorar, conferência (totais, saldos, primeira divergência, erros, ignoradas, valor zero), salvar/atualizar perfil ("salvar como novo") e importar; redireciona para `/conciliacao`. Lista das importações recentes da conta.
 - Linha "SALDO ANTERIOR" ignorada vira saldo inicial quando o arquivo não traz outro (Itaú); no OFX, confere saldo inicial + movimentos com o `LEDGERBAL`.
-- **Conciliação** (`013_reconciliation.sql`, `/conciliacao`): funções `link_reconciliation` (1:1, 1:N, N:1; somas com sinal), `unlink_reconciliation`, `reject_reconciliation_suggestion`, `ignore_statement_line`/`reopen_statement_line`, `create_entry_from_statement_line`, `set_ledger_entry_outside_statement`, `set_ledger_entry_account`; excluir um lançamento conciliado ou mudar seu valor/conta desfaz o vínculo e reabre as linhas. Tela em duas colunas com sugestões (mesmo dia + valor; ambíguas ordenadas por nome parecido), vínculo manual, ignorar com motivo, fora do extrato, trocar conta, vinculados/ignoradas/fora do extrato com desfazer e fechamento. ✓ de conciliado na visão Por extrato. Teste SQL em `supabase/tests/reconciliation.sql` (roda em transação desfeita).
+- **Conciliação** (`013_reconciliation.sql`, `/conciliacao`): funções `link_reconciliation` (1:1, 1:N, N:1; somas com sinal), `unlink_reconciliation`, `reject_reconciliation_suggestion`, `ignore_statement_line`/`reopen_statement_line`, `create_entry_from_statement_line`, `set_ledger_entry_outside_statement`, `set_ledger_entry_account`; excluir um lançamento conciliado ou mudar seu valor/conta desfaz o vínculo e reabre as linhas. Tela em duas colunas com sugestões (mesmo dia + valor; ambíguas ordenadas por nome parecido), vínculo manual, ignorar com motivo, fora do extrato, trocar conta, vinculados/ignoradas/fora do extrato com desfazer e fechamento. ✓ de conciliado na visão Por extrato. Teste SQL em `db/tests/reconciliation.sql` (roda em transação desfeita).
 
 ## Concluído (2026-11-11, décima rodada — contabilidade e coesão)
 
@@ -73,13 +73,13 @@
 - **Exportação contábil** (`/exportar/contabil`): CSV em partida dobrada, uma linha por rateio, Windows-1252 ou UTF-8; recusa quando falta conta contábil. Fluxo de caixa também em CSV. Colunas das exportações em `lib/export/columns.ts`, comuns aos formatos.
 - Vocabulário: visão **Por lançamento**, campo **Histórico** (antes "Nome do lançamento"); glossário em `docs/modelo.md`; `docs/contabilidade.md`.
 - `lib/session.ts` substitui as 15 cópias da consulta de grupo/papel; `SectionCard` substitui as classes `card`/`card-head` nos cadastros, importação, associados e lançamentos.
-- Teste SQL `supabase/tests/accounting.sql`.
+- Teste SQL `db/tests/accounting.sql`.
 
 ## Concluído (2026-11-11, décima primeira rodada — cenários de importação)
 
 - `015_import_scenarios.sql`: pré-conferência (novas, já importadas, suspeitas, órfãs) antes de importar; linhas desmarcadas com `skip`; desfazer importação; criação em massa de lançamentos conciliados (rubrica raiz pelo sinal); ignorar em massa; lançamentos "A definir" vinculáveis em qualquer conta.
 - Conciliação: sugestões com até 3 dias de diferença (nome desempata), "Marcar todas", "Criar lançamentos (N)" e "Ignorar (N)" na barra de seleção.
-- Teste SQL `supabase/tests/import_scenarios.sql` (digitado antes → parcial → completo reconvertido → órfã → massa → desfazer).
+- Teste SQL `db/tests/import_scenarios.sql` (digitado antes → parcial → completo reconvertido → órfã → massa → desfazer).
 
 ## Concluído (2026-11-12)
 
@@ -94,14 +94,14 @@
 ## Concluído (2026-11-12, frentes A, C, D e F)
 
 - **A — interface legada:** `/usuarios` e `/login` em componentes shadcn; classes sem uso removidas do `@layer legacy` (ficam `.shell` e as regras de `table`/`th`/`td`, ainda usadas por tabelas cruas).
-- **C — lançamentos:** histórico de alterações nos detalhes (`023_entry_history.sql`, `ledger_entry_history`, também para Consulta); filtro "Conciliado" (`?conciliado=sim|nao`) e ✓ nas duas visões; seleção e movimento em lote de conta com atalho "N em 'A definir'" (`024_move_entries_account.sql`). Teste `supabase/tests/entries.sql`.
+- **C — lançamentos:** histórico de alterações nos detalhes (`023_entry_history.sql`, `ledger_entry_history`, também para Consulta); filtro "Conciliado" (`?conciliado=sim|nao`) e ✓ nas duas visões; seleção e movimento em lote de conta com atalho "N em 'A definir'" (`024_move_entries_account.sql`). Teste `db/tests/entries.sql`.
 - **D — importação:** código CSV de extrato removido (leitor genérico em `lib/csv-reader.ts` para associados); conferência compara saldo inicial do OFX com o saldo da conta (`025_account_balance_before.sql`); aba "Perfis de leitura" em `/cadastros?aba=perfis` para renomear/excluir (`026_import_profile_admin.sql`). Testes `account_balance.sql`, `import_profiles.sql`.
 - **F — comprovantes:** anexos em bucket privado `comprovantes` (PDF, JPG, PNG, HEIC; 10 MB), envio direto ao Storage por URL assinada, abrir/baixar por URL de 60 s, clipe na lista, exclusão junto com o lançamento (`027_entry_attachments.sql`). Teste `entry_attachments.sql`.
 
 ## Concluído (2026-11-12, frentes B e E)
 
 - **B — tabelas:** `/lancamentos` em cartões abaixo de `md` nas duas visões (seleção, mover em lote, rolagem infinita e filtros mantidos); tabela desktop virtualizada acima de 300 linhas carregadas (`@tanstack/react-virtual`), cabeçalho fixo e `aria-rowcount`/`aria-rowindex`.
-- **E — testes:** pgTAP (`npm run test:db`): isolamento entre grupos, papéis, ausência de escrita direta e auditoria (`*.test.sql`, dados em `_fixture.psql`); scripts SQL antigos com TAP mínimo, também rodáveis via psql. Playwright (`npm run test:e2e`, Chromium desktop, porta 3210, OTP pelo Mailpit, grupo "Grupo E2E"): login, lançamentos, usuários, mover em lote, comprovantes, importação OFX → conciliação → filtro Conciliado → desfazer. Como rodar no `README.md`.
+- **E — testes:** pgTAP (`npm run test:db`): isolamento entre grupos, papéis, ausência de escrita direta e auditoria (`*.test.sql`, dados em `_fixture.psql`); scripts SQL antigos com TAP mínimo, também rodáveis via psql. Playwright (`npm run test:e2e`, Chromium desktop, porta 3210, login de teste em `/auth/e2e`, grupo "Grupo E2E"): login, lançamentos, usuários, mover em lote, comprovantes, importação OFX → conciliação → filtro Conciliado → desfazer. Como rodar no `README.md`.
 - Corrigido: ids dos campos de rateio estáveis no formulário (erro de hidratação).
 
 ## Concluído (2026-11-12, ajustes de uso)
@@ -155,7 +155,7 @@ Decidido (2026-11-12):
 
 ### Regras para os agentes
 
-- Cada frente em worktree própria, um commit por item, `npm run lint`, `npm run typecheck` e `npm test` verdes; SQL testado com `supabase/tests/`.
+- Cada frente em worktree própria, um commit por item, `npm run lint`, `npm run typecheck` e `npm test` verdes; SQL testado com `db/tests/`.
 - Worktree criada a partir de `main`; numeração de migrations reservada por frente para evitar colisão.
 - Seguir `CLAUDE.md` (PageHeader, rótulos visíveis, escrita só por funções SQL auditadas, `lib/server/session.ts`) e `AGENTS.md` (Next.js desta versão).
 - Atualizar este BACKLOG e os `docs/` ao concluir.

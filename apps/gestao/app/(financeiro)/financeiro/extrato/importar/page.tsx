@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { AppHeader } from "@/components/finance/app-header";
 import { RecentImports } from "@/components/finance/import/recent-imports";
 import { StatementImporter, type ImportAccount } from "@/components/finance/import/statement-importer";

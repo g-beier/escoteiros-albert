@@ -1,0 +1,34 @@
+# Infra local do Gestão: Postgres 17 (+ pgTAP) e Azurite (emulador do Blob Storage, comprovantes).
+# Portas só em 127.0.0.1. Suba com `npm run infra:start` (raiz do monorepo).
+name: geas-gestao
+
+services:
+  db:
+    build: ./docker
+    image: geas-gestao-db:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: geas
+    ports:
+      - "127.0.0.1:${GEAS_DB_PORT:-54330}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./tests:/tests:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d geas"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  blob:
+    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
+    command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --location /data --loose --skipApiVersionCheck
+    ports:
+      - "127.0.0.1:${GEAS_BLOB_PORT:-10000}:10000"
+    volumes:
+      - blob-data:/data
+
+volumes:
+  db-data:
+  blob-data:

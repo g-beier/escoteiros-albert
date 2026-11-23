@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { IconAlertTriangle, IconCheck, IconCircleCheck, IconMinus, IconX } from "@tabler/icons-react";
 import { Button } from "@geas/ui/components/button";
 import { Checkbox } from "@geas/ui/components/checkbox";

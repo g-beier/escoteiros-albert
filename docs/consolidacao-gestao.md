@@ -1,5 +1,9 @@
 # Gestão: consolidação de financeiro e inventario e camada de dados
 
+> **2026-11-21:** o Supabase saiu (`docs/migracao-saida-supabase.md`, fase 1). Onde este plano cita `lib/server/supabase`,
+> `serviceDb()`, `untyped`/`sb` ou `auth/confirm`, hoje valem `lib/server/pg` (SQL com parâmetros e `rpc`), as funções de
+> usuários de `056_group_users.sql` e o login Google (`/auth/google`, `/auth/callback`). O texto abaixo é o histórico da consolidação.
+
 Status: **concluído** (fases 0 a 4). Plano de 2026-11-17; o estado atual está em `CLAUDE.md` e `docs/CODEBASE_MAP.md`.
 
 Objetivo: juntar `apps/financeiro` e `apps/inventario` num único app Next, **`apps/gestao`**

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { IconBolt, IconFolderExclamation, IconHelpCircle, IconX } from "@tabler/icons-react";
 import { pageSession } from "@/lib/server/session";
 import { AppHeader } from "@/components/finance/app-header";

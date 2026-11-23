@@ -140,7 +140,6 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
       if (!entry) { toast.success(fromLine ? "Lançamento criado e conciliado." : "Lançamento salvo."); router.push(backHref); return; }
       setSaved(draft);
       toast.success("Alterações salvas.");
-      router.refresh();
     });
   }
 

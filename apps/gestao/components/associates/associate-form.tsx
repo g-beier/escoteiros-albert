@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { useActionState, useState } from "react";
 import { Button, buttonVariants } from "@geas/ui/components/button";
 import { Input } from "@geas/ui/components/input";

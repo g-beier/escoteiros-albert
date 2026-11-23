@@ -6,14 +6,14 @@ App interno do grupo com os módulos **Financeiro** (`/financeiro/...`, descrito
 
 MVP de gestão financeira para grupo escoteiro. Um lançamento representa uma movimentação da conta (histórico, forma de pagamento, total), pertence a uma **conta** (corrente, poupança, caixa…) e contém um ou mais rateios por rubrica. A aplicação oferece as visões “Movimentações” (um lançamento por linha), “Detalhamento” (um rateio por linha) e “Realizado”. Glossário em [`docs/modelo.md`](docs/modelo.md).
 
-Modelo principal: `accounts` (contas, com saldo inicial), `payment_methods` (com conta padrão), `ledger_entries` (linha do extrato, com `account_id`) e `entry_splits` (rateio). A importação de extrato grava `import_profiles` (perfil por banco/formato), `statement_imports` e `statement_lines` (linhas abertas, deduplicadas por impressão digital); a conciliação (`013_reconciliation.sql`) grava `reconciliation_links` (conjuntos 1:1, 1:N ou N:1 cujas somas batem) e `reconciliation_rejections` (sugestões recusadas); lançamentos podem ser marcados como fora do extrato. Plano completo em `docs/importacao-conciliacao.md`. A contabilidade (`014_accounting.sql`) acrescenta a **conta contábil** (`ledger_code`, máscara `0.0.0.0.0000`) em rubricas e contas, os campos do OFX nas linhas do extrato e o ID OFX (`external_ids`) nas visões de lançamentos; ver `docs/contabilidade.md`.
+Modelo principal: `accounts` (contas, com saldo inicial), `payment_methods` (com conta padrão), `ledger_entries` (linha do extrato, com `account_id`) e `entry_splits` (rateio). A importação de extrato grava `import_profiles` (perfil por banco/formato), `statement_imports` e `statement_lines` (linhas abertas, deduplicadas por impressão digital); a conciliação (`db/migrations/001_schema.sql`) grava `reconciliation_links` (conjuntos 1:1, 1:N ou N:1 cujas somas batem) e `reconciliation_rejections` (sugestões recusadas); lançamentos podem ser marcados como fora do extrato. Plano completo em `docs/importacao-conciliacao.md`. A contabilidade (`db/migrations/001_schema.sql`) acrescenta a **conta contábil** (`ledger_code`, máscara `0.0.0.0.0000`) em rubricas e contas, os campos do OFX nas linhas do extrato e o ID OFX (`external_ids`) nas visões de lançamentos; ver `docs/contabilidade.md`.
 
 ## Arquitetura
 
-- Next.js (App Router e Server Actions)
-- Supabase Auth passwordless com código único por e-mail e sessão em cookies
-- Gestão de usuários por convite, restrita a `@escoteirosalbert.com.br`
-- PostgreSQL/Supabase com Row Level Security por grupo
+- Next.js (App Router e Server Actions), um servidor Node (container)
+- Login com Google (OpenID Connect, PKCE) para os e-mails cadastrados pelo administrador; sessão própria em cookie `httpOnly` (o banco guarda só o hash do token)
+- PostgreSQL 17 (Azure Database for PostgreSQL em produção) com Row Level Security por grupo: cada consulta roda numa transação com o papel `authenticated` e o id do usuário (`lib/server/pg/db.ts`)
+- Comprovantes no Azure Blob Storage (contêiner privado, URLs SAS curtas emitidas só depois da permissão no banco)
 - Valores monetários armazenados como centavos inteiros
 - Criação do lançamento e seus rateios em uma única transação SQL
 
@@ -31,10 +31,10 @@ Navegação: **Início · Lançamentos · Extrato · Mensalidades** no menu prin
 - `/financeiro/lancamentos/novo` — novo lançamento; com `?linha=<id>` ("Criar lançamento" na conciliação) vem preenchido pela linha do extrato e já sai conciliado.
 - `/financeiro/extrato/conciliar` — extrato × lançamentos de uma conta e período (`conta`, `de`, `ate`; padrão: primeira conta ativa, mês atual): sugestões por mesmo valor no mesmo dia ou até 3 dias depois/antes, lançamentos "A definir" como candidatos, vínculo manual com conferência das somas, criar lançamentos e ignorar linhas em massa, fora do extrato, trocar conta, desfazer e fechamento com o saldo do extrato. Somente leitura para consulta.
 - `/financeiro/lancamentos/[id]` — detalhes com o formulário completo (inclusive **Observações**, texto livre opcional por lançamento, que entra na busca) e as linhas do extrato vinculadas (com ID OFX); edição e exclusão para tesouraria/administração, somente leitura para consulta.
-- `/financeiro/configuracoes/associados` — Configurações › Associados (nome, ramo, seção, patrulha, ativo); única aba de Configurações para consulta. Cadastro **Seções e patrulhas** (Ramo › Seção › Patrulha, `028_sections.sql`): seção escolhida numa lista do ramo (pré-selecionada se o ramo tem uma só), patrulha opcional da seção. Visualizações **Lista** (editável) e **Por seção** (`agrupar=secao`, agrupada e em ordem de nome), filtro `secao`; importação em massa por CSV (`nome, ramo, seção, patrulha, status`, seção e patrulha precisam estar cadastradas; com modelo para baixar e conferência antes de gravar; `016_import_associates.sql`).
+- `/financeiro/configuracoes/associados` — Configurações › Associados (nome, ramo, seção, patrulha, ativo); única aba de Configurações para consulta. Cadastro **Seções e patrulhas** (Ramo › Seção › Patrulha, `db/migrations/001_schema.sql`): seção escolhida numa lista do ramo (pré-selecionada se o ramo tem uma só), patrulha opcional da seção. Visualizações **Lista** (editável) e **Por seção** (`agrupar=secao`, agrupada e em ordem de nome), filtro `secao`; importação em massa por CSV (`nome, ramo, seção, patrulha, status`, seção e patrulha precisam estar cadastradas; com modelo para baixar e conferência antes de gravar; `db/migrations/001_schema.sql`).
 - `/financeiro/extrato/importar` — importar extrato **OFX** numa conta (tesouraria e administração): a conta (banco) é escolhida em cada importação — vale para OFX convertidos —, o perfil de leitura da última importação da conta é aplicado sozinho (ajustes recolhidos), conferência com o que já existe na conta (novas, já importadas, suspeitas, órfãs), totais, saldos, TRNTYPE e ID OFX, e lista das importações recentes da conta com **desfazer** (`conta` na URL). Depois de importar, segue para `/financeiro/extrato/conciliar?conta=…&de=…&ate=…`.
 - `/financeiro/configuracoes/contas|rubricas|formas|perfis|mensalidades` — Configurações (`app/(financeiro)/financeiro/configuracoes/[aba]`): contas (banco, agência, número, saldo inicial, conta contábil), rubricas com conta contábil, formas de pagamento com conta padrão e perfis de leitura do extrato OFX (contas em que foram usados, renomear, excluir) (tesouraria e administração).
-- `/usuarios` — convites e papéis (administração).
+- `/usuarios` — cadastro de e-mails e papéis (administração).
 
 ## Componentes
 
@@ -44,109 +44,100 @@ shadcn/ui com o preset `b1D0eVNQ` (estilo `base-mira`, primitivas Base UI, ícon
 
 A interface usa a fonte Outfit (variável), escolhida por ter algarismos tabulares (`tnum`) para alinhar valores e datas; o site institucional continua em Poppins. Use a classe `num` em valores, datas e campos numéricos. A paleta segue a identidade do Grupo Escoteiro Albert Schweitzer: roxo para ações primárias, verde para suporte e sucesso, amarelo para foco e neutros quentes nas superfícies.
 
-O navegador recebe somente a chave publicável do Supabase. As políticas RLS e as funções transacionais validam novamente grupo, papel e fechamento do rateio no banco.
+O navegador não fala com o banco: tudo passa pelo servidor. As políticas RLS e as funções transacionais validam novamente grupo, papel e fechamento do rateio no banco.
 
 ## Executar localmente
 
-O ambiente de desenvolvimento usa a Supabase CLI para executar PostgreSQL, Auth,
-Studio, Mailpit e os demais serviços em containers Docker. É necessário ter Docker
-ativo e Node.js instalado. Na primeira execução, `npx` baixa a CLI do Supabase.
-
-Todos os comandos rodam a partir da **raiz do monorepo**:
+A infra local é um Docker Compose (`db/compose.yaml`) com PostgreSQL 17 (+ pgTAP) e o Azurite (emulador do Blob
+Storage). É necessário ter Docker ativo e Node.js instalado. Todos os comandos rodam a partir da **raiz do monorepo**:
 
 ```bash
 npm install              # instala todas as apps (nunca rode dentro de apps/gestao)
-npm run infra:start      # sobe o Supabase local e gera apps/gestao/.env.local
-npm run dev:gestao   # aplicação em http://localhost:3000
+npm run infra:start      # sobe Postgres e Azurite, aplica as migrations e gera apps/gestao/.env.local
+npm run dev:gestao       # aplicação em http://localhost:3000
 ```
 
 ### Serviços locais
 
-| Serviço | URL | Para quê |
+| Serviço | Endereço | Para quê |
 | --- | --- | --- |
-| Aplicação | http://localhost:3000 | o financeiro |
-| Supabase Studio | http://localhost:54323 | tabelas, SQL Editor, usuários de Auth |
-| Mailpit | http://localhost:54324 | caixa de e-mails local: códigos de acesso e convites |
-| API Supabase | http://localhost:54321 | REST/Auth usados pela aplicação |
-| PostgreSQL | `postgresql://postgres:postgres@localhost:54322/postgres` | acesso direto via `psql` |
+| Aplicação | http://localhost:3000 | o Gestão |
+| PostgreSQL | `postgresql://postgres:postgres@127.0.0.1:54330/geas` | `psql`, DBeaver etc. (dono dos objetos) |
+| Azurite (Blob) | http://127.0.0.1:10000/devstoreaccount1 | comprovantes (contêiner `comprovantes`) |
 
-Nenhum e-mail real é disparado localmente: tudo chega no Mailpit.
+O app conecta como `geas_app` (`DATABASE_URL`), um papel de login sem privilégios próprios que só troca para
+`authenticated` ou `geas_auth` dentro de cada transação (`db/migrations/000_roles.sql`).
+
+### Login com Google
+
+1. No Google Cloud Console, crie um cliente OAuth do tipo **Aplicativo da Web** (tela de consentimento **Externo**,
+   escopos `openid` e `email`) com o URI de redirecionamento `http://localhost:3000/auth/callback`.
+2. Em `apps/gestao/.env.local`, acrescente `GOOGLE_CLIENT_ID=…` e `GOOGLE_CLIENT_SECRET=…` (o `infra:start`
+   preserva as linhas `GOOGLE_*`). `APP_URL` vale `http://localhost:3000` por padrão fora de produção.
+
+Entra quem tiver uma conta Google com o e-mail cadastrado em Usuários (qualquer domínio; o e-mail precisa estar
+verificado no Google). No primeiro login a conta Google fica presa ao cadastro; para trocar de conta, remova e cadastre de novo. Para usar o app local sem Google,
+rode o servidor com `E2E_LOGIN=1` (só em `next dev`): a tela de login mostra um campo "E-mail (teste)".
 
 ### Primeiro acesso local
 
-1. **Crie o usuário administrador** no Studio → *Authentication* → *Users* → *Add user* → *Create new user*.
-   Use um e-mail `@escoteirosalbert.com.br` (outros domínios são bloqueados pelo hook `restrict_auth_domain`)
-   e marque *Auto Confirm User*. A senha é irrelevante: o login é por código.
-2. **Crie o grupo** no Studio → *SQL Editor*, trocando o e-mail pelo do passo 1:
+1. **Cadastre o administrador e crie o grupo** (`psql` no banco local; troque o e-mail):
 
    ```sql
-   select public.admin_bootstrap_group(
-     'administrador@escoteirosalbert.com.br',
-     'Grupo Escoteiro Albert Schweitzer'
-   );
+   insert into auth.users(email) values ('administrador@example.org');
+   select public.admin_bootstrap_group('administrador@example.org', 'Grupo Escoteiro Albert Schweitzer');
    ```
 
    A função cria o grupo, torna o usuário administrador e cadastra rubricas e formas de pagamento iniciais.
-   Ela só pode ser executada pelo papel `postgres` (SQL Editor), nunca pela aplicação.
-3. **Entre na aplicação** em http://localhost:3000/login com o e-mail do passo 1.
-   O código de 6 dígitos chega no Mailpit (http://localhost:54324).
-4. **Convide as demais pessoas** em `/usuarios` (menu *Usuários*, só para administradores), escolhendo o papel:
+   Só o dono do banco a executa, nunca a aplicação. Atalho: `docker compose -f apps/gestao/db/compose.yaml exec db psql -U postgres -d geas`.
+2. **Entre** em http://localhost:3000/login com a conta Google desse e-mail (ou pelo login de teste).
+3. **Cadastre as demais pessoas** em `/usuarios` (só administradores), com o papel em cada módulo:
    - **Administrador**: tudo, inclusive usuários;
    - **Tesoureiro**: lançamentos, associados e cadastros;
    - **Consulta**: somente leitura.
 
-   O convite também chega no Mailpit; a pessoa convidada entra pelo link ou pedindo um código em `/login`.
-
 ### Banco de dados local
 
 ```bash
-npx supabase migration up   # (em apps/gestao) aplica migrations novas sem apagar dados
-npm run infra:reset         # recria o banco do zero e reaplica todas as migrations (apaga tudo; refaça o primeiro acesso)
-npm run infra:status        # mostra serviços, URLs e chaves
-npm run infra:stop          # encerra os containers (os dados são preservados)
-npm run infra:env --workspace=@geas/gestao   # regenera somente o .env.local
+npm run db:migrate --workspace=@geas/gestao   # aplica migrations novas sem apagar dados
+npm run db:types --workspace=@geas/gestao     # regenera lib/server/pg/schema.ts depois de uma migration
+npm run infra:reset                           # recria o banco do zero (apaga tudo; refaça o primeiro acesso)
+npm run infra:status                          # migrations aplicadas e pendentes
+npm run infra:stop                            # para os containers (os dados ficam nos volumes)
 ```
 
-Consultas úteis no SQL Editor:
+Consultas úteis:
 
 ```sql
 -- quem tem acesso e com qual papel
-select u.email, m.role from public.memberships m join auth.users u on u.id = m.user_id;
+select u.email, m.role, u.last_sign_in_at from public.memberships m join auth.users u on u.id = m.user_id;
 
 -- trilha de auditoria mais recente
 select created_at, action, entity_id, details from public.audit_events order by id desc limit 50;
 ```
 
-### Deploy na Vercel (atual, em transição)
+### Produção (Azure)
 
-A hospedagem definitiva está em avaliação e não será a Vercel (decisão D1 em `../../docs/consolidacao-gestao.md`). Enquanto isso, o deploy atual segue os passos abaixo.
+Estrutura mínima: um Container App (o Next em container), um Azure Database for PostgreSQL Flexible Server e uma
+conta de armazenamento com o contêiner privado `comprovantes`. Passo a passo, papéis do banco e variáveis em
+[`db/README.md`](db/README.md). Variáveis do app:
 
-Produção: `https://financeiro.escoteirosalbert.com.br`.
+| Variável | Valor |
+| --- | --- |
+| `DATABASE_URL` | `postgres://geas_app:<senha>@<servidor>.postgres.database.azure.com:5432/geas?sslmode=verify-full` |
+| `APP_URL` | origem pública, ex.: `https://gestao.escoteirosalbert.com.br` (cookies `Secure` e redirect do Google) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | cliente OAuth com o redirect `<APP_URL>/auth/callback` |
+| `AZURE_STORAGE_ACCOUNT_URL` | `https://<conta>.blob.core.windows.net` (identidade gerenciada do app com "Storage Blob Data Contributor") |
+| `NEXT_PUBLIC_FEATURE_*` | toggles de `lib/features.ts` (lidos no build) |
 
-1. Importe o repositório na Vercel com **Root Directory** = `apps/gestao`. Mantenha habilitado "Include files outside the root directory": a instalação usa o `package-lock.json` da raiz do monorepo. O framework Next.js é detectado sozinho.
-2. Em **Ignored Build Step**, use `git diff --quiet HEAD^ HEAD -- . ../../package-lock.json` para não fazer build quando só o site institucional mudar.
-3. Em **Domains**, adicione `financeiro.escoteirosalbert.com.br`. No DNS do domínio, crie o `CNAME financeiro → cname.vercel-dns.com`.
-4. Configure as variáveis abaixo com `NEXT_PUBLIC_SITE_URL=https://financeiro.escoteirosalbert.com.br` em Production.
-5. No Supabase de produção (Authentication → URL Configuration), defina o Site URL `https://financeiro.escoteirosalbert.com.br` e a Redirect URL `https://financeiro.escoteirosalbert.com.br/auth/confirm`.
-
-### Produção e Preview
-
-Crie projetos separados no Supabase, execute as migrations e replique nesses
-ambientes as opções de Auth declaradas em `supabase/config.toml`: URLs permitidas,
-hook SQL `public.restrict_auth_domain`, bloqueio de cadastro público e template de
-e-mail com `{{ .Token }}`.
-
-Na Vercel, configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` e `NEXT_PUBLIC_SITE_URL`. A chave secreta nunca pode usar o prefixo `NEXT_PUBLIC_`.
-
-O código por e-mail é autenticação passwordless de um fator, não MFA verdadeiro. Para administradores, pode-se adicionar TOTP como segundo fator futuramente. Configure SMTP próprio antes da produção para melhorar entregabilidade e controle dos e-mails.
+Nunca defina `E2E_LOGIN` em produção (de qualquer forma, ele não liga num build de produção).
 
 ### Segurança operacional
 
-- Configure os limites de envio de OTP e CAPTCHA do Supabase antes de produção.
-- Use bancos Supabase distintos para Preview e Production na Vercel.
-- Depois de criar o primeiro grupo, a migração `003_security_and_audit.sql` revoga o bootstrap público.
-- Remover um usuário bloqueia a conta e elimina sua associação ao grupo; lançamentos antigos preservam a autoria.
-- Mudanças de papel, remoções, convites, lançamentos, contas, rubricas, formas de pagamento, perfis de importação e importações de extrato geram eventos de auditoria.
+- O app não tem chave que ignore a RLS: usuários, papéis e remoções passam pelas funções auditadas como o administrador da sessão (`group_users`, `admin_add_member`, `admin_remove_member`).
+- `admin_bootstrap_group` (criar grupo) só roda como o dono do banco, nunca pela aplicação.
+- Remover um usuário tira o vínculo com o grupo; sem outro grupo, bloqueia o cadastro, solta a conta Google e derruba as sessões abertas. Lançamentos antigos preservam a autoria.
+- Mudanças de papel, remoções, cadastros, lançamentos, contas, rubricas, formas de pagamento, perfis de importação e importações de extrato geram eventos de auditoria.
 
 ### Qualidade
 
@@ -157,24 +148,24 @@ Execute `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:db`, `npm
 | Comando (raiz) | O quê | Precisa |
 | --- | --- | --- |
 | `npm test` | Vitest: funções de `lib/` (dinheiro, OFX, filtros, exportações…) | nada |
-| `npm run test:db` | `supabase test db` (pgTAP via pg_prove) com tudo de `supabase/tests/` | Supabase local rodando |
-| `npm run test:e2e` | Playwright (Chromium desktop) contra um `next dev` próprio na porta 3210 | Supabase local, Docker e `.env.local` |
+| `npm run test:db` | pgTAP (pg_prove dentro do container) com tudo de `db/tests/` | `npm run infra:start` |
+| `npm run test:e2e` | Playwright (Chromium desktop) contra um `next dev` próprio na porta 3210, com `E2E_LOGIN=1` | infra local e `.env.local` |
 
-**Banco (`supabase/tests/`).** Cada arquivo abre e desfaz a própria transação (`begin … rollback`), então rodar não altera o banco local; nunca é preciso `db reset`. O pg_prove pega todo `*.sql` da pasta:
+**Banco (`db/tests/`).** Cada arquivo abre e desfaz a própria transação (`begin … rollback`), então rodar não altera o banco local; nunca é preciso `infra:reset`. O pgTAP fica no schema `extensions`, só no banco local. O pg_prove pega todo `*.sql` da pasta:
 
-- `rls_isolation.test.sql` — isolamento entre grupos: o admin de outro grupo não lê nem escreve (SELECT/INSERT/UPDATE/DELETE direto, funções auditadas e bucket `comprovantes`) lançamentos, rateios, extrato, rubricas, contas, associados, mensalidades (`fee_*`), anexos e auditoria;
-- `rls_roles.test.sql` — papéis: consulta só lê; tesouraria escreve, mas não administra usuários nem lê `audit_events`; administração muda papéis, convida e remove (e quem sai perde o acesso);
+- `rls_isolation.test.sql` — isolamento entre grupos: o admin de outro grupo não lê nem escreve (SELECT/INSERT/UPDATE/DELETE direto, funções auditadas e permissões dos comprovantes) lançamentos, rateios, extrato, rubricas, contas, associados, mensalidades (`fee_*`), anexos e auditoria;
+- `rls_roles.test.sql` — papéis: consulta só lê; tesouraria escreve, mas não administra usuários nem lê `audit_events`; administração muda papéis, cadastra e remove (e quem sai perde o acesso);
 - `rls_direct_writes.test.sql` — tabelas que só aceitam funções auditadas não têm escrita direta nem para admin/tesouraria do próprio grupo (associados são a exceção proposital);
 - `sections.test.sql` — seções e patrulhas: só pelas funções auditadas, isolamento entre grupos e seção do mesmo ramo / patrulha da mesma seção no associado;
 - `audit.test.sql` — as funções principais gravam `audit_events` com grupo, ação e autor;
 - `_fixture.psql` — dados comuns desses quatro (incluído com `\ir`; a extensão `.psql` deixa o pg_prove de fora);
-- os demais `*.sql` (contabilidade, conciliação, importação, mensalidades…) são scripts psql que terminam com `ok 1 - TUDO OK`: imprimem TAP mínimo (`1..1`), então rodam no `supabase test db` e também sozinhos, como diz o cabeçalho de cada um (`cat arquivo | docker exec -i supabase_db_geas-financeiro psql …`).
+- os demais `*.sql` (contabilidade, conciliação, importação, mensalidades…) são scripts psql que terminam com `ok 1 - TUDO OK`: imprimem TAP mínimo (`1..1`), então rodam no pg_prove e também sozinhos, como diz o cabeçalho de cada um.
 
-Para um arquivo só: `npm exec --package=supabase -- supabase test db supabase/tests/rls_roles.test.sql` (em `apps/gestao`; `npx supabase` não funciona dentro do workspace).
+Para um arquivo só (em `apps/gestao`): `docker compose -f db/compose.yaml exec -T -w /tests -e PGOPTIONS='-c search_path=public,extensions' db pg_prove -U postgres -d geas /tests/rls_roles.test.sql`.
 
-**Navegador (`e2e/`).** Antes da primeira vez: `npx playwright install chromium` (em `apps/gestao`). O projeto `setup` cria, se faltar, o usuário `e2e.admin@escoteirosalbert.com.br` (Auth, pela chave secreta do `.env.local`) e o grupo “Grupo E2E (testes automatizados)” (`admin_bootstrap_group` via `docker exec … psql`), com as contas “Conta E2E” e “Conta E2E 2”, e entra por OTP lendo o código no Mailpit (porta 54324, `[local_smtp]` do `config.toml`). Os testes cobrem login (código errado e certo), lançamentos (criar, buscar, filtrar por conta e rubrica, editar, excluir pela lista e pelos detalhes), usuários (convidar, mudar papel, remover), mover em lote, comprovantes, importação do `nubank.ofx` das fixtures com “Criar lançamento” na conciliação, filtro Conciliado e desfazer importação.
+**Navegador (`e2e/`).** Antes da primeira vez: `npx playwright install chromium` (em `apps/gestao`). O projeto `setup` cadastra, se faltar, `e2e.admin@example.org` e o grupo “Grupo E2E (testes automatizados)” (`admin_bootstrap_group`, por `psql` no container), com as contas “Conta E2E” e “Conta E2E 2”, e entra pelo login de teste (`/auth/e2e`, ligado pelo Playwright com `E2E_LOGIN=1`). Os testes cobrem login (redirecionamento, e-mail sem cadastro, cookie inventado), lançamentos (criar, buscar, filtrar por conta e rubrica, editar, excluir pela lista e pelos detalhes), usuários (cadastrar, mudar papel, remover), mover em lote, comprovantes, importação do `nubank.ofx` das fixtures com “Criar lançamento” na conciliação, filtro Conciliado e desfazer importação.
 
-Tudo acontece no grupo E2E, com nomes únicos começando por `E2E`, e é desfeito pela interface; no começo e no fim, uma limpeza (como o admin E2E, pelas funções auditadas) desfaz importações, perfis e lançamentos `E2E …` que um teste interrompido tenha deixado, e os convidados (`e2e.convite.*`) são apagados do Auth. Os dados dos outros grupos não são tocados. O grupo E2E e seu admin ficam no banco entre execuções. Variáveis opcionais: `E2E_PORT`, `E2E_MAILPIT_URL`, `E2E_DB_CONTAINER`. Relatório em `playwright-report/` (`npx playwright show-report`).
+Tudo acontece no grupo E2E, com nomes únicos começando por `E2E`, e é desfeito pela interface; no começo e no fim, uma limpeza (como o admin E2E, pelas funções auditadas) desfaz importações, perfis e lançamentos `E2E …` que um teste interrompido tenha deixado, e os cadastrados pelos testes (`e2e.convite.*`) são apagados. Os dados dos outros grupos não são tocados. O grupo E2E e seu admin ficam no banco entre execuções. Variável opcional: `E2E_PORT` (com `E2E_PORT=3000`, o servidor que já está rodando precisa de `E2E_LOGIN=1`). Relatório em `playwright-report/` (`npx playwright show-report`).
 
 ## Próximos módulos sugeridos
 

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link } from "@geas/ui/components/link";
 import { IconAlertTriangle, IconArrowsMove, IconDeviceFloppy, IconDots, IconExternalLink, IconEye, IconEyeOff, IconPlus, IconTrash } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { saveCategoryTree } from "@/app/(financeiro)/financeiro/configuracoes/actions";
@@ -30,7 +29,6 @@ import { cn } from "@geas/ui/lib/utils";
  * os lançamentos acompanham a rubrica (id), não o código.
  */
 export function CategoriesManager({ categories, canEdit }: { categories: SavedCategory[]; canEdit: boolean }) {
-  const router = useRouter();
   const saved = useMemo(() => createDraft(categories), [categories]);
   const [draft, setDraft] = useState<Draft>(saved);
   const [onlyMissing, setOnlyMissing] = useState(false);
@@ -72,7 +70,6 @@ export function CategoriesManager({ categories, canEdit }: { categories: SavedCa
       if (result.error) { toast.error(result.error); return; }
       toast.success(result.success);
       setReviewing(false);
-      router.refresh();
     });
   };
 

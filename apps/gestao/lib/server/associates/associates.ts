@@ -1,7 +1,7 @@
 import type { AssociateMove, AssociateMovement, AssociateProfile, Registration, ScoutBranch } from "@/lib/associates/model";
 import type { ExistingAssociate } from "@/lib/associates/import";
 import type { Db } from "@/lib/server/db";
-import { rowsOf, rpc, sb, unwrap } from "@/lib/server/supabase/db";
+import { count, one, rows, rpc, run } from "@/lib/server/pg/db";
 
 // Cadastro de associados (040): leituras de `associate_profile_rows`, `associate_moves` e `associate_movements`;
 // escritas só pelas funções auditadas associates_* (conferem `can_manage_associates`).
@@ -10,27 +10,32 @@ const PROFILE_COLUMNS = "id, name, branch, active, section_id, section, patrol_i
 
 /** Associados do grupo (ativos e desligados), por nome. */
 export async function list(db: Db, groupId: string): Promise<AssociateProfile[]> {
-  return rowsOf(await sb(db).from("associate_profile_rows").select(PROFILE_COLUMNS).eq("group_id", groupId).order("name").limit(10000));
+  return rows<AssociateProfile>(db, (sql) => sql`
+    select ${sql.unsafe(PROFILE_COLUMNS)} from public.associate_profile_rows where group_id = ${groupId} order by name limit 10000`);
 }
 
 export async function get(db: Db, groupId: string, id: string): Promise<AssociateProfile | null> {
-  return unwrap(await sb(db).from("associate_profile_rows").select(PROFILE_COLUMNS).eq("group_id", groupId).eq("id", id).maybeSingle());
+  return one<AssociateProfile>(db, (sql) => sql`
+    select ${sql.unsafe(PROFILE_COLUMNS)} from public.associate_profile_rows where group_id = ${groupId} and id = ${id}`);
 }
 
 /** Passagens e entradas/saídas do associado, da mais recente para a mais antiga. */
 export async function history(db: Db, id: string): Promise<{ moves: AssociateMove[]; movements: AssociateMovement[] }> {
-  const [moves, movements] = await Promise.all([
-    sb(db).from("associate_moves").select("id, move_date, from_branch, to_branch, from_section_id, to_section_id, to_patrol_id, created_at")
-      .eq("associate_id", id).order("move_date", { ascending: false }).order("created_at", { ascending: false }).then(rowsOf),
-    sb(db).from("associate_movements").select("id, kind, movement_date, reason, created_at")
-      .eq("associate_id", id).order("movement_date", { ascending: false }).order("created_at", { ascending: false }).then(rowsOf),
-  ]);
-  return { moves, movements };
+  return run(db, async (sql) => {
+    const [moves, movements] = await Promise.all([
+      sql`select id, move_date, from_branch, to_branch, from_section_id, to_section_id, to_patrol_id, created_at
+          from public.associate_moves where associate_id = ${id} order by move_date desc, created_at desc`,
+      sql`select id, kind, movement_date, reason, created_at
+          from public.associate_movements where associate_id = ${id} order by movement_date desc, created_at desc`,
+    ]);
+    return { moves: [...moves] as unknown as AssociateMove[], movements: [...movements] as unknown as AssociateMovement[] };
+  });
 }
 
 /** Cadastrados, para a conferência da importação por CSV (nome, ramo, seção, equipe, situação). */
 export async function existingForImport(db: Db, groupId: string): Promise<ExistingAssociate[]> {
-  return rowsOf(await sb(db).from("associate_profile_rows").select("id, name, branch, section, patrol, active").eq("group_id", groupId).order("name").limit(10000));
+  return rows<ExistingAssociate>(db, (sql) => sql`
+    select id, name, branch, section, patrol, active from public.associate_profile_rows where group_id = ${groupId} order by name limit 10000`);
 }
 
 export type Dates = { birthDate: string | null; promiseDate: string | null; joinedOn: string | null };
@@ -70,8 +75,7 @@ export async function setTransition(db: Db, id: string, date: string | null): Pr
 
 /** Cadastros do registro rápido ainda não revisados. */
 export async function countToReview(db: Db, groupId: string): Promise<number> {
-  const { count } = await sb(db).from("associates").select("id", { count: "exact", head: true }).eq("group_id", groupId).eq("review_status", "para_revisar");
-  return count ?? 0;
+  return count(db, (sql) => sql`select count(*) from public.associates where group_id = ${groupId} and review_status = 'para_revisar'`);
 }
 
 /** Nome, datas, observações, registro, apelido e a correção de ramo, seção e equipe (sem histórico, 055). */

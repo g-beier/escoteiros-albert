@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import type { ReactNode } from "react";
 import { cn } from "@geas/ui/lib/utils";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@geas/ui/components/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { IconMenu2, IconX } from "@tabler/icons-react";

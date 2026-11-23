@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": { "value": "${AZURE_ENV_NAME}" },
+    "location": { "value": "${AZURE_LOCATION=brazilsouth}" },
+    "googleClientId": { "value": "${GOOGLE_CLIENT_ID=}" },
+    "appUrl": { "value": "${APP_URL_CUSTOM=}" },
+    "gestaoImage": { "value": "${SERVICE_GESTAO_IMAGE_NAME=}" },
+    "jobImage": { "value": "${JOB_IMAGE=}" },
+    "postgresSku": { "value": "${POSTGRES_SKU=Standard_B1ms}" },
+    "postgresTier": { "value": "${POSTGRES_TIER=Burstable}" }
+  }
+}

@@ -1,7 +1,7 @@
 import type { AssociatesRole, GroupRole, InventoryRole } from "@geas/ui/lib/roles";
 
-// Domínio permitido e papéis vêm de @geas/ui/lib/roles (comuns à tela de Usuários). Aqui ficam só as regras de cada módulo.
-export { ALLOWED_EMAIL_DOMAIN, GROUP_ROLES as MEMBER_ROLES, isAllowedEmail } from "@geas/ui/lib/roles";
+// Papéis vêm de @geas/ui/lib/roles (comuns à tela de Usuários). Aqui ficam só as regras de cada módulo.
+export { GROUP_ROLES as MEMBER_ROLES, isValidEmail } from "@geas/ui/lib/roles";
 export type { GroupRole as MemberRole } from "@geas/ui/lib/roles";
 
 /** Financeiro: tesouraria ou administração lançam, conciliam, importam e mantêm cadastros. */
@@ -18,3 +18,6 @@ export function inventoryRoleOf(groupRole: GroupRole, inventoryRole: InventoryRo
 export function associatesRoleOf(groupRole: GroupRole, associatesRole: AssociatesRole | null | undefined): AssociatesRole {
   return groupRole === "admin" ? "manager" : (associatesRole ?? "viewer");
 }
+
+/** Dias sem uso até a sessão vencer (banco em lib/server/auth.ts, cookie em proxy.ts). */
+export const SESSION_DAYS = 30;

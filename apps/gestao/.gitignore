@@ -1,5 +1,4 @@
 out
 .env*
 !.env.example
-supabase/snippets
 e2e/.auth

@@ -1,6 +1,6 @@
 /**
  * Anexos de comprovantes: regras compartilhadas entre o navegador (validação antes do envio),
- * as Server Actions e a migration 027 (bucket `comprovantes`, tipos e limite iguais aos daqui).
+ * as Server Actions e a migration 027 (contêiner `comprovantes` do Blob, tipos e limite iguais aos daqui).
  */
 
 export const ATTACHMENT_BUCKET = "comprovantes";
@@ -8,7 +8,7 @@ export const ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
 /** Validade das URLs assinadas para abrir/baixar (segundos). */
 export const ATTACHMENT_URL_TTL = 60;
 
-/** Tipo MIME aceito → extensão usada no caminho do bucket. */
+/** Tipo MIME aceito → extensão usada no caminho do arquivo. */
 const TYPES = {
   "application/pdf": "pdf",
   "image/jpeg": "jpg",
@@ -34,8 +34,6 @@ export type Attachment = {
   created_at: string;
 };
 
-export const ATTACHMENT_COLUMNS = "id, file_name, content_type, size_bytes, created_at";
-
 /**
  * Tipo do arquivo pelo MIME informado pelo navegador ou, se vazio/genérico (comum com HEIC),
  * pela extensão do nome. `null` quando não é aceito.
@@ -56,7 +54,7 @@ export function attachmentProblem(file: { name: string; type: string; size: numb
   return null;
 }
 
-/** Caminho no bucket: <grupo>/<lançamento>/<uuid>.<ext> (as políticas do Storage dependem deste formato). */
+/** Caminho no contêiner: <grupo>/<lançamento>/<uuid>.<ext> (as permissões do banco, 027, dependem deste formato). */
 export function attachmentPath(groupId: string, entryId: string, fileId: string, type: AttachmentType) {
   return `${groupId}/${entryId}/${fileId}.${TYPES[type]}`;
 }

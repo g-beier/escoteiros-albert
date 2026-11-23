@@ -3,11 +3,9 @@
 // Os papéis do Inventário (memberships.inventory_role) e do Associados (memberships.associates_role) valem para quem
 // não é administrador.
 
-export const ALLOWED_EMAIL_DOMAIN = "escoteirosalbert.com.br";
-
-export function isAllowedEmail(value: string) {
-  const parts = value.trim().toLowerCase().split("@");
-  return parts.length === 2 && parts[0].length > 0 && parts[1] === ALLOWED_EMAIL_DOMAIN;
+/** E-mail com formato válido (qualquer domínio: o acesso é pela conta Google desse e-mail, cadastrado pelo administrador). */
+export function isValidEmail(value: string) {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value.trim().toLowerCase());
 }
 
 export const GROUP_ROLES = ["admin", "treasurer", "viewer"] as const;
@@ -24,5 +22,5 @@ export const ASSOCIATES_ROLE_LABELS: Record<AssociatesRole, string> = { manager:
 
 /** Pessoa com acesso ao grupo, como a tela de Usuários mostra. */
 export type GroupUser = {
-  userId: string; email: string; confirmed: boolean; role: GroupRole; inventoryRole: InventoryRole; associatesRole: AssociatesRole;
+  userId: string; email: string; signedIn: boolean; role: GroupRole; inventoryRole: InventoryRole; associatesRole: AssociatesRole;
 };
