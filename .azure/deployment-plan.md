@@ -184,15 +184,19 @@ Nenhum teste foi escrito nem executado para estes ajustes, por decisão do usuá
 - [ ] Paginação de Materiais (só se ficar lento)
 - [ ] Importador da planilha de inventário que sirva para produção
 
-### Etapa 1: preparar artefatos (fora do escopo atual)
-- [ ] `output: "standalone"` e Dockerfile linux/amd64 com estáticos, `public` e fontes, usuário não root
-- [ ] Imagem do Job: `db.mjs`, migrations, criação do papel, bootstrap e dump
+### Etapa 1: preparar artefatos (feita em 2026-11-22, sem login)
+- [x] `output: "standalone"` e Dockerfile linux/amd64 com estáticos, `public` e fontes, usuário não root (`apps/gestao/Dockerfile`, alvo `app`, 99,5 MB)
+- [x] Imagem do Job: `db.mjs`, migrations, criação do papel, bootstrap e dump (alvo `job`, `scripts/maintenance.mjs`, hook `infra/hooks/job-image.sh`)
 - [x] Redirects com `appUrl()` no lugar de `request.url` (atrás do proxy a origem muda; feito em 2026-11-22)
-- [ ] Identidade gerenciada do Blob com `AZURE_CLIENT_ID`
-- [ ] `azure.yaml` e Bicep, validados com `az bicep build`
-- [ ] Testar a imagem com 1 GiB e 0,5 CPU no Docker, como `geas_app`, repetindo a carga da seção 4.2
+- [x] Identidade gerenciada do Blob com `AZURE_CLIENT_ID` (lido pelo `DefaultAzureCredential`; definido no Bicep)
+- [x] `azure.yaml` e Bicep (`infra/`), `az bicep build` e `lint` sem avisos
+- [x] Testar a imagem com 1 GiB e 0,5 CPU no Docker, como `geas_app`: 20 telas e os 3 PDFs, 460 requisições com 20 simultâneas em 28 s, todas 200, pico de 394 MiB, sem OOM. Job: `status`, `migrate`, `setup` (criar e trocar senha), `bootstrap` e `pg_dump` num banco descartável
 
 **Pronto quando:** imagem roda sob os limites sem OOM e o Bicep compila.
+
+Desvios: sem Application Insights (o app não tem instrumentação; logs só no Log Analytics). "Guardar 5 versões" no ACR
+não existe no Basic (política de retenção é Premium): limpar à mão ou por script. Placeholder de imagem até o primeiro
+`azd deploy` (porta 80; a do Gestão é 3000).
 
 ### Etapa 2: conferir a assinatura (exige login, ~1 h + esperas da Microsoft)
 - [ ] Ativar o crédito; login; confirmar assinatura com o usuário

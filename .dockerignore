@@ -1,0 +1,21 @@
+# Contexto do build das imagens do Gestão (apps/gestao/Dockerfile): só o necessário, sem segredos nem dados.
+**/node_modules
+**/.next
+**/.env*
+**/*.tsbuildinfo
+**/*.profraw
+.git
+.github
+.husky
+.azure
+infra
+docs
+apps/institucional/*
+!apps/institucional/package.json
+apps/gestao/e2e
+apps/gestao/playwright*.config.ts
+apps/gestao/test-results*
+apps/gestao/playwright-report
+apps/gestao/db/tests
+apps/gestao/scripts/inventory
+**/*.csv

@@ -10,6 +10,7 @@ import { rpc } from "@/lib/server/pg/db";
 // Configuração:
 //   produção: AZURE_STORAGE_ACCOUNT_URL (https://<conta>.blob.core.windows.net) + identidade gerenciada do app
 //             (papel "Storage Blob Data Contributor" na conta); as SAS são de delegação de usuário, sem chave guardada.
+//             A identidade é atribuída pelo usuário: AZURE_CLIENT_ID diz qual usar (lido pelo DefaultAzureCredential).
 //   local:    AZURE_STORAGE_CONNECTION_STRING do Azurite (gravada por `npm run infra:start`).
 
 const UPLOAD_SECONDS = 10 * 60;

@@ -37,3 +37,6 @@ playwright-report/
 
 # LLVM profiling output
 *.profraw
+
+# azd: ambientes locais (.env com saídas, config.json com as senhas pedidas); o plano em .azure/deployment-plan.md fica no git
+.azure/*/

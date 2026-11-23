@@ -20,38 +20,51 @@
 `000_roles.sql` cria os papéis sem login; `001_schema.sql`, o schema `auth` (`users`, `sessions`, `auth.uid()`) e todo o `public`. O papel de login do app é criado à mão
 (senha por ambiente) e recebe os papéis com `APP_DB_ROLE=geas_app` no `migrate`.
 
-## Azure (estrutura mínima)
+## Azure
 
-Ainda não existe. Serviços e preços: `docs/estimativa-azure.md` (raiz do repositório).
+Ainda não existe (nada provisionado). Plano, custos e etapas: `.azure/deployment-plan.md` e `docs/estimativa-azure.md`
+(raiz do repositório). Tudo é descrito em Bicep (`infra/`) e aplicado pelo azd (`azure.yaml`), nunca pelo CI.
 
-1. **Postgres:** Azure Database for PostgreSQL Flexible Server, versão 17, Burstable B1ms, mesma região do app.
-   Autenticação PostgreSQL, TLS obrigatório (padrão). Rede: acesso privado na VNet do ambiente do Container Apps,
-   sem endereço público. Por isso os passos 2, 3, 4 e o `pg_dump` rodam de dentro da VNet (Container Apps Job, ainda
-   por criar). Nenhuma extensão é necessária.
-2. **Banco e papel do app** (como o administrador do servidor, para que ele seja o dono):
+- **Imagens** (`apps/gestao/Dockerfile`, contexto = raiz do monorepo, linux/amd64): `app` (Next standalone, usuário
+  não root, porta 3000, heap de 512 MB) e `job` (Node + `pg_dump` 17 + `scripts/maintenance.mjs`, `db.mjs` e as
+  migrations). Os toggles `NEXT_PUBLIC_*` entram no build da `app`.
+- **Recursos** (`infra/resources.bicep`): VNet (`/27` do ambiente, `/28` do Postgres), Postgres Flexible 17 B1ms sem
+  endereço público, Container Apps (0–1 réplica, 0,5 vCPU / 1 GiB), Container Apps Job manual, Storage sem chave
+  compartilhada (contêineres `comprovantes` e `backups`, CORS só com a origem do app), ACR Basic, Key Vault (RBAC,
+  purge protection), Log Analytics com teto diário e duas identidades gerenciadas: a do app lê só `database-url` e
+  `google-client-secret`; a do Job lê a credencial de administrador e grava só em `backups`.
+- **Senhas:** `postgresAdminPassword` e `appDbPassword` (≥ 16 caracteres) e `googleClientSecret` são pedidos pelo azd
+  na primeira vez e gravados no Key Vault; a cópia local fica em `.azure/<ambiente>/` (fora do git).
 
-   ```sql
-   create database geas;
-   \c geas
-   create role geas_app login noinherit password '<senha forte>';
-   ```
+### Primeira subida (etapa 3 do plano, exige login)
 
-3. **Migrations** (pelo Job, dentro da VNet):
+1. `azd provision --preview`, revisar; depois `azd provision`.
+2. `azd deploy`: publica a imagem do app e, pelo hook `infra/hooks/job-image.sh`, a do Job.
+3. Banco, pelo Job (de dentro da VNet), na ordem:
 
    ```bash
-   DATABASE_ADMIN_URL='postgres://<admin>:<senha>@<servidor>.postgres.database.azure.com:5432/geas?sslmode=verify-full' \
-   APP_DB_ROLE=geas_app npm run db:migrate --workspace=@geas/gestao
+   eval "$(azd env get-values)"
+   # troca o comando do Job e dispara uma execução (sem override no start, que substituiria as variáveis com segredos)
+   job() {
+     az containerapp job update -n "$AZURE_CONTAINER_JOB_NAME" -g "$AZURE_RESOURCE_GROUP" --args "$1" -o none &&
+     az containerapp job start -n "$AZURE_CONTAINER_JOB_NAME" -g "$AZURE_RESOURCE_GROUP" -o none
+   }
+   job setup     # cria geas_app com a senha do Key Vault e aplica as migrations
    ```
 
-4. **Primeiro administrador:** `insert into auth.users(email) values ('…');` e
-   `select public.admin_bootstrap_group('…', 'Grupo Escoteiro Albert Schweitzer');` como o dono.
-5. **Armazenamento:** conta de armazenamento (StorageV2, LRS, acesso público a blobs desligado, TLS 1.2), contêiner
-   privado `comprovantes`, CORS com a origem do app (`PUT`, `GET`, `HEAD`, `OPTIONS`; cabeçalhos `*`). O app usa
-   identidade gerenciada com o papel **Storage Blob Data Contributor** na conta (sem chave guardada).
-6. **App:** Container App (consumo, 0–1 réplica) com a imagem do Next (`output: "standalone"`, próxima etapa) e as
-   variáveis do README do Gestão como segredos. HTTPS e domínio próprio pelo Container Apps.
-7. **Google:** cliente OAuth "Aplicativo da Web" com o redirect `<APP_URL>/auth/callback`.
-8. **Backups:** os automáticos do Flexible Server (7 dias por padrão); antes de mudanças grandes, `pg_dump` como o dono.
+   Primeiro administrador: `az containerapp job update … --set-env-vars BOOTSTRAP_ADMIN_EMAIL=<e-mail>`, `job bootstrap`
+   e depois `--remove-env-vars BOOTSTRAP_ADMIN_EMAIL`. Recusa se já houver grupo; os demais usuários entram por
+   `/usuarios`. Saída de cada execução: logs do Job no portal ou `az containerapp job logs show`.
+4. **Google:** cliente OAuth "Aplicativo da Web" com o redirect `<APP_URL>/auth/callback` (`APP_URL` sai do
+   `azd env get-values`); `GOOGLE_CLIENT_ID` com `azd env set` e novo `azd provision`.
+5. **Domínio próprio** (etapa 5): `APP_URL_CUSTOM` com `azd env set`, certificado gerenciado no Container Apps.
+
+### Rotina
+
+- Migrations novas: `azd deploy` (nova imagem do Job) e `job migrate`. `job status` lista aplicadas e pendentes.
+- Backups: os automáticos do Flexible Server (7 dias); antes de mudanças grandes, `job dump` (`pg_dump -Fc` no
+  contêiner `backups`, apagado após 90 dias).
+- Trocar a senha do app: novo `appDbPassword` no azd, `azd provision`, `job setup`, nova revisão do app.
 
 O export de transparência do site (`scripts/export-transparency.ts`) lê com `DATABASE_ADMIN_URL`, que no Azure
 não é alcançável de fora da VNet: use "Exportar para o site" no Gestão e faça o build com `TRANSPARENCY_SKIP=1`.
