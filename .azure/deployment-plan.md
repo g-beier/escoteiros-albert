@@ -128,7 +128,7 @@ Não usar 0,5 GiB: o processo já passa disso com heap limitado. Réplica máxim
 
 | Risco | Resposta |
 |---|---|
-| B1ms indisponível em brazilsouth (tabela da Microsoft ambígua) | **maior risco de custo:** conferir na etapa 2. D2s v3 em São Paulo = US$ 206,84/mês (124% do crédito); B1ms em eastus2 = US$ 47,31 (também a confirmar, dados fora do país). Decisão do usuário |
+| B1ms indisponível em brazilsouth (tabela da Microsoft ambígua) | **maior risco de custo:** conferir na etapa 2. D2s v3 em São Paulo = US$ 206,84/mês (124% do crédito); B1ms em eastus2 = US$ 47,31 (também a confirmar, dados fora do país). Alternativas no Brasil e ordem de decisão: `docs/azure-alternativas-banco.md` (plano por `POSTGRES_SKU`/`POSTGRES_TIER` no azd). Decisão do usuário |
 | Robôs impedem escala a zero | alerta de horas ligado; teto já calculado (+US$ 34,52/mês) |
 | Partida a frio de vários segundos (não medida no Azure) | medir na etapa 4; réplica mínima 1 é alternativa paga |
 | PDF e Início mais lentos em 0,5 vCPU | medir na etapa 4 |

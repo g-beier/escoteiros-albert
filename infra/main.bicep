@@ -40,6 +40,13 @@ param gestaoImage string = ''
 @description('Imagem do Job de manutenção (preenchida pelo hook infra/hooks/job-image.sh). Vazio: imagem de exemplo.')
 param jobImage string = ''
 
+@description('Plano do Postgres. Se o B1ms não estiver liberado, ver docs/azure-alternativas-banco.md (ex.: Standard_B2s).')
+param postgresSku string = 'Standard_B1ms'
+
+@allowed(['Burstable', 'GeneralPurpose', 'MemoryOptimized'])
+@description('Camada do plano do Postgres (Burstable para a série B).')
+param postgresTier string = 'Burstable'
+
 var tags = { 'azd-env-name': environmentName, app: 'geas-gestao' }
 
 resource rg 'Microsoft.Resources/resourceGroups@2024-11-01' = {
@@ -63,6 +70,8 @@ module resources 'resources.bicep' = {
     appUrl: appUrl
     gestaoImage: gestaoImage
     jobImage: jobImage
+    postgresSku: postgresSku
+    postgresTier: postgresTier
   }
 }
 

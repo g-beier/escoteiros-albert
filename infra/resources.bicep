@@ -23,6 +23,8 @@ param googleClientSecret string
 param appUrl string
 param gestaoImage string
 param jobImage string
+param postgresSku string
+param postgresTier string
 
 // Nomes globais com sufixo estável por assinatura + grupo + ambiente.
 var token = toLower(uniqueString(subscription().id, resourceGroup().id, environmentName))
@@ -172,13 +174,13 @@ resource jobAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Postgres 17, B1ms, sem HA, backup de 7 dias, só pela VNet. Autenticação por senha (papéis do schema), TLS obrigatório.
+// Postgres 17 (B1ms por padrão; alternativas em docs/azure-alternativas-banco.md), sem HA, backup de 7 dias, só pela VNet. Autenticação por senha (papéis do schema), TLS obrigatório.
 
 resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
   name: names.postgres
   location: location
   tags: tags
-  sku: { name: 'Standard_B1ms', tier: 'Burstable' }
+  sku: { name: postgresSku, tier: postgresTier }
   properties: {
     version: '17'
     administratorLogin: postgresAdminLogin

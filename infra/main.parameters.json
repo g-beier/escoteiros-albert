@@ -7,6 +7,8 @@
     "googleClientId": { "value": "${GOOGLE_CLIENT_ID=}" },
     "appUrl": { "value": "${APP_URL_CUSTOM=}" },
     "gestaoImage": { "value": "${SERVICE_GESTAO_IMAGE_NAME=}" },
-    "jobImage": { "value": "${JOB_IMAGE=}" }
+    "jobImage": { "value": "${JOB_IMAGE=}" },
+    "postgresSku": { "value": "${POSTGRES_SKU=Standard_B1ms}" },
+    "postgresTier": { "value": "${POSTGRES_TIER=Burstable}" }
   }
 }
