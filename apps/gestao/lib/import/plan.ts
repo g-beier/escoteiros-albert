@@ -1,8 +1,8 @@
 import {
-  AUDIENCE_INITIAL_CHOICES, BRANCH_CHOICES, CONTROL_STATUS_CHOICES, DIRECTORATE_CHOICES, FILE_ORDER, FUNCTION_CHOICES, ITEM_KIND_CHOICES,
+  AUDIENCE_INITIAL_CHOICES, BRANCH_CHOICES, CONDITION_CHOICES, CONTROL_STATUS_CHOICES, DIRECTORATE_CHOICES, FILE_ORDER, FUNCTION_CHOICES, ITEM_KIND_CHOICES,
   KINSHIP_CHOICES, REGISTRATION_CHOICES, VALUE_KIND_CHOICES, type Choice, type FileKind,
 } from "@/lib/import/contract";
-import type { ReadFile, ReadRow, Values } from "@/lib/import/read";
+import { countYear, type ReadFile, type ReadRow, type Values } from "@/lib/import/read";
 import type { ImportState, StateFunction, StateItem, StateLink, StatePerson, StateStatus } from "@/lib/import/state";
 import { nameKey, parseControlCell, type ControlCell } from "@/lib/import/values";
 
@@ -79,6 +79,8 @@ export class PlanContext {
   readonly links: StateLink[];
   readonly items: ItemRef[];
   readonly statuses: StateStatus[];
+  /** Materiais do inventário vistos em inventario-lotes.csv (nome comparável → controle). */
+  readonly inventoryMaterials = new Map<string, { name: string; tracking: "lot" | "unit"; line: number }>();
 
   constructor(readonly state: ImportState, readonly options: PlanOptions) {
     this.people = state.people.map((person) => ({ id: person.id, name: person.name, birth: person.birth, branch: person.branch, active: person.active }));
@@ -755,7 +757,159 @@ function planLife(file: ReadFile, ctx: PlanContext): PlannedFile {
   return plan;
 }
 
+/** Caminho de divisão: partes separadas por `›` ou `>`, sem espaços sobrando. */
+export function locationPath(text: string): string[] {
+  return text.split(/\s*[›>]\s*/).map((part) => part.trim()).filter(Boolean);
+}
+
+const INVENTORY_REPLACE = (ctx: PlanContext) => {
+  const inv = ctx.state.inventory;
+  return inv.materials || inv.locations
+    ? [`Substitui o inventário atual (${inv.locations} divisões, ${inv.materials} materiais, ${inv.lots} lotes, ${inv.units} peças): o que não estiver nos arquivos some.`]
+    : [];
+};
+
+type MaterialAttrs = { name: string; familyCode?: string; family?: string; consumable?: boolean; minimum?: number; description?: string; line: number };
+
+function planInventoryLots(file: ReadFile, ctx: PlanContext, batchErrors: string[]): PlannedFile {
+  const plan = emptyPlan(file);
+  if (ctx.state.inventory.appMovements) {
+    batchErrors.push(`${file.name}: o inventário já tem ${ctx.state.inventory.appMovements} registros feitos no app; a carga por CSV só substitui um inventário vazio ou carregado por CSV.`);
+  }
+  plan.warnings.push(...INVENTORY_REPLACE(ctx));
+  const years = file.dynamicColumns.map((header) => [header, countYear(header)] as const);
+  for (const [header, year] of years) if (!year || year < 2000 || year > 2100) batchErrors.push(`${file.name}: coluna "${header}" com ano inválido.`);
+
+  // Atributos do material: iguais em todas as linhas dele.
+  const materials = new Map<string, MaterialAttrs>();
+  const families = new Map<string, { code?: string; name: string; line: number }>();
+  const conflicts = new Map<number, string[]>();
+  const conflict = (line: number, message: string) => conflicts.set(line, [...(conflicts.get(line) ?? []), message]);
+  for (const row of file.rows) {
+    const v = row.values;
+    const name = str(v, "material");
+    if (!name) continue;
+    const key = nameKey(name);
+    const current = materials.get(key) ?? { name, line: row.line };
+    materials.set(key, current);
+    for (const field of ["familyCode", "family", "consumable", "minimum", "materialDescription"] as const) {
+      const value = v[field];
+      if (value === undefined) continue;
+      const target = field === "materialDescription" ? "description" : field;
+      const before = current[target as keyof MaterialAttrs];
+      if (before === undefined) Object.assign(current, { [target]: value });
+      else if (before !== value && !(typeof before === "string" && typeof value === "string" && nameKey(before) === nameKey(value))) {
+        conflict(row.line, `${name}: ${field === "materialDescription" ? "descrição" : field === "familyCode" ? "código da família" : field === "family" ? "família" : field === "consumable" ? "consumível" : "mínimo"} diferente da linha ${current.line}`);
+      }
+    }
+    const familyName = str(v, "family");
+    const code = str(v, "familyCode");
+    if (code && !/^\d{3}$/.test(code)) conflict(row.line, `código da família "${code}" deve ter 3 dígitos`);
+    if (code && !familyName) conflict(row.line, "código da família sem o nome da família");
+    if (familyName) {
+      const fam = families.get(nameKey(familyName));
+      if (!fam) families.set(nameKey(familyName), { code, name: familyName, line: row.line });
+      else if (code && fam.code && fam.code !== code) conflict(row.line, `família ${familyName} com código diferente da linha ${fam.line}`);
+      else if (code && !fam.code) fam.code = code;
+      if (code) for (const other of families.values()) if (other !== fam && other.code === code && nameKey(other.name) !== nameKey(familyName)) conflict(row.line, `código ${code} já é da família ${other.name}`);
+    }
+  }
+
+  const locations = new Set<string>();
+  const counts = new Map<string, { line: number; counts: Record<string, number> }>();
+  const lotKeys = new Map<string, number>();
+  for (const row of file.rows) {
+    const v = row.values;
+    const errors = [...row.errors, ...(conflicts.get(row.line) ?? [])];
+    const warnings: string[] = [];
+    const material = str(v, "material") ?? "";
+    const attrs = materials.get(nameKey(material));
+    const path = locationPath(str(v, "location") ?? "");
+    if (!path.length) errors.push("divisão vazia");
+    if (path.some((part) => part.length > 80)) errors.push("parte da divisão com mais de 80 caracteres");
+    const rowCounts: Record<string, number> = {};
+    for (const [header, raw] of Object.entries(row.dynamic)) {
+      const year = countYear(header);
+      if (!year) continue;
+      const quantity = Number(raw.replace(/\./g, ""));
+      if (!/^\d+$/.test(raw.replace(/\./g, "")) || quantity > 1_000_000) errors.push(`${header}: "${raw}" não é quantidade`);
+      else rowCounts[year] = quantity;
+    }
+    let quantity = v.quantity as number | undefined;
+    const latest = Object.keys(rowCounts).sort().at(-1);
+    if (quantity === undefined && latest) quantity = rowCounts[latest];
+    if (quantity === undefined) errors.push("informe a quantidade ou uma contagem");
+    const label = `${material} · ${path.join(" › ")}`;
+    if (errors.length || !attrs) { plan.rows.push(errorRow(row, label, errors)); continue; }
+
+    const pathText = path.join(" › ");
+    for (let i = 1; i <= path.length; i++) locations.add(path.slice(0, i).map(nameKey).join("›"));
+    ctx.inventoryMaterials.set(nameKey(material), { name: attrs.name, tracking: "lot", line: attrs.line });
+    const lotKey = [nameKey(material), path.map(nameKey).join("›"), str(v, "condition") ?? "", str(v, "expires") ?? "", nameKey(str(v, "variant") ?? "")].join("|");
+    if (quantity && lotKeys.has(lotKey)) warnings.push(`mesmo lote da linha ${lotKeys.get(lotKey)}: as quantidades somam`);
+    else if (quantity) lotKeys.set(lotKey, row.line);
+    const countKey = `${nameKey(material)}|${path.map(nameKey).join("›")}`;
+    const counted = counts.get(countKey);
+    if (counted) for (const [year, value] of Object.entries(rowCounts)) counted.counts[year] = (counted.counts[year] ?? 0) + value;
+    else counts.set(countKey, { line: row.line, counts: { ...rowCounts } });
+
+    const changes: Change[] = [
+      { field: "quantidade", before: "", after: String(quantity) + (str(v, "condition") ? ` (${showChoice(CONDITION_CHOICES, str(v, "condition"))})` : "") },
+      ...(Object.keys(rowCounts).length ? [{ field: "contagens", before: "", after: Object.entries(rowCounts).map(([year, value]) => `${year}: ${value}`).join(", ") }] : []),
+    ];
+    if (!quantity) warnings.push("quantidade 0: não vira lote, só registra as contagens");
+    plan.rows.push({ line: row.line, action: "nova", label, changes, errors: [], warnings });
+    const familyCode = attrs.familyCode ?? (attrs.family ? families.get(nameKey(attrs.family))?.code : undefined);
+    plan.payload.push({
+      line: row.line, location: pathText, material: attrs.name, ...(attrs.family ? { family: attrs.family } : {}), ...(familyCode ? { familyCode } : {}),
+      consumable: attrs.consumable ?? false, ...(attrs.minimum !== undefined ? { minimum: attrs.minimum } : {}), ...(attrs.description ? { materialDescription: attrs.description } : {}),
+      quantity, ...(str(v, "condition") ? { condition: str(v, "condition") } : {}), ...(str(v, "expires") ? { expires: str(v, "expires") } : {}),
+      ...(v.unitValue !== undefined ? { unitValue: v.unitValue } : {}), ...(str(v, "variant") ? { variant: str(v, "variant") } : {}), ...(str(v, "notes") ? { notes: str(v, "notes") } : {}),
+    });
+  }
+  // As contagens vão somadas por material e divisão, na primeira linha de cada par.
+  for (const { line, counts: byYear } of counts.values()) {
+    const row = plan.payload.find((entry) => entry.line === line);
+    if (row && Object.keys(byYear).length) row.counts = byYear;
+  }
+  if (plan.payload.length) plan.creations.push(`${locations.size} divisões, ${families.size} famílias e ${materials.size} materiais (a carga cria tudo de novo)`);
+  return plan;
+}
+
+function planInventoryUnits(file: ReadFile, ctx: PlanContext, batchErrors: string[]): PlannedFile {
+  const plan = emptyPlan(file);
+  if (!ctx.inventoryMaterials.size && !ctx.state.inventory.appMovements) {
+    batchErrors.push(`${file.name}: envie junto com inventario-lotes.csv (a carga substitui o inventário inteiro).`);
+  }
+  const tags = new Map<string, number>();
+  const unitMaterials = new Map<string, { family?: string; line: number }>();
+  for (const row of file.rows) {
+    const v = row.values;
+    const errors = [...row.errors];
+    const tag = str(v, "tag");
+    const material = str(v, "material") ?? "";
+    const path = locationPath(str(v, "location") ?? "");
+    if (tag && !/^GEAS-\d{3}-\d{4}$/.test(tag)) errors.push(`etiqueta "${tag}" fora do formato GEAS-000-0000`);
+    if (tag && tags.has(tag)) errors.push(`etiqueta repetida (linha ${tags.get(tag)})`);
+    if (tag && str(v, "familyCode") && tag.slice(5, 8) !== str(v, "familyCode")) errors.push(`a etiqueta ${tag} não é da família ${str(v, "familyCode")}`);
+    const lots = ctx.inventoryMaterials.get(nameKey(material));
+    if (lots?.tracking === "lot") errors.push(`${material} já é material por quantidade (inventario-lotes.csv, linha ${lots.line})`);
+    const previous = unitMaterials.get(nameKey(material));
+    if (previous && str(v, "family") && previous.family && nameKey(previous.family) !== nameKey(str(v, "family")!)) errors.push(`família diferente da linha ${previous.line}`);
+    if (!path.length) errors.push("divisão vazia");
+    const label = `${tag ?? str(v, "legacyCode") ?? "sem etiqueta"} · ${material}`;
+    if (errors.length) { plan.rows.push(errorRow(row, label, errors)); continue; }
+    if (tag) tags.set(tag, row.line);
+    if (!previous) unitMaterials.set(nameKey(material), { family: str(v, "family"), line: row.line });
+    plan.rows.push({ line: row.line, action: "nova", label, changes: [{ field: "divisão", before: "", after: path.join(" › ") }], errors: [], warnings: [] });
+    plan.payload.push({ line: row.line, ...v, location: path.join(" › ") });
+  }
+  return plan;
+}
+
 const PLANNERS: Partial<Record<FileKind, Planner>> = {
+  "inventario-lotes": planInventoryLots,
+  "inventario-pecas": planInventoryUnits,
   "vida-escoteira": planLife,
   "itens-controle": planItems,
   controle: planControls,

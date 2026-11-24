@@ -1,5 +1,5 @@
 import {
-  AUDIENCE_INITIAL_CHOICES, BRANCH_CHOICES, CONTROL_STATUS_CHOICES, DIRECTORATE_CHOICES, EXCLUSION_CHOICES, FUNCTION_CHOICES, ITEM_KIND_CHOICES, KINSHIP_CHOICES,
+  AUDIENCE_INITIAL_CHOICES, BRANCH_CHOICES, CONDITION_CHOICES, CONTROL_STATUS_CHOICES, DIRECTORATE_CHOICES, EXCLUSION_CHOICES, FUNCTION_CHOICES, ITEM_KIND_CHOICES, KINSHIP_CHOICES,
   REGISTRATION_CHOICES, VALUE_KIND_CHOICES, fileSpec, type FileKind,
 } from "@/lib/import/contract";
 import type { ImportState, StateStatus } from "@/lib/import/state";
@@ -142,6 +142,36 @@ export function lifeCsv(state: ImportState): string {
   return writeImportCsv(header("vida-escoteira"), rows);
 }
 
+export type LotExport = {
+  location: string; family_code: string | null; family: string | null; material: string; material_description: string | null;
+  consumable: boolean; minimum: number | null; quantity: number | null; condition: string | null; expires_on: string | null;
+  unit_value_cents: number | null; variant: string | null; notes: string | null; counts: Record<string, number> | null;
+};
+
+export type UnitExport = {
+  tag: string | null; legacy_code: string | null; material: string; family_code: string | null; family: string | null; location: string;
+  condition: string | null; description: string | null; unit_value_cents: number | null; notes: string | null;
+};
+
+const money = (cents: number | null) => (cents == null ? "" : (cents / 100).toFixed(2).replace(".", ","));
+
+/** Lotes com saldo e, numa linha de quantidade 0, as contagens de material e divisão sem lote; uma coluna por ano contado. */
+export function lotsCsv(lots: LotExport[]): string {
+  const years = [...new Set(lots.flatMap((lot) => Object.keys(lot.counts ?? {})))].sort();
+  return writeImportCsv([...header("inventario-lotes"), ...years.map((year) => `contagem ${year}`)], lots.map((lot) => [
+    lot.location, lot.family_code, lot.family, lot.material, lot.material_description, yesNo(lot.consumable), lot.minimum, lot.quantity ?? 0,
+    showChoice(CONDITION_CHOICES, lot.condition), showDate(lot.expires_on), money(lot.unit_value_cents), lot.variant, lot.notes,
+    ...years.map((year) => lot.counts?.[year] ?? ""),
+  ]));
+}
+
+export function unitsCsv(units: UnitExport[]): string {
+  return writeImportCsv(header("inventario-pecas"), units.map((unit) => [
+    unit.tag, unit.legacy_code, unit.material, unit.family_code, unit.family, unit.location, showChoice(CONDITION_CHOICES, unit.condition),
+    unit.description, money(unit.unit_value_cents), unit.notes,
+  ]));
+}
+
 /** Modelo para baixar: cabeçalho e as linhas de exemplo (nomes fictícios) do contrato. */
 export function templateCsv(kind: FileKind): string {
   const spec = fileSpec(kind);
@@ -149,4 +179,6 @@ export function templateCsv(kind: FileKind): string {
 }
 
 /** Tipos com "Baixar dados atuais" (os outros chegam com os próximos arquivos do contrato). */
-export const EXPORTABLE: readonly FileKind[] = ["secoes", "itens-controle", "pessoas", "funcoes", "responsaveis", "controle", "vida-escoteira"];
+export const EXPORTABLE: readonly FileKind[] = [
+  "secoes", "itens-controle", "pessoas", "funcoes", "responsaveis", "controle", "vida-escoteira", "inventario-lotes", "inventario-pecas",
+];

@@ -16,8 +16,8 @@ não as edite à mão.
    não duplica nada (tudo aparece como "igual").
 
 Ordem em que o app grava (um arquivo pode citar pessoas de outro do mesmo envio): `secoes` → `itens-controle` →
-`pessoas` → `funcoes` → `responsaveis` → `controle` → `vida-escoteira`; o inventário (`inventario-lotes` e
-`inventario-pecas`) é gravado à parte.
+`pessoas` → `funcoes` → `responsaveis` → `controle` → `vida-escoteira` → `inventario-lotes` → `inventario-pecas`.
+Tudo numa transação só: um erro inesperado no banco desfaz o envio inteiro.
 
 Na mesma tela dá para baixar o **modelo vazio** de cada arquivo e os **dados atuais** no mesmo formato (com a coluna
 `id`): servem de exemplo e permitem exportar, corrigir numa planilha e reimportar.
@@ -56,7 +56,7 @@ Na mesma tela dá para baixar o **modelo vazio** de cada arquivo e os **dados at
 | Doc 14a – Datas de promessa | `pessoas.csv` (promessa) |
 | Doc 22 – Controle de fluxo de dados pessoais | `controle.csv` (uma coluna por item; `NÃO`, `OK`, `DESAT.`, `ANTIGA`, `VER`, `TEM?`, `CONV.`, `XXX` são aceitos como estão; célula cinza = deixar vazia), `itens-controle.csv` só se houver coluna que não existe no app |
 | Linha do tempo (vida escoteira) | `vida-escoteira.csv`: cada sequência de meses pintados da mesma cor vira uma linha `período` (cor do ramo = ramo; azul = `adulto`); meses em branco entre elas são lacunas (não gerar linha); anotações viram `anotação` ou, com data, `evento` |
-| Doc 31 – Inventário | `inventario-lotes.csv` (uma linha por material × divisão × condição; aba = divisão, subtítulo = subdivisão `Aba › Subtítulo`; colunas de quantidade por ano = `contagem AAAA`; estado em texto livre = `condição` + `observação`; validade escrita no estado vai para `validade`; "a adquirir" não entra), `inventario-pecas.csv` (aba BARRACAS: uma linha por barraca etiquetada) |
+| Doc 31 – Inventário | `inventario-lotes.csv` (uma linha por material × divisão × condição; aba = divisão, subtítulo = subdivisão `Aba › Subtítulo`; colunas de quantidade por ano = `contagem AAAA`; estado em texto livre = `condição` + `observação`; validade escrita no estado vai para `validade`; "a adquirir" não entra), `inventario-pecas.csv` (aba BARRACAS: uma linha por barraca etiquetada). O script `apps/gestao/scripts/inventory/planilha-para-csv.mjs` já faz essa conversão |
 
 ## Arquivos
 
@@ -303,11 +303,11 @@ Alcateia;005;Primeiros socorros;Soro fisiológico 250 mL;;sim;4;;;31/08/2027;6,5
 
 - **Uma linha por:** peça com etiqueta (ex.: barraca B1).
 - **Identificação:** etiqueta (ou código antigo).
-- **Reimportar:** Substitui junto com inventario-lotes.csv.
+- **Reimportar:** Substitui junto com inventario-lotes.csv, que precisa vir no mesmo envio.
 
 | Coluna | Obrigatória | Valores | O que é | Exemplo |
 |---|---|---|---|---|
-| `etiqueta` |  | texto (13) | `GEAS-<família>-<número>` (ex.: GEAS-001-0001). Vazia = sem etiqueta ainda. | GEAS-001-0001 |
+| `etiqueta` |  | texto (até 20) | `GEAS-<família>-<número>` (ex.: GEAS-001-0001). Vazia = sem etiqueta ainda. | GEAS-001-0001 |
 | `código antigo` (ou `codigo`) |  | texto (até 30) | Código usado antes (ex.: B1). | B1 |
 | `material` (ou `item`, `nome`) | sim | texto (até 120) | Material da peça (não pode ser também material de lotes). | Barraca iglu 4 pessoas |
 | `família código` (ou `codigo da familia`) |  | texto (3) | Código de 3 dígitos da família. | 001 |

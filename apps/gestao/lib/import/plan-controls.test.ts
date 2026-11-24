@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { CONTROL_STATUS_CHOICES } from "@/lib/import/contract";
 import { planBatch } from "@/lib/import/plan";
 import { readImportFile } from "@/lib/import/read";
-import { EMPTY_LIFE, type ImportState, type StatePerson } from "@/lib/import/state";
+import { EMPTY_INVENTORY, EMPTY_LIFE, type ImportState, type StatePerson } from "@/lib/import/state";
 import { parseControlCell } from "@/lib/import/values";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -28,7 +28,7 @@ const STATE: ImportState = {
     item("i5", "Antigo", "situacao", { jovem: null }, false),
   ],
   statuses: [{ associateId: id(2), relativeId: null, itemId: "i1", status: "pendente", statusDate: "2026-01-01", validUntil: null, year: null, note: null }],
-  life: EMPTY_LIFE,
+  life: EMPTY_LIFE, inventory: EMPTY_INVENTORY,
 };
 
 const plan = (files: Record<string, string>) =>

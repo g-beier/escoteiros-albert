@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-// Converte a planilha de inventário do grupo ("Doc 31 – Inventário", uma aba por área) em duas tabelas simples:
-//   inventario-lotes.csv  — um lote por linha (divisão › subdivisão, família, tipo, material, quantidades 2024–2026,
-//                           quantidade atual, condição, validade, valor unitário, categoria, observação, estado original)
+// Converte a planilha de inventário do grupo ("Doc 31 – Inventário", uma aba por área) nos CSVs do contrato de
+// importação (apps/gestao/docs/importacao.md), prontos para a tela /importar:
+//   inventario-lotes.csv  — um lote por linha, com as contagens de 2024–2026
 //   inventario-pecas.csv  — as barracas da aba BARRACAS (B1…), com etiqueta GEAS-001-0001…
 // Regras em apps/gestao/docs/inventario/modelo.md ("Carga inicial"). Os CSV são dados do grupo: não versione.
+// É uma referência de conversão; outras planilhas podem ser convertidas à mão ou com IA seguindo o contrato.
 //
 // Uso: node apps/gestao/scripts/inventory/planilha-para-csv.mjs <planilha.xlsx> <pasta de saída>
 import ExcelJS from "exceljs";
@@ -116,8 +117,31 @@ const writeCsv = (file, rows) => {
     units.push({ etiqueta: `GEAS-001-${m[1].padStart(4, "0")}`, codigo_antigo: `B${m[1]}`, familia: "Barracas", descricao, condicao: "", divisao: "", conferida_em: "2026-01-10" });
   });
 
-  writeCsv(`${outDir}/inventario-lotes.csv`, lots);
-  writeCsv(`${outDir}/inventario-pecas.csv`, units);
+  // Formato do contrato (docs/importacao.md). Consumível vale para o material todo; linhas com a mesma chave de lote
+  // (material, divisão, condição, validade) mas observação ou valor diferentes ganham uma variação, para não somarem.
+  const consumable = new Set(lots.filter((l) => l.tipo === "consumivel").map((l) => l.material.toLowerCase()));
+  const lotNotes = (l) => [l.observacao, l.categoria ? `Categoria: ${l.categoria}` : ""].filter(Boolean).join(" · ").slice(0, 500);
+  const lotKey = (l) => [l.material.toLowerCase(), l.divisao, l.condicao, l.validade].join("|");
+  const sameKey = new Map();
+  for (const l of lots) sameKey.set(lotKey(l), [...(sameKey.get(lotKey(l)) ?? []), l]);
+  const variantOf = (l) => {
+    const rows = sameKey.get(lotKey(l));
+    if (new Set(rows.map((r) => `${lotNotes(r)}|${r.valor_unitario}`)).size < 2) return "";
+    const notesDiffer = new Set(rows.map(lotNotes)).size > 1;
+    return (notesDiffer ? lotNotes(l) || "sem observação" : `valor ${l.valor_unitario || "não informado"}`).slice(0, 80);
+  };
+  const money = (v) => (v === "" ? "" : Number(v).toFixed(2).replace(".", ","));
+  writeCsv(`${outDir}/inventario-lotes.csv`, lots.map((l) => ({
+    "divisão": l.divisao, "família código": "", "família": l.familia, material: l.material, "descrição do material": "",
+    "consumível": consumable.has(l.material.toLowerCase()) ? "sim" : "não", "mínimo": "", quantidade: l.quantidade,
+    "condição": l.condicao === "?" ? "" : l.condicao, validade: l.validade, "valor unitário": money(l.valor_unitario),
+    "variação": variantOf(l), "observação": lotNotes(l), "contagem 2024": l.q2024, "contagem 2025": l.q2025, "contagem 2026": l.q2026,
+  })));
+  writeCsv(`${outDir}/inventario-pecas.csv`, units.map((u) => ({
+    etiqueta: u.etiqueta, "código antigo": u.codigo_antigo, material: "Barraca etiquetada", "família código": "001", "família": u.familia,
+    "divisão": "Almoxarifado › Barracas (a conferir)", "condição": u.condicao, "descrição": u.descricao, valor: "",
+    "observação": `Conferida em ${u.conferida_em.split("-").reverse().join("/")}.`,
+  })));
   const by = (k) => Object.entries(lots.reduce((a, r) => ((a[r[k]] = (a[r[k]] || 0) + 1), a), {}));
   console.log("lotes:", lots.length, "| peças:", units.length, "| descartadas:", dropped.length);
   console.log("condição:", by("condicao").map(([k, v]) => `${k || "(vazio)"} ${v}`).join(" | "));

@@ -74,12 +74,15 @@ Fonte: planilha "Doc 31 – Inventário" (uma aba por área, quantidades de 2024
 - Descartados: a aba ALCATEIA TESTE e as linhas "a adquirir" (lista de compras, não patrimônio).
 - Lenços, camisetas, moletons e distintivos entram, por enquanto, como materiais por quantidade nas suas famílias; viram produtos com variações no passo 2 (Lojinha).
 
-Scripts (só para o banco local de desenvolvimento; os CSV são dados do grupo e não são versionados):
+Conversor de referência (os CSV são dados do grupo e não são versionados):
 
 ```bash
 node apps/gestao/scripts/inventory/planilha-para-csv.mjs <planilha.xlsx> <pasta>     # gera inventario-lotes.csv e inventario-pecas.csv
-node apps/gestao/scripts/inventory/importar-planilha.mjs <pasta> --grupo "<nome>"     # apaga o inventário do grupo e importa pelas funções
 ```
+
+Os dois arquivos seguem o contrato de importação (`apps/gestao/docs/importacao.md`) e entram pela tela **Importar**
+(`/importar`), em qualquer banco (local ou produção): a carga substitui o inventário inteiro, e só é aceita enquanto
+nada foi registrado pelo app (movimentos no canal `importacao`).
 
 ## Em aberto
 

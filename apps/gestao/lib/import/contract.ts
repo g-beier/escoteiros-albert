@@ -411,9 +411,9 @@ export const FILES: readonly FileSpec[] = [
     module: "inventario",
     row: "peça com etiqueta (ex.: barraca B1)",
     key: "etiqueta (ou código antigo)",
-    reimport: "Substitui junto com inventario-lotes.csv.",
+    reimport: "Substitui junto com inventario-lotes.csv, que precisa vir no mesmo envio.",
     columns: [
-      { key: "tag", header: "etiqueta", type: text(13, 13), help: "`GEAS-<família>-<número>` (ex.: GEAS-001-0001). Vazia = sem etiqueta ainda.", example: "GEAS-001-0001" },
+      { key: "tag", header: "etiqueta", type: text(20), help: "`GEAS-<família>-<número>` (ex.: GEAS-001-0001). Vazia = sem etiqueta ainda.", example: "GEAS-001-0001" },
       { key: "legacyCode", header: "código antigo", aliases: ["codigo"], type: text(30, 1), help: "Código usado antes (ex.: B1).", example: "B1" },
       { key: "material", header: "material", aliases: ["item", "nome"], type: text(120, 2), required: "sempre", help: "Material da peça (não pode ser também material de lotes).", example: "Barraca iglu 4 pessoas" },
       { key: "familyCode", header: "família código", aliases: ["codigo da familia"], type: text(3, 3), help: "Código de 3 dígitos da família.", example: "001" },

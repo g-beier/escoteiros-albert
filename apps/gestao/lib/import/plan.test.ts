@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { planBatch, planTotals } from "@/lib/import/plan";
 import { readImportFile } from "@/lib/import/read";
-import { EMPTY_LIFE, type ImportState, type StatePerson } from "@/lib/import/state";
+import { EMPTY_INVENTORY, EMPTY_LIFE, type ImportState, type StatePerson } from "@/lib/import/state";
 
 const OPTIONS = { filhotes: false, today: "2026-11-24" };
 
@@ -11,7 +11,7 @@ const person = (over: Partial<StatePerson>): StatePerson => ({
 });
 
 const STATE: ImportState = {
-  functions: [], relatives: [], links: [], items: [], statuses: [], life: EMPTY_LIFE,
+  functions: [], relatives: [], links: [], items: [], statuses: [], life: EMPTY_LIFE, inventory: EMPTY_INVENTORY,
   sections: [{ id: "s1", branch: "lobinho", name: "Alcateia Seeonee", active: true }, { id: "s2", branch: "escoteiro", name: "Tropa Tupã", active: true }],
   patrols: [{ id: "p1", sectionId: "s2", name: "Patrulha Lobo", active: true }],
   people: [person({}), person({ id: "00000000-0000-4000-8000-000000000002", name: "Bruno Lima", birth: null, branch: "escoteiro", sectionId: "s2", patrolId: "p1" })],

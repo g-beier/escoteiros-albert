@@ -3,7 +3,7 @@ import type { PlannedFile } from "@/lib/import/plan";
 import type { Db } from "@/lib/server/db";
 import { rows, rpc, run } from "@/lib/server/pg/db";
 import type { Json } from "@/lib/server/pg/schema";
-import type { FunctionExport, PersonExport, RelativeExport, SectionExport } from "@/lib/import/export";
+import type { FunctionExport, LotExport, PersonExport, RelativeExport, SectionExport, UnitExport } from "@/lib/import/export";
 
 // Importação por CSV (006, docs/importacao.md): o estado atual para a pré-visualização e a gravação do envio inteiro
 // por `import_batch` (uma transação; o banco confere tudo de novo).
@@ -11,7 +11,7 @@ import type { FunctionExport, PersonExport, RelativeExport, SectionExport } from
 /** O que já está no app, para identificar e comparar as linhas dos CSVs. */
 export async function state(db: Db, groupId: string): Promise<ImportState> {
   return run(db, async (sql) => {
-    const [sections, patrols, people, functions, relatives, links, items, statuses, periods, exclusions, events, stars, notes] = await Promise.all([
+    const [sections, patrols, people, functions, relatives, links, items, statuses, periods, exclusions, events, stars, notes, inventory] = await Promise.all([
       sql`select id, branch::text as branch, name, active from public.sections where group_id = ${groupId} order by name`,
       sql`select p.id, p.section_id as "sectionId", p.name, p.active from public.patrols p
           join public.sections s on s.id = p.section_id where s.group_id = ${groupId} order by p.name`,
@@ -41,6 +41,11 @@ export async function state(db: Db, groupId: string): Promise<ImportState> {
       sql`select associate_id as "associateId", star, branch::text as branch, delivered_on as delivered
           from public.associate_stars where group_id = ${groupId} order by star limit 50000`,
       sql`select id, life_notes from public.associates where group_id = ${groupId} and life_notes is not null limit 20000`,
+      sql`select (select count(*)::int from public.inventory_locations where group_id = ${groupId}) as locations,
+            (select count(*)::int from public.inventory_materials where group_id = ${groupId}) as materials,
+            (select count(*)::int from public.inventory_lots where group_id = ${groupId}) as lots,
+            (select count(*)::int from public.inventory_units where group_id = ${groupId}) as units,
+            (select count(*)::int from public.inventory_movements where group_id = ${groupId} and channel <> 'importacao') as "appMovements"`,
     ]);
     return {
       sections: [...sections], patrols: [...patrols], people: [...people], functions: [...functions], relatives: [...relatives],
@@ -49,6 +54,7 @@ export async function state(db: Db, groupId: string): Promise<ImportState> {
         periods: [...periods], exclusions: [...exclusions], events: [...events], stars: [...stars],
         notes: Object.fromEntries(notes.map((row) => [row.id, row.life_notes])),
       },
+      inventory: inventory[0],
     } as unknown as ImportState;
   });
 }
@@ -96,4 +102,44 @@ export async function exportRelatives(db: Db, groupId: string) {
     from public.relative_links l join public.associates a on a.id = l.associate_id join public.relatives r on r.id = l.relative_id
     left join public.associates ra on ra.id = r.associate_id
     where l.group_id = ${groupId} order by a.name, l.position limit 40000`);
+}
+
+/**
+ * Linhas para "Baixar dados atuais" de inventario-lotes.csv: os lotes com saldo; as contagens de cada material e
+ * divisão vão na primeira linha do par (ou numa linha de quantidade 0, quando o par não tem lote).
+ */
+export async function exportLots(db: Db, groupId: string) {
+  return rows<LotExport>(db, (sql) => sql`
+    with counts as (
+      select material_id, location_id, jsonb_object_agg(year::text, quantity) as counts
+      from public.inventory_counts where group_id = ${groupId} group by material_id, location_id
+    ), lots as (
+      select l.material_id, l.location_id, l.quantity, l.condition::text as condition, l.expires_on, l.unit_value_cents, l.variant, l.notes,
+        row_number() over (partition by l.material_id, l.location_id order by l.created_at) as n
+      from public.inventory_lots l where l.group_id = ${groupId} and l.quantity > 0
+    ), pairs as (
+      select material_id, location_id, quantity, condition, expires_on, unit_value_cents, variant, notes, n from lots
+      union all
+      select c.material_id, c.location_id, 0, null, null, null, null, null, 1 from counts c
+      where not exists (select 1 from lots where lots.material_id = c.material_id and lots.location_id = c.location_id)
+    )
+    select p.path as location, f.code as family_code, f.name as family, m.name as material, m.description as material_description, m.consumable,
+      m.minimum_quantity as minimum, x.quantity, x.condition, x.expires_on, x.unit_value_cents, x.variant, x.notes,
+      case when x.n = 1 then c.counts end as counts
+    from pairs x join public.inventory_materials m on m.id = x.material_id join public.inventory_location_paths p on p.id = x.location_id
+    left join public.inventory_families f on f.id = m.family_id
+    left join counts c on c.material_id = x.material_id and c.location_id = x.location_id
+    where m.tracking = 'lot'
+    order by p.sort_key, m.name, x.n limit 20000`);
+}
+
+/** Linhas para "Baixar dados atuais" de inventario-pecas.csv (peças não baixadas). */
+export async function exportUnits(db: Db, groupId: string) {
+  return rows<UnitExport>(db, (sql) => sql`
+    select u.tag, u.legacy_code, m.name as material, f.code as family_code, f.name as family, p.path as location, u.condition::text as condition,
+      u.description, u.unit_value_cents, u.notes
+    from public.inventory_units u join public.inventory_materials m on m.id = u.material_id join public.inventory_location_paths p on p.id = u.location_id
+    left join public.inventory_families f on f.id = m.family_id
+    where u.group_id = ${groupId} and u.written_off_at is null
+    order by u.tag nulls last, u.legacy_code limit 20000`);
 }

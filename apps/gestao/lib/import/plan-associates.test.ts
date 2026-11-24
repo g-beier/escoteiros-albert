@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { planBatch } from "@/lib/import/plan";
 import { readImportFile } from "@/lib/import/read";
-import { EMPTY_LIFE, type ImportState, type StatePerson } from "@/lib/import/state";
+import { EMPTY_INVENTORY, EMPTY_LIFE, type ImportState, type StatePerson } from "@/lib/import/state";
 
 const OPTIONS = { filhotes: false, today: "2026-11-24" };
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -22,7 +22,7 @@ const STATE: ImportState = {
   functions: [{ id: "f1", associateId: id(1), kind: "escotista", title: "Assistente", sectionId: "s1", started: "2019-03-01", ended: null, elected: false }],
   relatives: [{ id: "r1", name: "Marta Lima", associateId: null, notes: null }],
   links: [{ id: "l1", associateId: id(2), relativeId: "r1", kinship: "mae", kinshipNote: null, legal: true, financial: false }],
-  items: [], statuses: [], life: EMPTY_LIFE,
+  items: [], statuses: [], life: EMPTY_LIFE, inventory: EMPTY_INVENTORY,
 };
 
 const plan = (files: Record<string, string>) =>

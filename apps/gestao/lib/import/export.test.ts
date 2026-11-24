@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { peopleCsv, sectionsCsv } from "@/lib/import/export";
 import { planBatch } from "@/lib/import/plan";
 import { readImportFile } from "@/lib/import/read";
-import { EMPTY_LIFE, type ImportState } from "@/lib/import/state";
+import { EMPTY_INVENTORY, EMPTY_LIFE, type ImportState } from "@/lib/import/state";
 
 const STATE: ImportState = {
-  functions: [], relatives: [], links: [], items: [], statuses: [], life: EMPTY_LIFE,
+  functions: [], relatives: [], links: [], items: [], statuses: [], life: EMPTY_LIFE, inventory: EMPTY_INVENTORY,
   sections: [{ id: "s1", branch: "escoteiro", name: "Tropa Tupã", active: true }],
   patrols: [{ id: "p1", sectionId: "s1", name: "Patrulha Lobo", active: false }],
   people: [

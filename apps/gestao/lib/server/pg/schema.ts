@@ -858,6 +858,12 @@ export type Functions = {
   import_date: { Args: { p_row: Json; p_key: string }; Returns: string };
   import_find_associate: { Args: { p_group_id: string; p_id: string; p_name: string; p_birth: string }; Returns: string };
   import_functions: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
+  import_inventory_family: { Args: { p_group_id: string; p_code: string; p_name: string }; Returns: string };
+  import_inventory_location: { Args: { p_group_id: string; p_path: string }; Returns: string };
+  import_inventory_lots: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
+  import_inventory_material: { Args: { p_group_id: string; p_row: Json; p_tracking: Enums["inventory_tracking"] }; Returns: string };
+  import_inventory_units: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
+  import_inventory_wipe: { Args: { p_group_id: string }; Returns: undefined };
   import_life: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
   import_name_key: { Args: { p_text: string }; Returns: string };
   import_patrol: { Args: { p_section_id: string; p_name: string }; Returns: string };

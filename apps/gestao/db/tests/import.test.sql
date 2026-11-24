@@ -1,6 +1,6 @@
 -- pgTAP: importação por CSV (db/migrations/006_importacao.sql; contrato em docs/importacao.md). Rode com `npm run test:db`.
 begin;
-select plan(57);
+select plan(66);
 \ir _fixture.psql
 
 select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
@@ -154,6 +154,28 @@ select is((select count(*)::int || ':' || (select count(*) from public.associate
   'só o tipo presente é substituído');
 select throws_like(format($$select public.import_batch(%L, '[{"kind":"vida-escoteira","rows":[{"line":7,"person":"Bruno Importado","periods":[{"branch":"lobinho","started_on":"2019-02-01"},{"branch":"senior","started_on":"2020-01-01"}]}]}]')$$, :'gid_a'),
   'vida-escoteira.csv, linha 7: O período se sobrepõe%', 'sobreposição recusada pelo banco');
+
+-- inventario-lotes.csv + inventario-pecas.csv (carga com substituição) -------------------------------
+select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
+\set inventory '[{"kind":"inventario-lotes","rows":[{"line":2,"location":"Cozinha › Armário 1","material":"Panela Imp","family":"Cozinha Imp","familyCode":"902","consumable":false,"quantity":3,"condition":"bom","unitValue":8990,"counts":{"2025":4,"2026":3}},{"line":3,"location":"Cozinha > armário 1","material":"panela imp","consumable":false,"quantity":1,"condition":"bom","unitValue":9990},{"line":4,"location":"Alcateia Imp","material":"Soro Imp","consumable":true,"minimum":4,"quantity":6,"expires":"2027-08-31"},{"line":5,"location":"Alcateia Imp","material":"Lanterna Imp","consumable":false,"quantity":0,"counts":{"2025":2}}]},{"kind":"inventario-pecas","rows":[{"line":2,"tag":"GEAS-901-0001","legacyCode":"B1","material":"Barraca Imp","family":"Barracas Imp","familyCode":"901","location":"Almoxarifado › Barracas","condition":"bom"}]}]'
+select public.import_batch(:'gid_a', :'inventory'::jsonb) as result \gset
+select is((:'result'::jsonb)->'inventario-lotes', '{"lots":3,"counts":3}'::jsonb, 'lotes (iguais somam) e contagens');
+select is((:'result'::jsonb)->'inventario-pecas', '{"units":1}'::jsonb, 'peça etiquetada');
+select is((select string_agg(path, ', ' order by sort_key) from public.inventory_location_paths where group_id = :'gid_a'),
+  'Cozinha, Cozinha › Armário 1, Alcateia Imp, Almoxarifado, Almoxarifado › Barracas', 'divisões na ordem do arquivo, sem repetir');
+select is((select quantity || '|' || unit_value_cents from public.inventory_lots l join public.inventory_materials m on m.id = l.material_id where m.name = 'Panela Imp'),
+  '4|9240', 'linhas do mesmo lote somam, valor pela média ponderada');
+select is((select string_agg(year || ':' || quantity, ' ' order by year) from public.inventory_counts c join public.inventory_materials m on m.id = c.material_id where m.name = 'Lanterna Imp'),
+  '2025:2', 'quantidade 0 não vira lote, mas a contagem fica');
+select is((select string_agg(distinct channel || ':' || review_status, ',') from public.inventory_movements where group_id = :'gid_a'), 'importacao:revisado',
+  'movimentos da carga no canal importacao, revisados');
+select public.import_batch(:'gid_a', :'inventory'::jsonb) \gset
+select is((select count(*)::int || '|' || sum(quantity) from public.inventory_lots where group_id = :'gid_a'), '2|10', 'reimportar substitui, não duplica');
+select public.inventory_save_location(:'gid_a', null, null, 'Feita no app', null) \gset
+select public.inventory_save_material(:'gid_a', null, null, 'Material do app', 'lot', false, null, null) \gset
+select throws_like(format('select public.import_batch(%L, %L)', :'gid_a', :'inventory'), 'O inventário já tem % registros feitos no app%', 'depois do uso pelo app, a carga é recusada');
+select is((select count(*)::int from public.inventory_materials where group_id = :'gid_a' and name = 'Material do app'), 1, 'nada apagado');
+select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
 
 -- Permissão ---------------------------------------------------------------------------------------
 select tests.login('00000000-0000-0000-0000-00000000f0a3') \gset
