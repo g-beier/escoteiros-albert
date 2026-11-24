@@ -237,7 +237,7 @@ export const FILES: readonly FileSpec[] = [
       { key: "promise", header: "promessa", type: { kind: "data" }, help: "Data da promessa (vazia para promessa feita em outro grupo sem data).", example: "18/06/2022" },
       { key: "situation", header: "situação", aliases: ["situacao", "status"], type: list(SITUATION_CHOICES), help: "Na criação, vazio = ativo.", example: "ativo" },
       { key: "left", header: "desligado em", aliases: ["desligamento", "saida"], type: { kind: "data" }, required: "situação desligado", help: "Data do desligamento.", example: "" },
-      { key: "leftReason", header: "motivo", aliases: ["motivo do desligamento"], type: text(200), help: "Motivo do desligamento.", example: "" },
+      { key: "leftReason", header: "motivo", aliases: ["motivo do desligamento"], type: text(120), help: "Motivo do desligamento.", example: "" },
       { key: "notes", header: "observação", aliases: ["observacao", "obs", "notas"], type: text(500), help: "Observação geral.", example: "" },
     ],
     example: {
@@ -413,7 +413,7 @@ export const FILES: readonly FileSpec[] = [
     key: "etiqueta (ou código antigo)",
     reimport: "Substitui junto com inventario-lotes.csv.",
     columns: [
-      { key: "tag", header: "etiqueta", type: text(14, 14), help: "`GEAS-<família>-<número>` (ex.: GEAS-001-0001). Vazia = sem etiqueta ainda.", example: "GEAS-001-0001" },
+      { key: "tag", header: "etiqueta", type: text(13, 13), help: "`GEAS-<família>-<número>` (ex.: GEAS-001-0001). Vazia = sem etiqueta ainda.", example: "GEAS-001-0001" },
       { key: "legacyCode", header: "código antigo", aliases: ["codigo"], type: text(30, 1), help: "Código usado antes (ex.: B1).", example: "B1" },
       { key: "material", header: "material", aliases: ["item", "nome"], type: text(120, 2), required: "sempre", help: "Material da peça (não pode ser também material de lotes).", example: "Barraca iglu 4 pessoas" },
       { key: "familyCode", header: "família código", aliases: ["codigo da familia"], type: text(3, 3), help: "Código de 3 dígitos da família.", example: "001" },

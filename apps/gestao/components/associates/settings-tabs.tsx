@@ -14,6 +14,7 @@ export function settingsCrumbs(current: SettingsTab): Crumb[] {
 export function SettingsTabs({ current, canEdit }: { current: SettingsTab; canEdit: boolean }) {
   const tabs = (Object.keys(SETTINGS_LABELS) as SettingsTab[])
     .filter((tab) => canEdit || tab !== "importar")
-    .map((tab) => ({ href: `/associados/configuracoes/${tab}`, label: SETTINGS_LABELS[tab], active: tab === current }));
+    // Importar é a tela comum /importar (CSVs de todos os módulos)
+    .map((tab) => ({ href: tab === "importar" ? "/importar" : `/associados/configuracoes/${tab}`, label: SETTINGS_LABELS[tab], active: tab === current }));
   return <SectionTabs label="Configurações" tabs={tabs} />;
 }

@@ -1,5 +1,4 @@
 import type { AssociateMove, AssociateMovement, AssociateProfile, Registration, ScoutBranch } from "@/lib/associates/model";
-import type { ExistingAssociate } from "@/lib/associates/import";
 import type { Db } from "@/lib/server/db";
 import { count, one, rows, rpc, run } from "@/lib/server/pg/db";
 
@@ -30,12 +29,6 @@ export async function history(db: Db, id: string): Promise<{ moves: AssociateMov
     ]);
     return { moves: [...moves] as unknown as AssociateMove[], movements: [...movements] as unknown as AssociateMovement[] };
   });
-}
-
-/** Cadastrados, para a conferência da importação por CSV (nome, ramo, seção, equipe, situação). */
-export async function existingForImport(db: Db, groupId: string): Promise<ExistingAssociate[]> {
-  return rows<ExistingAssociate>(db, (sql) => sql`
-    select id, name, branch, section, patrol, active from public.associate_profile_rows where group_id = ${groupId} order by name limit 10000`);
 }
 
 export type Dates = { birthDate: string | null; promiseDate: string | null; joinedOn: string | null };
@@ -98,13 +91,4 @@ export async function leave(db: Db, id: string, date: string, reason: string | n
 
 export async function rejoin(db: Db, id: string, date: string, reason: string | null): Promise<void> {
   await rpc(db, "associates_rejoin", { p_associate_id: id, p_date: date, p_reason: reason });
-}
-
-export type ImportRow = { id?: string; name: string; branch: ScoutBranch; section?: string | null; patrol?: string | null; active: boolean };
-
-/** Importação em massa (tudo ou nada): cadastra os novos e atualiza os com `id`. */
-export async function importRows(db: Db, groupId: string, rows: ImportRow[]): Promise<{ created: number; updated: number }> {
-  const data = await rpc(db, "import_associates", { p_group_id: groupId, p_rows: rows });
-  const result = (data ?? {}) as { created?: number; updated?: number };
-  return { created: Number(result.created ?? 0), updated: Number(result.updated ?? 0) };
 }

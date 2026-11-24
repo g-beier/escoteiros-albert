@@ -51,7 +51,7 @@ select throws_like(format($$select public.import_statement_lines(%L, null, null,
 select throws_like(format($$select public.ignore_statement_lines(array[%L]::uuid[], 'x')$$, :'line_a2'), '%permissão%', 'consulta não ignora linha');
 select throws_like(format($$select public.unlink_reconciliation(%L)$$, :'line_a'), '%permissão%', 'consulta não desfaz conciliação');
 select throws_like(format($$select public.delete_entry_attachment(%L)$$, :'attach_a'), '%permissão%', 'consulta não exclui anexo');
-select throws_like(format($$select public.import_associates(%L, '[{"name":"Consulta","branch":"adulto"}]')$$, :'gid_a'), '%permissão%',
+select throws_like(format($$select public.import_batch(%L, '[{"kind":"pessoas","rows":[{"line":2,"name":"Consulta","branch":"adulto"}]}]')$$, :'gid_a'), '%permissão%',
   'consulta não importa associados');
 select throws_like(format($$select public.set_fee_record(%L, 2026, 4, 'pago', null, '{}')$$, :'assoc_a'), '%permissão%',
   'consulta não registra mensalidade');

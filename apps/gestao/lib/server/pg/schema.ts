@@ -850,8 +850,16 @@ export type Functions = {
   group_users: { Args: { p_group_id: string }; Returns: { user_id: string; email: string; last_sign_in_at: string; finance_role: Enums["module_role"]; inventory_role: Enums["module_role"]; associates_role: Enums["module_role"]; associate_id: string }[] };
   ignore_statement_line: { Args: { p_id: string; p_reason: string }; Returns: undefined };
   ignore_statement_lines: { Args: { p_ids: string[]; p_reason: string }; Returns: number };
-  import_associates: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
+  import_batch: { Args: { p_group_id: string; p_files: Json }; Returns: Json };
+  import_date: { Args: { p_row: Json; p_key: string }; Returns: string };
+  import_find_associate: { Args: { p_group_id: string; p_id: string; p_name: string; p_birth: string }; Returns: string };
+  import_name_key: { Args: { p_text: string }; Returns: string };
+  import_patrol: { Args: { p_section_id: string; p_name: string }; Returns: string };
+  import_people: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
+  import_section: { Args: { p_group_id: string; p_branch: Enums["scout_branch"]; p_name: string }; Returns: string };
+  import_sections: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
   import_statement_lines: { Args: { p_account_id: string; p_profile_id: string; p_profile_settings: Json; p_file_name: string; p_period_from: string; p_period_to: string; p_opening_balance_cents: number; p_closing_balance_cents: number; p_lines: Json }; Returns: Json };
+  import_text: { Args: { p_row: Json; p_key: string }; Returns: string };
   inventory_add_lot: { Args: { p_material_id: string; p_location_id: string; p_quantity: number; p_condition: Enums["inventory_condition"]; p_unit_value_cents: number; p_expires_on: string; p_acquired_on: string; p_origin: Enums["inventory_origin"]; p_supplier: string; p_invoice: string; p_notes: string; p_variant?: string }; Returns: string };
   inventory_add_unit: { Args: { p_material_id: string; p_location_id: string; p_tag: string; p_legacy_code: string; p_description: string; p_condition: Enums["inventory_condition"]; p_unit_value_cents: number; p_acquired_on: string; p_origin: Enums["inventory_origin"]; p_supplier: string; p_invoice: string; p_notes: string }; Returns: string };
   inventory_adjust_lot: { Args: { p_lot_id: string; p_quantity: number; p_notes: string }; Returns: undefined };

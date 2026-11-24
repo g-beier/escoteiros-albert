@@ -29,7 +29,7 @@ select public.rename_import_profile(:'profile_a', 'Perfil Auditoria') \gset
 select public.delete_statement_import(:'import_a') \gset
 select public.delete_import_profile(:'profile_a') \gset
 select public.delete_entry_attachment(:'attach_a') \gset
-select public.import_associates(:'gid_a', '[{"name":"Associado Auditoria","branch":"senior"}]') \gset
+select public.import_batch(:'gid_a', '[{"kind":"pessoas","rows":[{"line":2,"name":"Associado Auditoria","branch":"senior"}]}]') \gset
 select public.create_ledger_entry(:'gid_a', '2026-03-20', 'Para excluir', :'pix_a', null, false, -700,
   jsonb_build_array(jsonb_build_object('category_id', (select id from public.categories where group_id = :'gid_a' and code like '2.%' order by code limit 1),
     'amount_cents', -700, 'description', 'material')), :'acc_a') as entry_del \gset
@@ -82,7 +82,7 @@ select is(tests.audited('import_profile.renamed', :'profile_a'), 1, 'rename_impo
 select is(tests.audited('statement.import_deleted', :'import_a'), 1, 'delete_statement_import audita');
 select is(tests.audited('import_profile.deleted', :'profile_a'), 1, 'delete_import_profile audita');
 select is(tests.audited('ledger_entry.attachment_removed', :'entry_a'), 1, 'delete_entry_attachment audita');
-select is(tests.audited('associates.imported'), 1, 'import_associates audita');
+select is(tests.audited('import.batch'), 1, 'import_batch audita');
 select is(tests.audited('ledger_entry.created', :'entry_del'), 1, 'create_ledger_entry (2) audita');
 select is(tests.audited('ledger_entry.deleted', :'entry_del'), 1, 'delete_ledger_entry audita');
 select ok((select details ? 'before' from public.audit_events where action = 'ledger_entry.deleted' and entity_id = :'entry_del'),

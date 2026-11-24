@@ -40,7 +40,7 @@ select public.associates_create(:'gid_a', 'Edu Teste', 'adulto', null, null, nul
 select is((select count(*)::int from public.control_statuses where associate_id = :'edu' and item_id = :'aptidao' and status = 'pendente'), 1, 'adulto ganha a ficha de aptidão');
 select is((select count(*)::int from public.control_statuses where associate_id = :'edu' and item_id = :'equipes'), 0, 'item só de jovem não entra para adulto');
 
-select public.import_associates(:'gid_a', '[{"name":"Ivo Importado","branch":"senior"}]') \gset
+select public.import_batch(:'gid_a', '[{"kind":"pessoas","rows":[{"line":2,"name":"Ivo Importado","branch":"senior"}]}]') \gset
 select is((select count(*)::int from public.control_statuses s join public.associates a on a.id = s.associate_id
     where a.group_id = :'gid_a' and a.name = 'Ivo Importado' and s.status = 'pendente' and s.status_date = current_date), 8,
   'importação: associado novo também ganha o valor inicial');

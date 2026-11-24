@@ -63,6 +63,12 @@ Testes: pgTAP das permissões por papel (finance/associates/inventory), e2e com 
 
 ## 2. Importação de associados (CSV)
 
+**Em andamento (2026-11-24, branch `feat/importacao-csv`):** contrato único de CSV para todos os módulos em
+`apps/gestao/docs/importacao.md` (a conversão das planilhas é feita por fora, à mão ou com IA, seguindo o contrato) e
+tela comum `/importar` com pré-visualização e gravação numa transação (`import_batch`, migration `006`). Já importa
+`secoes.csv` e `pessoas.csv`; próximos: `funcoes`, `responsaveis`, `itens-controle` + `controle`, `vida-escoteira` e o
+inventário (`inventario-lotes`, `inventario-pecas`). A proposta abaixo foi a base do contrato.
+
 Só CSV. Os dados vêm dos Docs 10, 13, 14 e 22 e de planilhas ainda por criar, então o formato precisa aceitar colunas
 novas sem mudar código.
 

@@ -137,7 +137,7 @@ Ano-base do registro;administrativa;etapa;ano;;não;sim;sim;não
 | `promessa` |  | data dd/mm/aaaa | Data da promessa (vazia para promessa feita em outro grupo sem data). | 18/06/2022 |
 | `situação` (ou `situacao`, `status`) |  | `ativo`, `desligado` | Na criação, vazio = ativo. | ativo |
 | `desligado em` (ou `desligamento`, `saida`) | se situação desligado | data dd/mm/aaaa | Data do desligamento. |  |
-| `motivo` (ou `motivo do desligamento`) |  | texto (até 200) | Motivo do desligamento. |  |
+| `motivo` (ou `motivo do desligamento`) |  | texto (até 120) | Motivo do desligamento. |  |
 | `observação` (ou `observacao`, `obs`, `notas`) |  | texto (até 500) | Observação geral. |  |
 
 Exemplo:
@@ -307,7 +307,7 @@ Alcateia;005;Primeiros socorros;Soro fisiológico 250 mL;;sim;4;;;31/08/2027;6,5
 
 | Coluna | Obrigatória | Valores | O que é | Exemplo |
 |---|---|---|---|---|
-| `etiqueta` |  | texto (14) | `GEAS-<família>-<número>` (ex.: GEAS-001-0001). Vazia = sem etiqueta ainda. | GEAS-001-0001 |
+| `etiqueta` |  | texto (13) | `GEAS-<família>-<número>` (ex.: GEAS-001-0001). Vazia = sem etiqueta ainda. | GEAS-001-0001 |
 | `código antigo` (ou `codigo`) |  | texto (até 30) | Código usado antes (ex.: B1). | B1 |
 | `material` (ou `item`, `nome`) | sim | texto (até 120) | Material da peça (não pode ser também material de lotes). | Barraca iglu 4 pessoas |
 | `família código` (ou `codigo da familia`) |  | texto (3) | Código de 3 dígitos da família. | 001 |

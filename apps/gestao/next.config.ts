@@ -12,8 +12,11 @@ const nextConfig: NextConfig = {
   // porque @geas/ui e o node_modules ficam lá; o servidor sai em .next/standalone/apps/gestao/server.js.
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../.."),
+  // contrato da importação por CSV, servido em /importar/contrato
+  outputFileTracingIncludes: { "/importar/contrato": ["./docs/importacao.md"] },
   // vários layouts raiz (um por módulo): o 404 de URL sem rota vem de app/global-not-found.tsx
-  experimental: { globalNotFound: true },
+  // importação por CSV (/importar): os arquivos vão inteiros para a Server Action, que lê e grava no servidor
+  experimental: { globalNotFound: true, serverActions: { bodySizeLimit: "4mb" } },
   // rotas de antes da consolidação (app financeiro sem prefixo): favoritos e links antigos continuam valendo
   async redirects() {
     return [
