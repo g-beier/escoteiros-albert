@@ -5,6 +5,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { cn } from "./lib/utils";
 import { AppNavMenu } from "./components/app-nav-menu";
 import { SectionTabsMenu } from "./components/section-tabs-menu";
+import { displayCase } from "@geas/ui/lib/text";
 
 /** Módulo atual; "gestao" = telas comuns (Início, Usuários), sem módulo. */
 export type GeasApp = "gestao" | "financeiro" | "inventario" | "associados";
@@ -155,6 +156,9 @@ export function UserMenu({ email, role, logoutAction, usersHref, active = false 
 
 export type Crumb = { label: ReactNode; href?: string };
 
+/** Breadcrumbs no mesmo padrão: nomes cadastrados em maiúsculas aparecem capitalizados (`displayCase`). */
+const crumbLabel = (label: ReactNode) => (typeof label === "string" ? displayCase(label) : label);
+
 export function PageHeader({ title, description, crumbs, hideTitle, tabs, actions, children }: {
   title: ReactNode; description?: ReactNode; crumbs?: Crumb[]; hideTitle?: boolean;
   tabs?: ReactNode; actions?: ReactNode; children?: ReactNode;
@@ -162,7 +166,7 @@ export function PageHeader({ title, description, crumbs, hideTitle, tabs, action
   const path: Crumb[] = crumbs?.length ? [{ label: "Início", href: "/" }, ...crumbs] : [];
   return <div className="geas-page-header">
     {path.length > 0 && <nav className="geas-breadcrumbs" aria-label="Caminho"><ol>{path.map((crumb, index) => <li key={index}>
-      {index > 0 && <span aria-hidden>›</span>}{crumb.href ? <Link href={crumb.href}>{crumb.label}</Link> : <strong aria-current="page">{crumb.label}</strong>}
+      {index > 0 && <span aria-hidden>›</span>}{crumb.href ? <Link href={crumb.href}>{crumbLabel(crumb.label)}</Link> : <strong aria-current="page">{crumbLabel(crumb.label)}</strong>}
     </li>)}</ol></nav>}
     <div className="geas-page-header__row">
       <h1 className={hideTitle ? "geas-sr-only" : undefined}>{title}</h1>{tabs}
