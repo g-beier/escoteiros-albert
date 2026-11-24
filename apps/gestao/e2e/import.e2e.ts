@@ -23,6 +23,7 @@ test.afterAll(() => {
     delete from public.associate_functions where associate_id in ${people};
     delete from public.control_statuses where associate_id in ${people};
     delete from public.associate_life_periods where associate_id in ${people};
+    delete from public.associate_life_events where associate_id in ${people};
     delete from public.associate_movements where associate_id in ${people};
     delete from public.associates where id in ${people};
     delete from public.patrols where group_id = ${group} and name = ${literal(patrol)};
@@ -98,5 +99,22 @@ test("importar item de controle e situações (Doc 22)", async ({ page }) => {
   await page.getByRole("button", { name: "Importar 2 linhas" }).click();
   await expect(page.getByText(/^Importado\. /)).toBeVisible();
   await page.getByLabel("Arquivos CSV").setInputFiles(files());
+  await expect(page.getByRole("button", { name: "Nada a importar" })).toBeDisabled();
+});
+
+test("importar a vida escoteira substitui os períodos do cadastro", async ({ page }) => {
+  const csv = [
+    "pessoa;nascimento;tipo;ramo;início;fim;data;título",
+    `${names[0]};14/05/2013;período;lobinho;02/2021;02/2023;;`,
+    `${names[0]};14/05/2013;período;escoteiro;03/2023;;;`,
+    `${names[0]};14/05/2013;evento;;;;10/11/2024;Lis de Ouro`,
+  ].join("\r\n");
+  await page.goto("/importar");
+  await page.getByLabel("Arquivos CSV").setInputFiles({ name: "vida-escoteira.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") });
+  const vida = page.locator("section").filter({ has: page.getByRole("heading", { name: /^vida-escoteira\.csv/ }) });
+  await expect(vida).toContainText(/substitui \d+ períodos?/);
+  await page.getByRole("button", { name: "Importar 3 linhas" }).click();
+  await expect(page.getByText(/^Importado\. /)).toBeVisible();
+  await page.getByLabel("Arquivos CSV").setInputFiles({ name: "vida-escoteira.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") });
   await expect(page.getByRole("button", { name: "Nada a importar" })).toBeDisabled();
 });

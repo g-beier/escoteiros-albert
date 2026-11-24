@@ -858,6 +858,7 @@ export type Functions = {
   import_date: { Args: { p_row: Json; p_key: string }; Returns: string };
   import_find_associate: { Args: { p_group_id: string; p_id: string; p_name: string; p_birth: string }; Returns: string };
   import_functions: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
+  import_life: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
   import_name_key: { Args: { p_text: string }; Returns: string };
   import_patrol: { Args: { p_section_id: string; p_name: string }; Returns: string };
   import_people: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };

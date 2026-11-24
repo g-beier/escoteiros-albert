@@ -47,7 +47,10 @@ export function ImportBatch({ state, options, modules }: { state: ImportState; o
   });
   const plan = useMemo(() => planBatch(read.flatMap((item) => (item.file ? [item.file] : [])), state, options), [read, state, options]);
   const blocking = [...readErrors, ...notAllowed, ...plan.errors];
-  const toSend = plan.files.reduce((sum, file) => sum + file.payload.length, 0);
+  // linhas novas e alteradas (o payload pode juntar linhas: na vida escoteira, uma entrada por pessoa)
+  const toSend = plan.files.some((file) => file.payload.length)
+    ? plan.files.reduce((sum, file) => sum + file.rows.filter((row) => row.action === "nova" || row.action === "atualiza").length, 0)
+    : 0;
 
   async function onFiles(event: ChangeEvent<HTMLInputElement>) {
     const chosen = [...(event.target.files ?? [])];

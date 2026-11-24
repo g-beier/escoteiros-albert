@@ -11,7 +11,7 @@ import type { FunctionExport, PersonExport, RelativeExport, SectionExport } from
 /** O que já está no app, para identificar e comparar as linhas dos CSVs. */
 export async function state(db: Db, groupId: string): Promise<ImportState> {
   return run(db, async (sql) => {
-    const [sections, patrols, people, functions, relatives, links, items, statuses] = await Promise.all([
+    const [sections, patrols, people, functions, relatives, links, items, statuses, periods, exclusions, events, stars, notes] = await Promise.all([
       sql`select id, branch::text as branch, name, active from public.sections where group_id = ${groupId} order by name`,
       sql`select p.id, p.section_id as "sectionId", p.name, p.active from public.patrols p
           join public.sections s on s.id = p.section_id where s.group_id = ${groupId} order by p.name`,
@@ -32,10 +32,23 @@ export async function state(db: Db, groupId: string): Promise<ImportState> {
       sql`select associate_id as "associateId", relative_id as "relativeId", item_id as "itemId", status::text as status,
             status_date as "statusDate", valid_until as "validUntil", value_year as year, note
           from public.control_statuses where group_id = ${groupId} limit 100000`,
+      sql`select associate_id as "associateId", branch::text as branch, started_on as started, ended_on as ended, place
+          from public.associate_life_periods where group_id = ${groupId} order by started_on limit 50000`,
+      sql`select associate_id as "associateId", started_on as started, ended_on as ended, reason, note
+          from public.associate_life_exclusions where group_id = ${groupId} order by started_on limit 50000`,
+      sql`select associate_id as "associateId", event_date as date, title, description
+          from public.associate_life_events where group_id = ${groupId} order by event_date limit 50000`,
+      sql`select associate_id as "associateId", star, branch::text as branch, delivered_on as delivered
+          from public.associate_stars where group_id = ${groupId} order by star limit 50000`,
+      sql`select id, life_notes from public.associates where group_id = ${groupId} and life_notes is not null limit 20000`,
     ]);
     return {
       sections: [...sections], patrols: [...patrols], people: [...people], functions: [...functions], relatives: [...relatives],
       links: [...links], items: [...items], statuses: [...statuses],
+      life: {
+        periods: [...periods], exclusions: [...exclusions], events: [...events], stars: [...stars],
+        notes: Object.fromEntries(notes.map((row) => [row.id, row.life_notes])),
+      },
     } as unknown as ImportState;
   });
 }

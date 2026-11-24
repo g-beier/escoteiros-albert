@@ -638,7 +638,125 @@ function planControls(file: ReadFile, ctx: PlanContext, batchErrors: string[]): 
   return plan;
 }
 
+type LifeKind = "periodo" | "exclusao" | "evento" | "estrela" | "anotacao";
+const LIFE_LABEL: Record<LifeKind, [string, string]> = {
+  periodo: ["período", "períodos"], exclusao: ["exclusão", "exclusões"], evento: ["evento", "eventos"], estrela: ["estrela", "estrelas"], anotacao: ["anotação", "anotações"],
+};
+const LIFE_KEY: Record<LifeKind, string> = { periodo: "periods", exclusao: "exclusions", evento: "events", estrela: "stars", anotacao: "notes" };
+
+/** Fatos de um tipo, comparáveis (ordem e grafia normalizadas). */
+const sameFacts = (a: unknown[], b: unknown[]) => JSON.stringify(a) === JSON.stringify(b);
+
+function planLife(file: ReadFile, ctx: PlanContext): PlannedFile {
+  const plan = emptyPlan(file);
+  type Entry = { person: PersonRef; rows: { row: ReadRow; kind: LifeKind; errors: string[]; label: string; fact: Record<string, unknown> }[] };
+  const byPerson = new Map<PersonRef, Entry>();
+  for (const row of file.rows) {
+    const v = row.values;
+    const errors = [...row.errors];
+    const person = citedPerson(ctx, v, errors);
+    const kind = str(v, "kind") as LifeKind | undefined;
+    const fact: Record<string, unknown> = {};
+    let label = "";
+    const start = str(v, "start");
+    const end = str(v, "end");
+    if (kind === "periodo") {
+      const branch = str(v, "branch");
+      if (!branch) errors.push("período sem ramo");
+      if (!start) errors.push("período sem início");
+      if (start && end && end <= start) errors.push("fim antes do início");
+      if (start && start > ctx.options.today) errors.push("início no futuro");
+      if (end && end > ctx.options.today) errors.push("fim no futuro (deixe vazio enquanto vigente)");
+      Object.assign(fact, { branch, started_on: start, ended_on: end ?? null, place: str(v, "place") ?? null });
+      label = `${showChoice(BRANCH_CHOICES, branch)} ${showDate(start)} – ${end ? showDate(end) : "vigente"}${str(v, "place") ? ` (${str(v, "place")})` : ""}`;
+    } else if (kind === "exclusao") {
+      const reason = str(v, "reason");
+      if (!start || !end) errors.push("exclusão precisa de início e fim");
+      if (!reason) errors.push("exclusão sem motivo");
+      if (start && end && end <= start) errors.push("fim antes do início");
+      if (reason === "outro" && !str(v, "description")) errors.push("motivo outro: descreva na descrição");
+      if (reason === "licenca" && start && end && (Date.parse(end) - Date.parse(start)) / 86400000 <= 60) errors.push("licença só conta acima de 60 dias");
+      Object.assign(fact, { started_on: start, ended_on: end, reason, note: str(v, "description") ?? null });
+      label = `exclusão ${showDate(start)} – ${showDate(end)}`;
+    } else if (kind === "evento") {
+      if (!str(v, "date")) errors.push("evento sem data");
+      if (!str(v, "title")) errors.push("evento sem título");
+      if (str(v, "date") && str(v, "date")! > ctx.options.today) errors.push("data no futuro");
+      Object.assign(fact, { date: str(v, "date"), title: str(v, "title"), description: str(v, "description") ?? null });
+      label = `${showDate(str(v, "date"))} ${str(v, "title") ?? ""}`;
+    } else if (kind === "estrela") {
+      if (typeof v.star !== "number") errors.push("informe o número da estrela");
+      if (!str(v, "branch") && !str(v, "delivered")) errors.push("estrela sem entrega nem ramo: nada a registrar");
+      if (str(v, "delivered") && str(v, "delivered")! > ctx.options.today) errors.push("entrega no futuro");
+      Object.assign(fact, { star: v.star, branch: str(v, "branch") ?? null, delivered: str(v, "delivered") ?? null });
+      label = `estrela ${v.star ?? "?"}${str(v, "delivered") ? ` entregue em ${showDate(str(v, "delivered"))}` : ""}`;
+    } else if (kind === "anotacao") {
+      if (!str(v, "description")) errors.push("anotação sem texto (coluna descrição)");
+      fact.text = str(v, "description");
+      label = `anotação`;
+    }
+    if (!person || !kind) { plan.rows.push(errorRow(row, str(v, "person") ?? "", errors)); continue; }
+    const entry = byPerson.get(person) ?? { person, rows: [] };
+    byPerson.set(person, entry);
+    entry.rows.push({ row, kind, errors, label: `${person.name} · ${label}`, fact });
+  }
+
+  for (const { person, rows } of byPerson.values()) {
+    // Sobreposição e vigente único, entre os períodos do arquivo.
+    const periods = rows.filter((r) => r.kind === "periodo" && !r.errors.length).sort((a, b) => String(a.fact.started_on).localeCompare(String(b.fact.started_on)));
+    for (let i = 1; i < periods.length; i++) {
+      const previous = periods[i - 1]!;
+      if (!previous.fact.ended_on || String(previous.fact.ended_on) > String(periods[i]!.fact.started_on)) periods[i]!.errors.push(`sobrepõe o período da linha ${previous.row.line}`);
+    }
+    const exclusions = rows.filter((r) => r.kind === "exclusao" && !r.errors.length).sort((a, b) => String(a.fact.started_on).localeCompare(String(b.fact.started_on)));
+    for (let i = 1; i < exclusions.length; i++) {
+      if (String(exclusions[i - 1]!.fact.ended_on) > String(exclusions[i]!.fact.started_on)) exclusions[i]!.errors.push(`sobrepõe a exclusão da linha ${exclusions[i - 1]!.row.line}`);
+    }
+    const stars = new Map<number, number>();
+    for (const r of rows.filter((x) => x.kind === "estrela")) {
+      const star = r.fact.star as number;
+      if (stars.has(star)) r.errors.push(`estrela ${star} repetida (linha ${stars.get(star)})`); else stars.set(star, r.row.line);
+    }
+
+    const failed = rows.find((r) => r.errors.length);
+    if (failed) {
+      for (const r of rows) plan.rows.push(errorRow(r.row, r.label, r.errors.length ? r.errors : [`${person.name} fica de fora: corrija a linha ${failed.row.line}`]));
+      continue;
+    }
+
+    const current = {
+      periodo: person.id ? ctx.state.life.periods.filter((p) => p.associateId === person.id).map((p) => ({ branch: p.branch, started_on: p.started, ended_on: p.ended, place: p.place })) : [],
+      exclusao: person.id ? ctx.state.life.exclusions.filter((e) => e.associateId === person.id).map((e) => ({ started_on: e.started, ended_on: e.ended, reason: e.reason, note: e.note })) : [],
+      evento: person.id ? ctx.state.life.events.filter((e) => e.associateId === person.id).map((e) => ({ date: e.date, title: e.title, description: e.description })) : [],
+      estrela: person.id ? ctx.state.life.stars.filter((s) => s.associateId === person.id).map((s) => ({ star: s.star, branch: s.branch, delivered: s.delivered })) : [],
+      anotacao: person.id && ctx.state.life.notes[person.id] ? [{ text: ctx.state.life.notes[person.id] }] : [],
+    } satisfies Record<LifeKind, unknown[]>;
+    const payload: Record<string, unknown> = { line: rows[0]!.row.line, ...personPayload(person) };
+    for (const kind of Object.keys(LIFE_LABEL) as LifeKind[]) {
+      const ofKind = rows.filter((r) => r.kind === kind);
+      if (!ofKind.length) continue;
+      const sortKey = (fact: Record<string, unknown>) => String(fact.started_on ?? fact.date ?? fact.star ?? "").padStart(3, "0");
+      const facts = kind === "anotacao"
+        ? [{ text: ofKind.map((r) => r.fact.text).join("\n") }]
+        : ofKind.map((r) => r.fact).sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+      const before = [...current[kind]].sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+      const same = sameFacts(facts, before);
+      const replaced = current[kind].length;
+      const [one, many] = LIFE_LABEL[kind];
+      ofKind.forEach((r, index) => {
+        const warnings = !same && index === 0 && replaced > 0 ? [`substitui ${replaced} ${replaced === 1 ? one : many} de ${person.name} no app`] : [];
+        plan.rows.push({ line: r.row.line, action: same ? "igual" : replaced ? "atualiza" : "nova", label: r.label, changes: [], errors: [], warnings });
+      });
+      if (!same) payload[LIFE_KEY[kind]] = kind === "anotacao" ? (facts[0] as { text: string }).text : facts;
+    }
+    if (Object.keys(payload).some((key) => Object.values(LIFE_KEY).includes(key))) plan.payload.push(payload);
+  }
+  plan.rows.sort((a, b) => a.line - b.line);
+  return plan;
+}
+
 const PLANNERS: Partial<Record<FileKind, Planner>> = {
+  "vida-escoteira": planLife,
   "itens-controle": planItems,
   controle: planControls,
   secoes: planSections,

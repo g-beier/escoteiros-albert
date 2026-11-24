@@ -71,6 +71,20 @@ export type StateStatus = {
   note: string | null;
 };
 
+/** Vida escoteira de cada pessoa (004, 005). */
+export type StateLifePeriod = { associateId: string; branch: string; started: string; ended: string | null; place: string | null };
+export type StateLifeExclusion = { associateId: string; started: string; ended: string; reason: string; note: string | null };
+export type StateLifeEvent = { associateId: string; date: string; title: string; description: string | null };
+export type StateStar = { associateId: string; star: number; branch: string | null; delivered: string | null };
+export type StateLife = {
+  periods: StateLifePeriod[];
+  exclusions: StateLifeExclusion[];
+  events: StateLifeEvent[];
+  stars: StateStar[];
+  /** Anotações de histórico por pessoa (só quem tem). */
+  notes: Record<string, string>;
+};
+
 export type ImportState = {
   sections: StateSection[];
   patrols: StatePatrol[];
@@ -80,6 +94,8 @@ export type ImportState = {
   links: StateLink[];
   items: StateItem[];
   statuses: StateStatus[];
+  life: StateLife;
 };
 
-export const EMPTY_STATE: ImportState = { sections: [], patrols: [], people: [], functions: [], relatives: [], links: [], items: [], statuses: [] };
+export const EMPTY_LIFE: StateLife = { periods: [], exclusions: [], events: [], stars: [], notes: {} };
+export const EMPTY_STATE: ImportState = { sections: [], patrols: [], people: [], functions: [], relatives: [], links: [], items: [], statuses: [], life: EMPTY_LIFE };

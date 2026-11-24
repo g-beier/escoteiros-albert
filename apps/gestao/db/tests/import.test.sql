@@ -1,6 +1,6 @@
 -- pgTAP: importação por CSV (db/migrations/006_importacao.sql; contrato em docs/importacao.md). Rode com `npm run test:db`.
 begin;
-select plan(50);
+select plan(57);
 \ir _fixture.psql
 
 select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
@@ -135,6 +135,25 @@ select throws_like(format($$select public.import_batch(%L, '[{"kind":"controle",
   'controle.csv, linha 4: Imp Ficha: O item Imp Ficha não se aplica%', 'item que não se aplica ao público');
 select throws_like(format($$select public.import_batch(%L, '[{"kind":"controle","rows":[{"line":5,"audience":"responsavel","relative":"Ninguém","cells":[]}]}]')$$, :'gid_a'),
   'controle.csv, linha 5: responsável "Ninguém" não encontrado', 'responsável desconhecido');
+
+-- vida-escoteira.csv --------------------------------------------------------------------------------
+select public.import_batch(:'gid_a', $$[{"kind":"vida-escoteira","rows":[{"line":2,"person":"Bruno Importado",
+  "periods":[{"branch":"lobinho","started_on":"2019-02-01","ended_on":"2022-03-01","place":"Grupo Exemplo"},{"branch":"escoteiro","started_on":"2022-03-01","ended_on":null,"place":null}],
+  "exclusions":[{"started_on":"2023-04-01","ended_on":"2023-09-01","reason":"licenca","note":null}],
+  "events":[{"date":"2024-11-10","title":"Lis de Ouro","description":null}],
+  "stars":[{"star":2,"branch":"escoteiro","delivered":"2024-06-20"}],
+  "notes":"Ficha antiga.\nOutra nota."}]}]$$::jsonb) as result \gset
+select is((:'result'::jsonb)->'vida-escoteira', '{"people":1}'::jsonb, 'uma pessoa');
+select is((select string_agg(branch || ':' || started_on || ':' || coalesce(ended_on::text, '-') || ':' || source, ' ' order by started_on) from public.associate_life_periods where associate_id = :'bruno'),
+  'lobinho:2019-02-01:2022-03-01:planilha escoteiro:2022-03-01:-:planilha', 'períodos do cadastro trocados pelos da planilha');
+select is((select reason || ':' || started_on from public.associate_life_exclusions where associate_id = :'bruno'), 'licenca:2023-04-01', 'exclusão');
+select is((select star || ':' || branch || ':' || delivered_on from public.associate_stars where associate_id = :'bruno'), '2:escoteiro:2024-06-20', 'estrela entregue com ramo corrigido');
+select is((select life_notes from public.associates where id = :'bruno'), E'Ficha antiga.\nOutra nota.', 'anotações');
+select public.import_batch(:'gid_a', $$[{"kind":"vida-escoteira","rows":[{"line":2,"person":"Bruno Importado","events":[{"date":"2025-01-05","title":"Cruzeiro do Sul","description":null}]}]}]$$::jsonb) \gset
+select is((select count(*)::int || ':' || (select count(*) from public.associate_life_periods where associate_id = :'bruno') from public.associate_life_events where associate_id = :'bruno'), '1:2',
+  'só o tipo presente é substituído');
+select throws_like(format($$select public.import_batch(%L, '[{"kind":"vida-escoteira","rows":[{"line":7,"person":"Bruno Importado","periods":[{"branch":"lobinho","started_on":"2019-02-01"},{"branch":"senior","started_on":"2020-01-01"}]}]}]')$$, :'gid_a'),
+  'vida-escoteira.csv, linha 7: O período se sobrepõe%', 'sobreposição recusada pelo banco');
 
 -- Permissão ---------------------------------------------------------------------------------------
 select tests.login('00000000-0000-0000-0000-00000000f0a3') \gset

@@ -1,5 +1,5 @@
 import {
-  AUDIENCE_INITIAL_CHOICES, BRANCH_CHOICES, CONTROL_STATUS_CHOICES, DIRECTORATE_CHOICES, FUNCTION_CHOICES, ITEM_KIND_CHOICES, KINSHIP_CHOICES,
+  AUDIENCE_INITIAL_CHOICES, BRANCH_CHOICES, CONTROL_STATUS_CHOICES, DIRECTORATE_CHOICES, EXCLUSION_CHOICES, FUNCTION_CHOICES, ITEM_KIND_CHOICES, KINSHIP_CHOICES,
   REGISTRATION_CHOICES, VALUE_KIND_CHOICES, fileSpec, type FileKind,
 } from "@/lib/import/contract";
 import type { ImportState, StateStatus } from "@/lib/import/state";
@@ -100,6 +100,48 @@ export function controlsCsv(state: ImportState): string {
   return writeImportCsv([...fixed, ...items.map((item) => item.name)], rows);
 }
 
+/** Início de período: `mm/aaaa` no dia 1º, senão a data. */
+function startCell(iso: string) {
+  return iso.endsWith("-01") ? `${iso.slice(5, 7)}/${iso.slice(0, 4)}` : showDate(iso);
+}
+
+/** Fim (exclusivo no banco, inclusivo no CSV): o mês anterior quando cai no dia 1º, senão o dia anterior. */
+function endCell(iso: string | null) {
+  if (!iso) return "";
+  const date = new Date(`${iso}T00:00:00Z`);
+  if (iso.endsWith("-01")) {
+    date.setUTCMonth(date.getUTCMonth() - 1);
+    return `${String(date.getUTCMonth() + 1).padStart(2, "0")}/${date.getUTCFullYear()}`;
+  }
+  date.setUTCDate(date.getUTCDate() - 1);
+  return showDate(date.toISOString().slice(0, 10));
+}
+
+export function lifeCsv(state: ImportState): string {
+  const people = new Map(state.people.map((p) => [p.id, p]));
+  const rows: (string | number | null)[][] = [];
+  const base = (associateId: string) => {
+    const p = people.get(associateId);
+    return p ? [p.id, p.name, showDate(p.birth)] : null;
+  };
+  const push = (associateId: string, cells: (string | number | null)[]) => {
+    const who = base(associateId);
+    if (who) rows.push([...who, ...cells]);
+  };
+  //          tipo, ramo, início, fim, outro grupo, motivo, data, título, descrição, estrela, entregue em
+  for (const p of state.life.periods) push(p.associateId, ["período", showChoice(BRANCH_CHOICES, p.branch), startCell(p.started), endCell(p.ended), p.place, "", "", "", "", "", ""]);
+  for (const e of state.life.exclusions) push(e.associateId, ["exclusão", "", startCell(e.started), endCell(e.ended), "", showChoice(EXCLUSION_CHOICES, e.reason), "", "", e.note, "", ""]);
+  for (const e of state.life.events) push(e.associateId, ["evento", "", "", "", "", "", showDate(e.date), e.title, e.description, "", ""]);
+  for (const s of state.life.stars) push(s.associateId, ["estrela", showChoice(BRANCH_CHOICES, s.branch), "", "", "", "", "", "", "", s.star, showDate(s.delivered)]);
+  // uma linha de anotação por linha do texto (a importação junta de novo, com quebra de linha)
+  for (const [associateId, notes] of Object.entries(state.life.notes)) {
+    for (const line of notes.split(/\r?\n/).map((text) => text.trim()).filter(Boolean)) push(associateId, ["anotação", "", "", "", "", "", "", "", line, "", ""]);
+  }
+  // por pessoa, mantendo a ordem dos fatos (as anotações ficam na ordem do texto)
+  rows.sort((a, b) => String(a[1]).localeCompare(String(b[1]), "pt-BR"));
+  return writeImportCsv(header("vida-escoteira"), rows);
+}
+
 /** Modelo para baixar: cabeçalho e as linhas de exemplo (nomes fictícios) do contrato. */
 export function templateCsv(kind: FileKind): string {
   const spec = fileSpec(kind);
@@ -107,4 +149,4 @@ export function templateCsv(kind: FileKind): string {
 }
 
 /** Tipos com "Baixar dados atuais" (os outros chegam com os próximos arquivos do contrato). */
-export const EXPORTABLE: readonly FileKind[] = ["secoes", "itens-controle", "pessoas", "funcoes", "responsaveis", "controle"];
+export const EXPORTABLE: readonly FileKind[] = ["secoes", "itens-controle", "pessoas", "funcoes", "responsaveis", "controle", "vida-escoteira"];
