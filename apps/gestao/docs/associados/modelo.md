@@ -10,7 +10,7 @@ O módulo **Associados** (`/associados`) é o dono do cadastro de pessoas do gru
 |---|---|---|
 | Doc 10 – Lista simples de efetivo | Adultos e jovens por seção, com contagem; jovens com pais, responsáveis e familiares (`*` = outro parentesco; "Ver X" = irmão já listado) | Associados por ramo; responsáveis compartilhados entre irmãos |
 | Doc 13 – Controle de idade dos jovens | Nascimento, idade, período de transição de ramo | Nascimento; idade calculada (transição: Fase 2) |
-| Doc 14 – Datas de promessa | Data da promessa, por mês, de jovens e adultos | Data da promessa (aniversários: Fase 2) |
+| Doc 14a – Datas de promessa | Data da promessa, por mês, de jovens e adultos | Data da promessa (aniversários: Fase 2) |
 | Doc 22 – Controle de fluxo de dados pessoais | Por pessoa × coluna: onde o dado está e em que situação, com colunas agrupadas por diretoria; abas Escotistas, Dirigentes, Jovens e seus familiares, Integrações | Itens de controle, situações e a matriz `/associados/controle` |
 
 O dado pessoal completo (documentos, CPF, endereço, telefone, e-mail, saúde) fica **só no Paxtu** (sistema da UEB). O
@@ -93,7 +93,7 @@ Tempo de atividade e estrelas de atividade de cada pessoa (substitui a planilha 
 
 Telas: barra no perfil (cores, anos, estrelas e o controle); `/associados/[id]/vida-escoteira` (resumo, avisos, linha do
 tempo vertical por ano, períodos, estrelas, anotações); `/associados/vida-escoteira` (uma faixa por pessoa num eixo de
-anos comum, filtros a entregar, com lacunas, sem período); relatório PDF "Vida escoteira" (promessa, estrelas por ramo,
+anos comum, filtros a entregar, com lacunas, sem período); relatório PDF Doc 14b "Vida escoteira" (promessa, estrelas por ramo,
 total, "Possui lacunas - ver detalhes"). Quem edita: Editor do Associados (Diretoria de Métodos Educativos).
 
 ## Relatórios em PDF
@@ -105,7 +105,7 @@ entre duas linhas roxas) e rodapé ("Documento N - Título" e "Atualizado em: m�
 Cores: Lobinho amarelo, Escoteiro verde, Sênior rosa, Pioneiro `#FF8B8B`, Dirigente azul, Honorífico e Comissão
 fiscal laranja; o escotista leva a cor do ramo da sua seção. Disponíveis: **Doc 10 – Lista simples de efetivo**, **Doc 13 – Controle de idade dos jovens** (por seção, inclusive
 as vazias, do mais novo ao mais velho: nascimento, idade em anos e meses e período de transição, em negrito quando já
-vigente) e **Doc 14 – Datas de promessa** (por mês da promessa, por dia,
+vigente) e **Doc 14a – Datas de promessa** (por mês da promessa, por dia,
 ano e nome, data curta "17/1/26" e cor do ramo ou função; na página seguinte, "Sem promessa": ativos sem data
 registrada, para conferir).
 

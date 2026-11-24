@@ -85,7 +85,7 @@ test("visão do grupo e relatório", async ({ page }) => {
   await page.goto("/associados/vida-escoteira");
   await expect(page.getByRole("navigation").getByRole("link", { name: "Vida escoteira" }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: person })).toBeVisible();
-  const pdf = await page.request.get("/associados/relatorios/vida-escoteira");
+  const pdf = await page.request.get("/associados/relatorios/doc-14b");
   expect(pdf.status()).toBe(200);
   expect((await pdf.body()).subarray(0, 4).toString()).toBe("%PDF");
 });

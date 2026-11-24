@@ -8,21 +8,21 @@ import type { ScoutBranch } from "./model";
 export type ReportInfo = {
   /** Na URL: /associados/relatorios/<slug>. */
   slug: string;
-  /** Número do documento do grupo (Doc 10, 13…); sem número = documento interno. */
-  number: number | null;
+  /** Número do documento do grupo ("10", "13", "14a"…); sem número = documento interno. */
+  number: string | null;
   title: string;
   description: string;
 };
 
 /** Relatórios disponíveis. */
 export const REPORTS: ReportInfo[] = [
-  { slug: "doc-10", number: 10, title: "Lista simples de efetivo",
+  { slug: "doc-10", number: "10", title: "Lista simples de efetivo",
     description: "Adultos e jovens por seção (registro definitivo e provisório), diretoria, outros, totais e os responsáveis de cada jovem." },
-  { slug: "doc-13", number: 13, title: "Controle de idade dos jovens",
+  { slug: "doc-13", number: "13", title: "Controle de idade dos jovens",
     description: "Jovens por seção com nascimento, idade e período de transição de ramo (em negrito quando já vigente)." },
-  { slug: "doc-14", number: 14, title: "Datas de promessa",
+  { slug: "doc-14a", number: "14a", title: "Datas de promessa",
     description: "Promessas por mês, com a data e a cor do ramo ou função; e quem não tem data de promessa registrada." },
-  { slug: "vida-escoteira", number: null, title: "Vida escoteira",
+  { slug: "doc-14b", number: "14b", title: "Vida escoteira",
     description: "Jovens e adultos escotistas ou dirigentes: promessa, estrelas de atividade por ramo, total e quem possui lacunas." },
 ];
 

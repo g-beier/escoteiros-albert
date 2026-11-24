@@ -3,9 +3,11 @@ import { BRANCH_COLORS, colorLegend, NO_COLOR, personColor, reportBySlug, report
 
 describe("relatórios", () => {
   it("rodapé e nome do arquivo", () => {
-    expect(reportFooterName({ number: 10, title: "Lista simples de efetivo" })).toBe("Documento 10 - Lista simples de efetivo");
+    expect(reportFooterName({ number: "10", title: "Lista simples de efetivo" })).toBe("Documento 10 - Lista simples de efetivo");
     expect(reportFooterName({ number: null, title: "Modelo de layout" })).toBe("Modelo de layout");
-    expect(reportFilename({ number: 10, title: "Lista simples de efetivo" }, "2026-11-20")).toBe("doc-10-lista-simples-de-efetivo-2026-11-20.pdf");
+    expect(reportFilename({ number: "10", title: "Lista simples de efetivo" }, "2026-11-20")).toBe("doc-10-lista-simples-de-efetivo-2026-11-20.pdf");
+    expect(reportFooterName({ number: "14b", title: "Vida escoteira" })).toBe("Documento 14b - Vida escoteira");
+    expect(reportFilename({ number: "14a", title: "Datas de promessa" }, "2026-11-20")).toBe("doc-14a-datas-de-promessa-2026-11-20.pdf");
     expect(reportFilename({ number: null, title: "Controle de idade às vésperas" }, "2026-11-20")).toBe("controle-de-idade-as-vesperas-2026-11-20.pdf");
     expect(reportBySlug("doc-10")?.title).toBe("Lista simples de efetivo");
     expect(reportBySlug("x")).toBeNull();

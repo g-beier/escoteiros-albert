@@ -78,7 +78,7 @@ export default async function GroupLifePage({ searchParams }: { searchParams: Pr
     <PageBody>
       <PageHeader title="Vida escoteira" crumbs={[{ label: "Associados", href: "/associados" }, { label: "Vida escoteira" }]}
         description="Tempo de atividade desde a promessa: jovens e adultos escotistas ou dirigentes. Clique no nome para a linha do tempo."
-        actions={<a href="/associados/relatorios/vida-escoteira" target="_blank" rel="noopener" className={buttonVariants({ variant: "outline", size: "lg" })}>
+        actions={<a href="/associados/relatorios/doc-14b" target="_blank" rel="noopener" className={buttonVariants({ variant: "outline", size: "lg" })}>
           <IconFileTypePdf data-icon="inline-start" /> Relatório (PDF)
         </a>}>
         <SectionTabs label="Filtro" tabs={VIEWS.map((v) => ({ href: hrefFor(v.value), label: v.value === "entregar" && toDeliver ? `${v.label} (${toDeliver})` : v.label, active: v.value === view }))} />

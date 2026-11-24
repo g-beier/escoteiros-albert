@@ -22,9 +22,9 @@ const BUILDERS: Record<string, Builder> = {
     <Doc10Report doc={await reports.doc10(db, groupId, issuedOn)} title={report.title} footerName={reportFooterName(report)} issuedOn={issuedOn} /> as ReactElement<DocumentProps>,
   "doc-13": async ({ db, groupId, report, issuedOn }) =>
     <Doc13Report doc={await reports.doc13(db, groupId, issuedOn)} title={report.title} footerName={reportFooterName(report)} issuedOn={issuedOn} /> as ReactElement<DocumentProps>,
-  "doc-14": async ({ db, groupId, report, issuedOn }) =>
+  "doc-14a": async ({ db, groupId, report, issuedOn }) =>
     <Doc14Report doc={await reports.doc14(db, groupId, issuedOn)} title={report.title} footerName={reportFooterName(report)} issuedOn={issuedOn} /> as ReactElement<DocumentProps>,
-  "vida-escoteira": async ({ db, groupId, report, issuedOn }) =>
+  "doc-14b": async ({ db, groupId, report, issuedOn }) =>
     <LifeReportDocument doc={await reports.lifeReport(db, groupId, issuedOn)} title={report.title} footerName={reportFooterName(report)} issuedOn={issuedOn} /> as ReactElement<DocumentProps>,
 };
 
