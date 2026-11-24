@@ -22,6 +22,8 @@ export const REPORTS: ReportInfo[] = [
     description: "Jovens por seção com nascimento, idade e período de transição de ramo (em negrito quando já vigente)." },
   { slug: "doc-14", number: 14, title: "Datas de promessa",
     description: "Promessas por mês, com a data e a cor do ramo ou função; e quem não tem data de promessa registrada." },
+  { slug: "vida-escoteira", number: null, title: "Vida escoteira",
+    description: "Jovens e adultos escotistas ou dirigentes: promessa, estrelas de atividade por ramo, total e quem possui lacunas." },
 ];
 
 export const reportBySlug = (slug: string) => REPORTS.find((report) => report.slug === slug) ?? null;

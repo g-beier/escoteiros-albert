@@ -1,6 +1,6 @@
 import { Link } from "@geas/ui/components/link";
 import type { ReactNode } from "react";
-import { IconArrowRight, IconBolt, IconCake, IconCircleCheck, IconPlus, IconStar } from "@tabler/icons-react";
+import { IconArrowRight, IconAward, IconBolt, IconCake, IconCircleCheck, IconPlus, IconStar } from "@tabler/icons-react";
 import { PageBody, PageHeader } from "@geas/ui";
 import { buttonVariants } from "@geas/ui/components/button";
 import { Badge } from "@geas/ui/components/badge";
@@ -15,6 +15,7 @@ import { dateBR, formatCents } from "@/lib/format";
 import { EXPIRY_WARNING_DAYS } from "@/lib/inventory/vocabulary";
 import { DATES_AFTER_DAYS, DATES_BEFORE_DAYS, relativeDay, VALIDITY_WARNING_DAYS } from "@/lib/associates/alerts";
 import { ageYearsMonthsLabel } from "@/lib/associates/model";
+import { lifeBranchShort, STAR_NOTICE_DAYS } from "@/lib/associates/scout-life";
 import { overview as associatesOverview, sectionOverview } from "@/lib/server/associates/home";
 import { REVIEW_HREF } from "@/lib/quick";
 import { countToReview as associatesToReview } from "@/lib/server/associates/associates";
@@ -63,6 +64,7 @@ export default async function Home() {
   const lateTransitions = associates.transitions.filter((t) => t.level === "critico").length;
   const expired = associates.expiries.filter((e) => e.days < 0).length;
   const expiring = associates.expiries.length - expired;
+  const starsLate = associates.stars.filter((s) => s.star.dueOn <= today).length;
   const canQuick = member.finance.canWrite || member.inventory.canWrite || member.associates.canWrite;
   const alerts: Alert[] = ([
     { module: "financeiro", count: entriesReview, label: plural(entriesReview, "lançamento para revisar", "lançamentos para revisar"),
@@ -85,6 +87,8 @@ export default async function Home() {
       href: "/associados/controle?pendencias=1" },
     { module: "associados", count: associates.pending.adulto, label: plural(associates.pending.adulto, "pendência no controle dos adultos", "pendências no controle dos adultos"),
       href: "/associados/controle?publico=adultos&pendencias=1" },
+    { module: "associados", count: starsLate, label: plural(starsLate, "estrela de atividade a entregar", "estrelas de atividade a entregar"),
+      href: "/associados/vida-escoteira?ver=entregar" },
     { module: "associados", count: expired, label: plural(expired, "registro vencido", "registros vencidos"), href: "/#expiries-title" },
     { module: "associados", count: expiring, label: plural(expiring, `registro vencendo em ${VALIDITY_WARNING_DAYS} dias`, `registros vencendo em ${VALIDITY_WARNING_DAYS} dias`),
       href: "/#expiries-title" },
@@ -124,6 +128,22 @@ export default async function Home() {
             </Link>
           </li>)}
         </ul>}
+      </ListCard>}
+
+      {associatesFull && associates.stars.length > 0 && <ListCard title="Estrelas de atividade a entregar" titleId="stars-title" href="/associados/vida-escoteira?ver=entregar" linkLabel="Vida escoteira"
+        empty={`Nenhuma estrela a entregar nem completando nos próximos ${STAR_NOTICE_DAYS} dias.`}>
+        <ul className={cn("m-0 grid list-none p-0", associates.stars.length > 1 && "md:grid-cols-2")}>
+          {associates.stars.map((s) => <li key={s.associateId} className={cn("border-t first:border-t-0", associates.stars.length > 1 && "md:[&:nth-child(2)]:border-t-0 md:odd:border-r")}>
+            <Link href={`/associados/${s.associateId}/vida-escoteira`} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted">
+              <IconAward className="size-4 shrink-0 text-primary" aria-hidden />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{s.name}</span>
+                <span className="block truncate text-xs text-muted-foreground">{s.star.n}ª estrela{s.star.branch && ` · ${lifeBranchShort(s.star.branch)}`}</span>
+              </span>
+              <Badge variant={s.star.dueOn <= today ? "caution" : "info"} className="shrink-0">{s.star.dueOn <= today ? `desde ${dateBR(s.star.dueOn)}` : `em ${dateBR(s.star.dueOn)}`}</Badge>
+            </Link>
+          </li>)}
+        </ul>
       </ListCard>}
 
       <div className="grid gap-5 lg:grid-cols-2">

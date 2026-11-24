@@ -76,6 +76,26 @@ vínculos familiares. Consequência: o app não emite recibo nem cobrança com d
 - Importação do Paxtu; dados pessoais; recibos e cobrança com dados do responsável; progressão e especialidades;
   eventos e inscrições (candidato ao módulo Ações).
 
+## Vida escoteira (004)
+
+Tempo de atividade e estrelas de atividade de cada pessoa (substitui a planilha de linha do tempo).
+
+| Termo | Significado | No banco |
+|---|---|---|
+| **Período** | Tempo em atividade num ramo (jovem) ou como escotista ou dirigente (`adulto`; honoríficos e outras funções não contam), com início, fim (vazio = vigente) e, se foi em outro grupo, o nome dele. Intervalo [início, fim): na passagem um termina e o outro começa no mesmo dia. Lacuna = tempo sem período. Sem sobreposição. Origem: à mão, automático, sugestão do cadastro ou planilha. | `associate_life_periods`; `life_period_save`, `life_period_delete`, `life_periods_add`, `life_period_switch` |
+| **Acompanhamento automático** | Só o período vigente segue o cadastro: passagem fecha e abre no ramo novo (Pioneiro → Adulto só com função de escotista ou dirigente), desligamento fecha, entrada e reingresso abrem, função de escotista ou dirigente abre o de adulto e o fim da última o fecha. Evento com data anterior a outro período não muda nada: o passado é lançado à mão. O que ficou diferente aparece no perfil para ajustar (`lifeMismatch`). | triggers `life_follow_*`, `life_expected_branch` |
+| **Sugestão do cadastro** | Períodos montados com entradas, saídas, passagens e funções, para a parte ainda sem registro (antes do primeiro período). | `suggestPeriods`, `missingSuggestions` |
+| **Contagem** | Começa na promessa (antes dela não conta; sem promessa, nada conta) e para nas lacunas. | `lib/associates/scout-life.ts` |
+| **Estrela de atividade** | A estrela N cai na promessa + N anos, empurrada pela soma das lacunas. Ramo: o de mais dias nesses 12 meses de atividade, sem janeiro e fevereiro (férias); corrigível. | `starDates`, `starBranch`; correção em `associate_stars.branch` (`life_star_set_branch`) |
+| **Entrega** | "Certificado entregue" numa estrela quita as anteriores. Aviso 15 dias antes, que fica até a entrega: perfil, linha do tempo, visão do grupo e Início. | `associate_stars.delivered_on` (`life_star_deliver`) |
+| **Evento do histórico** | Fato com data e descrição, mostrado na linha do tempo junto com promessa, entradas, passagens, períodos e estrelas. | `associate_life_events` (`life_event_save`, `life_event_delete`) |
+| **Anotações de histórico** | Texto livre, sem data, para recuperar informações perdidas. | `associates.life_notes` (`life_notes_set`) |
+
+Telas: barra no perfil (cores, anos, estrelas e o controle); `/associados/[id]/vida-escoteira` (resumo, avisos, linha do
+tempo vertical por ano, períodos, estrelas, anotações); `/associados/vida-escoteira` (uma faixa por pessoa num eixo de
+anos comum, filtros a entregar, com lacunas, sem período); relatório PDF "Vida escoteira" (promessa, estrelas por ramo,
+total, "Possui lacunas - ver detalhes"). Quem edita: Editor do Associados (Diretoria de Métodos Educativos).
+
 ## Relatórios em PDF
 
 Os documentos do grupo (Doc 10, 13, 14, 22…) saem em PDF pelo botão **Relatórios** da lista de associados

@@ -4,6 +4,7 @@ import type { DocumentProps } from "@react-pdf/renderer";
 import { Doc10Report } from "@/components/associates/reports/doc10-report";
 import { Doc13Report } from "@/components/associates/reports/doc13-report";
 import { Doc14Report } from "@/components/associates/reports/doc14-report";
+import { LifeReportDocument } from "@/components/associates/reports/life-report";
 import { reportBySlug, reportFilename, reportFooterName, type ReportInfo } from "@/lib/associates/reports";
 import { todayISO } from "@/lib/associates/model";
 import { errorResponse } from "@/lib/finance/export/route-helpers";
@@ -23,6 +24,8 @@ const BUILDERS: Record<string, Builder> = {
     <Doc13Report doc={await reports.doc13(db, groupId, issuedOn)} title={report.title} footerName={reportFooterName(report)} issuedOn={issuedOn} /> as ReactElement<DocumentProps>,
   "doc-14": async ({ db, groupId, report, issuedOn }) =>
     <Doc14Report doc={await reports.doc14(db, groupId, issuedOn)} title={report.title} footerName={reportFooterName(report)} issuedOn={issuedOn} /> as ReactElement<DocumentProps>,
+  "vida-escoteira": async ({ db, groupId, report, issuedOn }) =>
+    <LifeReportDocument doc={await reports.lifeReport(db, groupId, issuedOn)} title={report.title} footerName={reportFooterName(report)} issuedOn={issuedOn} /> as ReactElement<DocumentProps>,
 };
 
 /**
