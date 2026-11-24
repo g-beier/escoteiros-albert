@@ -31,8 +31,8 @@ const VIEWS = [
 /**
  * Vida escoteira do grupo (substitui a planilha de linha do tempo): uma faixa por pessoa num eixo de anos comum, com
  * as cores dos ramos, as estrelas e o controle (anos, estrelas por ramo, a entregar). Só quem conta: jovens e adultos
- * com função de escotista ou dirigente, mais quem já tem período registrado. No celular (abaixo de `md`), só o nome e a
- * contagem: a faixa não cabe.
+ * com função de escotista ou dirigente, mais quem já tem período registrado. Abaixo de `lg`, só o nome e a contagem: a faixa
+ * não cabe. O eixo dos anos fica fixo no topo ao rolar.
  */
 export default async function GroupLifePage({ searchParams }: { searchParams: Promise<Search> }) {
   const params = await searchParams;
@@ -85,21 +85,22 @@ export default async function GroupLifePage({ searchParams }: { searchParams: Pr
         <AssociateFilters />
       </PageHeader>
 
-      <SectionCard aria-labelledby="group-life-title">
+      <SectionCard aria-labelledby="group-life-title" className="overflow-visible">
         <SectionHeader title="Linhas do tempo" titleId="group-life-title" description="Uma faixa por pessoa; as marcas são as estrelas.">
           <SectionCount>{people.length} {people.length === 1 ? "pessoa" : "pessoas"}</SectionCount>
         </SectionHeader>
-        <div className="hidden border-b px-4 py-2 md:block"><LifeLegend branches={["lobinho", "escoteiro", "senior", "pioneiro", "adulto"]} /></div>
+        <div className="hidden border-b px-4 py-2 lg:block"><LifeLegend branches={["lobinho", "escoteiro", "senior", "pioneiro", "adulto"]} /></div>
         {people.length === 0
           ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">Ninguém neste filtro.</p>
-          : <div className="md:overflow-x-auto"><div className="md:min-w-[760px]">
-            <div className="grid grid-cols-[1fr_auto] items-end gap-3 md:grid-cols-[15rem_1fr_10.5rem] border-b bg-muted px-4 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase">
+          : <div>
+            {/* Eixo dos anos fixo no topo ao rolar a lista (o cartão fica sem overflow-hidden para o sticky funcionar). */}
+            <div className="sticky top-0 z-10 grid grid-cols-[1fr_auto] items-end gap-3 border-b bg-muted px-4 py-1.5 lg:grid-cols-[15rem_1fr_10.5rem] text-[11px] font-semibold text-muted-foreground uppercase">
               <span>Nome</span>
-              <span className="relative hidden h-4 md:block" aria-hidden>{ticks.map((y) => <span key={y} className="num absolute -translate-x-1/2" style={{ left: `${pct(y)}%` }}>{y}</span>)}</span>
+              <span className="relative hidden h-4 lg:block" aria-hidden>{ticks.map((y) => <span key={y} className="num absolute -translate-x-1/2" style={{ left: `${pct(y)}%` }}>{y}</span>)}</span>
               <span className="text-right">Estrelas</span>
             </div>
             <ul className="m-0 list-none p-0">{people.map(({ associate, periods, summary }) => <li key={associate.id}
-              className="grid grid-cols-[1fr_auto] items-center gap-3 md:grid-cols-[15rem_1fr_10.5rem] border-b px-4 py-1 last:border-b-0">
+              className="grid grid-cols-[1fr_auto] items-center gap-3 border-b px-4 py-1 last:border-b-0 lg:grid-cols-[15rem_1fr_10.5rem]">
               <div className="min-w-0">
                 <Link href={`/associados/${associate.id}/vida-escoteira`} className={cn("block truncate text-sm leading-tight font-medium hover:underline", !associate.active && "text-muted-foreground")}>{associate.name}</Link>
                 <span className="block truncate text-[11px] leading-tight text-muted-foreground">
@@ -107,7 +108,7 @@ export default async function GroupLifePage({ searchParams }: { searchParams: Pr
                   {summary.hasGaps && " · lacunas"}
                 </span>
               </div>
-              <div className="relative hidden md:block">
+              <div className="relative hidden lg:block">
                 <span className="pointer-events-none absolute inset-0" aria-hidden>
                   {ticks.map((y) => <span key={y} className="absolute inset-y-0 w-px bg-border" style={{ left: `${pct(y)}%` }} />)}
                 </span>
@@ -117,7 +118,7 @@ export default async function GroupLifePage({ searchParams }: { searchParams: Pr
               </div>
               <StarsCell summary={summary} />
             </li>)}</ul>
-          </div></div>}
+          </div>}
       </SectionCard>
     </PageBody>
   </div>;

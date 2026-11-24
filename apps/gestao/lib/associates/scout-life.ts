@@ -28,8 +28,6 @@ export type LifeEvent = { id: string; event_date: string; title: string; descrip
 export const STAR_NOTICE_DAYS = 15;
 /** Funções de adulto que contam para o tempo de atividade. */
 export const COUNTING_FUNCTIONS = ["escotista", "dirigente"] as const;
-/** Meses de férias, fora da conta do ramo da estrela (janeiro e fevereiro). */
-const HOLIDAY_MONTHS = new Set([1, 2]);
 
 /** Rótulo do ramo do período: o adulto aparece como "Escotista ou dirigente". */
 export const lifeBranchLabel = (branch: ScoutBranch) => (branch === "adulto" ? "Escotista ou dirigente" : branchLabels[branch]);
@@ -104,12 +102,24 @@ function branchDays(segments: Segment[], from: string, to: string, skipHolidays:
   for (const s of segments) {
     const start = maxDate(s.start, from);
     const end = minDate(s.end ?? to, to);
-    for (let day = start; day < end; day = addDays(day, 1)) {
-      if (skipHolidays && HOLIDAY_MONTHS.has(Number(day.slice(5, 7)))) continue;
-      days.set(s.branch, (days.get(s.branch) ?? 0) + 1);
-    }
+    if (end <= start) continue;
+    let total = daysBetween(start, end);
+    if (skipHolidays) total -= holidayDays(start, end);
+    if (total > 0) days.set(s.branch, (days.get(s.branch) ?? 0) + total);
   }
   return days;
+}
+
+/** Dias de janeiro e fevereiro (férias) em [start, end), por aritmética de intervalos (sem percorrer dia a dia). */
+function holidayDays(start: string, end: string) {
+  let total = 0;
+  for (let year = Number(start.slice(0, 4)); year <= Number(end.slice(0, 4)); year += 1) {
+    const y = String(year).padStart(4, "0");
+    const a = maxDate(start, `${y}-01-01`);
+    const b = minDate(end, `${y}-03-01`);
+    if (b > a) total += daysBetween(a, b);
+  }
+  return total;
 }
 
 /** Ramo com mais dias na conta (empate: o mais recente na ordem dos trechos). */

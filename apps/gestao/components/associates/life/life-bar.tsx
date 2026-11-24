@@ -19,7 +19,9 @@ export function LifeBar({ periods, promiseDate, stars = [], from, to, today, siz
   const showToday = today !== undefined && today > from && today < to;
   const total = Math.max(1, daysBetween(from, to));
   const at = (day: string) => Math.min(100, Math.max(0, (daysBetween(from, day) / total) * 100));
-  const visibleStars = stars.filter((s) => s.dueOn >= from && s.dueOn <= to);
+  // Na barra pequena (visão do grupo, ~20 px por ano) as marcas não se leem e pesavam: 150 pessoas com 40 anos davam
+  // quase 5 mil marcas (~0,8 MB de HTML). A contagem fica na coluna ao lado; as marcas, só na barra média.
+  const visibleStars = size === "sm" ? [] : stars.filter((s) => s.dueOn >= from && s.dueOn <= to);
   return <div role="img" aria-label={label} className={cn("relative w-full", size === "sm" ? "h-3" : "h-5", visibleStars.length > 0 && size === "md" && "mb-4", showToday && size === "md" && "mt-3", className)}>
     <div className="absolute inset-0 rounded-sm bg-muted/60" />
     {segments.map((s, i) => <div key={i}

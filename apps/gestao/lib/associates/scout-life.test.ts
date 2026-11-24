@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AssociateMove, AssociateMovement } from "./model";
 import {
-  addYears, barSegments, countedSegments, lifeMismatch, lifeSummary, missingSuggestions, starDates, suggestPeriods, timeline,
+  addDays, addYears, barSegments, starBranch, countedSegments, lifeMismatch, lifeSummary, missingSuggestions, starDates, suggestPeriods, timeline,
   type LifePeriod,
 } from "./scout-life";
 
@@ -61,6 +61,20 @@ describe("lifeSummary", () => {
     // Ano 2025-03-01 → 2026-03-01: Lobinho até 2025-08-31 (6 meses), Escoteiro depois (6 meses, 2 deles de férias).
     const summary = lifeSummary({ periods: [period("lobinho", "2024-03-01", "2025-09-01"), period("escoteiro", "2025-09-01")], promiseDate: "2024-03-01", today: "2026-03-05" });
     expect(summary.stars[1]).toMatchObject({ n: 2, dueOn: "2026-03-01", computedBranch: "lobinho" });
+  });
+
+  it("conta de férias por intervalos bate com a contagem dia a dia", () => {
+    const segments = countedSegments([period("lobinho", "1998-11-20", "2001-02-10"), period("escoteiro", "2001-02-10", "2003-07-01"), period("senior", "2004-01-15")], "1998-11-20");
+    const naive = (from: string, to: string) => {
+      const days = new Map<string, number>();
+      for (const s of segments) for (let d = s.start > from ? s.start : from; d < (s.end && s.end < to ? s.end : to); d = addDays(d, 1)) {
+        if (![1, 2].includes(Number(d.slice(5, 7)))) days.set(s.branch, (days.get(s.branch) ?? 0) + 1);
+      }
+      return [...days].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    };
+    for (const [from, to] of [["1999-11-20", "2000-11-20"], ["2000-11-20", "2001-11-20"], ["2002-11-20", "2004-05-20"], ["2003-03-01", "2004-03-01"]]) {
+      expect(starBranch(segments, from, to)).toBe(naive(from, to));
+    }
   });
 
   it("aviso de entrega 15 dias antes e até a entrega; entregar quita as anteriores", () => {
