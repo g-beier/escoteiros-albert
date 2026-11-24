@@ -1,4 +1,4 @@
-import { readCsv, sniffCsvLayout } from "@/lib/finance/csv-reader";
+import { readCsv, sniffCsvLayout } from "@/lib/csv-reader";
 import { normalizeText } from "@/lib/finance/statement-import";
 import { FILHOTES_ENABLED } from "@/lib/features";
 import { SCOUT_BRANCHES, branchLabels, type PatrolItem, type ScoutBranch, type SectionItem } from "@/lib/associates/model";
