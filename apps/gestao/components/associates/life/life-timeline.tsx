@@ -1,12 +1,12 @@
-import { IconArrowsRightLeft, IconAward, IconDoorEnter, IconDoorExit, IconFlag, IconPlayerPlay, IconPlayerStop, IconPointFilled } from "@tabler/icons-react";
+import { IconArrowsRightLeft, IconAward, IconBan, IconDoorEnter, IconDoorExit, IconFlag, IconPlayerPlay, IconPlayerStop, IconPointFilled } from "@tabler/icons-react";
 import { cn } from "@geas/ui/lib/utils";
 import { dateBR } from "@/lib/format";
 import { lifeBranchColor, lifeBranchShort, type TimelineKind, type TimelineYear } from "@/lib/associates/scout-life";
-import { EditEventButton } from "./life-editors";
+import { EditEventButton, EditExclusionButton } from "./life-editors";
 
 const ICONS: Record<TimelineKind, typeof IconFlag> = {
   promessa: IconFlag, entrada: IconDoorEnter, saida: IconDoorExit, passagem: IconArrowsRightLeft,
-  inicio: IconPlayerPlay, fim: IconPlayerStop, estrela: IconAward, evento: IconPointFilled,
+  inicio: IconPlayerPlay, fim: IconPlayerStop, estrela: IconAward, evento: IconPointFilled, excluido: IconBan,
 };
 
 /**
@@ -42,6 +42,7 @@ export function LifeTimeline({ years, associateId, canEdit, today }: { years: Ti
                 {item.detail && <p className="m-0 text-xs whitespace-pre-line text-muted-foreground">{item.detail}</p>}
               </div>
               {canEdit && item.event && <EditEventButton associateId={associateId} event={item.event} today={today} />}
+              {canEdit && item.exclusion && <EditExclusionButton associateId={associateId} exclusion={item.exclusion} today={today} />}
             </li>;
           })}</ul>
         </div>

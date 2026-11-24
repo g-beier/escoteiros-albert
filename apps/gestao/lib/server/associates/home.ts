@@ -50,7 +50,7 @@ export async function overview(db: Db, groupId: string, today: string): Promise<
     expiries: registrationExpiries(statuses, associates, allItems.filter((item) => item.active), today),
     stars: associates
       .flatMap((a) => {
-        const pending = lifeSummary({ periods: life.periods.get(a.id) ?? [], promiseDate: a.promise_date, records: life.stars.get(a.id) ?? [], today }).pending;
+        const pending = lifeSummary({ periods: life.periods.get(a.id) ?? [], promiseDate: a.promise_date, records: life.stars.get(a.id) ?? [], exclusions: life.exclusions.get(a.id) ?? [], today }).pending;
         return pending ? [{ associateId: a.id, name: a.name, star: pending }] : [];
       })
       .sort((x, y) => x.star.dueOn.localeCompare(y.star.dueOn) || x.name.localeCompare(y.name, "pt-BR")),

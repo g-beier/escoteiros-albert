@@ -43,5 +43,5 @@ export async function doc13(db: Db, groupId: string, today: string): Promise<Doc
 /** Vida escoteira: promessa, estrelas por ramo e lacunas. */
 export async function lifeReport(db: Db, groupId: string, today: string): Promise<LifeReport> {
   const [people, fns, data] = await Promise.all([associates.list(db, groupId), functions.list(db, groupId), life.ofGroup(db, groupId)]);
-  return buildLifeReport({ associates: people, functions: fns, periods: data.periods, stars: data.stars, today });
+  return buildLifeReport({ associates: people, functions: fns, periods: data.periods, stars: data.stars, exclusions: data.exclusions, today });
 }

@@ -4,7 +4,7 @@
 
 import type { AssociateFunction } from "./controls";
 import { SCOUT_BRANCHES, type AssociateProfile, type ScoutBranch } from "./model";
-import { expectedBranch, lifeBranchColor, lifeSummary, type LifePeriod, type StarRecord } from "./scout-life";
+import { expectedBranch, lifeBranchColor, lifeSummary, type LifeExclusion, type LifePeriod, type StarRecord } from "./scout-life";
 
 export const GAPS_NOTE = "Possui lacunas - ver detalhes";
 
@@ -16,8 +16,8 @@ export type LifeReport = { branches: ScoutBranch[]; rows: LifeReportRow[] };
 
 const collator = new Intl.Collator("pt-BR", { sensitivity: "base", numeric: true });
 
-export function buildLifeReport({ associates, functions, periods, stars, today }: {
-  associates: AssociateProfile[]; functions: AssociateFunction[]; periods: Map<string, LifePeriod[]>; stars: Map<string, StarRecord[]>; today: string;
+export function buildLifeReport({ associates, functions, periods, stars, exclusions, today }: {
+  associates: AssociateProfile[]; functions: AssociateFunction[]; periods: Map<string, LifePeriod[]>; stars: Map<string, StarRecord[]>; exclusions?: Map<string, LifeExclusion[]>; today: string;
 }): LifeReport {
   const functionsOf = Map.groupBy(functions, (fn) => fn.associate_id);
   const rows = associates
@@ -26,7 +26,7 @@ export function buildLifeReport({ associates, functions, periods, stars, today }
       const list = periods.get(a.id) ?? [];
       const current = expectedBranch(a, functionsOf.get(a.id) ?? [], today);
       if (list.length === 0 && current === null) return [];
-      const summary = lifeSummary({ periods: list, promiseDate: a.promise_date, records: stars.get(a.id) ?? [], today });
+      const summary = lifeSummary({ periods: list, promiseDate: a.promise_date, records: stars.get(a.id) ?? [], exclusions: exclusions?.get(a.id) ?? [], today });
       const note = !a.promise_date ? "Sem data de promessa" : list.length === 0 ? "Sem período registrado" : summary.hasGaps ? GAPS_NOTE : "";
       return [{
         id: a.id, name: a.name, color: current ? lifeBranchColor(current) : "#FFFFFF", promiseDate: a.promise_date,

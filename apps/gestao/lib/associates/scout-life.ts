@@ -24,6 +24,15 @@ export type StarRecord = { star: number; branch: ScoutBranch | null; delivered_o
 /** Evento do histórico lançado à mão (`associate_life_events`). */
 export type LifeEvent = { id: string; event_date: string; title: string; description: string | null };
 
+/** Motivos de tempo no grupo que não conta (POR, Regra 173, II b e c). */
+export const EXCLUSION_REASONS = ["frequencia", "licenca", "suspensao", "outro"] as const;
+export type ExclusionReason = (typeof EXCLUSION_REASONS)[number];
+export const exclusionReasonLabels: Record<ExclusionReason, string> = {
+  frequencia: "Frequência de até 70%", licenca: "Licença acima de 60 dias", suspensao: "Suspensão disciplinar", outro: "Outro motivo",
+};
+/** Período não contabilizado (`associate_life_exclusions`, 005): [início, fim), descontado da contagem. */
+export type LifeExclusion = { id: string; started_on: string; ended_on: string; reason: ExclusionReason; note: string | null };
+
 /** Dias antes da estrela em que o aviso de entrega começa (e fica até a entrega). */
 export const STAR_NOTICE_DAYS = 15;
 /** Funções de adulto que contam para o tempo de atividade. */
@@ -58,13 +67,39 @@ const minDate = (a: string, b: string) => (a < b ? a : b);
 /** Trecho que conta: [start, end), `end` nulo = vigente. */
 type Segment = { branch: ScoutBranch; start: string; end: string | null };
 
-/** Períodos em ordem, cortados na promessa (o que vem antes não conta). */
-export function countedSegments(periods: Pick<LifePeriod, "branch" | "started_on" | "ended_on">[], promiseDate: string | null): Segment[] {
+/**
+ * Períodos em ordem, cortados na promessa (o que vem antes não conta) e sem os trechos não contabilizados
+ * (`exclusions`), que viram lacunas.
+ */
+export function countedSegments(periods: Pick<LifePeriod, "branch" | "started_on" | "ended_on">[], promiseDate: string | null,
+  exclusions: Pick<LifeExclusion, "started_on" | "ended_on">[] = []): Segment[] {
   if (!promiseDate) return [];
-  return [...periods]
+  const segments = [...periods]
     .sort((a, b) => a.started_on.localeCompare(b.started_on))
     .filter((p) => p.ended_on === null || p.ended_on > promiseDate)
     .map((p) => ({ branch: p.branch, start: maxDate(p.started_on, promiseDate), end: p.ended_on }));
+  return subtractExclusions(segments, exclusions);
+}
+
+/** Tira de cada trecho os intervalos [início, fim) não contabilizados, partindo o trecho quando o corte cai no meio. */
+export function subtractExclusions(segments: Segment[], exclusions: Pick<LifeExclusion, "started_on" | "ended_on">[]): Segment[] {
+  const cuts = [...exclusions].sort((a, b) => a.started_on.localeCompare(b.started_on));
+  const result: Segment[] = [];
+  for (const segment of segments) {
+    let pieces: Segment[] = [segment];
+    for (const x of cuts) {
+      pieces = pieces.flatMap((piece) => {
+        const overlaps = x.started_on < (piece.end ?? "9999-12-31") && x.ended_on > piece.start;
+        if (!overlaps) return [piece];
+        return [
+          ...(x.started_on > piece.start ? [{ ...piece, end: x.started_on }] : []),
+          ...(piece.end === null || x.ended_on < piece.end ? [{ ...piece, start: x.ended_on }] : []),
+        ];
+      });
+    }
+    result.push(...pieces);
+  }
+  return result;
 }
 
 /** Dias que contam até `today` (exclusive). */
@@ -175,10 +210,12 @@ export type LifeSummary = {
 };
 
 /** Resumo da vida escoteira de uma pessoa em `today`. */
-export function lifeSummary({ periods, promiseDate, records = [], today }: {
-  periods: Pick<LifePeriod, "branch" | "started_on" | "ended_on">[]; promiseDate: string | null; records?: StarRecord[]; today: string;
+export function lifeSummary({ periods, promiseDate, records = [], exclusions = [], today }: {
+  periods: Pick<LifePeriod, "branch" | "started_on" | "ended_on">[]; promiseDate: string | null; records?: StarRecord[];
+  /** Períodos não contabilizados (005): descontados como lacunas. */
+  exclusions?: Pick<LifeExclusion, "started_on" | "ended_on">[]; today: string;
 }): LifeSummary {
-  const segments = countedSegments(periods, promiseDate);
+  const segments = countedSegments(periods, promiseDate, exclusions);
   const noticeUntil = addDays(today, STAR_NOTICE_DAYS);
   const byNumber = new Map(records.map((r) => [r.star, r]));
   const lastDelivered = Math.max(0, ...records.filter((r) => r.delivered_on).map((r) => r.star));
@@ -319,26 +356,28 @@ export function missingSuggestions(suggested: SuggestedPeriod[], existing: Pick<
 
 // Linha do tempo ------------------------------------------------------------------------------------------------------
 
-export type TimelineKind = "promessa" | "entrada" | "saida" | "passagem" | "inicio" | "fim" | "estrela" | "evento";
+export type TimelineKind = "promessa" | "entrada" | "saida" | "passagem" | "inicio" | "fim" | "estrela" | "evento" | "excluido";
 export type TimelineItem = {
   key: string; date: string; kind: TimelineKind; title: string; detail?: string;
   /** Cor do marcador (ramo); nulo = neutro. */
   branch: ScoutBranch | null;
   /** Evento lançado à mão (editável). */
   event?: LifeEvent;
+  /** Período não contabilizado (editável). */
+  exclusion?: LifeExclusion;
 };
 export type TimelineYear = { year: number; branch: ScoutBranch | null; items: TimelineItem[] };
 
-const KIND_ORDER: TimelineKind[] = ["saida", "fim", "passagem", "entrada", "inicio", "promessa", "estrela", "evento"];
+const KIND_ORDER: TimelineKind[] = ["saida", "fim", "passagem", "entrada", "inicio", "promessa", "excluido", "estrela", "evento"];
 
 /**
  * Linha do tempo vertical, um bloco por ano (do mais antigo ao mais recente): promessa, entradas e saídas, passagens,
  * início e fim de períodos (quando não coincidem com entrada, saída ou passagem), estrelas vencidas e os eventos
  * lançados à mão. A cor do ano é o ramo com mais dias nele.
  */
-export function timeline({ periods, promiseDate, moves, movements, stars, events, today }: {
+export function timeline({ periods, promiseDate, moves, movements, stars, events, exclusions = [], today }: {
   periods: LifePeriod[]; promiseDate: string | null; moves: AssociateMove[]; movements: AssociateMovement[];
-  stars: Star[]; events: LifeEvent[]; today: string;
+  stars: Star[]; events: LifeEvent[]; exclusions?: LifeExclusion[]; today: string;
 }): TimelineYear[] {
   const items: TimelineItem[] = [];
   const sameDay = (date: string, kinds: ("entrada" | "saida")[]) => movements.some((m) => m.movement_date === date && kinds.includes(m.kind));
@@ -367,6 +406,11 @@ export function timeline({ periods, promiseDate, moves, movements, stars, events
       detail: star.status === "entregue" ? (star.deliveredOn ? `Certificado entregue em ${star.deliveredOn.split("-").reverse().join("/")}` : "Entregue") : "A entregar",
       branch: star.branch });
   }
+  for (const x of exclusions) {
+    const range = `${x.started_on.split("-").reverse().join("/")} a ${x.ended_on.split("-").reverse().join("/")}`;
+    items.push({ key: `exc-${x.id}`, date: x.started_on, kind: "excluido", title: `Não contabilizado: ${exclusionReasonLabels[x.reason].toLowerCase()}`,
+      detail: [range, x.note].filter(Boolean).join(" · "), branch: branchOn(x.started_on), exclusion: x });
+  }
   for (const event of events) {
     items.push({ key: `ev-${event.id}`, date: event.event_date, kind: "evento", title: event.title, detail: event.description ?? undefined,
       branch: branchOn(event.event_date), event });
@@ -386,13 +430,21 @@ export function timeline({ periods, promiseDate, moves, movements, stars, events
 
 // Barra (perfil e visão do grupo) ------------------------------------------------------------------------------------
 
-export type BarSegment = { branch: ScoutBranch; from: number; to: number; beforePromise: boolean; future: boolean; place: string | null };
+export type BarSegment = {
+  branch: ScoutBranch; from: number; to: number; beforePromise: boolean; future: boolean; place: string | null;
+  /** Dentro de um período não contabilizado (listrado). */
+  excluded: ExclusionReason | null;
+};
 
 /**
  * Trechos de uma barra entre `from` e `to` em frações (0–1): cada período, cortado no intervalo e nos pontos de
- * virada: a promessa (antes dela não conta, mostrado mais claro) e hoje (`today`; depois dele é só projeção do vigente).
+ * virada: a promessa (antes dela não conta, mostrado mais claro), os períodos não contabilizados (listrados) e hoje
+ * (`today`; depois dele é só projeção do vigente).
  */
-export function barSegments(periods: LifePeriod[], promiseDate: string | null, from: string, to: string, today?: string): BarSegment[] {
+export function barSegments(periods: LifePeriod[], promiseDate: string | null, from: string, to: string, today?: string,
+  exclusions: LifeExclusion[] = []): BarSegment[] {
+  const points = [promiseDate, today, ...exclusions.flatMap((x) => [x.started_on, x.ended_on])];
+  const excludedAt = (day: string) => exclusions.find((x) => x.started_on <= day && x.ended_on > day)?.reason ?? null;
   const total = Math.max(1, daysBetween(from, to));
   const frac = (day: string) => Math.min(1, Math.max(0, daysBetween(from, day) / total));
   const result: BarSegment[] = [];
@@ -400,12 +452,12 @@ export function barSegments(periods: LifePeriod[], promiseDate: string | null, f
     const start = maxDate(p.started_on, from);
     const end = minDate(p.ended_on ?? to, to);
     if (end <= start) continue;
-    const cuts = [start, ...[promiseDate, today].filter((d): d is string => Boolean(d) && (d as string) > start && (d as string) < end).sort(), end];
+    const cuts = [start, ...[...new Set(points)].filter((d): d is string => Boolean(d) && (d as string) > start && (d as string) < end).sort(), end];
     for (let i = 0; i < cuts.length - 1; i += 1) {
       const [a, b] = [cuts[i], cuts[i + 1]];
       if (b <= a) continue;
       result.push({ branch: p.branch, from: frac(a), to: frac(b), beforePromise: !promiseDate || b <= promiseDate,
-        future: Boolean(today) && a >= (today as string), place: p.place });
+        future: Boolean(today) && a >= (today as string), place: p.place, excluded: excludedAt(a) });
     }
   }
   return result;

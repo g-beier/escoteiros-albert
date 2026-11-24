@@ -107,6 +107,30 @@ describe("lifeSummary", () => {
   });
 });
 
+describe("períodos não contabilizados (Regra 173)", () => {
+  const x = (started_on: string, ended_on: string) => ({ id: started_on, started_on, ended_on, reason: "licenca" as const, note: null });
+  it("viram lacuna: partem o trecho e empurram as estrelas", () => {
+    const periods = [period("escoteiro", "2020-03-01")];
+    const free = lifeSummary({ periods, promiseDate: "2020-03-01", today: "2026-11-24" });
+    const paused = lifeSummary({ periods, promiseDate: "2020-03-01", today: "2026-11-24", exclusions: [x("2022-05-01", "2022-09-01")] });
+    expect(free.stars.map((s) => s.dueOn).slice(0, 3)).toEqual(["2021-03-01", "2022-03-01", "2023-03-01"]);
+    expect(paused.stars.map((s) => s.dueOn).slice(0, 3)).toEqual(["2021-03-01", "2022-03-01", "2023-07-02"]); // 123 dias depois
+    expect(paused.hasGaps).toBe(true);
+    expect(countedSegments(periods, "2020-03-01", [x("2022-05-01", "2022-09-01")])).toEqual([
+      { branch: "escoteiro", start: "2020-03-01", end: "2022-05-01" }, { branch: "escoteiro", start: "2022-09-01", end: null },
+    ]);
+  });
+  it("cobrindo o trecho inteiro, ou fora dele", () => {
+    const periods = [period("lobinho", "2018-01-01", "2019-01-01"), period("escoteiro", "2019-01-01", "2020-01-01")];
+    expect(countedSegments(periods, "2018-01-01", [x("2017-06-01", "2019-01-01")])).toEqual([{ branch: "escoteiro", start: "2019-01-01", end: "2020-01-01" }]);
+    expect(countedSegments(periods, "2018-01-01", [x("2021-01-01", "2022-01-01")])).toHaveLength(2);
+  });
+  it("na barra, o trecho fica marcado", () => {
+    const bar = barSegments([period("escoteiro", "2020-01-01", "2024-01-01")], "2020-01-01", "2020-01-01", "2024-01-01", undefined, [x("2021-01-01", "2022-01-01")]);
+    expect(bar.map((b) => b.excluded)).toEqual([null, "licenca", null]);
+  });
+});
+
 describe("lifeMismatch", () => {
   const today = "2026-11-24";
   it("cadastro e vigente iguais", () => {

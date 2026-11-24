@@ -63,7 +63,7 @@ export default async function AssociateDetail({ params }: { params: Promise<{ id
   const transition = transitionOf(associate, today);
   const span = youth ? transitionWindow(associate) : null;
   const scouterOf = youth ? [] : scouterSections(functions, today).get(id) ?? [];
-  const lifeNow = lifeSummary({ periods: life.periods, promiseDate: associate.promise_date, records: life.stars, today });
+  const lifeNow = lifeSummary({ periods: life.periods, promiseDate: associate.promise_date, records: life.stars, exclusions: life.exclusions, today });
   const mismatch = lifeMismatch({ associate, periods: life.periods, functions, moves, movements, today });
 
   return <div className="shell">
@@ -96,7 +96,7 @@ export default async function AssociateDetail({ params }: { params: Promise<{ id
       {associate.review_status === "para_revisar" && <ReviewNotice associateId={id} canEdit={member.associates.canReview} />}
       {transition && <TransitionNotice associateId={id} transition={transition} branch={associate.branch} canEdit={canEdit} today={today} />}
 
-      <LifeCard associateId={id} periods={life.periods} summary={lifeNow} mismatch={mismatch} canEdit={member.associates.canReview} today={today} />
+      <LifeCard associateId={id} periods={life.periods} exclusions={life.exclusions} summary={lifeNow} mismatch={mismatch} canEdit={member.associates.canReview} today={today} />
 
       {!youth && <AssociateFunctions associateId={id} associateName={associate.name} functions={functions} sections={catalog.sections}
         canEdit={canEdit} today={today} />}

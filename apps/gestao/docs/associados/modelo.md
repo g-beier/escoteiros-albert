@@ -88,6 +88,7 @@ Tempo de atividade e estrelas de atividade de cada pessoa (substitui a planilha 
 | **Contagem** | Começa na promessa (antes dela não conta; sem promessa, nada conta) e para nas lacunas. | `lib/associates/scout-life.ts` |
 | **Estrela de atividade** | A estrela N cai na promessa + N anos, empurrada pela soma das lacunas. Ramo: o de mais dias nesses 12 meses de atividade, sem janeiro e fevereiro (férias); corrigível. | `starDates`, `starBranch`; correção em `associate_stars.branch` (`life_star_set_branch`) |
 | **Entrega** | "Certificado entregue" numa estrela quita as anteriores. Aviso 15 dias antes, que fica até a entrega: perfil, linha do tempo, visão do grupo e Início. | `associate_stars.delivered_on` (`life_star_deliver`) |
+| **Período não contabilizado** | Tempo no grupo que não conta (POR, Regra 173, II b e c): frequência de até 70% nos doze meses, licença acima de 60 dias (as mais curtas contam), suspensão disciplinar ou outro motivo com observação. Fica por cima dos períodos, que não mudam; a contagem o desconta como lacuna e a barra o mostra listrado. Sem sobreposição. | `associate_life_exclusions` (005); `life_exclusion_save`, `life_exclusion_delete` |
 | **Evento do histórico** | Fato com data e descrição, mostrado na linha do tempo junto com promessa, entradas, passagens, períodos e estrelas. | `associate_life_events` (`life_event_save`, `life_event_delete`) |
 | **Anotações de histórico** | Texto livre, sem data, para recuperar informações perdidas. | `associates.life_notes` (`life_notes_set`) |
 

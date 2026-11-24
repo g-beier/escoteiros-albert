@@ -2,7 +2,7 @@ import { IconArrowRight } from "@tabler/icons-react";
 import { Link } from "@geas/ui/components/link";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
 import { dateBR } from "@/lib/format";
-import { lifeBranchColor, lifeBranchShort, starsLabel, yearsLabel, type LifeMismatch, type LifePeriod, type LifeSummary } from "@/lib/associates/scout-life";
+import { lifeBranchColor, lifeBranchShort, starsLabel, yearsLabel, type LifeExclusion, type LifeMismatch, type LifePeriod, type LifeSummary } from "@/lib/associates/scout-life";
 import type { ScoutBranch } from "@/lib/associates/model";
 import { LifeBar } from "./life-bar";
 import { MismatchNotice, StarNotice } from "./life-notices";
@@ -28,8 +28,8 @@ export function StarsByBranch({ byBranch }: { byBranch: LifeSummary["byBranch"] 
  * Vida escoteira no perfil: a barra pequena (cores, anos, estrelas), o controle (anos, próxima estrela, estrela a
  * entregar, vigente diferente do cadastro) e o link para a linha do tempo completa.
  */
-export function LifeCard({ associateId, periods, summary, mismatch, canEdit, today }: {
-  associateId: string; periods: LifePeriod[]; summary: LifeSummary; mismatch: LifeMismatch | null; canEdit: boolean; today: string;
+export function LifeCard({ associateId, periods, exclusions = [], summary, mismatch, canEdit, today }: {
+  associateId: string; periods: LifePeriod[]; exclusions?: LifeExclusion[]; summary: LifeSummary; mismatch: LifeMismatch | null; canEdit: boolean; today: string;
 }) {
   const { from, to } = barRange(periods, summary, today);
   const delivered = summary.stars.filter((s) => s.status === "entregue").length;
@@ -46,7 +46,7 @@ export function LifeCard({ associateId, periods, summary, mismatch, canEdit, tod
         : <>
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground num">
             <span>{from.slice(0, 4)}</span>
-            <LifeBar today={today} periods={periods} promiseDate={summary.promiseDate} stars={summary.stars} from={from} to={to} label={`Vida escoteira de ${from.slice(0, 4)} a ${to.slice(0, 4)}`} />
+            <LifeBar today={today} periods={periods} exclusions={exclusions} promiseDate={summary.promiseDate} stars={summary.stars} from={from} to={to} label={`Vida escoteira de ${from.slice(0, 4)} a ${to.slice(0, 4)}`} />
             <span>{to.slice(0, 4)}</span>
           </div>
           <dl className="m-0 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">

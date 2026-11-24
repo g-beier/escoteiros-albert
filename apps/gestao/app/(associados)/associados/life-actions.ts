@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { InputError, runAction } from "@/lib/action";
 import { ALL_SCOUT_BRANCHES, type ScoutBranch } from "@/lib/associates/model";
-import type { SuggestedPeriod } from "@/lib/associates/scout-life";
+import { EXCLUSION_REASONS, type ExclusionReason, type SuggestedPeriod } from "@/lib/associates/scout-life";
 import * as life from "@/lib/server/associates/scout-life";
 import { associatesEditorOrError } from "@/lib/server/session";
 import { date, id, notes, optional, optionalId, text } from "./form-data";
@@ -124,5 +124,28 @@ export async function saveNotes(_previous: ActionResult, formData: FormData): Pr
     await life.setNotes(db, id(formData, "associateId"), notes(formData, "notes", 4000));
     revalidate();
     return "Anotações salvas.";
+  });
+}
+
+/** Período não contabilizado (POR, Regra 173): frequência, licença acima de 60 dias, suspensão ou outro. */
+export async function saveExclusion(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
+  return runAction(associatesEditorOrError, async ({ db }) => {
+    const exclusionId = optionalId(formData, "exclusionId");
+    const reason = text(formData, "reason");
+    if (!(EXCLUSION_REASONS as readonly string[]).includes(reason)) throw new InputError("Escolha o motivo.");
+    await life.saveExclusion(db, {
+      associateId: id(formData, "associateId"), exclusionId, reason: reason as ExclusionReason, note: notes(formData, "note", 500),
+      startedOn: date(formData, "startedOn", "o início", true), endedOn: date(formData, "endedOn", "o fim", true),
+    });
+    revalidate();
+    return exclusionId ? "Período não contabilizado corrigido." : "Período não contabilizado incluído.";
+  });
+}
+
+export async function deleteExclusion(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
+  return runAction(associatesEditorOrError, async ({ db }) => {
+    await life.deleteExclusion(db, id(formData, "exclusionId"));
+    revalidate();
+    return "Período não contabilizado apagado: volta a contar.";
   });
 }

@@ -4,7 +4,7 @@ import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { AppHeader } from "@/components/associates/app-header";
 import { barRange, StarsByBranch } from "@/components/associates/life/life-card";
 import { LifeBar, LifeLegend } from "@/components/associates/life/life-bar";
-import { AddEventButton, NotesEditor, PeriodsEditor, StarsEditor, SuggestionCard } from "@/components/associates/life/life-editors";
+import { AddEventButton, ExclusionsEditor, NotesEditor, PeriodsEditor, StarsEditor, SuggestionCard } from "@/components/associates/life/life-editors";
 import { MismatchNotice, StarNotice } from "@/components/associates/life/life-notices";
 import { LifeTimeline } from "@/components/associates/life/life-timeline";
 import { SetupNeeded } from "@/components/shell/setup-needed";
@@ -33,10 +33,10 @@ export default async function LifePage({ params }: { params: Promise<{ id: strin
   const [{ moves, movements }, functions, data] = await Promise.all([associates.history(db, id), functionsData.listOf(db, id), life.ofAssociate(db, id)]);
   const today = todayISO();
   const canEdit = member.associates.canReview;
-  const summary = lifeSummary({ periods: data.periods, promiseDate: associate.promise_date, records: data.stars, today });
+  const summary = lifeSummary({ periods: data.periods, promiseDate: associate.promise_date, records: data.stars, exclusions: data.exclusions, today });
   const mismatch = lifeMismatch({ associate, periods: data.periods, functions, moves, movements, today });
   const suggestion = missingSuggestions(suggestPeriods({ branch: associate.branch, movements, moves, functions, today }), data.periods);
-  const years = timeline({ periods: data.periods, promiseDate: associate.promise_date, moves, movements, stars: summary.stars, events: data.events, today });
+  const years = timeline({ periods: data.periods, promiseDate: associate.promise_date, moves, movements, stars: summary.stars, events: data.events, exclusions: data.exclusions, today });
   const { from, to } = barRange(data.periods, summary, today);
   const pendingBefore = summary.stars.filter((s) => s.status === "pendente" && s.n < (summary.pending?.n ?? 0)).length;
 
@@ -63,7 +63,7 @@ export default async function LifePage({ params }: { params: Promise<{ id: strin
         <div className="grid gap-3 px-4 py-4">
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground num">
             <span>{from.slice(0, 4)}</span>
-            <LifeBar today={today} periods={data.periods} promiseDate={associate.promise_date} stars={summary.stars} from={from} to={to} label={`Vida escoteira de ${from.slice(0, 4)} a ${to.slice(0, 4)}`} />
+            <LifeBar today={today} periods={data.periods} exclusions={data.exclusions} promiseDate={associate.promise_date} stars={summary.stars} from={from} to={to} label={`Vida escoteira de ${from.slice(0, 4)} a ${to.slice(0, 4)}`} />
             <span>{to.slice(0, 4)}</span>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -83,6 +83,7 @@ export default async function LifePage({ params }: { params: Promise<{ id: strin
       </SectionCard>
 
       <PeriodsEditor associateId={id} periods={data.periods} canEdit={canEdit} today={today} />
+      <ExclusionsEditor associateId={id} exclusions={data.exclusions} canEdit={canEdit} today={today} />
       <StarsEditor associateId={id} stars={summary.stars} canEdit={canEdit} today={today} />
       <NotesEditor associateId={id} notes={data.notes} canEdit={canEdit} />
     </PageBody>

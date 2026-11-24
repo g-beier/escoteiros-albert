@@ -87,6 +87,17 @@ export type Tables = {
     created_by: string | null;
     created_at: string;
   };
+  associate_life_exclusions: {
+    id: string;
+    group_id: string;
+    associate_id: string;
+    started_on: string;
+    ended_on: string;
+    reason: string;
+    note: string | null;
+    created_by: string | null;
+    created_at: string;
+  };
   associate_life_periods: {
     id: string;
     group_id: string;
@@ -880,6 +891,8 @@ export type Functions = {
   life_associate_for_edit: { Args: { p_associate_id: string }; Returns: Tables["associates"] };
   life_event_delete: { Args: { p_event_id: string }; Returns: undefined };
   life_event_save: { Args: { p_associate_id: string; p_event_id: string; p_date: string; p_title: string; p_description: string }; Returns: string };
+  life_exclusion_delete: { Args: { p_exclusion_id: string }; Returns: undefined };
+  life_exclusion_save: { Args: { p_associate_id: string; p_exclusion_id: string; p_started_on: string; p_ended_on: string; p_reason: string; p_note: string }; Returns: string };
   life_expected_branch: { Args: { p_associate_id: string; p_branch: Enums["scout_branch"]; p_active: boolean; p_on: string }; Returns: Enums["scout_branch"] };
   life_follow: { Args: { p_associate_id: string; p_on: string; p_expected: Enums["scout_branch"] }; Returns: undefined };
   life_notes_set: { Args: { p_associate_id: string; p_notes: string }; Returns: undefined };

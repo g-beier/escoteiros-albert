@@ -13,14 +13,15 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { useActionToast, type ActionResult } from "@geas/ui/lib/use-action-toast";
 import { cn } from "@geas/ui/lib/utils";
 import {
-  applySuggestion, deletePeriod, deleteEvent, deliverStar, saveEvent, saveNotes, savePeriod, setStarBranch,
+  applySuggestion, deleteExclusion, deletePeriod, deleteEvent, deliverStar, saveEvent, saveExclusion, saveNotes, savePeriod, setStarBranch,
 } from "@/app/(associados)/associados/life-actions";
 import { ActionDialog } from "@/components/shell/action-dialog";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import { dateBR } from "@/lib/format";
 import { SCOUT_BRANCHES, type ScoutBranch } from "@/lib/associates/model";
 import {
-  lifeBranchColor, lifeBranchLabel, lifeBranchShort, lifeSourceLabels, type LifeEvent, type LifePeriod, type Star, type SuggestedPeriod,
+  EXCLUSION_REASONS, exclusionReasonLabels, lifeBranchColor, lifeBranchLabel, lifeBranchShort, lifeSourceLabels, type LifeEvent, type LifeExclusion,
+  type LifePeriod, type Star, type SuggestedPeriod,
 } from "@/lib/associates/scout-life";
 import { Field } from "../associate-form";
 
@@ -157,6 +158,89 @@ export function SuggestionCard({ associateId, periods, canEdit }: { associateId:
       <input type="hidden" name="periods" value={JSON.stringify(periods)} />
       <Button type="submit" variant="outline" disabled={pending}><IconWand data-icon="inline-start" /> {pending ? "Incluindo…" : "Incluir sugestão"}</Button>
     </ActionForm>}
+  </SectionCard>;
+}
+
+// Períodos não contabilizados (POR, Regra 173) ---------------------------------------------------------------------
+
+const reasonOptions = EXCLUSION_REASONS.map((value) => ({ value, label: exclusionReasonLabels[value] }));
+const REASON_HELP: Record<string, string> = {
+  frequencia: "Presença em até 70% das reuniões e atividades nos doze meses: o ano não conta.",
+  licenca: "Licenças de até 60 dias contam como atividade; só lance as mais longas.",
+  suspensao: "Período de suspensão por medida disciplinar.",
+  outro: "Descreva o motivo na observação.",
+};
+
+function ExclusionDialog({ associateId, exclusion, today, onOpenChange }: {
+  associateId: string; exclusion?: LifeExclusion; today: string; onOpenChange: (open: boolean) => void;
+}) {
+  const [reason, setReason] = useState<string>(exclusion?.reason ?? "frequencia");
+  const [confirm, setConfirm] = useState(false);
+  if (exclusion && confirm) {
+    return <ActionDialog open onOpenChange={onOpenChange} title="Apagar período não contabilizado?" action={deleteExclusion} submitLabel="Apagar" destructive
+      hidden={{ exclusionId: exclusion.id }} description={`De ${dateBR(exclusion.started_on)} a ${dateBR(exclusion.ended_on)}: o tempo volta a contar para as estrelas.`}>
+      <span className="sr-only">Confirme para apagar.</span>
+    </ActionDialog>;
+  }
+  return <ActionDialog open onOpenChange={onOpenChange} title={exclusion ? "Corrigir período não contabilizado" : "Não contabilizar período"} action={saveExclusion}
+    submitLabel={exclusion ? "Salvar" : "Não contabilizar"} hidden={{ associateId, exclusionId: exclusion?.id ?? "", reason }}
+    footerStart={exclusion && <Button type="button" variant="ghost" className="text-destructive" onClick={() => setConfirm(true)}>Apagar</Button>}
+    description="Tempo no grupo que não conta para as estrelas de atividade (POR, Regra 173). Fica listrado na barra e empurra as estrelas seguintes.">
+    <Field id="exclusion-reason" label="Motivo" hint={REASON_HELP[reason]} className="sm:col-span-2">
+      <OptionSelect id="exclusion-reason" value={reason} onValueChange={setReason} options={reasonOptions} />
+    </Field>
+    <Field id="exclusion-start" label="Início">
+      <Input id="exclusion-start" name="startedOn" type="date" required max={today} defaultValue={exclusion?.started_on ?? ""} className="num" />
+    </Field>
+    <Field id="exclusion-end" label="Fim" hint="O dia em que volta a contar.">
+      <Input id="exclusion-end" name="endedOn" type="date" required defaultValue={exclusion?.ended_on ?? ""} className="num" />
+    </Field>
+    <Field id="exclusion-note" label={reason === "outro" ? "Observação" : "Observação (opcional)"} className="sm:col-span-2">
+      <Textarea id="exclusion-note" name="note" rows={2} maxLength={500} required={reason === "outro"} defaultValue={exclusion?.note ?? ""} />
+    </Field>
+  </ActionDialog>;
+}
+
+export function EditExclusionButton({ associateId, exclusion, today }: { associateId: string; exclusion: LifeExclusion; today: string }) {
+  const [open, setOpen] = useState(false);
+  return <>
+    <Button variant="ghost" size="icon-sm" aria-label={`Corrigir período não contabilizado de ${dateBR(exclusion.started_on)}`} onClick={() => setOpen(true)}><IconPencil /></Button>
+    {open && <ExclusionDialog associateId={associateId} exclusion={exclusion} today={today} onOpenChange={setOpen} />}
+  </>;
+}
+
+/** Períodos não contabilizados: frequência de até 70%, licença acima de 60 dias, suspensão ou outro motivo. */
+export function ExclusionsEditor({ associateId, exclusions, canEdit, today }: { associateId: string; exclusions: LifeExclusion[]; canEdit: boolean; today: string }) {
+  const [open, setOpen] = useState<LifeExclusion | "novo" | null>(null);
+  const close = (value: boolean) => { if (!value) setOpen(null); };
+  return <SectionCard aria-labelledby="exclusions-title">
+    <SectionHeader title="Períodos não contabilizados" titleId="exclusions-title"
+      description="No grupo, mas fora da contagem (POR, Regra 173): frequência de até 70%, licença acima de 60 dias ou suspensão.">
+      <SectionCount>{exclusions.length}</SectionCount>
+      {canEdit && <Button variant="outline" onClick={() => setOpen("novo")}><IconPlus data-icon="inline-start" /> Não contabilizar período</Button>}
+    </SectionHeader>
+    {exclusions.length === 0
+      ? <p className="px-4 py-6 text-center text-xs text-muted-foreground">Todo o tempo nos períodos conta.</p>
+      : <div className="overflow-x-auto"><Table className="min-w-[520px]">
+        <TableCaption className="sr-only">Períodos não contabilizados</TableCaption>
+        <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
+          <TableHead className={HEAD_CLASS}>Motivo</TableHead>
+          <TableHead className={cn(HEAD_CLASS, "w-28")}>Início</TableHead>
+          <TableHead className={cn(HEAD_CLASS, "w-28")}>Fim</TableHead>
+          <TableHead className={HEAD_CLASS}>Observação</TableHead>
+          {canEdit && <TableHead className={cn(HEAD_CLASS, "w-12")}><span className="sr-only">Ações</span></TableHead>}
+        </TableRow></TableHeader>
+        <TableBody>{exclusions.map((x) => <TableRow key={x.id}>
+          <TableCell className={CELL_CLASS}>{exclusionReasonLabels[x.reason]}</TableCell>
+          <TableCell className={cn(CELL_CLASS, "num")}>{dateBR(x.started_on)}</TableCell>
+          <TableCell className={cn(CELL_CLASS, "num")}>{dateBR(x.ended_on)}</TableCell>
+          <TableCell className={cn(CELL_CLASS, "whitespace-normal text-muted-foreground")}>{x.note ?? "—"}</TableCell>
+          {canEdit && <TableCell className={CELL_CLASS}>
+            <Button variant="ghost" size="icon-sm" aria-label={`Corrigir período não contabilizado de ${dateBR(x.started_on)}`} onClick={() => setOpen(x)}><IconPencil /></Button>
+          </TableCell>}
+        </TableRow>)}</TableBody>
+      </Table></div>}
+    {open && <ExclusionDialog associateId={associateId} exclusion={open === "novo" ? undefined : open} today={today} onOpenChange={close} />}
   </SectionCard>;
 }
 

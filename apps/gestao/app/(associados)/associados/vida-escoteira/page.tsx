@@ -49,8 +49,8 @@ export default async function GroupLifePage({ searchParams }: { searchParams: Pr
     .filter((a) => (status === "todos" || (status === "ativos") === a.active) && matchesQuery(a.name, params.q))
     .map((a) => {
       const periods = data.periods.get(a.id) ?? [];
-      const summary = lifeSummary({ periods, promiseDate: a.promise_date, records: data.stars.get(a.id) ?? [], today });
-      return { associate: a, periods, summary, counts: periods.length > 0 || expectedBranch(a, functionsOf.get(a.id) ?? [], today) !== null };
+      const summary = lifeSummary({ periods, promiseDate: a.promise_date, records: data.stars.get(a.id) ?? [], exclusions: data.exclusions.get(a.id) ?? [], today });
+      return { associate: a, periods, exclusions: data.exclusions.get(a.id) ?? [], summary, counts: periods.length > 0 || expectedBranch(a, functionsOf.get(a.id) ?? [], today) !== null };
     })
     .filter((p) => p.counts)
     .filter((p) => view === "" || (view === "entregar" ? p.summary.pending !== null : view === "lacunas" ? p.summary.hasGaps : p.periods.length === 0));
@@ -99,7 +99,7 @@ export default async function GroupLifePage({ searchParams }: { searchParams: Pr
               <span className="relative hidden h-4 lg:block" aria-hidden>{ticks.map((y) => <span key={y} className="num absolute -translate-x-1/2" style={{ left: `${pct(y)}%` }}>{y}</span>)}</span>
               <span className="text-right">Estrelas</span>
             </div>
-            <ul className="m-0 list-none p-0">{people.map(({ associate, periods, summary }) => <li key={associate.id}
+            <ul className="m-0 list-none p-0">{people.map(({ associate, periods, exclusions, summary }) => <li key={associate.id}
               className="grid grid-cols-[1fr_auto] items-center gap-3 border-b px-4 py-1 last:border-b-0 lg:grid-cols-[15rem_1fr_10.5rem]">
               <div className="min-w-0">
                 <Link href={`/associados/${associate.id}/vida-escoteira`} className={cn("block truncate text-sm leading-tight font-medium hover:underline", !associate.active && "text-muted-foreground")}>{associate.name}</Link>
@@ -113,7 +113,7 @@ export default async function GroupLifePage({ searchParams }: { searchParams: Pr
                   {ticks.map((y) => <span key={y} className="absolute inset-y-0 w-px bg-border" style={{ left: `${pct(y)}%` }} />)}
                 </span>
                 {periods.length > 0
-                  ? <LifeBar today={today} periods={periods} promiseDate={summary.promiseDate} stars={summary.stars} from={from} to={to} size="sm" label={`Vida escoteira de ${associate.name}`} />
+                  ? <LifeBar today={today} periods={periods} exclusions={exclusions} promiseDate={summary.promiseDate} stars={summary.stars} from={from} to={to} size="sm" label={`Vida escoteira de ${associate.name}`} />
                   : <span className="relative text-[11px] text-muted-foreground">sem período registrado</span>}
               </div>
               <StarsCell summary={summary} />
