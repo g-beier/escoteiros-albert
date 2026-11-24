@@ -9,13 +9,17 @@ test.describe.configure({ mode: "serial" });
 
 const troop = uniqueName("Tropa Importada");
 const patrol = uniqueName("Patrulha Importada");
-const names = [uniqueName("Importado um"), uniqueName("Importado dois")];
+const names = [uniqueName("Importado um"), uniqueName("Importado dois"), uniqueName("Importada chefe")];
 const literal = (value: string) => `'${value.replaceAll("'", "''")}'`;
 const group = `(select m.group_id from public.memberships m join auth.users u on u.id = m.user_id where u.email = ${literal(E2E_ADMIN_EMAIL)})`;
 
 test.afterAll(() => {
   const people = `(select id from public.associates where group_id = ${group} and name in (${names.map(literal).join(", ")}))`;
+  const relatives = `(select relative_id from public.relative_links where associate_id in ${people})`;
   psql(`
+    delete from public.control_statuses where relative_id in ${relatives};
+    delete from public.relatives where id in ${relatives};
+    delete from public.associate_functions where associate_id in ${people};
     delete from public.control_statuses where associate_id in ${people};
     delete from public.associate_life_periods where associate_id in ${people};
     delete from public.associate_movements where associate_id in ${people};
@@ -61,4 +65,19 @@ test("importar seções e pessoas com conferência; reenviar não duplica; ender
   await page.getByLabel("Arquivos CSV").setInputFiles(files());
   await expect(pessoas).toContainText("2 iguais");
   await expect(page.getByRole("button", { name: "Nada a importar" })).toBeDisabled();
+});
+
+test("importar funções e responsáveis de pessoas do mesmo envio", async ({ page }) => {
+  await page.goto("/importar");
+  await page.getByLabel("Arquivos CSV").setInputFiles([
+    { name: "pessoas.csv", mimeType: "text/csv", buffer: Buffer.from(`nome;nascimento;ramo\r\n${names[2]};21/11/1985;adulto\r\n`, "utf8") },
+    { name: "funcoes.csv", mimeType: "text/csv", buffer: Buffer.from(`pessoa;tipo;cargo;seção;início\r\n${names[2]};escotista;Assistente;${troop};01/03/2019\r\n`, "utf8") },
+    { name: "responsaveis.csv", mimeType: "text/csv", buffer: Buffer.from(`jovem;nascimento do jovem;responsável;parentesco;descrição do parentesco;legal;associado\r\n${names[0]};14/05/2013;${names[2]};outro;tia;sim;${names[2]}\r\n`, "utf8") },
+  ]);
+  await page.getByRole("button", { name: "Importar 3 linhas" }).click();
+  await expect(page.getByText(/^Importado\. /)).toBeVisible();
+
+  await page.goto(`/associados?situacao=todos&q=${encodeURIComponent(names[0]!)}`);
+  await page.getByRole("link", { name: names[0]! }).click();
+  await expect(page.getByText(names[2]!).first()).toBeVisible();
 });

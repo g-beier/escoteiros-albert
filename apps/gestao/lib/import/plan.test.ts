@@ -11,6 +11,7 @@ const person = (over: Partial<StatePerson>): StatePerson => ({
 });
 
 const STATE: ImportState = {
+  functions: [], relatives: [], links: [],
   sections: [{ id: "s1", branch: "lobinho", name: "Alcateia Seeonee", active: true }, { id: "s2", branch: "escoteiro", name: "Tropa Tupã", active: true }],
   patrols: [{ id: "p1", sectionId: "s2", name: "Patrulha Lobo", active: true }],
   people: [person({}), person({ id: "00000000-0000-4000-8000-000000000002", name: "Bruno Lima", birth: null, branch: "escoteiro", sectionId: "s2", patrolId: "p1" })],

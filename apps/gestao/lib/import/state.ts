@@ -23,10 +23,36 @@ export type StatePerson = {
   notes: string | null;
 };
 
+export type StateFunction = {
+  id: string;
+  associateId: string;
+  kind: string;
+  title: string | null;
+  sectionId: string | null;
+  started: string | null;
+  ended: string | null;
+  elected: boolean;
+};
+
+export type StateRelative = { id: string; name: string; associateId: string | null; notes: string | null };
+
+export type StateLink = {
+  id: string;
+  associateId: string;
+  relativeId: string;
+  kinship: string;
+  kinshipNote: string | null;
+  legal: boolean;
+  financial: boolean;
+};
+
 export type ImportState = {
   sections: StateSection[];
   patrols: StatePatrol[];
   people: StatePerson[];
+  functions: StateFunction[];
+  relatives: StateRelative[];
+  links: StateLink[];
 };
 
-export const EMPTY_STATE: ImportState = { sections: [], patrols: [], people: [] };
+export const EMPTY_STATE: ImportState = { sections: [], patrols: [], people: [], functions: [], relatives: [], links: [] };

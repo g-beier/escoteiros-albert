@@ -153,7 +153,7 @@ id;nome;apelido;nascimento;ramo;seção;patrulha;registro;entrada;promessa;situa
 ### `funcoes.csv`: Funções dos adultos
 
 - **Uma linha por:** função de um adulto (quem tem duas funções tem duas linhas).
-- **Identificação:** pessoa + tipo + seção + início.
+- **Identificação:** pessoa + tipo + seção + início (sem início: a função com o mesmo fim, ou a vigente).
 - **Reimportar:** Atualiza cargo, fim e eleito da mesma função; cria as que não existem. Nunca apaga.
 - Só adultos (ramo adulto) têm função.
 

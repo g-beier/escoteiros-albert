@@ -5,6 +5,7 @@ import { readImportFile } from "@/lib/import/read";
 import type { ImportState } from "@/lib/import/state";
 
 const STATE: ImportState = {
+  functions: [], relatives: [], links: [],
   sections: [{ id: "s1", branch: "escoteiro", name: "Tropa Tupã", active: true }],
   patrols: [{ id: "p1", sectionId: "s1", name: "Patrulha Lobo", active: false }],
   people: [
@@ -31,5 +32,37 @@ describe("exportar e reimportar", () => {
       expect(file.rows.map((row) => [row.action, row.errors, row.warnings])).toEqual(file.rows.map(() => ["igual", [], []]));
       expect(file.payload).toEqual([]);
     }
+  });
+});
+
+describe("exportar e reimportar funções e responsáveis", () => {
+  it("dá tudo igual", async () => {
+    const { functionsCsv, relativesCsv } = await import("@/lib/import/export");
+    const adult = { id: "00000000-0000-4000-8000-000000000003", name: "Carla Dias", nickname: null, birth: "1985-11-21", branch: "adulto", sectionId: null, patrolId: null,
+      registration: "definitivo", joined: null, promise: null, active: true, left: null, notes: null };
+    const state: ImportState = {
+      ...STATE,
+      people: [...STATE.people, adult],
+      functions: [
+        { id: "f1", associateId: adult.id, kind: "escotista", title: "Chefe", sectionId: "s1", started: "2019-03-01", ended: null, elected: false },
+        { id: "f2", associateId: adult.id, kind: "dirigente", title: null, sectionId: null, started: null, ended: "2024-12-31", elected: true },
+      ],
+      relatives: [{ id: "r1", name: "Marta Lima", associateId: null, notes: "Avisar antes" }, { id: "r2", name: "Carla Dias", associateId: adult.id, notes: null }],
+      links: [
+        { id: "l1", associateId: STATE.people[0]!.id, relativeId: "r1", kinship: "mae", kinshipNote: null, legal: true, financial: false },
+        { id: "l2", associateId: STATE.people[0]!.id, relativeId: "r2", kinship: "outro", kinshipNote: "tia", legal: false, financial: true },
+      ],
+    };
+    const functions = functionsCsv([
+      { person_id: adult.id, person: "Carla Dias", birth_date: "1985-11-21", kind: "escotista", title: "Chefe", section: "Tropa Tupã", started_on: "2019-03-01", ended_on: null, elected: false },
+      { person_id: adult.id, person: "Carla Dias", birth_date: "1985-11-21", kind: "dirigente", title: null, section: null, started_on: null, ended_on: "2024-12-31", elected: true },
+    ]);
+    const relatives = relativesCsv([
+      { youth_id: STATE.people[0]!.id, youth: "Bruno Lima", youth_birth: "2012-09-02", relative: "Marta Lima", kinship: "mae", kinship_note: null, legal: true, financial: false, relative_associate: null, notes: "Avisar antes" },
+      { youth_id: STATE.people[0]!.id, youth: "Bruno Lima", youth_birth: "2012-09-02", relative: "Carla Dias", kinship: "outro", kinship_note: "tia", legal: false, financial: true, relative_associate: "Carla Dias", notes: null },
+    ]);
+    const plan = planBatch([readImportFile("funcoes.csv", functions).file!, readImportFile("responsaveis.csv", relatives).file!], state, { filhotes: false, today: "2026-11-24" });
+    expect(plan.errors).toEqual([]);
+    for (const file of plan.files) expect(file.rows.map((row) => [row.action, row.errors])).toEqual(file.rows.map(() => ["igual", []]));
   });
 });

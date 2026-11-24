@@ -261,7 +261,7 @@ export const FILES: readonly FileSpec[] = [
     title: "Funções dos adultos",
     module: "associados",
     row: "função de um adulto (quem tem duas funções tem duas linhas)",
-    key: "pessoa + tipo + seção + início",
+    key: "pessoa + tipo + seção + início (sem início: a função com o mesmo fim, ou a vigente)",
     reimport: "Atualiza cargo, fim e eleito da mesma função; cria as que não existem. Nunca apaga.",
     columns: [
       ...personColumns(),

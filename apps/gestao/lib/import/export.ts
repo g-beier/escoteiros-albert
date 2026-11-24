@@ -1,4 +1,4 @@
-import { BRANCH_CHOICES, REGISTRATION_CHOICES, fileSpec, type FileKind } from "@/lib/import/contract";
+import { BRANCH_CHOICES, FUNCTION_CHOICES, KINSHIP_CHOICES, REGISTRATION_CHOICES, fileSpec, type FileKind } from "@/lib/import/contract";
 import { showChoice, showDate } from "@/lib/import/plan";
 import { writeImportCsv } from "@/lib/import/read";
 
@@ -28,6 +28,32 @@ export function sectionsCsv(sections: SectionExport[]): string {
   return writeImportCsv(header("secoes"), sections.map((s) => [showChoice(BRANCH_CHOICES, s.branch), s.section, s.patrol, s.active ? "sim" : "não"]));
 }
 
+export type FunctionExport = {
+  person_id: string; person: string; birth_date: string | null; kind: string; title: string | null; section: string | null;
+  started_on: string | null; ended_on: string | null; elected: boolean;
+};
+
+export type RelativeExport = {
+  youth_id: string; youth: string; youth_birth: string | null; relative: string; kinship: string; kinship_note: string | null;
+  legal: boolean; financial: boolean; relative_associate: string | null; notes: string | null;
+};
+
+const yesNo = (value: boolean) => (value ? "sim" : "não");
+
+export function functionsCsv(functions: FunctionExport[]): string {
+  return writeImportCsv(header("funcoes"), functions.map((f) => [
+    f.person_id, f.person, showDate(f.birth_date), showChoice(FUNCTION_CHOICES, f.kind), f.title, f.section,
+    showDate(f.started_on), showDate(f.ended_on), f.kind === "dirigente" ? yesNo(f.elected) : "",
+  ]));
+}
+
+export function relativesCsv(links: RelativeExport[]): string {
+  return writeImportCsv(header("responsaveis"), links.map((l) => [
+    l.youth_id, l.youth, showDate(l.youth_birth), l.relative, showChoice(KINSHIP_CHOICES, l.kinship), l.kinship_note,
+    yesNo(l.legal), yesNo(l.financial), l.relative_associate, l.notes,
+  ]));
+}
+
 /** Modelo para baixar: cabeçalho e as linhas de exemplo (nomes fictícios) do contrato. */
 export function templateCsv(kind: FileKind): string {
   const spec = fileSpec(kind);
@@ -35,4 +61,4 @@ export function templateCsv(kind: FileKind): string {
 }
 
 /** Tipos com "Baixar dados atuais" (os outros chegam com os próximos arquivos do contrato). */
-export const EXPORTABLE: readonly FileKind[] = ["secoes", "pessoas"];
+export const EXPORTABLE: readonly FileKind[] = ["secoes", "pessoas", "funcoes", "responsaveis"];

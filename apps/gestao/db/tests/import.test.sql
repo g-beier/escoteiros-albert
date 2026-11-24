@@ -1,6 +1,6 @@
 -- pgTAP: importação por CSV (db/migrations/006_importacao.sql; contrato em docs/importacao.md). Rode com `npm run test:db`.
 begin;
-select plan(26);
+select plan(40);
 \ir _fixture.psql
 
 select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
@@ -62,7 +62,48 @@ select throws_like(format($$select public.import_batch(%L, '[{"kind":"pessoas","
 select throws_like(format($$select public.import_batch(%L, '[{"kind":"secoes","rows":[{"line":2,"branch":"senior","section":"Tropa Sênior Imp"}]},{"kind":"pessoas","rows":[{"line":9,"name":"Futuro","branch":"senior","birth":"2090-01-01"}]}]')$$, :'gid_a'),
   'pessoas.csv, linha 9: A data de nascimento não pode ser futura', 'erro numa linha desfaz o envio');
 select is((select count(*)::int from public.sections where name = 'Tropa Sênior Imp'), 0, 'seção do envio desfeito não ficou');
-select throws_like(format($$select public.import_batch(%L, '[{"kind":"funcoes","rows":[{"line":2}]}]')$$, :'gid_a'), '%não está disponível', 'tipo ainda não disponível');
+select throws_like(format($$select public.import_batch(%L, '[{"kind":"controle","rows":[{"line":2}]}]')$$, :'gid_a'), '%não está disponível', 'tipo ainda não disponível');
+
+-- funcoes.csv -------------------------------------------------------------------------------------
+select public.import_batch(:'gid_a', $$[
+  {"kind":"pessoas","rows":[{"line":2,"name":"Chefe Importada","birth":"1985-11-21","branch":"adulto"}]},
+  {"kind":"funcoes","rows":[
+    {"line":2,"person":"Chefe Importada","personBirth":"1985-11-21","kind":"escotista","title":"Assistente","section":"tropa imp","started":"2019-03-01"},
+    {"line":3,"person":"Chefe Importada","personBirth":"1985-11-21","kind":"dirigente","title":"Diretora","started":"2020-01-01","ended":"2024-12-31","elected":true}
+  ]}
+]$$::jsonb) as result \gset
+select is((:'result'::jsonb)->'funcoes', '{"created":2,"updated":0}'::jsonb, 'duas funções criadas para a pessoa nova do mesmo envio');
+select id as chefe from public.associates where name = 'Chefe Importada' \gset
+select is((select s.name || '|' || f.title || '|' || f.started_on from public.associate_functions f join public.sections s on s.id = f.section_id where f.associate_id = :'chefe' and f.kind = 'escotista'),
+  'Tropa Imp|Assistente|2019-03-01', 'escotista com a seção pelo nome');
+select is((select ended_on::text || '|' || elected from public.associate_functions where associate_id = :'chefe' and kind = 'dirigente'), '2024-12-31|true', 'dirigente encerrada e eleita');
+select id as funcao from public.associate_functions where associate_id = :'chefe' and kind = 'escotista' \gset
+select lives_ok(format($$select public.import_batch(%L, '[{"kind":"funcoes","rows":[{"line":2,"personId":"%s","kind":"escotista","functionId":"%s","title":"Chefe de seção"}]}]')$$, :'gid_a', :'chefe', :'funcao'), 'atualiza pela chave');
+select is((select title || '|' || started_on from public.associate_functions where id = :'funcao'), 'Chefe de seção|2019-03-01', 'muda o cargo e mantém o início');
+select throws_like(format($$select public.import_batch(%L, '[{"kind":"funcoes","rows":[{"line":4,"person":"Ana Importada","kind":"dirigente"}]}]')$$, :'gid_a'),
+  'funcoes.csv, linha 4: %', 'jovem não recebe função');
+select throws_like(format($$select public.import_batch(%L, '[{"kind":"funcoes","rows":[{"line":5,"personId":"%s","kind":"escotista","section":"Inexistente"}]}]')$$, :'gid_a', :'chefe'),
+  'funcoes.csv, linha 5: seção "Inexistente" não cadastrada', 'seção desconhecida');
+
+-- responsaveis.csv --------------------------------------------------------------------------------
+select public.import_batch(:'gid_a', $$[{"kind":"responsaveis","rows":[
+  {"line":2,"person":"Bruno Importado","relative":"Marta Importada","kinship":"mae","legal":true},
+  {"line":3,"person":"Ana Importada","personBirth":"2015-05-14","relative":"marta  importada","kinship":"mae","financial":true},
+  {"line":4,"person":"Ana Importada","personBirth":"2015-05-14","relative":"Chefe Importada","kinship":"outro","kinshipNote":"tia","relativeAssociate":"Chefe Importada","notes":"Busca às vezes"}
+]}]$$::jsonb) as result \gset
+select is((:'result'::jsonb)->'responsaveis', '{"created":3,"updated":0}'::jsonb, 'três vínculos');
+select is((select count(*)::int from public.relatives where group_id = :'gid_a' and public.import_name_key(name) = 'marta importada'), 1, 'mesmo nome = mesmo responsável, compartilhado');
+select is((select count(*)::int from public.relative_links l join public.relatives r on r.id = l.relative_id where r.name = 'Marta Importada'), 2, 'ligado aos dois jovens');
+select is((select r.associate_id::text || '|' || r.notes || '|' || l.kinship_note from public.relatives r join public.relative_links l on l.relative_id = r.id where r.name = 'Chefe Importada'),
+  :'chefe' || '|Busca às vezes|tia', 'responsável que é associado, com observação');
+select public.import_batch(:'gid_a', $$[{"kind":"responsaveis","rows":[
+  {"line":2,"person":"Bruno Importado","relative":"Marta Importada","kinship":"mae","financial":true}
+]}]$$::jsonb) as result \gset
+select is((:'result'::jsonb)->'responsaveis', '{"created":0,"updated":1}'::jsonb, 'reimportar atualiza o vínculo');
+select is((select legal::text || '|' || financial from public.relative_links l join public.relatives r on r.id = l.relative_id
+  join public.associates a on a.id = l.associate_id where r.name = 'Marta Importada' and a.name = 'Bruno Importado'), 'true|true', 'vazio mantém legal; financeiro muda');
+select throws_like(format($$select public.import_batch(%L, '[{"kind":"responsaveis","rows":[{"line":6,"personId":"%s","relative":"Alguém","kinship":"mae"}]}]')$$, :'gid_a', :'chefe'),
+  'responsaveis.csv, linha 6: Só jovens têm responsáveis', 'adulto não tem responsável');
 
 -- Permissão ---------------------------------------------------------------------------------------
 select tests.login('00000000-0000-0000-0000-00000000f0a3') \gset

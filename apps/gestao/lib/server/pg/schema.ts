@@ -851,12 +851,16 @@ export type Functions = {
   ignore_statement_line: { Args: { p_id: string; p_reason: string }; Returns: undefined };
   ignore_statement_lines: { Args: { p_ids: string[]; p_reason: string }; Returns: number };
   import_batch: { Args: { p_group_id: string; p_files: Json }; Returns: Json };
+  import_cited_associate: { Args: { p_group_id: string; p_row: Json }; Returns: string };
   import_date: { Args: { p_row: Json; p_key: string }; Returns: string };
   import_find_associate: { Args: { p_group_id: string; p_id: string; p_name: string; p_birth: string }; Returns: string };
+  import_functions: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
   import_name_key: { Args: { p_text: string }; Returns: string };
   import_patrol: { Args: { p_section_id: string; p_name: string }; Returns: string };
   import_people: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
+  import_relatives: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
   import_section: { Args: { p_group_id: string; p_branch: Enums["scout_branch"]; p_name: string }; Returns: string };
+  import_section_by_name: { Args: { p_group_id: string; p_name: string }; Returns: string };
   import_sections: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
   import_statement_lines: { Args: { p_account_id: string; p_profile_id: string; p_profile_settings: Json; p_file_name: string; p_period_from: string; p_period_to: string; p_opening_balance_cents: number; p_closing_balance_cents: number; p_lines: Json }; Returns: Json };
   import_text: { Args: { p_row: Json; p_key: string }; Returns: string };
