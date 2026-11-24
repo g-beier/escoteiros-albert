@@ -219,7 +219,7 @@ jovem id;jovem;nascimento do jovem;responsável;parentesco;descrição do parent
 | `nascimento` |  | data dd/mm/aaaa | Desempata nomes iguais. | 14/05/2015 |
 | `jovem` | se responsável | texto (até 120) | Só em linha de responsável: um jovem dele (o responsável é procurado entre os responsáveis desse jovem). |  |
 | `nascimento do jovem` |  | data dd/mm/aaaa | Desempata jovens com o mesmo nome. |  |
-| `<nome do item>` |  |  | Uma coluna por item de controle, com o nome exato do item (Configurações › Itens, ou itens-controle.csv do mesmo envio). Célula: situação (tabela abaixo), ano (itens de ano) ou data (itens de data); texto depois de ` - ` vira observação. | ok - conferido no Paxtu |
+| `<nome do item>` |  |  | Uma coluna por item de controle, com o nome do item (Configurações › Itens, ou itens-controle.csv do mesmo envio); coluna que não é item barra o envio. Célula: situação (tabela abaixo), opcionalmente com a data em que foi conferida (`ok 10/03/2026`); item de ano: o ano (`2026`, vale ok) ou situação e ano; item de data: a validade (`31/03/2027`, vale ok) ou situação e data; texto depois de ` - ` vira observação. Vazia: não muda. | ok - conferido no Paxtu |
 
 Exemplo:
 

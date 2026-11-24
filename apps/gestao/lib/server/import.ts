@@ -11,7 +11,7 @@ import type { FunctionExport, PersonExport, RelativeExport, SectionExport } from
 /** O que já está no app, para identificar e comparar as linhas dos CSVs. */
 export async function state(db: Db, groupId: string): Promise<ImportState> {
   return run(db, async (sql) => {
-    const [sections, patrols, people, functions, relatives, links] = await Promise.all([
+    const [sections, patrols, people, functions, relatives, links, items, statuses] = await Promise.all([
       sql`select id, branch::text as branch, name, active from public.sections where group_id = ${groupId} order by name`,
       sql`select p.id, p.section_id as "sectionId", p.name, p.active from public.patrols p
           join public.sections s on s.id = p.section_id where s.group_id = ${groupId} order by p.name`,
@@ -25,10 +25,17 @@ export async function state(db: Db, groupId: string): Promise<ImportState> {
       sql`select id, name, associate_id as "associateId", notes from public.relatives where group_id = ${groupId} limit 20000`,
       sql`select id, associate_id as "associateId", relative_id as "relativeId", kinship::text as kinship, kinship_note as "kinshipNote", legal, financial
           from public.relative_links where group_id = ${groupId} limit 40000`,
+      sql`select i.id, i.name, i.kind::text as kind, i.directorate::text as directorate, i.value_kind::text as "valueKind",
+            i.validity_months as "validityMonths", i.remove_on_leave as "removeOnLeave", i.active,
+            coalesce((select jsonb_object_agg(a.audience::text, a.initial_status::text) from public.control_item_audiences a where a.item_id = i.id), '{}') as audiences
+          from public.control_items i where i.group_id = ${groupId} order by i.directorate, i.position`,
+      sql`select associate_id as "associateId", relative_id as "relativeId", item_id as "itemId", status::text as status,
+            status_date as "statusDate", valid_until as "validUntil", value_year as year, note
+          from public.control_statuses where group_id = ${groupId} limit 100000`,
     ]);
     return {
       sections: [...sections], patrols: [...patrols], people: [...people], functions: [...functions], relatives: [...relatives],
-      links: [...links],
+      links: [...links], items: [...items], statuses: [...statuses],
     } as unknown as ImportState;
   });
 }

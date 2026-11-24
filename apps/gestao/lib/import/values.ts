@@ -94,3 +94,44 @@ export const nameKey = (name: string) => normalizeText(name);
 
 /** Texto limpo: espaços repetidos e nas pontas removidos. */
 export const cleanText = (text: string) => text.replace(/\s+/g, " ").trim();
+
+/** Conteúdo de uma célula de `controle.csv` (docs/importacao.md). */
+export type ControlCell = { status?: string; year?: number; validUntil?: string; statusDate?: string; note?: string };
+
+/**
+ * Célula do controle: `<situação> [dd/mm/aaaa] [- observação]`; item de ano: `<ano>` ou `<situação> <ano>`;
+ * item de data: `<data>` (validade, situação ok). Códigos do Doc 22 aceitos (`CONTROL_STATUS_CHOICES`).
+ */
+export function parseControlCell(text: string, valueKind: string, choices: readonly { value: string; label: string; aliases?: readonly string[] }[]): Parsed<ControlCell> {
+  const clean = cleanText(text);
+  const dash = clean.search(/\s[-–]\s/);
+  const main = (dash >= 0 ? clean.slice(0, dash) : clean).trim();
+  const note = dash >= 0 ? clean.slice(dash).replace(/^\s[-–]\s/, "").trim() : "";
+  if (note.length > 200) return { error: "observação com mais de 200 caracteres" };
+  const withNote = (cell: ControlCell): Parsed<ControlCell> => ({ value: note ? { ...cell, note } : cell });
+
+  if (valueKind === "ano" && /^\d{4}$/.test(main)) {
+    const year = Number(main);
+    return year >= 1900 && year <= 2100 ? withNote({ year }) : { error: `ano ${main} fora de 1900–2100` };
+  }
+  if (valueKind === "data" && /^[\d/.-]+$/.test(main)) {
+    const date = parseDate(main);
+    return date.error ? { error: date.error } : withNote({ validUntil: date.value });
+  }
+  let statusText = main;
+  const cell: ControlCell = {};
+  const trailingDate = main.match(/^(.*?)\s+(\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4})$/);
+  const trailingYear = valueKind === "ano" ? main.match(/^(.*?)\s+(\d{4})$/) : null;
+  if (trailingDate) {
+    const date = parseDate(trailingDate[2]!);
+    if (date.error) return { error: date.error };
+    statusText = trailingDate[1]!;
+    if (valueKind === "data") cell.validUntil = date.value; else cell.statusDate = date.value;
+  } else if (trailingYear) {
+    statusText = trailingYear[1]!;
+    cell.year = Number(trailingYear[2]);
+  }
+  const status = parseChoice(statusText, choices);
+  if (status.error) return { error: `"${main}" não é situação${valueKind === "ano" ? ", ano" : valueKind === "data" ? ", data" : ""} aceita` };
+  return withNote({ ...cell, status: status.value });
+}

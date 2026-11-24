@@ -1,6 +1,6 @@
 -- pgTAP: importação por CSV (db/migrations/006_importacao.sql; contrato em docs/importacao.md). Rode com `npm run test:db`.
 begin;
-select plan(40);
+select plan(50);
 \ir _fixture.psql
 
 select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
@@ -62,7 +62,7 @@ select throws_like(format($$select public.import_batch(%L, '[{"kind":"pessoas","
 select throws_like(format($$select public.import_batch(%L, '[{"kind":"secoes","rows":[{"line":2,"branch":"senior","section":"Tropa Sênior Imp"}]},{"kind":"pessoas","rows":[{"line":9,"name":"Futuro","branch":"senior","birth":"2090-01-01"}]}]')$$, :'gid_a'),
   'pessoas.csv, linha 9: A data de nascimento não pode ser futura', 'erro numa linha desfaz o envio');
 select is((select count(*)::int from public.sections where name = 'Tropa Sênior Imp'), 0, 'seção do envio desfeito não ficou');
-select throws_like(format($$select public.import_batch(%L, '[{"kind":"controle","rows":[{"line":2}]}]')$$, :'gid_a'), '%não está disponível', 'tipo ainda não disponível');
+select throws_like(format($$select public.import_batch(%L, '[{"kind":"desconhecido","rows":[{"line":2}]}]')$$, :'gid_a'), '%não está disponível', 'tipo ainda não disponível');
 
 -- funcoes.csv -------------------------------------------------------------------------------------
 select public.import_batch(:'gid_a', $$[
@@ -104,6 +104,37 @@ select is((select legal::text || '|' || financial from public.relative_links l j
   join public.associates a on a.id = l.associate_id where r.name = 'Marta Importada' and a.name = 'Bruno Importado'), 'true|true', 'vazio mantém legal; financeiro muda');
 select throws_like(format($$select public.import_batch(%L, '[{"kind":"responsaveis","rows":[{"line":6,"personId":"%s","relative":"Alguém","kinship":"mae"}]}]')$$, :'gid_a', :'chefe'),
   'responsaveis.csv, linha 6: Só jovens têm responsáveis', 'adulto não tem responsável');
+
+-- itens-controle.csv + controle.csv ----------------------------------------------------------------
+select public.import_batch(:'gid_a', $$[
+  {"kind":"itens-controle","rows":[
+    {"line":2,"name":"Imp Ficha","kind":"documento","directorate":"metodos_educativos","validityMonths":12,"audiences":[{"audience":"jovem","initial_status":"pendente"},{"audience":"responsavel","initial_status":null}]},
+    {"line":3,"name":"Imp Ano","kind":"etapa","directorate":"administrativa","valueKind":"ano","audiences":[{"audience":"jovem","initial_status":null}]}
+  ]},
+  {"kind":"controle","rows":[
+    {"line":2,"audience":"jovem","person":"Bruno Importado","cells":[{"item":"imp ficha","status":"ok","statusDate":"2026-03-10","note":"conferida"},{"item":"Imp Ano","year":2026}]},
+    {"line":3,"audience":"responsavel","relative":"Marta Importada","youth":"Ana Importada","youthBirth":"2015-05-14","cells":[{"item":"Imp Ficha","status":"a_verificar"}]}
+  ]}
+]$$::jsonb) as result \gset
+select is((:'result'::jsonb)->'itens-controle', '{"created":2,"updated":0}'::jsonb, 'itens criados');
+select is((:'result'::jsonb)->'controle', '{"cells":3,"updated":2}'::jsonb, 'três células de duas linhas');
+select id as bruno from public.associates where name = 'Bruno Importado' \gset
+select is((select s.status || '|' || s.status_date || '|' || s.valid_until || '|' || s.note from public.control_statuses s join public.control_items i on i.id = s.item_id
+  where s.associate_id = :'bruno' and i.name = 'Imp Ficha'), 'ok|2026-03-10|2027-03-10|conferida', 'situação com data, validade calculada e observação');
+select is((select s.status || '|' || s.value_year from public.control_statuses s join public.control_items i on i.id = s.item_id
+  where s.associate_id = :'bruno' and i.name = 'Imp Ano'), 'ok|2026', 'item de ano: o ano vale ok');
+select is((select s.status::text from public.control_statuses s join public.control_items i on i.id = s.item_id join public.relatives r on r.id = s.relative_id
+  where r.name = 'Marta Importada' and i.name = 'Imp Ficha'), 'a_verificar', 'responsável achado entre os do jovem');
+select public.import_batch(:'gid_a', $$[{"kind":"controle","rows":[{"line":2,"audience":"jovem","person":"Bruno Importado","cells":[{"item":"Imp Ficha","status":"ok"}]}]}]$$::jsonb) \gset
+select is((select s.status_date || '|' || s.note from public.control_statuses s join public.control_items i on i.id = s.item_id
+  where s.associate_id = :'bruno' and i.name = 'Imp Ficha'), '2026-03-10|conferida', 'célula só com a situação mantém data e observação');
+select public.import_batch(:'gid_a', $$[{"kind":"itens-controle","rows":[{"line":2,"name":"Imp Ano","audiences":[{"audience":"jovem","initial_status":null},{"audience":"adulto","initial_status":"pendente"}]}]}]$$::jsonb) as result \gset
+select is((:'result'::jsonb)->'itens-controle', '{"created":0,"updated":1}'::jsonb, 'item existente atualizado pelo nome');
+select is((select count(*)::int from public.control_item_audiences a join public.control_items i on i.id = a.item_id where i.name = 'Imp Ano'), 2, 'público ampliado');
+select throws_like(format($$select public.import_batch(%L, '[{"kind":"controle","rows":[{"line":4,"audience":"adulto","personId":"%s","cells":[{"item":"Imp Ficha","status":"ok"}]}]}]')$$, :'gid_a', :'chefe'),
+  'controle.csv, linha 4: Imp Ficha: O item Imp Ficha não se aplica%', 'item que não se aplica ao público');
+select throws_like(format($$select public.import_batch(%L, '[{"kind":"controle","rows":[{"line":5,"audience":"responsavel","relative":"Ninguém","cells":[]}]}]')$$, :'gid_a'),
+  'controle.csv, linha 5: responsável "Ninguém" não encontrado', 'responsável desconhecido');
 
 -- Permissão ---------------------------------------------------------------------------------------
 select tests.login('00000000-0000-0000-0000-00000000f0a3') \gset

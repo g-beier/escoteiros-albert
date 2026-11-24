@@ -321,7 +321,7 @@ export const FILES: readonly FileSpec[] = [
     ],
     dynamic: {
       pattern: "<nome do item>",
-      help: "Uma coluna por item de controle, com o nome exato do item (Configurações › Itens, ou itens-controle.csv do mesmo envio). Célula: situação (tabela abaixo), ano (itens de ano) ou data (itens de data); texto depois de ` - ` vira observação.",
+      help: "Uma coluna por item de controle, com o nome do item (Configurações › Itens, ou itens-controle.csv do mesmo envio); coluna que não é item barra o envio. Célula: situação (tabela abaixo), opcionalmente com a data em que foi conferida (`ok 10/03/2026`); item de ano: o ano (`2026`, vale ok) ou situação e ano; item de data: a validade (`31/03/2027`, vale ok) ou situação e data; texto depois de ` - ` vira observação. Vazia: não muda.",
       example: "ok - conferido no Paxtu",
     },
     example: {

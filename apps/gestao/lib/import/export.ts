@@ -1,4 +1,8 @@
-import { BRANCH_CHOICES, FUNCTION_CHOICES, KINSHIP_CHOICES, REGISTRATION_CHOICES, fileSpec, type FileKind } from "@/lib/import/contract";
+import {
+  AUDIENCE_INITIAL_CHOICES, BRANCH_CHOICES, CONTROL_STATUS_CHOICES, DIRECTORATE_CHOICES, FUNCTION_CHOICES, ITEM_KIND_CHOICES, KINSHIP_CHOICES,
+  REGISTRATION_CHOICES, VALUE_KIND_CHOICES, fileSpec, type FileKind,
+} from "@/lib/import/contract";
+import type { ImportState, StateStatus } from "@/lib/import/state";
 import { showChoice, showDate } from "@/lib/import/plan";
 import { writeImportCsv } from "@/lib/import/read";
 
@@ -54,6 +58,48 @@ export function relativesCsv(links: RelativeExport[]): string {
   ]));
 }
 
+const initial = (audiences: Record<string, string | null>, audience: string) =>
+  !(audience in audiences) ? "não" : audiences[audience] === null ? "sim" : showChoice(AUDIENCE_INITIAL_CHOICES, audiences[audience]);
+
+export function itemsCsv(state: ImportState): string {
+  return writeImportCsv(header("itens-controle"), state.items.filter((item) => item.active).map((item) => [
+    item.name, showChoice(DIRECTORATE_CHOICES, item.directorate), showChoice(ITEM_KIND_CHOICES, item.kind), showChoice(VALUE_KIND_CHOICES, item.valueKind),
+    item.validityMonths, yesNo(item.removeOnLeave), initial(item.audiences, "jovem"), initial(item.audiences, "adulto"), initial(item.audiences, "responsavel"),
+  ]));
+}
+
+/** Célula do controle no formato que `parseControlCell` lê de volta. */
+export function controlCell(status: StateStatus | undefined, valueKind: string): string {
+  if (!status) return "";
+  const label = showChoice(CONTROL_STATUS_CHOICES, status.status);
+  let text: string;
+  if (valueKind === "ano") text = status.status === "ok" && status.year ? String(status.year) : [label, status.year].filter(Boolean).join(" ");
+  else if (valueKind === "data") text = status.status === "ok" && status.validUntil ? showDate(status.validUntil) : [label, showDate(status.validUntil)].filter(Boolean).join(" ");
+  else text = [label, showDate(status.statusDate)].filter(Boolean).join(" ");
+  return status.note ? `${text} - ${status.note}` : text;
+}
+
+/** Matriz do controle: associados ativos e os responsáveis dos jovens ativos, uma coluna por item ativo. */
+export function controlsCsv(state: ImportState): string {
+  const items = state.items.filter((item) => item.active);
+  const statusOf = new Map(state.statuses.map((s) => [`${s.associateId ?? s.relativeId}|${s.itemId}`, s]));
+  const fixed = fileSpec("controle").columns.map((column) => column.header);
+  const people = state.people.filter((p) => p.active);
+  const byId = new Map(people.map((p) => [p.id, p]));
+  const rows: (string | null)[][] = [];
+  for (const p of people) {
+    rows.push([p.branch === "adulto" ? "adulto" : "jovem", p.id, p.name, showDate(p.birth), "", "",
+      ...items.map((item) => controlCell(statusOf.get(`${p.id}|${item.id}`), item.valueKind))]);
+  }
+  for (const relative of state.relatives) {
+    const youth = state.links.map((l) => (l.relativeId === relative.id ? byId.get(l.associateId) : undefined)).find((p) => p && p.branch !== "adulto");
+    if (!youth) continue;
+    rows.push(["responsável", "", relative.name, "", youth.name, showDate(youth.birth),
+      ...items.map((item) => controlCell(statusOf.get(`${relative.id}|${item.id}`), item.valueKind))]);
+  }
+  return writeImportCsv([...fixed, ...items.map((item) => item.name)], rows);
+}
+
 /** Modelo para baixar: cabeçalho e as linhas de exemplo (nomes fictícios) do contrato. */
 export function templateCsv(kind: FileKind): string {
   const spec = fileSpec(kind);
@@ -61,4 +107,4 @@ export function templateCsv(kind: FileKind): string {
 }
 
 /** Tipos com "Baixar dados atuais" (os outros chegam com os próximos arquivos do contrato). */
-export const EXPORTABLE: readonly FileKind[] = ["secoes", "pessoas", "funcoes", "responsaveis"];
+export const EXPORTABLE: readonly FileKind[] = ["secoes", "itens-controle", "pessoas", "funcoes", "responsaveis", "controle"];

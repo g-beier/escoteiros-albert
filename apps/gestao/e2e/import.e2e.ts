@@ -10,6 +10,7 @@ test.describe.configure({ mode: "serial" });
 const troop = uniqueName("Tropa Importada");
 const patrol = uniqueName("Patrulha Importada");
 const names = [uniqueName("Importado um"), uniqueName("Importado dois"), uniqueName("Importada chefe")];
+const item = uniqueName("Item importado");
 const literal = (value: string) => `'${value.replaceAll("'", "''")}'`;
 const group = `(select m.group_id from public.memberships m join auth.users u on u.id = m.user_id where u.email = ${literal(E2E_ADMIN_EMAIL)})`;
 
@@ -26,6 +27,9 @@ test.afterAll(() => {
     delete from public.associates where id in ${people};
     delete from public.patrols where group_id = ${group} and name = ${literal(patrol)};
     delete from public.sections where group_id = ${group} and name = ${literal(troop)};
+    delete from public.control_statuses where item_id in (select id from public.control_items where group_id = ${group} and name = ${literal(item)});
+    delete from public.control_item_audiences where item_id in (select id from public.control_items where group_id = ${group} and name = ${literal(item)});
+    delete from public.control_items where group_id = ${group} and name = ${literal(item)};
   `);
 });
 
@@ -80,4 +84,19 @@ test("importar funções e responsáveis de pessoas do mesmo envio", async ({ pa
   await page.goto(`/associados?situacao=todos&q=${encodeURIComponent(names[0]!)}`);
   await page.getByRole("link", { name: names[0]! }).click();
   await expect(page.getByText(names[2]!).first()).toBeVisible();
+});
+
+test("importar item de controle e situações (Doc 22)", async ({ page }) => {
+  const files = () => [
+    { name: "itens-controle.csv", mimeType: "text/csv", buffer: Buffer.from(`item;diretoria;tipo;jovem;responsável\r\n${item};comunicação;canal;não;convidado\r\n`, "utf8") },
+    { name: "controle.csv", mimeType: "text/csv", buffer: Buffer.from(`público;pessoa;jovem;nascimento do jovem;${item}\r\nresponsável;${names[2]};${names[0]};14/05/2013;OK - entrou no grupo\r\n`, "utf8") },
+  ];
+  await page.goto("/importar");
+  await page.getByLabel("Arquivos CSV").setInputFiles(files());
+  const controle = page.locator("section").filter({ has: page.getByRole("heading", { name: /^controle\.csv/ }) });
+  await expect(controle).toContainText("1 atualiza");
+  await page.getByRole("button", { name: "Importar 2 linhas" }).click();
+  await expect(page.getByText(/^Importado\. /)).toBeVisible();
+  await page.getByLabel("Arquivos CSV").setInputFiles(files());
+  await expect(page.getByRole("button", { name: "Nada a importar" })).toBeDisabled();
 });

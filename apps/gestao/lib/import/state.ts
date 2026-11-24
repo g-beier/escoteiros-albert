@@ -46,6 +46,31 @@ export type StateLink = {
   financial: boolean;
 };
 
+export type StateItem = {
+  id: string;
+  name: string;
+  kind: string;
+  directorate: string;
+  valueKind: string;
+  validityMonths: number | null;
+  removeOnLeave: boolean;
+  active: boolean;
+  /** Público → valor inicial (null = aplica sem valor inicial); público ausente = não se aplica. */
+  audiences: Record<string, string | null>;
+};
+
+/** Situação gravada de um associado ou de um responsável. */
+export type StateStatus = {
+  associateId: string | null;
+  relativeId: string | null;
+  itemId: string;
+  status: string;
+  statusDate: string | null;
+  validUntil: string | null;
+  year: number | null;
+  note: string | null;
+};
+
 export type ImportState = {
   sections: StateSection[];
   patrols: StatePatrol[];
@@ -53,6 +78,8 @@ export type ImportState = {
   functions: StateFunction[];
   relatives: StateRelative[];
   links: StateLink[];
+  items: StateItem[];
+  statuses: StateStatus[];
 };
 
-export const EMPTY_STATE: ImportState = { sections: [], patrols: [], people: [], functions: [], relatives: [], links: [] };
+export const EMPTY_STATE: ImportState = { sections: [], patrols: [], people: [], functions: [], relatives: [], links: [], items: [], statuses: [] };

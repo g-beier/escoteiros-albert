@@ -22,6 +22,7 @@ const STATE: ImportState = {
   functions: [{ id: "f1", associateId: id(1), kind: "escotista", title: "Assistente", sectionId: "s1", started: "2019-03-01", ended: null, elected: false }],
   relatives: [{ id: "r1", name: "Marta Lima", associateId: null, notes: null }],
   links: [{ id: "l1", associateId: id(2), relativeId: "r1", kinship: "mae", kinshipNote: null, legal: true, financial: false }],
+  items: [], statuses: [],
 };
 
 const plan = (files: Record<string, string>) =>

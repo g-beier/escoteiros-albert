@@ -5,7 +5,7 @@ import { readImportFile } from "@/lib/import/read";
 import type { ImportState } from "@/lib/import/state";
 
 const STATE: ImportState = {
-  functions: [], relatives: [], links: [],
+  functions: [], relatives: [], links: [], items: [], statuses: [],
   sections: [{ id: "s1", branch: "escoteiro", name: "Tropa Tupã", active: true }],
   patrols: [{ id: "p1", sectionId: "s1", name: "Patrulha Lobo", active: false }],
   people: [

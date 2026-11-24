@@ -852,6 +852,9 @@ export type Functions = {
   ignore_statement_lines: { Args: { p_ids: string[]; p_reason: string }; Returns: number };
   import_batch: { Args: { p_group_id: string; p_files: Json }; Returns: Json };
   import_cited_associate: { Args: { p_group_id: string; p_row: Json }; Returns: string };
+  import_control_items: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
+  import_control_relative: { Args: { p_group_id: string; p_row: Json }; Returns: string };
+  import_controls: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
   import_date: { Args: { p_row: Json; p_key: string }; Returns: string };
   import_find_associate: { Args: { p_group_id: string; p_id: string; p_name: string; p_birth: string }; Returns: string };
   import_functions: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };

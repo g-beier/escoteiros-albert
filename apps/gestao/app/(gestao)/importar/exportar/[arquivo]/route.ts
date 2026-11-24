@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { EXPORTABLE, functionsCsv, peopleCsv, relativesCsv, sectionsCsv } from "@/lib/import/export";
+import { EXPORTABLE, controlsCsv, functionsCsv, itemsCsv, peopleCsv, relativesCsv, sectionsCsv } from "@/lib/import/export";
 import type { FileKind } from "@/lib/import/contract";
 import * as imports from "@/lib/server/import";
 import { associatesReaderOrError } from "@/lib/server/session";
@@ -12,6 +12,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if ("error" in member) return new Response(member.error, { status: 403 });
   const { db, groupId } = member;
   const csv = kind === "pessoas" ? peopleCsv(await imports.exportPeople(db, groupId))
+    : kind === "itens-controle" ? itemsCsv(await imports.state(db, groupId))
+    : kind === "controle" ? controlsCsv(await imports.state(db, groupId))
     : kind === "funcoes" ? functionsCsv(await imports.exportFunctions(db, groupId))
       : kind === "responsaveis" ? relativesCsv(await imports.exportRelatives(db, groupId))
         : sectionsCsv(await imports.exportSections(db, groupId));

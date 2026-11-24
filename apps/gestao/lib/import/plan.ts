@@ -1,7 +1,10 @@
-import { BRANCH_CHOICES, FILE_ORDER, FUNCTION_CHOICES, KINSHIP_CHOICES, REGISTRATION_CHOICES, type Choice, type FileKind } from "@/lib/import/contract";
+import {
+  AUDIENCE_INITIAL_CHOICES, BRANCH_CHOICES, CONTROL_STATUS_CHOICES, DIRECTORATE_CHOICES, FILE_ORDER, FUNCTION_CHOICES, ITEM_KIND_CHOICES,
+  KINSHIP_CHOICES, REGISTRATION_CHOICES, VALUE_KIND_CHOICES, type Choice, type FileKind,
+} from "@/lib/import/contract";
 import type { ReadFile, ReadRow, Values } from "@/lib/import/read";
-import type { ImportState, StateFunction, StateLink, StatePerson } from "@/lib/import/state";
-import { nameKey } from "@/lib/import/values";
+import type { ImportState, StateFunction, StateItem, StateLink, StatePerson, StateStatus } from "@/lib/import/state";
+import { nameKey, parseControlCell, type ControlCell } from "@/lib/import/values";
 
 /**
  * Plano da importação: compara cada linha lida com o que está no app (e com as linhas anteriores do mesmo envio) e
@@ -34,6 +37,9 @@ export type PlannedFile = {
 };
 
 export type BatchPlan = { files: PlannedFile[]; errors: string[] };
+
+/** Item de controle conhecido durante o plano: do app ou criado por itens-controle.csv do mesmo envio. */
+type ItemRef = Omit<StateItem, "id"> & { id?: string };
 
 export type PlanOptions = { filhotes: boolean; today: string };
 
@@ -71,12 +77,16 @@ export class PlanContext {
   readonly functions: StateFunction[];
   readonly relatives: RelativeRef[];
   readonly links: StateLink[];
+  readonly items: ItemRef[];
+  readonly statuses: StateStatus[];
 
   constructor(readonly state: ImportState, readonly options: PlanOptions) {
     this.people = state.people.map((person) => ({ id: person.id, name: person.name, birth: person.birth, branch: person.branch, active: person.active }));
     this.functions = state.functions;
     this.relatives = state.relatives.map((relative) => ({ ...relative }));
     this.links = state.links;
+    this.items = state.items.map((item) => ({ ...item, audiences: { ...item.audiences } }));
+    this.statuses = state.statuses;
     this.sections = state.sections.map((section) => ({ ...section }));
     const sectionById = new Map(this.sections.map((section) => [section.id!, section]));
     this.patrols = state.patrols.flatMap((patrol) => {
@@ -158,7 +168,7 @@ export class PlanContext {
 
 // Planos por arquivo --------------------------------------------------------------------------------------------------
 
-type Planner = (file: ReadFile, ctx: PlanContext) => PlannedFile;
+type Planner = (file: ReadFile, ctx: PlanContext, batchErrors: string[]) => PlannedFile;
 
 function emptyPlan(file: ReadFile): PlannedFile {
   return { kind: file.kind, name: file.name, rows: [], warnings: [...file.warnings], creations: [], payload: [] };
@@ -474,7 +484,163 @@ function planRelatives(file: ReadFile, ctx: PlanContext): PlannedFile {
   return plan;
 }
 
+const AUDIENCES = ["jovem", "adulto", "responsavel"] as const;
+const AUDIENCE_LABEL: Record<string, string> = { jovem: "jovem", adulto: "adulto", responsavel: "responsável" };
+const initialLabel = (value: string | null | undefined) => (value === undefined ? "não" : value === null ? "sim" : showChoice(AUDIENCE_INITIAL_CHOICES, value));
+
+function planItems(file: ReadFile, ctx: PlanContext): PlannedFile {
+  const plan = emptyPlan(file);
+  const seen = new Map<string, number>();
+  for (const row of file.rows) {
+    const v = row.values;
+    const errors = [...row.errors];
+    const name = str(v, "name") ?? "";
+    const key = nameKey(name);
+    if (seen.has(key)) errors.push(`mesmo item da linha ${seen.get(key)}`);
+    const existing = ctx.items.find((item) => nameKey(item.name) === key);
+    if (!existing && !str(v, "directorate")) errors.push("diretoria é obrigatória para criar");
+    if (!existing && !str(v, "kind")) errors.push("tipo é obrigatório para criar");
+    const audiences: Record<string, string | null> = { ...(existing?.audiences ?? {}) };
+    for (const audience of AUDIENCES) {
+      const value = str(v, audience);
+      if (value === undefined) continue;
+      if (value === "nao") delete audiences[audience]; else audiences[audience] = value === "sim" ? null : value;
+    }
+    if (!Object.keys(audiences).length) errors.push("o item precisa valer para jovem, adulto ou responsável");
+    if (errors.length) { plan.rows.push(errorRow(row, name, errors)); continue; }
+    seen.set(key, row.line);
+
+    const payload: Record<string, unknown> = { line: row.line, ...v, audiences: AUDIENCES.filter((a) => a in audiences).map((a) => ({ audience: a, initial_status: audiences[a] })) };
+    if (!existing) {
+      const item: ItemRef = {
+        name, kind: str(v, "kind")!, directorate: str(v, "directorate")!, valueKind: str(v, "valueKind") ?? "situacao",
+        validityMonths: (v.validityMonths as number | undefined) ?? null, removeOnLeave: (v.removeOnLeave as boolean | undefined) ?? false, active: true, audiences,
+      };
+      ctx.items.push(item);
+      const changes: Change[] = [
+        { field: "diretoria", before: "", after: showChoice(DIRECTORATE_CHOICES, item.directorate) },
+        { field: "tipo", before: "", after: `${showChoice(ITEM_KIND_CHOICES, item.kind)} (${showChoice(VALUE_KIND_CHOICES, item.valueKind)})` },
+        { field: "público", before: "", after: Object.keys(audiences).map((a) => `${AUDIENCE_LABEL[a]}: ${initialLabel(audiences[a])}`).join(", ") },
+      ];
+      plan.rows.push({ line: row.line, action: "nova", label: name, changes, errors: [], warnings: [] });
+      plan.payload.push(payload);
+      continue;
+    }
+    if (existing.id) payload.itemId = existing.id;
+    const changes: Change[] = [];
+    const compare = (field: string, before: string, after: string | undefined) => { if (after !== undefined && after !== before) changes.push({ field, before, after }); };
+    compare("diretoria", showChoice(DIRECTORATE_CHOICES, existing.directorate), str(v, "directorate") && showChoice(DIRECTORATE_CHOICES, str(v, "directorate")));
+    compare("tipo", showChoice(ITEM_KIND_CHOICES, existing.kind), str(v, "kind") && showChoice(ITEM_KIND_CHOICES, str(v, "kind")));
+    compare("valor", showChoice(VALUE_KIND_CHOICES, existing.valueKind), str(v, "valueKind") && showChoice(VALUE_KIND_CHOICES, str(v, "valueKind")));
+    compare("validade meses", existing.validityMonths?.toString() ?? "", v.validityMonths?.toString());
+    compare("remover no desligamento", yesNo(existing.removeOnLeave), typeof v.removeOnLeave === "boolean" ? yesNo(v.removeOnLeave) : undefined);
+    for (const audience of AUDIENCES) compare(AUDIENCE_LABEL[audience]!, initialLabel(existing.audiences[audience]), str(v, audience) !== undefined ? initialLabel(audiences[audience]) : undefined);
+    const warnings = existing.active ? [] : ["item desativado: continua desativado (reative em Configurações › Itens)"];
+    existing.audiences = audiences;
+    if (str(v, "valueKind")) existing.valueKind = str(v, "valueKind")!;
+    const action: RowAction = changes.length ? "atualiza" : "igual";
+    plan.rows.push({ line: row.line, action, label: existing.name, changes, errors: [], warnings });
+    if (action === "atualiza") plan.payload.push(payload);
+  }
+  return plan;
+}
+
+function showCell(cell: ControlCell | StateStatus | undefined, valueKind: string) {
+  if (!cell) return "";
+  const parts = [
+    valueKind === "ano" && cell.year ? String(cell.year) : "",
+    valueKind === "data" && cell.validUntil ? showDate(cell.validUntil) : "",
+    cell.status && !((valueKind === "ano" && cell.year) || (valueKind === "data" && cell.validUntil)) ? showChoice(CONTROL_STATUS_CHOICES, cell.status) : "",
+    cell.statusDate ? `em ${showDate(cell.statusDate)}` : "",
+  ].filter(Boolean);
+  return parts.join(" ") + (cell.note ? ` - ${cell.note}` : "");
+}
+
+function planControls(file: ReadFile, ctx: PlanContext, batchErrors: string[]): PlannedFile {
+  const plan = emptyPlan(file);
+  const columns = new Map<string, ItemRef>();
+  for (const header of file.dynamicColumns) {
+    const item = ctx.items.find((candidate) => nameKey(candidate.name) === nameKey(header));
+    if (item) columns.set(header, item);
+    else batchErrors.push(`${file.name}: a coluna "${header}" não é item de controle (confira o nome em Configurações › Itens ou cadastre em itens-controle.csv).`);
+  }
+  for (const item of new Set(columns.values())) if (!item.active) plan.warnings.push(`O item "${item.name}" está desativado: as células dele dão erro.`);
+  const seen = new Map<string, number>();
+  for (const row of file.rows) {
+    const v = row.values;
+    const errors = [...row.errors];
+    const audience = str(v, "audience");
+    let target: { associateId?: string; relativeId?: string; person?: PersonRef; relativeName?: string } | undefined;
+    let label = str(v, "person") ?? "";
+    if (audience === "responsavel") {
+      const youthName = str(v, "youth");
+      const name = str(v, "person") ?? "";
+      let youth: PersonRef | undefined;
+      if (youthName) {
+        const found = ctx.findPerson(undefined, youthName, v.youthBirth);
+        if (found.error) errors.push(`jovem: ${found.error}`); else if (!found.person) errors.push(`jovem "${youthName}" não encontrado`);
+        youth = found.person;
+      }
+      const linked = youth?.id ? new Set(ctx.links.filter((l) => l.associateId === youth!.id).map((l) => l.relativeId)) : undefined;
+      const candidates = ctx.relatives.filter((r) => nameKey(r.name) === nameKey(name) && (!linked || (r.id && linked.has(r.id)) || (!r.id && youth && !youth.id)));
+      if (candidates.length > 1) errors.push(`há ${candidates.length} responsáveis "${name}": informe o jovem`);
+      else if (!candidates.length) errors.push(`responsável "${name}" não encontrado${youthName ? ` entre os de ${youthName}` : ""} (cadastre em responsaveis.csv)`);
+      const relative = candidates.length === 1 ? candidates[0] : undefined;
+      target = relative ? { relativeId: relative.id, relativeName: relative.name } : undefined;
+      label = `${name}${youthName ? ` (responsável de ${youthName})` : ""}`;
+      if (relative && !relative.id) target = { relativeName: relative.name };
+      if (target && youth && !youth.id) Object.assign(target, { person: youth });
+    } else if (audience) {
+      const person = citedPerson(ctx, v, errors);
+      if (person && (person.branch === "adulto" ? "adulto" : "jovem") !== audience) errors.push(`público ${AUDIENCE_LABEL[audience]}, mas é ${person.branch === "adulto" ? "adulto" : "jovem"}`);
+      target = person ? { associateId: person.id, person } : undefined;
+      label = person?.name ?? label;
+    }
+    const key = target ? target.associateId ?? target.relativeId ?? `${target.relativeName}|${target.person?.name}` : "";
+    if (key && seen.has(key)) errors.push(`mesma pessoa da linha ${seen.get(key)}`);
+
+    const cells: Record<string, unknown>[] = [];
+    const changes: Change[] = [];
+    for (const [header, raw] of Object.entries(row.dynamic)) {
+      const item = columns.get(header);
+      if (!item) continue;
+      if (audience && !(audience in item.audiences)) { errors.push(`${item.name}: não se aplica a ${AUDIENCE_LABEL[audience]}`); continue; }
+      if (!item.active) { errors.push(`${item.name}: item desativado`); continue; }
+      const parsed = parseControlCell(raw, item.valueKind, CONTROL_STATUS_CHOICES);
+      if (parsed.error !== undefined) { errors.push(`${item.name}: ${parsed.error}`); continue; }
+      const cell: ControlCell = parsed.value;
+      if (cell.statusDate && cell.statusDate > ctx.options.today) { errors.push(`${item.name}: data no futuro`); continue; }
+      const current = item.id && (target?.associateId || target?.relativeId)
+        ? ctx.statuses.find((s) => s.itemId === item.id && (target!.associateId ? s.associateId === target!.associateId : s.relativeId === target!.relativeId))
+        : undefined;
+      const status = cell.status ?? "ok";
+      const same = current && current.status === status
+        && (cell.year === undefined || cell.year === current.year)
+        && (cell.validUntil === undefined || cell.validUntil === current.validUntil)
+        && (cell.statusDate === undefined || cell.statusDate === current.statusDate)
+        && (cell.note === undefined || cell.note === current.note);
+      if (same) continue;
+      changes.push({ field: item.name, before: showCell(current, item.valueKind), after: showCell({ ...cell, status }, item.valueKind) });
+      cells.push({ item: item.name, ...(item.id ? { itemId: item.id } : {}), ...cell });
+    }
+    if (errors.length || !target || !audience) { plan.rows.push(errorRow(row, label, errors)); continue; }
+    seen.set(key, row.line);
+    const action: RowAction = cells.length ? "atualiza" : "igual";
+    plan.rows.push({ line: row.line, action, label, changes, errors: [], warnings: [] });
+    if (!cells.length) continue;
+    const payload: Record<string, unknown> = { line: row.line, audience, cells };
+    if (audience === "responsavel") {
+      if (target.relativeId) payload.relativeId = target.relativeId;
+      else Object.assign(payload, { relative: target.relativeName, ...(target.person ? { youth: target.person.name, youthBirth: target.person.birth } : {}) });
+    } else Object.assign(payload, personPayload(target.person!));
+    plan.payload.push(payload);
+  }
+  return plan;
+}
+
 const PLANNERS: Partial<Record<FileKind, Planner>> = {
+  "itens-controle": planItems,
+  controle: planControls,
   secoes: planSections,
   pessoas: planPeople,
   funcoes: planFunctions,
@@ -500,7 +666,7 @@ export function planBatch(files: ReadFile[], state: ImportState, options: PlanOp
     if (!file) continue;
     const planner = PLANNERS[kind];
     if (!planner) { errors.push(`${file.name}: a importação de ${kind}.csv ainda não está disponível.`); continue; }
-    planned.push(planner(file, ctx));
+    planned.push(planner(file, ctx, errors));
   }
   return { files: planned, errors };
 }
