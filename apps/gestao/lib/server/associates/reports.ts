@@ -1,11 +1,13 @@
 import { buildDoc10, type Doc10 } from "@/lib/associates/doc10";
 import { buildDoc13, type Doc13 } from "@/lib/associates/doc13";
 import { buildDoc14, type Doc14 } from "@/lib/associates/doc14";
+import { buildLifeReport, type LifeReport } from "@/lib/associates/life-report";
 import type { Db } from "@/lib/server/db";
 import * as associates from "./associates";
 import * as controls from "./controls";
 import * as functions from "./functions";
 import * as relatives from "./relatives";
+import * as life from "./scout-life";
 import * as sections from "./sections";
 
 // Dados dos relatórios em PDF do Associados (/associados/relatorios). O conteúdo é montado pelas funções puras de
@@ -36,4 +38,10 @@ export async function doc14(db: Db, groupId: string, today: string): Promise<Doc
 export async function doc13(db: Db, groupId: string, today: string): Promise<Doc13> {
   const [people, catalog] = await Promise.all([associates.list(db, groupId), sections.catalog(db, groupId)]);
   return buildDoc13({ associates: people, sections: catalog.sections, today });
+}
+
+/** Vida escoteira: promessa, estrelas por ramo e lacunas. */
+export async function lifeReport(db: Db, groupId: string, today: string): Promise<LifeReport> {
+  const [people, fns, data] = await Promise.all([associates.list(db, groupId), functions.list(db, groupId), life.ofGroup(db, groupId)]);
+  return buildLifeReport({ associates: people, functions: fns, periods: data.periods, stars: data.stars, exclusions: data.exclusions, today });
 }

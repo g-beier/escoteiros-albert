@@ -9,7 +9,7 @@ import { Doc14Report } from "./doc14-report";
 // Fumaça do Doc 14 com nomes fictícios. REPORT_OUT=/caminho/prefixo grava os PDFs para conferir.
 
 const render = async (input: Parameters<typeof buildDoc14>[0], name: string) => {
-  const report = reportBySlug("doc-14")!;
+  const report = reportBySlug("doc-14a")!;
   const pdf = await renderReport(<Doc14Report doc={buildDoc14(input)} title={report.title} footerName={reportFooterName(report)} issuedOn="2026-11-20" />);
   if (process.env.REPORT_OUT) writeFileSync(`${process.env.REPORT_OUT}-${name}.pdf`, pdf);
   return pdf.toString("latin1");

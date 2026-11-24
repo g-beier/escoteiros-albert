@@ -77,6 +77,40 @@ export type Tables = {
     section_id: string | null;
     elected: boolean;
   };
+  associate_life_events: {
+    id: string;
+    group_id: string;
+    associate_id: string;
+    event_date: string;
+    title: string;
+    description: string | null;
+    created_by: string | null;
+    created_at: string;
+  };
+  associate_life_exclusions: {
+    id: string;
+    group_id: string;
+    associate_id: string;
+    started_on: string;
+    ended_on: string;
+    reason: string;
+    note: string | null;
+    created_by: string | null;
+    created_at: string;
+  };
+  associate_life_periods: {
+    id: string;
+    group_id: string;
+    associate_id: string;
+    branch: Enums["scout_branch"];
+    started_on: string;
+    ended_on: string | null;
+    place: string | null;
+    source: string;
+    created_by: string | null;
+    created_at: string;
+    updated_at: string;
+  };
   associate_movements: {
     id: string;
     group_id: string;
@@ -135,6 +169,15 @@ export type Tables = {
     created_at: string | null;
     updated_at: string | null;
   };
+  associate_stars: {
+    associate_id: string;
+    star: number;
+    group_id: string;
+    branch: Enums["scout_branch"] | null;
+    delivered_on: string | null;
+    updated_by: string | null;
+    updated_at: string;
+  };
   associates: {
     id: string;
     group_id: string;
@@ -155,6 +198,7 @@ export type Tables = {
     transition_started_on: string | null;
     registration: Enums["associate_registration"];
     nickname: string | null;
+    life_notes: string | null;
   };
   audit_events: {
     id: number;
@@ -844,6 +888,23 @@ export type Functions = {
   is_group_member: { Args: { requested_group_id: string }; Returns: boolean };
   ledger_entry_history: { Args: { p_entry_id: string }; Returns: { id: number; created_at: string; action: string; actor_email: string; details: Json }[] };
   ledger_entry_snapshot: { Args: { p_entry_id: string }; Returns: Json };
+  life_associate_for_edit: { Args: { p_associate_id: string }; Returns: Tables["associates"] };
+  life_event_delete: { Args: { p_event_id: string }; Returns: undefined };
+  life_event_save: { Args: { p_associate_id: string; p_event_id: string; p_date: string; p_title: string; p_description: string }; Returns: string };
+  life_exclusion_delete: { Args: { p_exclusion_id: string }; Returns: undefined };
+  life_exclusion_save: { Args: { p_associate_id: string; p_exclusion_id: string; p_started_on: string; p_ended_on: string; p_reason: string; p_note: string }; Returns: string };
+  life_expected_branch: { Args: { p_associate_id: string; p_branch: Enums["scout_branch"]; p_active: boolean; p_on: string }; Returns: Enums["scout_branch"] };
+  life_follow: { Args: { p_associate_id: string; p_on: string; p_expected: Enums["scout_branch"] }; Returns: undefined };
+  life_notes_set: { Args: { p_associate_id: string; p_notes: string }; Returns: undefined };
+  life_period_check: { Args: { p_associate_id: string; p_branch: Enums["scout_branch"]; p_started_on: string; p_ended_on: string; p_place: string; p_except: string }; Returns: undefined };
+  life_period_delete: { Args: { p_period_id: string }; Returns: undefined };
+  life_period_save: { Args: { p_associate_id: string; p_period_id: string; p_branch: Enums["scout_branch"]; p_started_on: string; p_ended_on: string; p_place: string }; Returns: string };
+  life_period_snapshot: { Args: { p_period_id: string }; Returns: Json };
+  life_period_switch: { Args: { p_associate_id: string; p_date: string; p_branch: Enums["scout_branch"] }; Returns: undefined };
+  life_periods_add: { Args: { p_associate_id: string; p_periods: Json; p_source: string }; Returns: number };
+  life_star_deliver: { Args: { p_associate_id: string; p_star: number; p_date: string }; Returns: undefined };
+  life_star_set_branch: { Args: { p_associate_id: string; p_star: number; p_branch: Enums["scout_branch"] }; Returns: undefined };
+  life_today: { Args: Record<string, never>; Returns: string };
   link_reconciliation: { Args: { p_statement_line_ids: string[]; p_ledger_entry_ids: string[] }; Returns: string };
   members_drop_if_empty: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean };
   module_role_of: { Args: { p_group_id: string; p_module: string }; Returns: Enums["module_role"] };

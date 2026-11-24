@@ -9,7 +9,7 @@ valendo para o que fica depois. Infra e Azure: `.azure/deployment-plan.md`.
 1. **Papéis** (seção 1): pequeno, muda quem vê o quê; vem antes de dar acesso a mais gente.
 2. **Importação de associados por CSV** (seção 2): o Financeiro e os relatórios dependem das pessoas.
 3. **Importação do inventário por CSV** (seção 3), com as contagens de 2025 e 2026.
-4. **Vida escoteira** (seção 4): modelo depois de ver a planilha de linha do tempo; implementação em seguida.
+4. **Vida escoteira** (seção 4): feito (004); falta importar a planilha.
 5. **Ir ao ar**: tela de consentimento do Google (página `/privacidade` pronta), Azure, domínio
    `gestao.escoteirosalbert.com.br`, carga real pelos CSVs, uso pela diretoria em paralelo às planilhas.
 6. **Antes da contagem de 2027**: conferência anual no Inventário (Passo 4 do backlog do inventário).
@@ -104,25 +104,21 @@ contagens e ajuste os itens.
 
 ## 4. Vida escoteira (tempo de atividade)
 
-Objetivo: registrar, de forma relativamente manual, a linha do tempo de cada pessoa para contar os anos de atividade.
-Referência: uma planilha com uma linha do tempo por pessoa, com datas e células pintadas que representam a contagem
-(ver com o Diretor-presidente antes de modelar).
+Feito em 2026-11-24 (migration `004_vida_escoteira.sql`), depois de ver a planilha de linha do tempo (uma linha por
+pessoa, um mês por célula, células pintadas na cor do ramo ou azul para os voluntários, a contagem de anos no
+aniversário). Modelo em `apps/gestao/docs/associados/modelo.md` (Vida escoteira).
 
-Rascunho para discutir:
-- **Períodos**: por pessoa, início e fim (ou só o ano), tipo (jovem num ramo, adulto numa função, afastamento), onde
-  (este grupo ou outro, texto livre) e se conta para o tempo de atividade. Pode haver períodos antes da entrada no
-  grupo.
-- **Sugestão automática**: o que o app já sabe (entrada e saídas em `associate_movements`, passagens em
-  `associate_moves`, funções de adulto) aparece como período sugerido; a diretoria confirma ou corrige. O resto é
-  manual.
-- **Contagem**: anos de atividade = soma dos períodos que contam, pela regra combinada (ex.: ano conta se ...).
-- **Telas**: linha do tempo no perfil (anos em colunas, células pintadas como na planilha), edição dos períodos;
-  relatório do grupo; aviso no Início para quem completa anos de atividade.
-- **Importação**: a planilha atual entra pelo CSV (seção 2), como um quarto arquivo de períodos, ou um ano por coluna.
+Decisões:
+- A contagem começa na **promessa** (não na entrada). Lacunas pausam a contagem; reingressos depois da promessa abrem
+  novos períodos. Tempo em outros grupos conta (campo "outro grupo").
+- Contam jovens e adultos **escotistas ou dirigentes**; honoríficos e outras funções não (o cinza da planilha).
+- Estrela a cada 12 meses de atividade, no ramo com mais atividade nesses 12 meses, sem janeiro e fevereiro (férias);
+  o ramo pode ser corrigido à mão.
+- Aviso de entrega 15 dias antes, que fica até marcar "certificado entregue"; a entrega quita as estrelas anteriores.
+- Quem controla: Diretoria de Métodos Educativos (Editor do Associados).
+- Períodos passados são livres; só o vigente acompanha o cadastro sozinho (passagem, desligamento, reingresso, funções).
+- Eventos do histórico com data (Cruzeiro do Sul, Lis de Ouro…) e anotações sem data.
+- Linhas muito longas num ramo na planilha são históricos perdidos, a resgatar.
 
-Perguntas para quando olharmos a planilha:
-1. A unidade é o ano (célula por ano) ou períodos com datas? Meio ano conta?
-2. O que significa cada cor?
-3. Qual a regra oficial de contagem (UEB) e para que ela serve (distintivo de tempo de atividade, homenagens)?
-4. Conta tempo em outros grupos? E afastamentos (licença, intercâmbio)?
-5. Quem lança e quem confere?
+Falta: importar a planilha atual (cores → períodos, anotações → eventos ou anotações); avisos de estrela aos chefes no
+Início (como aniversários e transições).

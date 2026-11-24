@@ -14,6 +14,9 @@ import { AssociateFunctions } from "@/components/associates/associate-functions"
 import { AssociateRelatives } from "@/components/associates/associate-relatives";
 import { ReviewNotice } from "@/components/associates/review-notice";
 import { TransitionNotice } from "@/components/associates/transition-notice";
+import { LifeCard } from "@/components/associates/life/life-card";
+import { lifeMismatch, lifeSummary } from "@/lib/associates/scout-life";
+import * as lifeData from "@/lib/server/associates/scout-life";
 import { transitionOf, transitionWindow } from "@/lib/associates/alerts";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
@@ -42,9 +45,9 @@ export default async function AssociateDetail({ params }: { params: Promise<{ id
   const associate = await associates.get(db, groupId, id);
   if (!associate) notFound();
   const youth = associate.branch !== "adulto";
-  const [{ moves, movements }, catalog, functions, items, statuses, links, relatives, people] = await Promise.all([
+  const [{ moves, movements }, catalog, functions, items, statuses, links, life, relatives, people] = await Promise.all([
     associates.history(db, id), sectionsData.catalog(db, groupId), functionsData.listOf(db, id), controls.items(db, groupId), controls.statusesOf(db, id),
-    relativesData.linksOf(db, id),
+    relativesData.linksOf(db, id), lifeData.ofAssociate(db, id),
     youth ? relativesData.list(db, groupId) : Promise.resolve([]),
     youth ? associates.list(db, groupId) : Promise.resolve([]),
   ]);
@@ -60,6 +63,8 @@ export default async function AssociateDetail({ params }: { params: Promise<{ id
   const transition = transitionOf(associate, today);
   const span = youth ? transitionWindow(associate) : null;
   const scouterOf = youth ? [] : scouterSections(functions, today).get(id) ?? [];
+  const lifeNow = lifeSummary({ periods: life.periods, promiseDate: associate.promise_date, records: life.stars, exclusions: life.exclusions, today });
+  const mismatch = lifeMismatch({ associate, periods: life.periods, functions, moves, movements, today });
 
   return <div className="shell">
     <AppHeader current={`/associados/${id}`} member={member} />
@@ -90,6 +95,8 @@ export default async function AssociateDetail({ params }: { params: Promise<{ id
 
       {associate.review_status === "para_revisar" && <ReviewNotice associateId={id} canEdit={member.associates.canReview} />}
       {transition && <TransitionNotice associateId={id} transition={transition} branch={associate.branch} canEdit={canEdit} today={today} />}
+
+      <LifeCard associateId={id} periods={life.periods} exclusions={life.exclusions} summary={lifeNow} mismatch={mismatch} canEdit={member.associates.canReview} today={today} />
 
       {!youth && <AssociateFunctions associateId={id} associateName={associate.name} functions={functions} sections={catalog.sections}
         canEdit={canEdit} today={today} />}
