@@ -10,7 +10,7 @@ import { BULK_ACTIONS, type BulkAction, type BulkTarget, type EntryInput } from 
 import type { Condition, Origin, Tracking, WriteOffReason } from "@/lib/inventory/vocabulary";
 import { parseMoneyToCents } from "@/lib/money";
 import * as materials from "@/lib/server/inventory/materials";
-import { inventoryWriterOrError } from "@/lib/server/session";
+import { inventoryEditorOrError, inventoryWriterOrError } from "@/lib/server/session";
 
 // Validação dos formulários aqui; as escritas são as funções inventory_* (lib/server/inventory/materials.ts),
 // auditadas, e as do chefe ficam para revisar.
@@ -271,5 +271,16 @@ export async function updateUnit(_previous: ActionResult, formData: FormData) {
       description: optional(formData, "description"), ...entry(formData),
     });
     return "Dados da peça salvos.";
+  });
+}
+
+/** Ordem dos materiais de uma divisão (tela Ordenar): a lista inteira, na ordem da tela. Só Editor. */
+export async function orderMaterials(locationId: string, materialIds: string[]): Promise<ActionResult> {
+  return runAction(() => inventoryEditorOrError("Apenas editores do Inventário ordenam os materiais."), async ({ db }) => {
+    const uuid = /^[0-9a-f-]{36}$/i;
+    if (!uuid.test(locationId) || !materialIds.every((value) => uuid.test(value))) throw new InputError("Registro inválido. Recarregue a página.");
+    await materials.orderMaterials(db, locationId, materialIds);
+    revalidatePath("/inventario/materiais");
+    return "Ordem salva.";
   });
 }

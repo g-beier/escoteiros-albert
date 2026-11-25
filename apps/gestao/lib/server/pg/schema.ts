@@ -475,6 +475,12 @@ export type Tables = {
     updated_at: string;
     variant: string | null;
   };
+  inventory_material_positions: {
+    group_id: string;
+    material_id: string;
+    location_id: string;
+    position: number;
+  };
   inventory_material_rows: {
     id: string | null;
     group_id: string | null;
@@ -898,6 +904,7 @@ export type Functions = {
   inventory_merged_value: { Args: { p_value: number; p_quantity: number; p_added_value: number; p_added: number }; Returns: number };
   inventory_next_location_position: { Args: { p_group_id: string; p_parent_id: string }; Returns: number };
   inventory_next_tag: { Args: { p_family_id: string }; Returns: string };
+  inventory_order_materials: { Args: { p_location_id: string; p_material_ids: string[] }; Returns: number };
   inventory_place_location: { Args: { p_id: string; p_target: string; p_place: string }; Returns: undefined };
   inventory_quick: { Args: { p_action: string; p_args: Json }; Returns: Json };
   inventory_record_count: { Args: { p_material_id: string; p_location_id: string; p_year: number; p_quantity: number; p_notes: string }; Returns: string };

@@ -35,7 +35,7 @@ import { pageSession } from "@/lib/server/session";
 
 type Line = ListLine & StockRow & { material: MaterialRow };
 type Row =
-  | { kind: "group"; key: string; level: "root" | "sub"; depth?: number; href?: string; label: string }
+  | { kind: "group"; key: string; level: "root" | "sub"; depth?: number; href?: string; label: string; orderHref?: string }
   | { kind: "line"; key: string; line: Line; depth: number };
 
 type Search = Record<string, string | undefined>;
@@ -51,7 +51,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   const currentYear = Number(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).slice(0, 4));
   const years = [currentYear - 1, currentYear - 2] as const;
 
-  const [materialData, stock, paths, familyOptions, counts, cookieStore, toReview] = await Promise.all([
+  const [materialData, stock, paths, familyOptions, counts, cookieStore, toReview, positions] = await Promise.all([
     materialsData.list(db, groupId, { includeInactive: params.inativos === "1", familyId: params.familia, search: params.q }),
     materialsData.stockByLocation(db, groupId),
     locations.listPaths(db, groupId),
@@ -59,6 +59,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
     materialsData.countsOfYears(db, groupId, [...years]),
     cookies(),
     member.inventory.canReview ? movementsData.pendingCount(db, groupId) : Promise.resolve(0),
+    materialsData.positions(db, groupId),
   ]);
 
   // Colunas: as que existem (anos com contagem) menos as que o usuário ocultou.
@@ -92,7 +93,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   for (const row of stock) {
     const material = materials.get(row.material_id);
     if (!material) continue;
-    const line: Line = { ...row, material, previous: previousOf(row.material_id, row.location_id) };
+    const line: Line = { ...row, material, previous: previousOf(row.material_id, row.location_id), position: positions.get(`${row.location_id}|${row.material_id}`) ?? null };
     if (!matchesFilters(line, state)) continue;
     byLocation.set(row.location_id, [...(byLocation.get(row.location_id) ?? []), line]);
   }
@@ -120,10 +121,11 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   const here = materialsHref(params);
   // Abas mantêm busca, filtros e ordem; trocam só o local.
   const hrefFor = (divisao?: string) => materialsHref({ ...params, divisao });
+  // Padrão: a ordem escolhida em cada divisão. Material: ordem do local → A→Z → Z→A → ordem do local.
   const sortHref = (key: SortKey) => {
+    if (key === "material" && state.sort === "material" && state.dir === "desc") return materialsHref({ ...params, ordem: undefined, dir: undefined });
     const dir: SortDir = state.sort === key && state.dir === "asc" ? "desc" : "asc";
-    const isDefault = key === "material" && dir === "asc";
-    return materialsHref({ ...params, ordem: isDefault ? undefined : key, dir: isDefault || dir === "asc" ? undefined : dir });
+    return materialsHref({ ...params, ordem: key, dir: dir === "asc" ? undefined : dir });
   };
   const sortProps = (key: SortKey) => ({ active: state.sort === key, dir: state.dir, href: sortHref(key) });
   const tabs = [
@@ -132,6 +134,9 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   ];
   const heading = showAll ? "Todos os locais" : selected && selected.depth > 0 ? selected.path : root?.name ?? "Materiais";
   const canEdit = member.inventory.canWrite;
+  // Ordenar os materiais de uma divisão (Editor), só na ordem do local: a tela de ordem volta para esta lista.
+  const orderHref = (locationId: string) =>
+    member.inventory.canReview && state.sort === "posicao" && byLocation.has(locationId) ? withBack(`/inventario/materiais/ordenar?divisao=${locationId}`, here) : undefined;
   const span = columns.length + 1 + (canEdit ? 2 : 0);
   // Edição em massa: divisões ativas (na ordem da árvore) e famílias para os diálogos da barra de ações.
   const locationOptions = paths.filter((row) => row.active).map((row) => ({ value: row.id, label: row.path }));
@@ -142,8 +147,8 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   const rows: Row[] = [
     ...groups.flatMap(({ location, lines: groupLines }): Row[] => [
       ...(location.depth === 0
-        ? showAll ? [{ kind: "group", key: location.id, level: "root", label: location.name } as const] : []
-        : [{ kind: "group", key: location.id, level: "sub", depth: location.depth, href: hrefFor(location.id), label: location.name } as const]),
+        ? showAll ? [{ kind: "group", key: location.id, level: "root", label: location.name, orderHref: orderHref(location.id) } as const] : []
+        : [{ kind: "group", key: location.id, level: "sub", depth: location.depth, href: hrefFor(location.id), label: location.name, orderHref: orderHref(location.id) } as const]),
       ...groupLines.map((line): Row => ({ kind: "line", key: `${line.location_id}-${line.material_id}`, line, depth: location.depth })),
     ]),
     ...(noStock.length > 0 ? [{ kind: "group", key: "sem-estoque", level: "root", label: "Sem estoque" } as const] : []),
@@ -168,6 +173,8 @@ export default async function Materials({ searchParams }: { searchParams: Promis
         <SectionHeader title={heading}
           description={selected && selected.depth > 0 && root ? <>Só esta divisão e o que está dentro dela. <Link href={hrefFor(root.id)} className="font-semibold text-primary hover:underline">Ver {root.name} inteiro</Link></> : undefined}>
           <SectionCount>{distinct} {distinct === 1 ? "material" : "materiais"} · valor total <span className="num">{formatCents(total)}</span></SectionCount>
+          {root && selected?.depth === 0 && orderHref(root.id) && <Link href={orderHref(root.id)!} className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <IconArrowsSort data-icon="inline-start" /> Ordenar {root.name}</Link>}
         </SectionHeader>
         {/* A tabela fica mesmo vazia: o cabeçalho tem os menus das colunas, para desfazer o filtro. Corpo em blocos
             (`cv-table`/`cv-rows` do tema): o navegador pula os que estão fora da tela. */}
@@ -189,7 +196,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
             </TableRow></TableHeader>
             {chunk(rows).map((block, index) => <TableBody key={index} className="cv-rows" style={cvRows(block.length, "2.5rem")}>
               {block.map((row) => row.kind === "group"
-                ? <GroupRow key={row.key} level={row.level} depth={row.depth} columns={span} href={row.href}>{row.label}</GroupRow>
+                ? <GroupRow key={row.key} level={row.level} depth={row.depth} columns={span} href={row.href} orderHref={row.orderHref}>{row.label}</GroupRow>
                 : <MaterialLine key={row.key} line={row.line} depth={row.depth} columns={columns} back={here} actions={stockActions} />)}
             </TableBody>)}
             {rows.length === 0 && <TableBody><TableRow className="hover:bg-transparent">
@@ -247,11 +254,14 @@ function SortHead({ label, title, className, active, dir, href }: { label: strin
 const indent = (level: number) => ({ paddingLeft: `${0.75 + Math.max(level, 0) * 1.25}rem` });
 
 /** Linha de subtítulo: local macro (na aba Todos) ou subdivisão, recuada pelo nível. */
-function GroupRow({ level, depth = 0, columns, href, children }: { level: "root" | "sub"; depth?: number; columns: number; href?: string; children: React.ReactNode }) {
+function GroupRow({ level, depth = 0, columns, href, orderHref, children }: { level: "root" | "sub"; depth?: number; columns: number; href?: string; orderHref?: string; children: React.ReactNode }) {
   return <TableRow className="hover:bg-transparent">
     <TableCell colSpan={columns} style={level === "sub" ? indent(depth - 1) : undefined}
       className={cn(CELL_CLASS, level === "root" ? "bg-secondary pt-3 text-sm font-bold" : "bg-muted/60 text-xs font-semibold text-muted-foreground")}>
-      {href ? <Link href={href} className="hover:text-foreground hover:underline">{children}</Link> : children}
+      <span className="flex items-center justify-between gap-3">
+        {href ? <Link href={href} className="hover:text-foreground hover:underline">{children}</Link> : <span>{children}</span>}
+        {orderHref && <Link href={orderHref} className="text-xs font-medium text-primary hover:underline" aria-label={`Ordenar os materiais de ${children}`}>Ordenar</Link>}
+      </span>
     </TableCell>
   </TableRow>;
 }
