@@ -13,12 +13,11 @@ export function settingsCrumbs(current: SettingsTab): Crumb[] {
 }
 
 /**
- * Configurações do Inventário: Divisões e Famílias para todos (o gestor edita). Usuários é a tela comum /usuarios;
- * Importar (só editores, `canImport`) é a tela comum /importar.
+ * Configurações do Inventário: Divisões e Famílias para todos (o gestor edita). Usuários e Importar são telas comuns,
+ * no menu da conta (Administração).
  */
-export function SettingsTabs({ current, canImport = false }: { current: SettingsTab; canImport?: boolean }) {
+export function SettingsTabs({ current }: { current: SettingsTab }) {
   const tabs = (Object.keys(SETTINGS_LABELS) as SettingsTab[])
     .map((tab) => ({ href: `/inventario/configuracoes/${tab}`, label: SETTINGS_LABELS[tab], active: tab === current }));
-  if (canImport) tabs.push({ href: "/importar", label: "Importar", active: false });
   return <SectionTabs label="Configurações" tabs={tabs} />;
 }

@@ -141,14 +141,23 @@ export function userInitials(email: string) {
   return ((parts[0]?.[0] ?? "?") + (parts[1]?.[0] ?? "")).toUpperCase();
 }
 
-export function UserMenu({ email, role, logoutAction, usersHref, active = false }: {
-  email: string; /** Rótulo do papel (ex.: "Editor"). */ role?: string; logoutAction: () => Promise<void>; usersHref?: string; active?: boolean;
+export type AdminLink = { href: string; label: string; active?: boolean };
+
+/**
+ * Menu da conta: e-mail, papel, o grupo "Administração" (telas comuns a todos os módulos, como Usuários e Importar;
+ * só os links que a pessoa pode abrir) e Sair. Fica destacado quando a tela atual é uma das de administração.
+ */
+export function UserMenu({ email, role, logoutAction, adminLinks = [] }: {
+  email: string; /** Rótulo do papel (ex.: "Editor"). */ role?: string; logoutAction: () => Promise<void>; adminLinks?: AdminLink[];
 }) {
-  return <details className="geas-user-menu" data-active={active || undefined}>
+  return <details className="geas-user-menu" data-active={adminLinks.some((link) => link.active) || undefined}>
     <summary aria-label={`Conta de ${email}`} title={email}><span>{userInitials(email)}</span></summary>
     <div className="geas-user-menu__content">
       <div className="geas-user-menu__identity"><strong>{email}</strong>{role && <small>{role}</small>}</div>
-      {usersHref && <Link href={usersHref}>Usuários</Link>}
+      {adminLinks.length > 0 && <div role="group" aria-labelledby="geas-user-menu-admin" className="geas-user-menu__group">
+        <span id="geas-user-menu-admin" className="geas-user-menu__heading">Administração</span>
+        {adminLinks.map((link) => <Link key={link.href} href={link.href} aria-current={link.active ? "page" : undefined}>{link.label}</Link>)}
+      </div>}
       <form action={logoutAction}><button type="submit">Sair</button></form>
     </div>
   </details>;

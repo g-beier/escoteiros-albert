@@ -118,3 +118,16 @@ test("importar a vida escoteira substitui os períodos do cadastro", async ({ pa
   await page.getByLabel("Arquivos CSV").setInputFiles({ name: "vida-escoteira.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") });
   await expect(page.getByRole("button", { name: "Nada a importar" })).toBeDisabled();
 });
+
+test("Importar e Usuários ficam no menu da conta (Administração), não nas Configurações dos módulos", async ({ page }) => {
+  await page.goto("/associados/configuracoes/secoes");
+  await expect(page.getByRole("link", { name: "Importar", exact: true })).toHaveCount(0);
+  await page.getByLabel(/^Conta de /).click();
+  const admin = page.getByRole("group", { name: "Administração" });
+  await expect(admin.getByRole("link", { name: "Usuários" })).toBeVisible();
+  await admin.getByRole("link", { name: "Importar dados" }).click();
+  await expect(page).toHaveURL(/\/importar$/);
+  await expect(page.getByRole("heading", { name: "Importar dados" })).toBeVisible();
+  await page.goto("/inventario/configuracoes/divisoes");
+  await expect(page.getByRole("link", { name: "Importar", exact: true })).toHaveCount(0);
+});

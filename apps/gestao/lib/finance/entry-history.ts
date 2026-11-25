@@ -96,10 +96,12 @@ function describe(row: AuditRow, names: HistoryNames): { title: string; changes:
     }
     case "ledger_entry.updated": {
       const changes = snapshotChanges((details.before ?? {}) as Snapshot, (details.after ?? {}) as Snapshot, names);
-      return { title: changes.length ? "Lançamento alterado" : "Lançamento salvo sem alterações", changes };
+      const title = details.reason === "agrupado" ? "Lançamentos agrupados neste" : details.reason === "desagrupado" ? "Rateios desagrupados em lançamentos próprios"
+        : details.reason === "em lote" ? "Lançamento alterado em lote" : "Lançamento alterado";
+      return { title: changes.length ? title : "Lançamento salvo sem alterações", changes };
     }
     case "ledger_entry.document_filed":
-      return { title: details.filed ? "Documento arquivado" : "Documento marcado como pendente", changes: [] };
+      return { title: `${details.filed ? "Documento arquivado" : "Documento marcado como pendente"}${details.reason === "em lote" ? " em lote" : ""}`, changes: [] };
     case "ledger_entry.outside_statement":
       return { title: details.outside_statement ? "Marcado como fora do extrato" : "Desmarcado como fora do extrato", changes: [] };
     case "ledger_entry.account_changed": {

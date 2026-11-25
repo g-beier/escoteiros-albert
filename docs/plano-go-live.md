@@ -96,7 +96,7 @@ Comum aos três:
 ## 3. Importação do inventário (CSV)
 
 **Feito (2026-11-24, migration 010):** `inventario-lotes.csv` (com colunas `contagem AAAA`) e `inventario-pecas.csv` em
-`/importar`, carga com substituição enquanto o inventário só tem movimentos importados. `planilha-para-csv.mjs` já
+`/importar`, carga com substituição enquanto o inventário só tem movimentos importados. `planilha-para-csv.ts` já
 gera o formato do contrato; `importar-planilha.mjs` saiu. Texto original abaixo.
 
 Só CSV, com os materiais e as **quantidades contadas em 2025 e 2026**, para que em 2027 a conferência parta dessas

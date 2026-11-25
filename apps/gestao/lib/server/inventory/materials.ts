@@ -1,5 +1,5 @@
 import type {
-  EntryInput, ExpiringLot, Lot, Material, MaterialDefaults, MaterialInput, MaterialRow, MaterialSummary, StockRow, Unit,
+  BulkAction, BulkTarget, EntryInput, ExpiringLot, Lot, Material, MaterialDefaults, MaterialInput, MaterialRow, MaterialSummary, StockRow, Unit,
 } from "@/lib/inventory/model";
 import { searchTerms } from "@/lib/inventory/search";
 import type { Condition, WriteOffReason } from "@/lib/inventory/vocabulary";
@@ -181,5 +181,15 @@ export async function updateLot(db: Db, input: EntryInput & { lotId: string; exp
 export async function updateUnit(db: Db, input: EntryInput & { unitId: string; tag: string | null; legacyCode: string | null; description: string | null }) {
   await rpc(db, "inventory_update_unit", {
     p_unit_id: input.unitId, p_tag: input.tag, p_legacy_code: input.legacyCode, p_description: input.description, ...entry(input),
+  });
+}
+
+/**
+ * Edição em massa (011): cada linha (material numa divisão) passa pelas funções de sempre, numa transação só.
+ * Devolve quantos lotes/peças (estoque) ou materiais (cadastro) mudaram.
+ */
+export async function bulk(db: Db, groupId: string, action: BulkAction, targets: BulkTarget[], args: Record<string, string | boolean | null>, notes: string | null): Promise<number> {
+  return rpc(db, "inventory_bulk", {
+    p_group_id: groupId, p_action: action, p_targets: targets.map((t) => ({ material_id: t.materialId, location_id: t.locationId })), p_args: args, p_notes: notes ?? undefined,
   });
 }

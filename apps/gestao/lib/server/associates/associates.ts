@@ -13,6 +13,20 @@ export async function list(db: Db, groupId: string): Promise<AssociateProfile[]>
     select ${sql.unsafe(PROFILE_COLUMNS)} from public.associate_profile_rows where group_id = ${groupId} order by name limit 10000`);
 }
 
+/**
+ * Busca de associados ativos pelo nome ou apelido (registro rápido): sem acento nem maiúsculas, todas as palavras
+ * precisam aparecer (`terms` já normalizados, como `searchTerms`). Até `limit` + 1 linhas, para saber se há mais.
+ */
+export async function search(db: Db, groupId: string, terms: string[], limit: number): Promise<AssociateProfile[]> {
+  if (!terms.length) return [];
+  return rows<AssociateProfile>(db, (sql) => sql`
+    select ${sql.unsafe(PROFILE_COLUMNS)} from public.associate_profile_rows p
+    where p.group_id = ${groupId} and p.active
+      and not exists (select 1 from unnest(${terms}::text[]) t
+        where position(t in public.inventory_search_normalize(p.name || ' ' || coalesce(p.nickname, ''))) = 0)
+    order by p.name limit ${limit + 1}`);
+}
+
 export async function get(db: Db, groupId: string, id: string): Promise<AssociateProfile | null> {
   return one<AssociateProfile>(db, (sql) => sql`
     select ${sql.unsafe(PROFILE_COLUMNS)} from public.associate_profile_rows where group_id = ${groupId} and id = ${id}`);

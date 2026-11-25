@@ -172,6 +172,21 @@ export function unitsCsv(units: UnitExport[]): string {
   ]));
 }
 
+export type EntryExport = {
+  entry_id: string; entry_date: string; name: string; account: string; payment_method: string; document: string | null; document_filed: boolean;
+  amount_cents: number; category_code: string | null; category_name: string; description: string; associate: string | null; notes: string | null;
+  /** Quantos rateios o lançamento tem: com mais de um, as linhas levam o id do lançamento também em `lançamento`. */
+  split_count: number;
+};
+
+/** Um rateio por linha, com o `id` do lançamento: reimportar dá tudo "igual". Valor sem sinal (o tipo vem da rubrica). */
+export function entriesCsv(rows: EntryExport[]): string {
+  return writeImportCsv(header("lancamentos"), rows.map((r) => [
+    r.entry_id, r.split_count > 1 ? r.entry_id.slice(0, 8) : "", showDate(r.entry_date), r.name, r.account, r.payment_method, r.document,
+    yesNo(r.document_filed), money(Math.abs(r.amount_cents)), [r.category_code, r.category_name].filter(Boolean).join(" "), r.description, r.associate, r.notes,
+  ]));
+}
+
 /** Modelo para baixar: cabeçalho e as linhas de exemplo (nomes fictícios) do contrato. */
 export function templateCsv(kind: FileKind): string {
   const spec = fileSpec(kind);
@@ -180,5 +195,5 @@ export function templateCsv(kind: FileKind): string {
 
 /** Tipos com "Baixar dados atuais" (os outros chegam com os próximos arquivos do contrato). */
 export const EXPORTABLE: readonly FileKind[] = [
-  "secoes", "itens-controle", "pessoas", "funcoes", "responsaveis", "controle", "vida-escoteira", "inventario-lotes", "inventario-pecas",
+  "secoes", "itens-controle", "pessoas", "funcoes", "responsaveis", "controle", "vida-escoteira", "inventario-lotes", "inventario-pecas", "lancamentos",
 ];

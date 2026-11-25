@@ -30,9 +30,12 @@ export type Column = {
   example: string;
 };
 
-export type FileKind = "secoes" | "itens-controle" | "pessoas" | "funcoes" | "responsaveis" | "controle" | "vida-escoteira" | "inventario-lotes" | "inventario-pecas";
+export type FileKind = "secoes" | "itens-controle" | "pessoas" | "funcoes" | "responsaveis" | "controle" | "vida-escoteira" | "inventario-lotes" | "inventario-pecas" | "lancamentos";
 
-export type Module = "associados" | "inventario";
+export type Module = "associados" | "inventario" | "financeiro";
+
+/** Nome do módulo nas mensagens ("só editores do Financeiro importam…"). */
+export const MODULE_NAMES: Record<Module, string> = { associados: "Associados", inventario: "Inventário", financeiro: "Financeiro" };
 
 export type FileSpec = {
   kind: FileKind;
@@ -428,6 +431,42 @@ export const FILES: readonly FileSpec[] = [
       header: ["etiqueta", "código antigo", "material", "família código", "família", "divisão", "condição", "descrição", "valor", "observação"],
       rows: [["GEAS-001-0001", "B1", "Barraca iglu 4 pessoas", "001", "Barracas", "Almoxarifado › Barracas", "bom", "Azul, sobreteto remendado", "450,00", "Conferida em 10/01/2026"]],
     },
+  },
+  {
+    kind: "lancamentos",
+    file: "lancamentos.csv",
+    title: "Financeiro: lançamentos (só administradores do Financeiro)",
+    module: "financeiro",
+    row: "rateio: uma rubrica de um lançamento (o lançamento de um rateio só é uma linha)",
+    key: "`id` do lançamento; sem ele, data + conta + histórico + valor total (lançamentos iguais no mesmo dia contam um a um)",
+    reimport: "Cria os lançamentos que não existem; os que já existem ficam como estão. Nunca altera nem apaga.",
+    columns: [
+      { key: "id", header: "id", type: { kind: "id" }, help: "Id do lançamento no app (vem da exportação). Com ele, a linha é do lançamento que já existe.", example: "" },
+      { key: "group", header: "lançamento", aliases: ["lancamento", "grupo"], type: text(60, 1), help: "Junta linhas num lançamento só (um rateio por linha): as linhas com o mesmo texto aqui são o mesmo lançamento, e data, conta, forma e histórico vêm da primeira. Vazio = a linha é um lançamento.", example: "" },
+      { key: "date", header: "data", type: { kind: "data" }, required: "sempre", help: "Data do lançamento.", example: "10/03/2026" },
+      { key: "name", header: "histórico", aliases: ["historico", "nome"], type: text(200, 2), help: "Nome do lançamento. Vazio = a descrição do rateio.", example: "Mensalidade março" },
+      { key: "account", header: "conta", type: text(60, 2), required: "criacao", help: "Nome da conta (criada se não existir). Use \"A definir\" quando não souber.", example: "Mercado Pago" },
+      { key: "paymentMethod", header: "forma de pagamento", aliases: ["forma pgto", "forma", "forma de pgto"], type: text(60, 2), required: "criacao", help: "Nome da forma de pagamento (criada se não existir).", example: "PIX" },
+      { key: "document", header: "documento", type: text(60), help: "Número da nota ou recibo.", example: "" },
+      { key: "filed", header: "pasta", aliases: ["documentos arquivados", "arquivado"], type: { kind: "sim_nao" }, help: "Documentos arquivados na pasta. Padrão: não.", example: "não" },
+      { key: "amount", header: "valor", type: { kind: "dinheiro" }, required: "sempre", help: "Valor do rateio, sem sinal: entrada ou saída pelo tipo da rubrica (receita ou despesa).", example: "30,00" },
+      { key: "category", header: "rubrica", type: text(200, 1), required: "sempre", help: "Código da rubrica (`1.1`, `1.1.` ou `1.1. Mensalidades`), ou o nome, se for único.", example: "1.1" },
+      { key: "description", header: "descrição", aliases: ["descricao", "descrição do rateio"], type: text(200, 2), help: "Descrição do rateio. Vazio = o histórico.", example: "Mensalidade" },
+      { key: "associate", header: "associado", aliases: ["nome do associado"], type: text(120, 2), help: "Associado do rateio, pelo nome. Não encontrado: o rateio fica sem associado e o nome vai para a observação do lançamento.", example: "Ana Souza" },
+      { key: "notes", header: "observação", aliases: ["observacao", "obs"], type: text(500), help: "Observação do lançamento.", example: "" },
+    ],
+    example: {
+      header: ["id", "lançamento", "data", "histórico", "conta", "forma de pagamento", "documento", "pasta", "valor", "rubrica", "descrição", "associado", "observação"],
+      rows: [
+        ["", "", "10/03/2026", "Mensalidade março", "Mercado Pago", "PIX", "", "não", "30,00", "1.1", "Mensalidade", "Ana Souza", ""],
+        ["", "feira-1", "12/03/2026", "Compras da feira", "Caixa", "Dinheiro", "NF 123", "sim", "40,00", "2.6.2", "Legumes", "", ""],
+        ["", "feira-1", "12/03/2026", "Compras da feira", "Caixa", "Dinheiro", "NF 123", "sim", "12,50", "2.6.4", "Copos", "", ""],
+      ],
+    },
+    notes: [
+      "Transferência entre contas do próprio grupo não é lançamento: não entra aqui (na conciliação, ignore a linha do extrato como transferência).",
+      "Os lançamentos importados entram revisados; os rateios podem ser agrupados ou desagrupados depois no Detalhamento.",
+    ],
   },
 ];
 

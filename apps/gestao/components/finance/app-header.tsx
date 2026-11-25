@@ -1,6 +1,6 @@
-import { IconSettings } from "@tabler/icons-react";
-import { AppHeader as SharedHeader, UserMenu } from "@geas/ui";
-import { logout } from "@/app/(gestao)/login/actions";
+import { IconBolt, IconSettings } from "@tabler/icons-react";
+import { AppHeader as SharedHeader } from "@geas/ui";
+import { AccountMenu } from "@/components/shell/account-menu";
 import { Brand } from "@/components/shell/brand";
 import { roleLabel, type Member } from "@/lib/server/session";
 
@@ -13,9 +13,12 @@ const sections = [
 
 export const isSettingsPath = (path: string) => path.startsWith("/financeiro/configuracoes");
 
-/** Configurações (engrenagem) só para quem as mantém: Editor ou mais. */
+/** Registro rápido (raio) para quem lança (Colaborador ou mais); Configurações (engrenagem) só para quem as mantém: Editor ou mais. */
 export function AppHeader({ member, current }: { member: Member; current: string }) {
   return <SharedHeader brand={<Brand module="financeiro" />} navigation={sections.map((item) => ({ href:item.href, label:item.label, active:item.match(current) }))}
-    utilities={member.finance.canReview ? [{ href: "/financeiro/configuracoes", label: "Configurações", icon: <IconSettings size={18} />, active: isSettingsPath(current) }] : []}
-    account={<UserMenu email={member.user.email} role={roleLabel(member.finance)} logoutAction={logout} usersHref={member.managesUsers ? "/usuarios" : undefined} active={current.startsWith("/usuarios")}/>}/>
+    utilities={[
+      ...(member.finance.canWrite ? [{ href: "/rapido", label: "Registro rápido", icon: <IconBolt size={18} />, active: false }] : []),
+      ...(member.finance.canReview ? [{ href: "/financeiro/configuracoes", label: "Configurações", icon: <IconSettings size={18} />, active: isSettingsPath(current) }] : []),
+    ]}
+    account={<AccountMenu member={member} role={roleLabel(member.finance)} current={current} />}/>
 }

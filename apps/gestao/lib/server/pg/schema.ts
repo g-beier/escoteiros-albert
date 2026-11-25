@@ -786,6 +786,11 @@ export type Functions = {
   associates_update: { Args: { p_associate_id: string; p_name: string; p_birth_date: string; p_promise_date: string; p_joined_on: string; p_notes: string; p_registration: Enums["associate_registration"]; p_nickname: string; p_branch?: Enums["scout_branch"]; p_section_id?: string; p_patrol_id?: string }; Returns: undefined };
   associates_update_function: { Args: { p_function_id: string; p_kind: Enums["associate_function_kind"]; p_section_id: string; p_title: string; p_started_on: string; p_ended_on: string; p_elected?: boolean }; Returns: undefined };
   attachment_path_entry: { Args: { p_name: string }; Returns: { group_id: string; entry_id: string } | null };
+  bulk_audit_entries: { Args: { p_group_id: string; p_before: Json }; Returns: number };
+  bulk_ids: { Args: { p_ids: string[]; p_what: string }; Returns: string[] };
+  bulk_lock_entries: { Args: { p_group_id: string; p_entry_ids: string[] }; Returns: undefined };
+  bulk_snapshots: { Args: { p_entry_ids: string[] }; Returns: Json };
+  can_admin_finance: { Args: { p_group_id: string }; Returns: boolean };
   can_delete_attachment_object: { Args: { p_name: string }; Returns: boolean };
   can_edit_group: { Args: { requested_group_id: string }; Returns: boolean };
   can_edit_inventory: { Args: { p_group_id: string }; Returns: boolean };
@@ -864,6 +869,8 @@ export type Functions = {
   import_inventory_material: { Args: { p_group_id: string; p_row: Json; p_tracking: Enums["inventory_tracking"] }; Returns: string };
   import_inventory_units: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
   import_inventory_wipe: { Args: { p_group_id: string }; Returns: undefined };
+  import_ledger_entries: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
+  import_ledger_entries_guard: { Args: { p_group_id: string }; Returns: undefined };
   import_life: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
   import_name_key: { Args: { p_text: string }; Returns: string };
   import_patrol: { Args: { p_section_id: string; p_name: string }; Returns: string };
@@ -877,6 +884,7 @@ export type Functions = {
   inventory_add_lot: { Args: { p_material_id: string; p_location_id: string; p_quantity: number; p_condition: Enums["inventory_condition"]; p_unit_value_cents: number; p_expires_on: string; p_acquired_on: string; p_origin: Enums["inventory_origin"]; p_supplier: string; p_invoice: string; p_notes: string; p_variant?: string }; Returns: string };
   inventory_add_unit: { Args: { p_material_id: string; p_location_id: string; p_tag: string; p_legacy_code: string; p_description: string; p_condition: Enums["inventory_condition"]; p_unit_value_cents: number; p_acquired_on: string; p_origin: Enums["inventory_origin"]; p_supplier: string; p_invoice: string; p_notes: string }; Returns: string };
   inventory_adjust_lot: { Args: { p_lot_id: string; p_quantity: number; p_notes: string }; Returns: undefined };
+  inventory_bulk: { Args: { p_group_id: string; p_action: string; p_targets: Json; p_args: Json; p_notes?: string }; Returns: number };
   inventory_check_location: { Args: { p_group_id: string; p_location_id: string }; Returns: undefined };
   inventory_check_tag: { Args: { p_group_id: string; p_material_id: string; p_unit_id: string; p_tag: string }; Returns: string };
   inventory_clean: { Args: { p_text: string }; Returns: string };
@@ -929,6 +937,7 @@ export type Functions = {
   life_today: { Args: Record<string, never>; Returns: string };
   link_reconciliation: { Args: { p_statement_line_ids: string[]; p_ledger_entry_ids: string[] }; Returns: string };
   members_drop_if_empty: { Args: { p_group_id: string; p_user_id: string }; Returns: boolean };
+  merge_ledger_entries: { Args: { p_group_id: string; p_split_ids: string[]; p_entry: Json }; Returns: string };
   module_role_of: { Args: { p_group_id: string; p_module: string }; Returns: Enums["module_role"] };
   move_ledger_entries_account: { Args: { p_entry_ids: string[]; p_account_id: string }; Returns: Json };
   next_category_position: { Args: { p_parent_id: string }; Returns: number };
@@ -961,6 +970,8 @@ export type Functions = {
   seed_payment_methods: { Args: { p_group_id: string }; Returns: undefined };
   set_account_active: { Args: { p_account_id: string; p_active: boolean }; Returns: undefined };
   set_category_active: { Args: { p_category_id: string; p_active: boolean }; Returns: undefined };
+  set_entries_document_filed: { Args: { p_group_id: string; p_entry_ids: string[]; p_filed: boolean }; Returns: number };
+  set_entries_payment_method: { Args: { p_group_id: string; p_entry_ids: string[]; p_payment_method_id: string }; Returns: number };
   set_entry_document_filed: { Args: { p_entry_id: string; p_filed: boolean }; Returns: undefined };
   set_fee_associate_price: { Args: { p_associate_id: string; p_year: number; p_monthly_cents: number; p_reason: string }; Returns: undefined };
   set_fee_exemption: { Args: { p_associate_id: string; p_year: number; p_reason: string }; Returns: undefined };
@@ -971,6 +982,9 @@ export type Functions = {
   set_ledger_entry_outside_statement: { Args: { p_entry_id: string; p_outside: boolean }; Returns: undefined };
   set_payment_method_active: { Args: { p_payment_method_id: string; p_active: boolean }; Returns: undefined };
   set_payment_method_default_account: { Args: { p_payment_method_id: string; p_account_id: string }; Returns: undefined };
+  set_splits_associate: { Args: { p_group_id: string; p_split_ids: string[]; p_associate_id: string }; Returns: number };
+  set_splits_category: { Args: { p_group_id: string; p_split_ids: string[]; p_category_id: string }; Returns: number };
+  split_ledger_entry_splits: { Args: { p_group_id: string; p_split_ids: string[] }; Returns: number };
   statement_description_key: { Args: { p_description: string }; Returns: string };
   statement_line_fingerprint: { Args: { p_account_id: string; p_date: string; p_amount_cents: number; p_description: string; p_occurrence: number }; Returns: string };
   statement_line_snapshot: { Args: { p_line_id: string }; Returns: Json };

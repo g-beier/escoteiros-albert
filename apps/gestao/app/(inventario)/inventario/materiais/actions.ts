@@ -6,7 +6,7 @@ import { materialsBackHref, withBack } from "@/lib/inventory/material-list";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { InputError, runAction } from "@/lib/action";
 import { DataError } from "@/lib/server/db";
-import type { EntryInput } from "@/lib/inventory/model";
+import { BULK_ACTIONS, type BulkAction, type BulkTarget, type EntryInput } from "@/lib/inventory/model";
 import type { Condition, Origin, Tracking, WriteOffReason } from "@/lib/inventory/vocabulary";
 import { parseMoneyToCents } from "@/lib/money";
 import * as materials from "@/lib/server/inventory/materials";
@@ -188,6 +188,44 @@ export async function adjustLot(_previous: ActionResult, formData: FormData) {
     return "Contagem ajustada.";
   });
 }
+
+/**
+ * Edição em massa da lista de Materiais. `targets`: JSON com as linhas `"material|divisão"` (divisão vazia = sem
+ * estoque). Ações de estoque (transferir, condição, baixa) mexem em tudo o que o material tem naquela divisão;
+ * família e consumível valem para o material inteiro.
+ */
+export async function bulkEdit(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
+  return runAction(inventoryWriterOrError, async ({ db, groupId }) => {
+    const action = oneOf<BulkAction>(formData, "action", [...BULK_ACTIONS]);
+    if (!action) throw new InputError("Escolha a ação.");
+    let keys: unknown;
+    try { keys = JSON.parse(text(formData, "targets") || "[]"); } catch { keys = null; }
+    const uuid = /^[0-9a-f-]{36}$/i;
+    if (!Array.isArray(keys) || !keys.length) throw new InputError("Selecione pelo menos um material.");
+    const targets: BulkTarget[] = keys.map((key) => {
+      const [materialId = "", locationId = ""] = String(key).split("|");
+      if (!uuid.test(materialId) || (locationId && !uuid.test(locationId))) throw new InputError("Seleção inválida. Recarregue a página.");
+      return { materialId, locationId: locationId || null };
+    });
+    const stock = action === "transferir" || action === "condicao" || action === "baixa";
+    if (stock && !targets.some((t) => t.locationId)) throw new InputError("As linhas escolhidas não têm estoque.");
+    const args: Record<string, string | boolean | null> =
+      action === "transferir" ? { to_location_id: id(formData, "locationId") }
+      : action === "condicao" ? { condition: oneOf(formData, "condition", CONDITIONS) ?? (() => { throw new InputError("Escolha a condição."); })() }
+      : action === "baixa" ? { reason: reason(formData) }
+      : action === "familia" ? { family_id: optionalId(formData, "familyId") }
+      : { value: (() => { const v = text(formData, "consumable"); if (v !== "sim" && v !== "nao") throw new InputError("Escolha consumível ou não."); return v === "sim"; })() };
+    const changed = await materials.bulk(db, groupId, action, targets, args, optional(formData, "notes"));
+    revalidatePath("/inventario/materiais");
+    revalidatePath("/inventario");
+    const what = stock ? (changed === 1 ? "lote ou peça" : "lotes ou peças") : changed === 1 ? "material" : "materiais";
+    return changed ? `${BULK_DONE[action]}: ${changed} ${what}.` : "Nada mudou: as linhas escolhidas já estavam assim.";
+  });
+}
+
+const BULK_DONE: Record<BulkAction, string> = {
+  transferir: "Transferido", condicao: "Condição registrada", baixa: "Baixa registrada", familia: "Família alterada", consumivel: "Cadastro alterado",
+};
 
 /**
  * Lotes de um material numa divisão, para o diálogo ± da lista (a lista não leva os lotes de cada linha no HTML).

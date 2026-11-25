@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { loadEntryPage } from "@/app/actions";
 import { LedgerCards, LedgerTable, SplitCards, SplitTable } from "@/components/finance/entry-tables";
 import { Button } from "@geas/ui/components/button";
-import { useEntryOverrides } from "@/components/finance/entries/entry-editor";
+import { useEntryListVersion, useEntryOverrides } from "@/components/finance/entries/entry-editor";
 import { PAGE_SIZE, type EntryPage, type SplitRow, type LedgerRow } from "@/lib/finance/entry-rows";
 import type { EntrySort, SortOrder } from "@/lib/finance/filters";
 import { cn } from "@geas/ui/lib/utils";
@@ -49,6 +49,7 @@ export function InfiniteEntries({ initial, query, filtered, order, sort, sortHre
   const scrollerRef = useRef<HTMLDivElement>(null);
   const loading = useRef(false);
   const overrides = useEntryOverrides();
+  const listVersion = useEntryListVersion();
   const view = initial.view;
   const total = initial.total;
 
@@ -64,6 +65,20 @@ export function InfiniteEntries({ initial, query, filtered, order, sort, sortHre
     setPages((current) => [...current, page]);
     setStatus(page.rows.length < PAGE_SIZE ? "done" : "idle");
   }, [view, query, offset, initial]);
+
+  // Depois de agrupar/desagrupar (versão nova da lista), lançamentos somem e aparecem: busca de novo a primeira página.
+  const shownVersion = useRef(listVersion);
+  useEffect(() => {
+    if (shownVersion.current === listVersion) return;
+    shownVersion.current = listVersion;
+    loading.current = true;
+    loadEntryPage(view, query, 0).then((page) => {
+      loading.current = false;
+      if (page.error) { setError(page.error); setStatus("error"); return; }
+      setPages([page]);
+      setStatus(page.rows.length < PAGE_SIZE ? "done" : "idle");
+    }, () => { loading.current = false; setError("Falha de conexão."); setStatus("error"); });
+  }, [listVersion, view, query]);
 
   useEffect(() => {
     const target = sentinel.current;
@@ -86,12 +101,16 @@ export function InfiniteEntries({ initial, query, filtered, order, sort, sortHre
       return true;
     }).map((row) => {
       const override = overrides[row.entry_id];
-      if (!override) return row;
+      const split = "split_id" in row ? overrides[row.split_id] : undefined;
+      if (!override && !split) return row;
       return {
         ...row,
-        ...(override.filed !== undefined && { document_filed: override.filed }),
-        ...(override.accountName !== undefined && { account_name: override.accountName }),
-        ...(override.reconciled !== undefined && { reconciled: override.reconciled }),
+        ...(override?.filed !== undefined && { document_filed: override.filed }),
+        ...(override?.accountName !== undefined && { account_name: override.accountName }),
+        ...(override?.reconciled !== undefined && { reconciled: override.reconciled }),
+        ...(override?.paymentMethodName !== undefined && { payment_method_name: override.paymentMethodName }),
+        ...(split?.category && { category_name: split.category.name, category_code: split.category.code, category_kind: split.category.kind }),
+        ...(split?.associateName !== undefined && { associate_name: split.associateName }),
       };
     });
   }, [pages, overrides]);

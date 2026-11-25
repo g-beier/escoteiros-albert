@@ -74,6 +74,22 @@ describe("describeHistory", () => {
     expect(item).toMatchObject({ title: "Rubrica excluída: rateios movidos", changes: [{ label: "Rubrica", before: "2.2.2 Acampamento de Grupo, 2.2.2.1 Transporte", after: "2.2 Programa" }] });
   });
 
+  it("marks bulk changes (012): payment method, category of splits and filed documents", () => {
+    const after = { ...base, payment_method_id: "din", splits: [{ ...base.splits[0], category_id: "cat-2" }] };
+    const [edit, filed] = describeHistory([
+      row("ledger_entry.updated", { before: base, after, reason: "em lote" }),
+      row("ledger_entry.document_filed", { filed: true, reason: "em lote" }, 2),
+    ], names);
+    expect(edit.title).toBe("Lançamento alterado em lote");
+    // Intl separa "R$" do número com espaço não separável
+    expect(JSON.parse(JSON.stringify(edit.changes).replace(/\u00a0/g, " "))).toEqual([
+      { label: "Forma de pagamento", before: "PIX", after: "Dinheiro" },
+      { label: "Rateio removido", before: "2.1 Material · -R$ 30,00 · Cartolina" },
+      { label: "Rateio incluído", after: "2.2 Transporte · -R$ 30,00 · Cartolina" },
+    ]);
+    expect(filed.title).toBe("Documento arquivado em lote");
+  });
+
   it("marks an edit without differences", () => {
     expect(describeHistory([row("ledger_entry.updated", { before: base, after: base })], names)[0].title).toBe("Lançamento salvo sem alterações");
   });

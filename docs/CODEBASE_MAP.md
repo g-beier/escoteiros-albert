@@ -325,7 +325,7 @@ Browser reads the file (`decodeBytes` → `readOfx` → `applyOfxProfile`) → `
 **Tests / tooling**
 - E2E needs the local infra (`docker compose exec` psql); login through `/auth/e2e` (`E2E_LOGIN=1`, set by `playwright.config.ts`); `workers:1`, shared E2E group, port 3210 by default.
 - No unit tests for `lib/server` or `lib/inventory`; DB covered by pgTAP, flows by e2e.
-- Inventory CSVs (from `scripts/inventory/planilha-para-csv.mjs` or any conversion following `docs/importacao.md`) load through `/importar`, which **replaces** the group's inventory while it has only imported movements. CSVs are group data: never commit.
+- Inventory CSVs (from `scripts/inventory/planilha-para-csv.ts` or any conversion following `docs/importacao.md`) load through `/importar`, which **replaces** the group's inventory while it has only imported movements. CSVs are group data: never commit.
 
 ## Navigation Guide
 

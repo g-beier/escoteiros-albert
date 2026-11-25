@@ -1,6 +1,6 @@
 import { IconBolt } from "@tabler/icons-react";
-import { AppHeader, UserMenu } from "@geas/ui";
-import { logout } from "@/app/(gestao)/login/actions";
+import { AppHeader } from "@geas/ui";
+import { AccountMenu } from "@/components/shell/account-menu";
 import { Brand } from "@/components/shell/brand";
 import { moduleAccess, roleLabel, type Member, type ModuleAccess } from "@/lib/server/session";
 
@@ -26,6 +26,5 @@ export function GestaoHeader({ current, member, quick = false }: { current: stri
   return <AppHeader brand={<Brand module="gestao" />}
     navigation={sections.filter((item) => !item.module || access[item.module]).map((item) => ({ href: item.href, label: item.label, active: item.match(current) }))}
     utilities={quick ? [{ href: "/rapido", label: "Registro rápido", icon: <IconBolt size={18} />, active: current.startsWith("/rapido") }] : undefined}
-    account={<UserMenu email={member.user.email} role={roleLabel(highestRole(member))} logoutAction={logout}
-      usersHref={member.managesUsers ? "/usuarios" : undefined} active={current === "/usuarios"} />} />;
+    account={<AccountMenu member={member} role={roleLabel(highestRole(member))} current={current} />} />;
 }

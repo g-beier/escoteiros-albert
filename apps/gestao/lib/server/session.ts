@@ -123,6 +123,8 @@ export const associatesReaderOrError = (denied = "Sem acesso ao Associados.") =>
 export const financeWriterOrError = (denied = "Sem permissão para esta alteração.") => allowed((m) => m.finance.canWrite, denied);
 /** Financeiro, Editor ou mais: revisão, cadastros, extrato, conciliação e mensalidades. */
 export const financeEditorOrError = (denied = "Apenas editores do Financeiro podem fazer esta alteração.") => allowed((m) => m.finance.canReview, denied);
+/** Ações em lote e importação de lançamentos (015): só o Administrador do Financeiro. */
+export const financeAdminOrError = (denied = "Ações em lote são do administrador do Financeiro.") => allowed((m) => m.finance.canAdmin, denied);
 /** Inventário, Colaborador ou mais: cadastra e movimenta material (o do Colaborador fica para revisar). */
 export const inventoryWriterOrError = (denied = "Sem permissão para esta alteração.") => allowed((m) => m.inventory.canWrite, denied);
 /** Inventário, Editor ou mais: revisão, divisões, famílias e contagens. */

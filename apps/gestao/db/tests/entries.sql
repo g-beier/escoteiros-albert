@@ -13,7 +13,8 @@ insert into auth.users(id, email) values
   ('00000000-0000-0000-0000-0000000000c3', 'outro.lanc@escoteirosalbert.com.br');
 select public.admin_bootstrap_group('tes.lanc@escoteirosalbert.com.br', 'Grupo Teste Lançamentos') as gid \gset
 select public.admin_bootstrap_group('outro.lanc@escoteirosalbert.com.br', 'Outro Grupo Lançamentos') as gid2 \gset
-update public.memberships set finance_role = 'editor' where user_id = '00000000-0000-0000-0000-0000000000c1';
+-- administrador: a troca de conta em lote (024) é dele desde a 015
+update public.memberships set finance_role = 'admin' where user_id = '00000000-0000-0000-0000-0000000000c1';
 insert into public.memberships(group_id, user_id, finance_role) values (:'gid', '00000000-0000-0000-0000-0000000000c2', 'viewer');
 insert into public.accounts(group_id, name, kind) values (:'gid', 'Cora', 'corrente') returning id as acc \gset
 select id as undefined_acc from public.accounts where group_id = :'gid' and name = 'A definir' \gset
@@ -121,7 +122,7 @@ end $$;
 do $$ begin
   perform public.move_ledger_entries_account(array[current_setting('test.e1')::uuid], current_setting('test.acc')::uuid);
   raise exception 'FALHOU: consulta moveu';
-exception when raise_exception then if sqlerrm not like '%sem permissão%' then raise; end if; end $$;
+exception when raise_exception then if sqlerrm not ilike '%sem permissão%' then raise; end if; end $$;
 
 \echo '--- outro grupo não vê nada'
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c3","role":"authenticated"}', true);

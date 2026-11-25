@@ -1,7 +1,7 @@
 -- pgTAP: registro rápido comum (049). Lançamento e associado entram para revisar; só quem edita o módulo registra e
 -- revisa; a revisão é auditada e não atravessa grupos. Rode com `npm run test:db`.
 begin;
-select plan(23);
+select plan(24);
 \ir _fixture.psql
 
 select id as despesa_a from public.categories where group_id = :'gid_a' and kind = 'despesa' and code = '2.1' \gset
@@ -32,7 +32,8 @@ select tests.login('00000000-0000-0000-0000-00000000f0b1') \gset
 select is(public.review_ledger_entries(:'gid_b', array[:'quick_a']::uuid[]), 0, 'outro grupo não revisa o lançamento');
 
 select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
-select is(public.review_ledger_entries(:'gid_a', array[:'quick_a', :'entry_a']::uuid[]), 1, 'revisa só o que estava para revisar');
+select throws_like(format($$select public.review_ledger_entries(%L, array[%L, %L]::uuid[])$$, :'gid_a', :'quick_a', :'entry_a'), 'Revisar em lote é do administrador%', 'editor não revisa em lote (015)');
+select is(public.review_ledger_entries(:'gid_a', array[:'quick_a']::uuid[]), 1, 'editor revisa um lançamento');
 select is((select review_status || '|' || (reviewed_by = '00000000-0000-0000-0000-00000000f0a2') from public.ledger_entries where id = :'quick_a'),
   'revisado|true', 'quem revisou fica gravado');
 select tests.logout() \gset

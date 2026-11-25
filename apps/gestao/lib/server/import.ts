@@ -3,7 +3,7 @@ import type { PlannedFile } from "@/lib/import/plan";
 import type { Db } from "@/lib/server/db";
 import { rows, rpc, run } from "@/lib/server/pg/db";
 import type { Json } from "@/lib/server/pg/schema";
-import type { FunctionExport, LotExport, PersonExport, RelativeExport, SectionExport, UnitExport } from "@/lib/import/export";
+import type { EntryExport, FunctionExport, LotExport, PersonExport, RelativeExport, SectionExport, UnitExport } from "@/lib/import/export";
 
 // Importação por CSV (006, docs/importacao.md): o estado atual para a pré-visualização e a gravação do envio inteiro
 // por `import_batch` (uma transação; o banco confere tudo de novo).
@@ -11,7 +11,8 @@ import type { FunctionExport, LotExport, PersonExport, RelativeExport, SectionEx
 /** O que já está no app, para identificar e comparar as linhas dos CSVs. */
 export async function state(db: Db, groupId: string): Promise<ImportState> {
   return run(db, async (sql) => {
-    const [sections, patrols, people, functions, relatives, links, items, statuses, periods, exclusions, events, stars, notes, inventory] = await Promise.all([
+    const [sections, patrols, people, functions, relatives, links, items, statuses, periods, exclusions, events, stars, notes, inventory,
+      categories, accounts, paymentMethods, entries] = await Promise.all([
       sql`select id, branch::text as branch, name, active from public.sections where group_id = ${groupId} order by name`,
       sql`select p.id, p.section_id as "sectionId", p.name, p.active from public.patrols p
           join public.sections s on s.id = p.section_id where s.group_id = ${groupId} order by p.name`,
@@ -46,6 +47,11 @@ export async function state(db: Db, groupId: string): Promise<ImportState> {
             (select count(*)::int from public.inventory_lots where group_id = ${groupId}) as lots,
             (select count(*)::int from public.inventory_units where group_id = ${groupId}) as units,
             (select count(*)::int from public.inventory_movements where group_id = ${groupId} and channel <> 'importacao') as "appMovements"`,
+      sql`select id, code, name, kind::text as kind, active from public.categories where group_id = ${groupId} order by public.category_code_key(code)`,
+      sql`select id, name, active from public.accounts where group_id = ${groupId} order by name`,
+      sql`select id, name, active from public.payment_methods where group_id = ${groupId} order by name`,
+      sql`select e.id, e.entry_date::text as date, a.name as account, e.name, e.total_cents::int as total
+          from public.ledger_entries e join public.accounts a on a.id = e.account_id where e.group_id = ${groupId} limit 100000`,
     ]);
     return {
       sections: [...sections], patrols: [...patrols], people: [...people], functions: [...functions], relatives: [...relatives],
@@ -55,6 +61,7 @@ export async function state(db: Db, groupId: string): Promise<ImportState> {
         notes: Object.fromEntries(notes.map((row) => [row.id, row.life_notes])),
       },
       inventory: inventory[0],
+      finance: { categories: [...categories], accounts: [...accounts], paymentMethods: [...paymentMethods], entries: [...entries] },
     } as unknown as ImportState;
   });
 }
@@ -142,4 +149,16 @@ export async function exportUnits(db: Db, groupId: string) {
     left join public.inventory_families f on f.id = m.family_id
     where u.group_id = ${groupId} and u.written_off_at is null
     order by u.tag nulls last, u.legacy_code limit 20000`);
+}
+
+/** Linhas para "Baixar dados atuais" de lancamentos.csv: um rateio por linha, do mais antigo ao mais novo. */
+export async function exportEntries(db: Db, groupId: string) {
+  return rows<EntryExport>(db, (sql) => sql`
+    select e.id as entry_id, e.entry_date::text as entry_date, e.name, a.name as account, p.name as payment_method, e.document, e.document_filed,
+      s.amount_cents::int as amount_cents, c.code as category_code, c.name as category_name, s.description, x.name as associate, e.notes,
+      count(*) over (partition by e.id)::int as split_count
+    from public.entry_splits s join public.ledger_entries e on e.id = s.entry_id join public.accounts a on a.id = e.account_id
+    join public.payment_methods p on p.id = e.payment_method_id join public.categories c on c.id = s.category_id
+    left join public.associates x on x.id = s.associate_id
+    where e.group_id = ${groupId} order by e.entry_date, e.created_at, e.id, s.created_at, s.id limit 50000`);
 }

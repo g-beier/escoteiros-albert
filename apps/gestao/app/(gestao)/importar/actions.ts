@@ -6,7 +6,7 @@ import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { InputError, runAction } from "@/lib/action";
 import { todayISO } from "@/lib/associates/model";
 import { FILHOTES_ENABLED } from "@/lib/features";
-import { fileSpec, type Module } from "@/lib/import/contract";
+import { MODULE_NAMES, fileSpec, type Module } from "@/lib/import/contract";
 import { planBatch, planTotals } from "@/lib/import/plan";
 import { readImportFile, type ReadFile } from "@/lib/import/read";
 import * as imports from "@/lib/server/import";
@@ -14,7 +14,8 @@ import { memberOrError, type Member } from "@/lib/server/session";
 
 const filesSchema = z.array(z.object({ name: z.string().max(200), text: z.string().max(3_000_000) })).min(1, "Escolha um arquivo.").max(12, "No máximo 12 arquivos por envio.");
 
-const canImport = (member: Member, module: Module) => (module === "associados" ? member.associates.canReview : member.inventory.canReview);
+const canImport = (member: Member, module: Module) =>
+  module === "associados" ? member.associates.canReview : module === "inventario" ? member.inventory.canReview : member.finance.canAdmin;
 
 /**
  * Grava um envio de CSVs (docs/importacao.md). O servidor lê e planeja de novo contra o estado atual (a pré-visualização
@@ -29,7 +30,7 @@ export async function importFiles(input: unknown): Promise<ActionResult> {
       const read = readImportFile(name, text);
       if (read.error || !read.file) throw new InputError(read.error ?? `${name}: não foi possível ler.`);
       const spec = fileSpec(read.file.kind);
-      if (!canImport(member, spec.module)) throw new InputError(`${name}: só editores do ${spec.module === "associados" ? "Associados" : "Inventário"} importam ${spec.file}.`);
+      if (!canImport(member, spec.module)) throw new InputError(`${name}: só ${spec.module === "financeiro" ? "administradores" : "editores"} do ${MODULE_NAMES[spec.module]} importam ${spec.file}.`);
       files.push(read.file);
     }
     const plan = planBatch(files, await imports.state(member.db, member.groupId), { filhotes: FILHOTES_ENABLED, today: todayISO() });

@@ -102,3 +102,31 @@ test("o formulário não salva enquanto o rateio não confere", async ({ page })
   await page.getByRole("button", { name: "Lançar diferença na última rubrica" }).click();
   await expect(page.getByRole("group", { name: "Rubrica 1" }).getByLabel(/^Valor \(R\$\)/)).toHaveValue("10,00");
 });
+
+test("mostrar e ocultar colunas: por visão, guardado entre visitas", async ({ page }) => {
+  const name = uniqueName("Colunas");
+  await createEntry(page, { name, direction: "saida", total: "5,00", account: E2E_ACCOUNTS[0], category: "Telefone", description: "coluna" });
+  await page.goto("/financeiro/lancamentos/movimentacoes");
+  await search(page, name);
+  const table = entriesTable(page);
+  const toggle = async (label: string) => {
+    await page.getByRole("button", { name: /^Colunas/ }).click();
+    await page.getByRole("menuitemcheckbox", { name: label }).click();
+    await page.keyboard.press("Escape");
+  };
+  await expect(table.getByRole("columnheader", { name: /Forma pgto/ })).toBeVisible();
+  await toggle("Forma pgto");
+  await expect(table.getByRole("columnheader", { name: /Forma pgto/ })).toHaveCount(0);
+  await expect(entryRow(page, name)).not.toContainText("PIX");
+  await expect(page.getByRole("button", { name: /^Colunas/ })).toContainText("1 oculta");
+  await page.reload();
+  await expect(table.getByRole("columnheader", { name: /Forma pgto/ })).toHaveCount(0);
+  // a outra visão tem a escolha dela
+  await page.goto("/financeiro/lancamentos/detalhamento");
+  await expect(page.getByRole("region", { name: "Detalhamento" }).getByRole("columnheader", { name: /Forma pgto/ })).toBeVisible();
+  await page.goto("/financeiro/lancamentos/movimentacoes");
+  await search(page, name);
+  await toggle("Forma pgto");
+  await expect(table.getByRole("columnheader", { name: /Forma pgto/ })).toBeVisible();
+  await expect(entryRow(page, name)).toContainText("PIX");
+});

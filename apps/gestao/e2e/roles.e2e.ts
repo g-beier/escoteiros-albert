@@ -10,6 +10,7 @@ import { pageAs } from "./support/members";
 const stamp = Date.now().toString(36);
 const chief = `e2e.chefe.${stamp}@example.org`;
 const contributor = `e2e.colaborador.${stamp}@example.org`;
+const financeEditor = `e2e.editor.fin.${stamp}@example.org`;
 const scouter = `${E2E_PREFIX} Chefe ${stamp}`;
 const youth = `${E2E_PREFIX} Jovem ${stamp}`;
 const other = `${E2E_PREFIX} Outro ${stamp}`;
@@ -35,6 +36,10 @@ test.beforeAll(() => {
   psql(`insert into public.memberships(group_id, user_id, finance_role, inventory_role, associates_role)
     select ${literal(gid)}, id, 'contributor', 'viewer', 'viewer' from auth.users where email = ${literal(contributor)}
     on conflict (group_id, user_id) do update set finance_role = 'contributor', inventory_role = 'viewer', associates_role = 'viewer';`);
+  ensureUser(financeEditor);
+  psql(`insert into public.memberships(group_id, user_id, finance_role, inventory_role, associates_role)
+    select ${literal(gid)}, id, 'editor', 'viewer', 'viewer' from auth.users where email = ${literal(financeEditor)}
+    on conflict (group_id, user_id) do update set finance_role = 'editor', inventory_role = 'viewer', associates_role = 'viewer';`);
   const chiefId = psql(`select id from auth.users where email = ${literal(chief)};`);
   // aniversário hoje: aparece em "Aniversários e promessas"
   asAdmin(`
@@ -49,7 +54,7 @@ test.beforeAll(() => {
 
 test.afterAll(async () => {
   psql(`delete from public.ledger_entries where created_by = (select id from auth.users where email = ${literal(contributor)});`);
-  await deleteUsers([chief, contributor]);
+  await deleteUsers([chief, contributor, financeEditor]);
   psql(`
     delete from public.associates where name in (${[scouter, youth, other].map(literal).join(", ")});
     delete from public.sections where name like ${literal(`${E2E_PREFIX} % ${stamp}`)};`);
@@ -110,5 +115,25 @@ test("colaborador do Financeiro lança, mas o lançamento fica para revisar", as
     await expect(page.getByRole("note")).toBeVisible();
     await expect(page.getByRole("button", { name: "Marcar como revisado" })).toHaveCount(0);
   });
+  await page.context().close();
+});
+
+test("editor do Financeiro: sem ações em lote nem importação de lançamentos; importa extratos", async ({ browser }) => {
+  const page = await pageAs(browser, financeEditor);
+  await page.goto("/financeiro/lancamentos/movimentacoes?de=tudo");
+  await expect(page.getByRole("region", { name: "Movimentações" })).toBeVisible();
+  // registro rápido no cabeçalho do módulo, como no Inventário (quem lança)
+  await expect(page.getByRole("banner").getByRole("link", { name: "Registro rápido" })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: /^Selecionar/ })).toHaveCount(0);
+  await page.goto("/financeiro/lancamentos/detalhamento?de=tudo");
+  await expect(page.getByRole("region", { name: "Detalhamento" })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: /^Selecionar/ })).toHaveCount(0);
+  await page.getByLabel(/^Conta de /).click();
+  await expect(page.getByRole("link", { name: "Importar dados" })).toHaveCount(0);
+  const response = await page.goto("/importar");
+  expect(response?.status()).toBe(404);
+  await page.goto("/financeiro/extrato/importar");
+  await expect(page).toHaveURL(/\/financeiro\/extrato\/importar/);
+  await expect(page.getByRole("heading", { name: "Extrato" })).toBeVisible();
   await page.context().close();
 });

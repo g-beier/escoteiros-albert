@@ -72,12 +72,12 @@ Fonte: planilha "Doc 31 – Inventário" (uma aba por área, quantidades de 2024
 - A coluna Categoria (só a Alcateia tem: Atividade, Compartilhado, Infraestrutura, Primeiros Socorros) não tem campo próprio no modelo: vai para a observação do lote.
 - A aba BARRACAS (B1 a B11, conferidas em 10/01/2026) vira peças com etiqueta, família Barracas (`001`): B1 = `GEAS-001-0001` … B11 = `GEAS-001-0011`, com o código antigo e a descrição de cada uma, no material "Barraca etiquetada" e na divisão provisória Almoxarifado › Barracas (a conferir). Falta conciliar com as linhas de barraca das abas das seções (que continuam como lotes), para não contar a mesma barraca duas vezes.
 - Descartados: a aba ALCATEIA TESTE e as linhas "a adquirir" (lista de compras, não patrimônio).
-- Lenços, camisetas, moletons e distintivos entram, por enquanto, como materiais por quantidade nas suas famílias; viram produtos com variações no passo 2 (Lojinha).
+- Lenços, camisetas, moletons e distintivos entram, por enquanto, como materiais por quantidade em subdivisões (Diretoria › Lenços, Distintivos e certificados › <grupo>…), sem família; viram produtos com variações no passo 2 (Lojinha).
 
 Conversor de referência (os CSV são dados do grupo e não são versionados):
 
 ```bash
-node apps/gestao/scripts/inventory/planilha-para-csv.mjs <planilha.xlsx> <pasta>     # gera inventario-lotes.csv e inventario-pecas.csv
+npm run inventory:csv --workspace=@geas/gestao -- <planilha.xlsx> <pasta>   # gera inventario-lotes.csv e inventario-pecas.csv
 ```
 
 Os dois arquivos seguem o contrato de importação (`apps/gestao/docs/importacao.md`) e entram pela tela **Importar**

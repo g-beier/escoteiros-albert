@@ -56,7 +56,14 @@ Na mesma tela dá para baixar o **modelo vazio** de cada arquivo e os **dados at
 | Doc 14a – Datas de promessa | `pessoas.csv` (promessa) |
 | Doc 22 – Controle de fluxo de dados pessoais | `controle.csv` (uma coluna por item; `NÃO`, `OK`, `DESAT.`, `ANTIGA`, `VER`, `TEM?`, `CONV.`, `XXX` são aceitos como estão; célula cinza = deixar vazia), `itens-controle.csv` só se houver coluna que não existe no app |
 | Linha do tempo (vida escoteira) | `vida-escoteira.csv`: cada sequência de meses pintados da mesma cor vira uma linha `período` (cor do ramo = ramo; azul = `adulto`); meses em branco entre elas são lacunas (não gerar linha); anotações viram `anotação` ou, com data, `evento` |
-| Doc 31 – Inventário | `inventario-lotes.csv` (uma linha por material × divisão × condição; aba = divisão, subtítulo = subdivisão `Aba › Subtítulo`; colunas de quantidade por ano = `contagem AAAA`; estado em texto livre = `condição` + `observação`; validade escrita no estado vai para `validade`; "a adquirir" não entra), `inventario-pecas.csv` (aba BARRACAS: uma linha por barraca etiquetada). O script `apps/gestao/scripts/inventory/planilha-para-csv.mjs` já faz essa conversão |
+| Financeiro GEAS (aba Movimentação Financeira, baixada como CSV) | `lancamentos.csv`: `npm run finance:csv --workspace=@geas/gestao -- <planilha.csv> <pasta>` converte (conta pela forma de pagamento: PIX/boleto/depósito/cartão → Mercado Pago, "PIX - Cora" → Cora, dinheiro → Caixa, vazia → A definir); caixinhas e transferências entre contas próprias ficam de fora (não são lançamento). Uma linha vira um lançamento; agrupe no Detalhamento o que for um pagamento só |
+| Doc 31 – Inventário | `inventario-lotes.csv` (uma linha por material × divisão × condição; aba = divisão, subtítulo = subdivisão `Aba › Subtítulo`; colunas de quantidade por ano = `contagem AAAA`; estado em texto livre = `condição` + `observação`; validade escrita no estado vai para `validade`; "a adquirir" não entra), `inventario-pecas.csv` (aba BARRACAS: uma linha por barraca etiquetada). O script `apps/gestao/scripts/inventory/planilha-para-csv.ts` já faz essa conversão e confere o resultado com a mesma pré-visualização da tela (`npm run inventory:csv --workspace=@geas/gestao -- <planilha.xlsx> <pasta>`) |
+
+Docs 10, 13, 14 e 22 de uma vez: `npm run associates:csv --workspace=@geas/gestao -- <pasta com os .xlsx> <pasta de saída>`
+(`apps/gestao/scripts/associates/planilhas-para-csv.ts`) gera `pessoas.csv`, `funcoes.csv`, `responsaveis.csv` e
+`controle.csv` (seção = o ramo: Alcateia, Tropa Escoteira, Tropa Sênior, Clã Pioneiro, Ninhada) e confere tudo com a
+mesma pré-visualização da tela. O Doc 10 não diz mãe ou pai: sem `*`, o parentesco é deduzido do primeiro nome (confira
+na pré-visualização). O resumo mostra só contagens e a posição na planilha; `--detalhes` mostra os nomes.
 
 ## Arquivos
 
@@ -323,6 +330,39 @@ Exemplo:
 ```csv
 etiqueta;código antigo;material;família código;família;divisão;condição;descrição;valor;observação
 GEAS-001-0001;B1;Barraca iglu 4 pessoas;001;Barracas;Almoxarifado › Barracas;bom;Azul, sobreteto remendado;450,00;Conferida em 10/01/2026
+```
+
+### `lancamentos.csv`: Financeiro: lançamentos (só administradores do Financeiro)
+
+- **Uma linha por:** rateio: uma rubrica de um lançamento (o lançamento de um rateio só é uma linha).
+- **Identificação:** `id` do lançamento; sem ele, data + conta + histórico + valor total (lançamentos iguais no mesmo dia contam um a um).
+- **Reimportar:** Cria os lançamentos que não existem; os que já existem ficam como estão. Nunca altera nem apaga.
+- Transferência entre contas do próprio grupo não é lançamento: não entra aqui (na conciliação, ignore a linha do extrato como transferência).
+- Os lançamentos importados entram revisados; os rateios podem ser agrupados ou desagrupados depois no Detalhamento.
+
+| Coluna | Obrigatória | Valores | O que é | Exemplo |
+|---|---|---|---|---|
+| `id` |  | id do app | Id do lançamento no app (vem da exportação). Com ele, a linha é do lançamento que já existe. |  |
+| `lançamento` (ou `lancamento`, `grupo`) |  | texto (até 60) | Junta linhas num lançamento só (um rateio por linha): as linhas com o mesmo texto aqui são o mesmo lançamento, e data, conta, forma e histórico vêm da primeira. Vazio = a linha é um lançamento. |  |
+| `data` | sim | data dd/mm/aaaa | Data do lançamento. | 10/03/2026 |
+| `histórico` (ou `historico`, `nome`) |  | texto (até 200) | Nome do lançamento. Vazio = a descrição do rateio. | Mensalidade março |
+| `conta` | ao criar | texto (até 60) | Nome da conta (criada se não existir). Use "A definir" quando não souber. | Mercado Pago |
+| `forma de pagamento` (ou `forma pgto`, `forma`, `forma de pgto`) | ao criar | texto (até 60) | Nome da forma de pagamento (criada se não existir). | PIX |
+| `documento` |  | texto (até 60) | Número da nota ou recibo. |  |
+| `pasta` (ou `documentos arquivados`, `arquivado`) |  | sim/não | Documentos arquivados na pasta. Padrão: não. | não |
+| `valor` | sim | valor 1.234,56 | Valor do rateio, sem sinal: entrada ou saída pelo tipo da rubrica (receita ou despesa). | 30,00 |
+| `rubrica` | sim | texto (até 200) | Código da rubrica (`1.1`, `1.1.` ou `1.1. Mensalidades`), ou o nome, se for único. | 1.1 |
+| `descrição` (ou `descricao`, `descrição do rateio`) |  | texto (até 200) | Descrição do rateio. Vazio = o histórico. | Mensalidade |
+| `associado` (ou `nome do associado`) |  | texto (até 120) | Associado do rateio, pelo nome. Não encontrado: o rateio fica sem associado e o nome vai para a observação do lançamento. | Ana Souza |
+| `observação` (ou `observacao`, `obs`) |  | texto (até 500) | Observação do lançamento. |  |
+
+Exemplo:
+
+```csv
+id;lançamento;data;histórico;conta;forma de pagamento;documento;pasta;valor;rubrica;descrição;associado;observação
+;;10/03/2026;Mensalidade março;Mercado Pago;PIX;;não;30,00;1.1;Mensalidade;Ana Souza;
+;feira-1;12/03/2026;Compras da feira;Caixa;Dinheiro;NF 123;sim;40,00;2.6.2;Legumes;;
+;feira-1;12/03/2026;Compras da feira;Caixa;Dinheiro;NF 123;sim;12,50;2.6.4;Copos;;
 ```
 
 Situações aceitas nas células de `controle.csv` (e como valor inicial em `itens-controle.csv`):

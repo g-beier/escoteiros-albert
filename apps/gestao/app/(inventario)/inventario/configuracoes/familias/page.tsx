@@ -14,7 +14,7 @@ export default async function FamiliesPage() {
   return <div className="shell">
     <AppHeader current="/inventario/configuracoes/familias" member={member} />
     <PageBody width="narrow">
-      <PageHeader title="Configurações" tabs={<SettingsTabs current="familias" canImport={member.inventory.canReview} />} crumbs={settingsCrumbs("familias")}
+      <PageHeader title="Configurações" tabs={<SettingsTabs current="familias" />} crumbs={settingsCrumbs("familias")}
         description={member.inventory.canReview
           ? "Tipos de material. Clique numa família para ver os materiais dela."
           : "Tipos de material. Só o gestor do inventário altera as famílias."} />

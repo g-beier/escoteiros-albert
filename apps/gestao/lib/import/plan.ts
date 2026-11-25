@@ -3,7 +3,7 @@ import {
   KINSHIP_CHOICES, REGISTRATION_CHOICES, VALUE_KIND_CHOICES, type Choice, type FileKind,
 } from "@/lib/import/contract";
 import { countYear, type ReadFile, type ReadRow, type Values } from "@/lib/import/read";
-import type { ImportState, StateFunction, StateItem, StateLink, StatePerson, StateStatus } from "@/lib/import/state";
+import type { ImportState, StateCategory, StateFunction, StateItem, StateLink, StatePerson, StateStatus } from "@/lib/import/state";
 import { nameKey, parseControlCell, type ControlCell } from "@/lib/import/values";
 
 /**
@@ -907,7 +907,137 @@ function planInventoryUnits(file: ReadFile, ctx: PlanContext, batchErrors: strin
   return plan;
 }
 
+// Financeiro: lançamentos -----------------------------------------------------------------------------------------
+
+/** Rubrica pelo texto da planilha: código (`1.1`, `1.1.`, `1.1. Mensalidades`) ou nome único. */
+export function findCategory(categories: StateCategory[], text: string): { category?: StateCategory; error?: string; warning?: string } {
+  const match = text.trim().match(/^(\d+(?:\.\d+)*)\.?(?:\s+(.+))?$/);
+  if (match) {
+    const category = categories.find((c) => c.code === match[1]);
+    if (!category) return { error: `rubrica ${match[1]} não existe no app` };
+    const warning = match[2] && nameKey(match[2]) !== nameKey(category.name) ? `rubrica ${match[1]}: no app o nome é "${category.name}"` : undefined;
+    return { category, ...(warning ? { warning } : {}) };
+  }
+  const found = categories.filter((c) => nameKey(c.name) === nameKey(text));
+  if (found.length === 1) return { category: found[0] };
+  if (found.length > 1) return { error: `há ${found.length} rubricas "${text}" (${found.map((c) => c.code).join(", ")}): use o código` };
+  return { error: `rubrica "${text}" não existe no app` };
+}
+
+const entrySignature = (date: string, account: string, name: string, total: number) => [date, nameKey(account), nameKey(name), total].join("|");
+const money = (cents: number) => `${cents < 0 ? "-" : ""}R$ ${(Math.abs(cents) / 100).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+
+/**
+ * lancamentos.csv: um rateio por linha; `lançamento` junta linhas num lançamento. Identifica pelo `id` ou pela
+ * assinatura data + conta + histórico + total (iguais no mesmo dia contam um a um: o 2º PIX de R$ 30 igual só é
+ * "igual" se o app já tiver dois). Contas e formas que faltam são criadas; nada existente muda.
+ */
+function planLedgerEntries(file: ReadFile, ctx: PlanContext): PlannedFile {
+  const plan = emptyPlan(file);
+  const finance = ctx.state.finance;
+  const byId = new Map(finance.entries.map((entry) => [entry.id, entry]));
+  const remaining = new Map<string, number>();
+  for (const entry of finance.entries) {
+    const key = entrySignature(entry.date, entry.account, entry.name, entry.total);
+    remaining.set(key, (remaining.get(key) ?? 0) + 1);
+  }
+  const accounts = new Map(finance.accounts.map((a) => [nameKey(a.name), a.name]));
+  const methods = new Map(finance.paymentMethods.map((m) => [nameKey(m.name), m.name]));
+
+  // Linhas do mesmo `lançamento` juntas, na ordem da primeira.
+  const groups = new Map<string, ReadRow[]>();
+  for (const row of file.rows) {
+    const key = str(row.values, "group") ? `g:${nameKey(str(row.values, "group")!)}` : `l:${row.line}`;
+    groups.set(key, [...(groups.get(key) ?? []), row]);
+  }
+
+  for (const rows of groups.values()) {
+    const first = rows[0]!;
+    const v = first.values;
+    const errors = rows.flatMap((row) => row.errors.map((error) => (rows.length > 1 ? `linha ${row.line}: ${error}` : error)));
+    const warnings: string[] = [];
+    const date = str(v, "date") ?? "";
+    const account = str(v, "account");
+    const method = str(v, "paymentMethod");
+    for (const row of rows.slice(1)) {
+      for (const [key, label] of [["date", "data"], ["account", "conta"], ["paymentMethod", "forma de pagamento"]] as const) {
+        const other = str(row.values, key);
+        if (other && nameKey(other) !== nameKey(str(v, key) ?? "")) errors.push(`linha ${row.line}: ${label} diferente da linha ${first.line} (o lançamento é um só)`);
+      }
+    }
+    if (date && date > ctx.options.today) errors.push("data no futuro");
+
+    const notes: string[] = str(v, "notes") ? [str(v, "notes")!] : [];
+    const splits: { category_id: string; amount_cents: number; description: string; associate?: string }[] = [];
+    for (const row of rows) {
+      const r = row.values;
+      const text = str(r, "category");
+      const amount = r.amount as number | undefined;
+      if (!text || amount === undefined) continue;
+      const found = findCategory(finance.categories, text);
+      if (found.error || !found.category) { errors.push(rows.length > 1 ? `linha ${row.line}: ${found.error}` : found.error!); continue; }
+      if (found.warning) warnings.push(found.warning);
+      const category = found.category;
+      if (!category.active) errors.push(`rubrica ${category.code} ${category.name} está inativa`);
+      if (!category.kind) { errors.push(`rubrica ${category.code} ${category.name} não é de receita nem de despesa`); continue; }
+      if (amount === 0) { errors.push("valor zero"); continue; }
+      const signed = category.kind === "despesa" ? -amount : amount;
+      const description = str(r, "description") ?? str(r, "name") ?? str(v, "name") ?? category.name;
+      const associateName = str(r, "associate");
+      let associate: string | undefined;
+      if (associateName) {
+        const person = ctx.findPerson(undefined, associateName, undefined);
+        if (person.person) associate = person.person.name;
+        else {
+          warnings.push(`associado "${associateName}" ${person.error ? "ambíguo" : "não encontrado"}: o nome vai para a observação`);
+          notes.push(`Associado na planilha: ${associateName}`);
+        }
+      }
+      splits.push({ category_id: category.id, amount_cents: signed, description: description.slice(0, 200), ...(associate ? { associate } : {}) });
+    }
+    const name = (str(v, "name") ?? str(v, "description") ?? splits[0]?.description ?? "").slice(0, 200);
+    const total = splits.reduce((sum, split) => sum + split.amount_cents, 0);
+    const label = `${showDate(date)} · ${name || "sem histórico"} · ${money(total)}${rows.length > 1 ? ` (${rows.length} rateios)` : ""}`;
+    if (!errors.length && splits.length && total === 0) errors.push("o total do lançamento é zero");
+
+    const id = str(v, "id");
+    if (id) {
+      if (!byId.has(id)) errors.push(`id ${id} não encontrado no app`);
+      if (errors.length) { plan.rows.push(errorRow(first, label, errors)); continue; }
+      plan.rows.push({ line: first.line, action: "igual", label, changes: [], errors: [], warnings });
+      continue;
+    }
+    if (!account) errors.push("conta é obrigatória para criar o lançamento");
+    if (!method) errors.push("forma de pagamento é obrigatória para criar o lançamento");
+    if (account && finance.accounts.some((a) => !a.active && nameKey(a.name) === nameKey(account))) errors.push(`a conta ${account} está inativa`);
+    if (method && finance.paymentMethods.some((m) => !m.active && nameKey(m.name) === nameKey(method))) errors.push(`a forma de pagamento ${method} está inativa`);
+    if (errors.length || !splits.length || !account || !method) { plan.rows.push(errorRow(first, label, errors)); continue; }
+
+    const signature = entrySignature(date, accounts.get(nameKey(account)) ?? account, name, total);
+    const left = remaining.get(signature) ?? 0;
+    if (left > 0) {
+      remaining.set(signature, left - 1);
+      plan.rows.push({ line: first.line, action: "igual", label, changes: [], errors: [], warnings });
+      continue;
+    }
+    if (!accounts.has(nameKey(account))) { accounts.set(nameKey(account), account); plan.creations.push(`Nova conta "${account}"`); }
+    if (!methods.has(nameKey(method))) { methods.set(nameKey(method), method); plan.creations.push(`Nova forma de pagamento "${method}"`); }
+    const changes: Change[] = splits.map((split) => {
+      const category = finance.categories.find((c) => c.id === split.category_id)!;
+      return { field: "rateio", before: "", after: `${category.code} ${category.name} · ${money(split.amount_cents)} · ${split.description}${split.associate ? ` · ${split.associate}` : ""}` };
+    });
+    plan.rows.push({ line: first.line, action: "nova", label, changes, errors: [], warnings });
+    plan.payload.push({
+      line: first.line, date, name, account: accounts.get(nameKey(account)), payment_method: methods.get(nameKey(method)),
+      ...(str(v, "document") ? { document: str(v, "document") } : {}), filed: v.filed === true,
+      ...(notes.length ? { notes: notes.join("\n").slice(0, 2000) } : {}), total_cents: total, splits,
+    });
+  }
+  return plan;
+}
+
 const PLANNERS: Partial<Record<FileKind, Planner>> = {
+  lancamentos: planLedgerEntries,
   "inventario-lotes": planInventoryLots,
   "inventario-pecas": planInventoryUnits,
   "vida-escoteira": planLife,

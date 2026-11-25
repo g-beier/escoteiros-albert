@@ -7,7 +7,7 @@ Modelo e vocabulário em `docs/modelo.md`.
 - Modelo recriado (`032_inventory_catalog.sql`): material por peça (etiqueta `GEAS-000-0000`) ou por lote, consumíveis com estoque mínimo, validade por lote, divisões em árvore, famílias com código, dados de entrada, baixa com motivo, movimentos com status de revisão. Escrita só pelas funções `inventory_*`, auditadas.
 - Papéis por app: administrador do grupo = gestor nos dois apps; papel do inventário (gestor, chefe, consulta) definido em `/usuarios`.
 - Telas: Materiais (lista, cadastro, detalhe com lotes/peças e ações), Divisões, Famílias, Início (validade, mínimo, pendentes), Movimentações.
-- Carga de desenvolvimento da planilha "Doc 31 – Inventário" (`scripts/inventory/planilha-para-csv.mjs`, `scripts/inventory/importar-planilha.mjs`).
+- Carga de desenvolvimento da planilha "Doc 31 – Inventário" (`scripts/inventory/planilha-para-csv.ts`; a carga é pela tela `/importar`).
 
 ## Concluído (2026-11-13, ajustes)
 

@@ -14,7 +14,7 @@ export default async function LocationsPage() {
   return <div className="shell">
     <AppHeader current="/inventario/configuracoes/divisoes" member={member} />
     <PageBody width="narrow">
-      <PageHeader title="Configurações" tabs={<SettingsTabs current="divisoes" canImport={member.inventory.canReview} />} crumbs={settingsCrumbs("divisoes")}
+      <PageHeader title="Configurações" tabs={<SettingsTabs current="divisoes" />} crumbs={settingsCrumbs("divisoes")}
         description={member.inventory.canReview
           ? "Onde os materiais do grupo ficam guardados. Arraste pela alça para reordenar ou pôr dentro de outra; clique numa divisão para ver o que há nela."
           : "Onde os materiais do grupo ficam guardados. Só o gestor do inventário altera as divisões."} />

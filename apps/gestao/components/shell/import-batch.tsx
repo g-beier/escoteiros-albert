@@ -12,7 +12,7 @@ import { Spinner } from "@geas/ui/components/spinner";
 import { ToggleGroup, ToggleGroupItem } from "@geas/ui/components/toggle-group";
 import { cn } from "@geas/ui/lib/utils";
 import { decodeBytes } from "@/lib/finance/statement-import";
-import { FILES, fileSpec, type Module } from "@/lib/import/contract";
+import { FILES, MODULE_NAMES, fileSpec, type Module } from "@/lib/import/contract";
 import { EXPORTABLE, templateCsv } from "@/lib/import/export";
 import { SUPPORTED_KINDS, planBatch, planTotals, type PlanOptions, type PlannedFile, type PlannedRow, type RowAction } from "@/lib/import/plan";
 import { readImportFile } from "@/lib/import/read";
@@ -43,7 +43,7 @@ export function ImportBatch({ state, options, modules }: { state: ImportState; o
   const notAllowed = read.flatMap((item) => {
     if (!item.file) return [];
     const spec = fileSpec(item.file.kind);
-    return modules[spec.module] ? [] : [`${item.name}: só editores do ${spec.module === "associados" ? "Associados" : "Inventário"} importam ${spec.file}.`];
+    return modules[spec.module] ? [] : [`${item.name}: só ${spec.module === "financeiro" ? "administradores" : "editores"} do ${MODULE_NAMES[spec.module]} importam ${spec.file}.`];
   });
   const plan = useMemo(() => planBatch(read.flatMap((item) => (item.file ? [item.file] : [])), state, options), [read, state, options]);
   const blocking = [...readErrors, ...notAllowed, ...plan.errors];

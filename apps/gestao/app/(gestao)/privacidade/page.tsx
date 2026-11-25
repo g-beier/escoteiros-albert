@@ -66,7 +66,8 @@ export default function PrivacyPage() {
         <ul className="list-disc space-y-1 pl-6">
           <li><strong>Sessão</strong> (essencial): mantém você conectado por até 30 dias sem uso. Sai ao clicar em
             “Sair”.</li>
-          <li><strong>Preferências de tela</strong>, como as colunas escolhidas na lista de materiais.</li>
+          <li><strong>Preferências de tela</strong>, como as colunas escolhidas na lista de materiais e nas listas de
+            lançamentos. Ficam só no seu navegador e só são gravadas quando você muda a escolha.</li>
         </ul>
         <p>Durante o login, um cookie temporário protege a volta do Google contra falsificação e expira em minutos.</p>
       </Section>

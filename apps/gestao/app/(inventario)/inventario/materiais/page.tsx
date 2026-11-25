@@ -7,6 +7,7 @@ import { buttonVariants } from "@geas/ui/components/button";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { cn } from "@geas/ui/lib/utils";
+import type { Option } from "@geas/ui/components/option-controls";
 import { AppHeader } from "@/components/inventory/app-header";
 import { ColumnMenu, type ColumnFilter } from "@/components/inventory/materials/column-menu";
 import { HEAD_TRIGGER, HeadIcons } from "@/components/shell/column-head";
@@ -22,6 +23,7 @@ import * as materialsData from "@/lib/server/inventory/materials";
 import * as movementsData from "@/lib/server/inventory/movements";
 import { MaterialFilters } from "@/components/inventory/materials/material-filters";
 import { StockEditor } from "@/components/inventory/materials/stock-editor";
+import { BulkSelection } from "@/components/inventory/materials/bulk";
 import { IconSprite, SpriteIcon } from "@/components/shell/icon-sprite";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
@@ -130,7 +132,9 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   ];
   const heading = showAll ? "Todos os locais" : selected && selected.depth > 0 ? selected.path : root?.name ?? "Materiais";
   const canEdit = member.inventory.canWrite;
-  const span = columns.length + 1 + (canEdit ? 1 : 0);
+  const span = columns.length + 1 + (canEdit ? 2 : 0);
+  // Edição em massa: divisões ativas (na ordem da árvore) e famílias para os diálogos da barra de ações.
+  const locationOptions = paths.filter((row) => row.active).map((row) => ({ value: row.id, label: row.path }));
   // Botão ± das linhas (material por quantidade): os lotes vêm do servidor ao clicar (StockEditor), não no HTML.
   const pathOf = new Map(paths.map((row) => [row.id, row.path]));
   const stockActions: StockActions | null = canEdit ? { pathOf } : null;
@@ -168,9 +172,12 @@ export default async function Materials({ searchParams }: { searchParams: Promis
         {/* A tabela fica mesmo vazia: o cabeçalho tem os menus das colunas, para desfazer o filtro. Corpo em blocos
             (`cv-table`/`cv-rows` do tema): o navegador pula os que estão fora da tela. */}
         <IconSprite icons={SPRITE} />
-        <EditorFrame canEdit={canEdit}><div className="overflow-x-auto"><Table className={cn("cv-table min-w-[760px]", MAT_BODY)} style={cvCols(["minmax(12rem, 1fr)", ...columns.map((id) => HEADS[id].track), ...(canEdit ? ["2.5rem"] : [])])}>
+        <EditorFrame canEdit={canEdit} listKey={here} locations={locationOptions} families={familyOptions}><div className="overflow-x-auto"><Table className={cn("cv-table min-w-[760px]", MAT_BODY)} style={cvCols([...(canEdit ? ["2.25rem"] : []), "minmax(12rem, 1fr)", ...columns.map((id) => HEADS[id].track), ...(canEdit ? ["2.5rem"] : [])])}>
             <TableCaption className="sr-only">Materiais por divisão; a ordem escolhida vale dentro de cada divisão</TableCaption>
             <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
+              {canEdit && <TableHead className={cn(HEAD_CLASS, "w-9 px-1! text-center")}>
+                <input type="checkbox" data-sel-all="" aria-label="Selecionar todas as linhas da lista" title="Selecionar todas (Shift + clique numa linha marca o intervalo)" className="size-4 cursor-pointer accent-primary align-middle" />
+              </TableHead>}
               <SortHead label="Material" {...sortProps("material")} />
               {columns.map((id) => COLUMN_FILTERS[id]
                 ? <TableHead key={id} className={cn(HEAD_CLASS, HEADS[id].className)} aria-sort={state.sort === id ? (state.dir === "asc" ? "ascending" : "descending") : undefined}>
@@ -252,7 +259,8 @@ function GroupRow({ level, depth = 0, columns, href, children }: { level: "root"
 const empty = <span className="text-muted-foreground">—</span>;
 
 /** Quem edita ganha o ouvinte único dos botões ± (StockEditor); quem só lê, a tabela pura. */
-const EditorFrame = ({ canEdit, children }: { canEdit: boolean; children: React.ReactNode }) => canEdit ? <StockEditor>{children}</StockEditor> : <>{children}</>;
+const EditorFrame = ({ canEdit, listKey, locations, families, children }: { canEdit: boolean; listKey: string; locations: Option[]; families: Option[]; children: React.ReactNode }) =>
+  canEdit ? <BulkSelection key={listKey} locations={locations} families={families}><StockEditor>{children}</StockEditor></BulkSelection> : <>{children}</>;
 
 const SPRITE = { "plus-minus": IconPlusMinus, alert: IconAlertTriangle };
 
@@ -266,7 +274,7 @@ const MAT_BODY = [
   "[&_tr[data-m]]:border-b [&_tr[data-m]]:transition-colors [&_tr[data-m]:hover]:bg-muted/50 [&_tr[data-off]]:opacity-60",
   "[&_tr[data-m]>td]:px-3 [&_tr[data-m]>td]:py-1.5 [&_tr[data-m]>td]:align-middle [&_tr[data-m]>td]:whitespace-nowrap [&_td[data-n]]:whitespace-normal!",
   "[&_td[data-a=c]]:text-center [&_td[data-a=r]]:text-right [&_td[data-a=q]]:text-center [&_td[data-a=q]]:font-semibold [&_td[data-a=m]]:text-center [&_td[data-a=m]]:text-muted-foreground",
-  "[&_td[data-a=b]]:px-1! [&_td[data-a=b]]:text-center",
+  "[&_td[data-a=b]]:px-1! [&_td[data-a=b]]:text-center [&_input[data-sel]]:size-4 [&_input[data-sel]]:cursor-pointer [&_input[data-sel]]:accent-primary [&_input[data-sel]]:align-middle [&_tr[data-m]:has(input[data-sel]:checked)]:bg-primary/5",
   "[&_[data-cond]]:inline-flex [&_[data-cond]]:items-center [&_[data-cond]]:gap-1.5 [&_[data-cond]]:rounded-full [&_[data-cond]]:px-2 [&_[data-cond]]:py-0.5 [&_[data-cond]]:text-xs [&_[data-cond]]:font-medium [&_[data-cond]]:whitespace-nowrap",
   "[&_[data-cond]]:before:size-1.5 [&_[data-cond]]:before:shrink-0 [&_[data-cond]]:before:rounded-full [&_[data-cond]]:before:bg-current [&_[data-cond]]:before:opacity-80 [&_[data-cond]]:before:content-['']",
   "[&_[data-cond=novo]]:bg-success [&_[data-cond=novo]]:text-white [&_[data-cond=bom]]:bg-success-soft [&_[data-cond=bom]]:text-success",
@@ -326,6 +334,7 @@ function MaterialLine({ line, depth, columns, back, actions }: { line: Line; dep
   };
   return <tr data-m={material.id} data-l={stock ? line.location_id : undefined} data-name={stock ? material.name : undefined}
     data-path={stock ? actions.pathOf.get(line.location_id) ?? "" : undefined} data-cons={stock && material.consumable ? "" : undefined} data-off={material.active ? undefined : ""}>
+    {actions && <td data-a="b"><input type="checkbox" data-sel="" value={`${material.id}|${line.location_id}`} aria-label={`Selecionar ${material.name}${line.location_id ? ` em ${actions.pathOf.get(line.location_id) ?? ""}` : " (sem estoque)"}`} /></td>}
     <td data-n="" style={indent(depth)}>
       <Link href={withBack(`/inventario/materiais/${material.id}`, back)} className="hover:underline">{material.name}</Link>
       {(material.consumable || !material.active) && <span className="ml-2 inline-flex flex-wrap gap-1 align-middle">
