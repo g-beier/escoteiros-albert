@@ -2,7 +2,7 @@
 -- Valor inicial no cadastro, responsável compartilhado por irmãos, situações do responsável, "a remover"
 -- no desligamento, desvincular, permissões e isolamento entre grupos. Rode com `npm run test:db`.
 begin;
-select plan(78);
+select plan(79);
 \ir _fixture.psql
 
 select id as email from public.control_items where group_id = :'gid_a' and name = 'Contatos no e-mail do GEAS' \gset
@@ -47,12 +47,18 @@ select is((select count(*)::int from public.control_statuses s join public.assoc
 select public.associates_create(:'gid_a', 'Pio Teste', 'pioneiro', null, null, null, null, null, null) as pio \gset
 select count(*)::int as pio_before from public.control_statuses where associate_id = :'pio' \gset
 select lives_ok(format($$select public.associates_move(%L, current_date, 'adulto', null, null)$$, :'pio'), 'pioneiro passa a adulto');
-select is((select count(*)::int from public.control_statuses where associate_id = :'pio'), :pio_before, 'passagem não mexe nas situações');
+select is((select count(*)::int from public.control_statuses s where s.associate_id = :'pio'
+    and not exists (select 1 from public.control_item_audiences a where a.item_id = s.item_id and a.audience = 'adulto')), 0,
+  'passagem a adulto apaga as situações dos itens só de jovens (016)');
+select is((select count(*)::int from public.control_statuses where associate_id = :'pio'),
+  (select count(*)::int from public.control_items i join public.control_item_audiences a on a.item_id = i.id
+    where i.group_id = :'gid_a' and i.active and a.audience = 'adulto' and a.initial_status is not null),
+  'passagem a adulto cria a situação inicial dos itens de adultos (016)');
 
--- Mudar públicos e valor inicial não mexe em situações gravadas.
+-- Mudar o valor inicial não mexe em situações gravadas; tirar um público apaga as situações dele (016).
 select lives_ok(format($$select public.control_item_update(%L, 'Instagram do GEAS', 'canal', 'comunicacao', '[{"audience":"adulto","initial_status":"ok"}]', null, true, null)$$, :'insta'),
   'Instagram só para adultos');
-select is((select status::text from public.control_statuses where associate_id = :'ana' and item_id = :'insta'), 'pendente', 'situação do jovem continua');
+select is((select status::text from public.control_statuses where associate_id = :'ana' and item_id = :'insta'), null, 'item deixa de valer para jovens: situação do jovem apagada');
 select lives_ok(format($$select public.control_item_update(%L, 'Instagram do GEAS', 'canal', 'comunicacao',
   '[{"audience":"jovem","initial_status":"pendente"},{"audience":"adulto","initial_status":"pendente"},{"audience":"responsavel","initial_status":"pendente"}]', null, true, null)$$, :'insta'),
   'volta aos três públicos');

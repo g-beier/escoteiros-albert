@@ -163,6 +163,7 @@ function ItemForm({ item, directorate: initialDirectorate, onDone }: { item: Con
     }
     return result;
   }, {});
+  const removed = (item?.audiences ?? []).map((a) => a.audience).filter((a) => audiences[a] === undefined);
   const toggleAudience = (audience: ControlAudience, checked: boolean) => setAudiences((current) => {
     const next = { ...current };
     if (checked) next[audience] = "pendente";
@@ -197,7 +198,7 @@ function ItemForm({ item, directorate: initialDirectorate, onDone }: { item: Con
         </Field>
         <fieldset className="m-0 grid gap-1.5 border-0 p-0 sm:col-span-2">
           <legend className="mb-1.5 text-sm font-medium">Se aplica a</legend>
-          <p className="m-0 text-[11px] text-muted-foreground">O valor inicial fica preenchido quando a pessoa é cadastrada. Mudar aqui não altera as situações já gravadas.</p>
+          <p className="m-0 text-[11px] text-muted-foreground">O valor inicial fica preenchido quando a pessoa é cadastrada. Mudar o valor inicial não altera as situações já gravadas; marcar um público preenche o valor inicial de quem já está ativo nele.</p>
           <div className="grid grid-cols-[minmax(8rem,auto)_1fr] items-center gap-x-4 gap-y-2">
             <span className="text-xs font-medium text-muted-foreground">Público</span>
             <span className="text-xs font-medium text-muted-foreground">Valor inicial</span>
@@ -216,6 +217,9 @@ function ItemForm({ item, directorate: initialDirectorate, onDone }: { item: Con
               </Fragment>;
             })}
           </div>
+          {removed.length > 0 && <p role="status" className="m-0 text-xs text-destructive">
+            Ao salvar, as situações de {removed.map((a) => audienceNames[a]).join(" e ")} neste item serão apagadas (menos as “a remover”).
+          </p>}
         </fieldset>
         <Field id="item-validity" label="Validade (meses)" hint="Em branco: não vence. Ficha médica: 12.">
           <Input id="item-validity" name="validityMonths" type="number" min={1} max={120} step={1} className="num" defaultValue={item?.validity_months ?? ""} />

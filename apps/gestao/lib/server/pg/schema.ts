@@ -826,7 +826,9 @@ export type Functions = {
   control_status_set_relative: { Args: { p_relative_id: string; p_item_id: string; p_status: Enums["control_status"]; p_status_date: string; p_valid_until: string; p_note: string; p_value_year?: number }; Returns: undefined };
   control_status_snapshot: { Args: { p_associate_id: string; p_item_id: string }; Returns: Json };
   control_status_snapshot_relative: { Args: { p_relative_id: string; p_item_id: string }; Returns: Json };
+  control_statuses_drop_audience: { Args: { p_item_id: string; p_audience: Enums["control_audience"] }; Returns: number };
   control_statuses_init: { Args: { p_group_id: string; p_associate_id: string; p_relative_id: string; p_audience: Enums["control_audience"] }; Returns: number };
+  control_statuses_init_audience: { Args: { p_item_id: string; p_audience: Enums["control_audience"] }; Returns: number };
   create_account: { Args: { p_group_id: string; p_name: string; p_kind: Enums["account_kind"]; p_bank: string; p_branch: string; p_number: string; p_opening_balance_cents: number; p_opening_date: string; p_ledger_code: string }; Returns: string };
   create_category: { Args: { p_group_id: string; p_parent_id: string; p_name: string; p_ledger_code: string }; Returns: string };
   create_entries_from_statement_lines: { Args: { p_items: Json }; Returns: number };
