@@ -125,6 +125,8 @@ export const financeWriterOrError = (denied = "Sem permissão para esta alteraç
 export const financeEditorOrError = (denied = "Apenas editores do Financeiro podem fazer esta alteração.") => allowed((m) => m.finance.canReview, denied);
 /** Ações em lote e importação de lançamentos (015): só o Administrador do Financeiro. */
 export const financeAdminOrError = (denied = "Ações em lote são do administrador do Financeiro.") => allowed((m) => m.finance.canAdmin, denied);
+/** Inventário: quem vê o módulo (PDF de conferência). */
+export const inventoryReaderOrError = (denied = "Sem acesso ao Inventário.") => allowed((m) => m.inventory.canRead, denied);
 /** Inventário, Colaborador ou mais: cadastra e movimenta material (o do Colaborador fica para revisar). */
 export const inventoryWriterOrError = (denied = "Sem permissão para esta alteração.") => allowed((m) => m.inventory.canWrite, denied);
 /** Inventário, Editor ou mais: revisão, divisões, famílias e contagens. */

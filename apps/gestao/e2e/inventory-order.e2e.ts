@@ -52,6 +52,14 @@ test("gestor ordena os materiais da divisão e a lista segue a ordem", async ({ 
   await expect(page).toHaveURL(/\/inventario\/materiais\?divisao=/);
   await expect.poll(() => names(page, "table")).toEqual([second, first]);
 
+  // PDF de conferência da divisão (botão Imprimir): abre como PDF.
+  const href = await page.getByRole("link", { name: "Imprimir" }).getAttribute("href");
+  expect(href).toMatch(/^\/inventario\/relatorios\/conferencia\?divisao=/);
+  const pdf = await page.request.get(href!);
+  expect(pdf.status()).toBe(200);
+  expect(pdf.headers()["content-type"]).toBe("application/pdf");
+  if (process.env.E2E_SAVE_PDF) (await import("node:fs")).writeFileSync(process.env.E2E_SAVE_PDF, await pdf.body());
+
   // Pelo nome (cabeçalho Material) volta a A→Z.
   await page.getByRole("link", { name: /^Material/ }).click();
   await expect.poll(() => names(page, "table")).toEqual([first, second]);

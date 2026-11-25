@@ -1,7 +1,7 @@
 import { Link } from "@geas/ui/components/link";
 import { cookies } from "next/headers";
 import { Fragment } from "react";
-import { IconAlertTriangle, IconArrowsSort, IconBolt, IconClipboardCheck, IconPlus, IconPlusMinus } from "@tabler/icons-react";
+import { IconAlertTriangle, IconArrowsSort, IconBolt, IconClipboardCheck, IconPlus, IconPlusMinus, IconPrinter } from "@tabler/icons-react";
 import { PageBody, PageHeader, SectionTabs } from "@geas/ui";
 import { buttonVariants } from "@geas/ui/components/button";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
@@ -163,6 +163,10 @@ export default async function Materials({ searchParams }: { searchParams: Promis
         actions={<>
           {toReview > 0 && <Link href="/inventario/movimentacoes?revisao=para_revisar" className="inline-flex items-center gap-1.5 rounded-full bg-caution-soft px-3 py-1 text-xs font-semibold text-caution hover:ring-1 hover:ring-current">
             <IconClipboardCheck className="size-4" aria-hidden /> {toReview} para revisar</Link>}
+          {/* PDF de conferência da aba atual (Todos ou a divisão), com a ordem escolhida e colunas para contar à mão. */}
+          <a href={`/inventario/relatorios/conferencia${selected ? `?divisao=${selected.id}` : ""}`} target="_blank" rel="noopener"
+            className={buttonVariants({ variant: "outline", size: "lg" })} title="Folha de conferência em PDF, na ordem de cada divisão">
+            <IconPrinter data-icon="inline-start" /> Imprimir</a>
           {member.inventory.canWrite && <Link href="/rapido" className={buttonVariants({ variant: "outline", size: "lg" })}><IconBolt data-icon="inline-start" /> Registro rápido</Link>}
           {member.inventory.canWrite && <Link href={withBack("/inventario/materiais/novo", here)} className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}
         </>}>
