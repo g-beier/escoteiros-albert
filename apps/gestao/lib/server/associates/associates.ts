@@ -1,4 +1,4 @@
-import type { AssociateMove, AssociateMovement, AssociateProfile, Registration, ScoutBranch } from "@/lib/associates/model";
+import type { AssociateMove, AssociateMovement, AssociateProfile, QuarantinedAssociate, Registration, ScoutBranch } from "@/lib/associates/model";
 import type { Db } from "@/lib/server/db";
 import { count, one, rows, rpc, run } from "@/lib/server/pg/db";
 
@@ -101,6 +101,23 @@ export async function move(db: Db, input: MoveInput): Promise<void> {
 
 export async function leave(db: Db, id: string, date: string, reason: string | null): Promise<void> {
   await rpc(db, "associates_leave", { p_associate_id: id, p_date: date, p_reason: reason });
+}
+
+/** Pede a exclusão (018): some das telas na hora e é apagado de vez depois da quarentena. Devolve a data da exclusão. */
+export async function requestDeletion(db: Db, id: string, reason: string): Promise<string> {
+  return rpc(db, "associates_request_deletion", { p_associate_id: id, p_reason: reason });
+}
+
+/** Restaura um associado em quarentena. */
+export async function cancelDeletion(db: Db, id: string): Promise<void> {
+  await rpc(db, "associates_cancel_deletion", { p_associate_id: id });
+}
+
+/** Associados em quarentena do grupo, do que sai antes ao que sai depois. Só Editor. */
+export async function quarantine(db: Db, groupId: string): Promise<QuarantinedAssociate[]> {
+  return rows<QuarantinedAssociate>(db, (sql) => sql`
+    select id, name, branch, active, deletion_due_on::text, deletion_requested_at::text, requested_by, deletion_reason
+    from public.associates_quarantine(${groupId})`);
 }
 
 export async function rejoin(db: Db, id: string, date: string, reason: string | null): Promise<void> {

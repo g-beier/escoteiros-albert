@@ -107,6 +107,8 @@ export type ImportState = {
   life: StateLife;
   inventory: StateInventory;
   finance: StateFinance;
+  /** Nomes de associados com exclusão pedida (quarentena, 018): não casam com ninguém, mas avisam quem os cadastraria de novo. */
+  quarantined?: string[];
 };
 
 export const EMPTY_LIFE: StateLife = { periods: [], exclusions: [], events: [], stars: [], notes: {} };

@@ -65,6 +65,8 @@ Ainda não existe (nada provisionado). Plano, custos e etapas: `.azure/deploymen
 - Backups: os automáticos do Flexible Server (7 dias); antes de mudanças grandes, `job dump` (`pg_dump -Fc` no
   contêiner `backups`, apagado após 90 dias).
 - Trocar a senha do app: novo `appDbPassword` no azd, `azd provision`, `job setup`, nova revisão do app.
+- Exclusão definitiva de associados (018): o Job agendado `caj-geas-purge-<ambiente>` roda `purge` todo dia às 06:15
+  UTC (apaga quem passou dos 60 dias de quarentena; o log traz só a contagem). Local: `npm run db:purge --workspace=@geas/gestao`.
 
 O export de transparência do site (`scripts/export-transparency.ts`) lê com `DATABASE_ADMIN_URL`, que no Azure
 não é alcançável de fora da VNet: use "Exportar para o site" no Gestão e faça o build com `TRANSPARENCY_SKIP=1`.

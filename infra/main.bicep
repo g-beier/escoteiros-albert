@@ -82,5 +82,6 @@ output AZURE_CONTAINER_REGISTRY_ENDPOINT string = resources.outputs.registryLogi
 output AZURE_CONTAINER_REGISTRY_NAME string = resources.outputs.registryName
 output AZURE_CONTAINER_APP_NAME string = resources.outputs.appName
 output AZURE_CONTAINER_JOB_NAME string = resources.outputs.jobName
+output AZURE_CONTAINER_PURGE_JOB_NAME string = resources.outputs.purgeJobName
 output AZURE_STORAGE_ACCOUNT_URL string = resources.outputs.storageAccountUrl
 output APP_URL string = resources.outputs.appUrl

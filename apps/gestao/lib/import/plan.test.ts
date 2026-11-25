@@ -42,6 +42,12 @@ describe("pessoas.csv", () => {
     expect(planTotals(file)).toEqual({ nova: 2, atualiza: 1, igual: 1, erro: 2 });
   });
 
+  it("nome em quarentena (exclusão pedida) cadastra de novo, com aviso", () => {
+    const file = plan({ "pessoas.csv": "nome;nascimento;ramo\nCAIO  Reis;;lobinho\n" }, { ...STATE, quarantined: ["Caio Reis"] }).files[0]!;
+    expect(file.rows[0]!.action).toBe("nova");
+    expect(file.rows[0]!.warnings[0]).toContain("lista de exclusão");
+  });
+
   it("nome igual com nascimento diferente é outra pessoa; sem nascimento e dois homônimos é ambíguo", () => {
     const state = { ...STATE, people: [...STATE.people, person({ id: "00000000-0000-4000-8000-000000000003", birth: "2016-01-01" })] };
     const file = plan({ "pessoas.csv": "nome;nascimento;ramo\nAna Souza;02/02/2017;lobinho\nAna Souza;;\n" }, state).files[0]!;

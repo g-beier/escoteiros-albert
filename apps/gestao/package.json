@@ -9,6 +9,7 @@
     "infra:status": "node scripts/db.mjs status",
     "infra:reset": "node scripts/db.mjs reset",
     "db:migrate": "node scripts/db.mjs migrate",
+    "db:purge": "node scripts/db.mjs purge",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

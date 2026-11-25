@@ -12,7 +12,7 @@ import type { EntryExport, FunctionExport, LotExport, PersonExport, RelativeExpo
 export async function state(db: Db, groupId: string): Promise<ImportState> {
   return run(db, async (sql) => {
     const [sections, patrols, people, functions, relatives, links, items, statuses, periods, exclusions, events, stars, notes, inventory,
-      categories, accounts, paymentMethods, entries] = await Promise.all([
+      categories, accounts, paymentMethods, entries, quarantined] = await Promise.all([
       sql`select id, branch::text as branch, name, active from public.sections where group_id = ${groupId} order by name`,
       sql`select p.id, p.section_id as "sectionId", p.name, p.active from public.patrols p
           join public.sections s on s.id = p.section_id where s.group_id = ${groupId} order by p.name`,
@@ -52,6 +52,7 @@ export async function state(db: Db, groupId: string): Promise<ImportState> {
       sql`select id, name, active from public.payment_methods where group_id = ${groupId} order by name`,
       sql`select e.id, e.entry_date::text as date, a.name as account, e.name, e.total_cents::int as total
           from public.ledger_entries e join public.accounts a on a.id = e.account_id where e.group_id = ${groupId} limit 100000`,
+      sql`select name from public.associates_quarantined_names(${groupId}) as name`,
     ]);
     return {
       sections: [...sections], patrols: [...patrols], people: [...people], functions: [...functions], relatives: [...relatives],
@@ -62,6 +63,7 @@ export async function state(db: Db, groupId: string): Promise<ImportState> {
       },
       inventory: inventory[0],
       finance: { categories: [...categories], accounts: [...accounts], paymentMethods: [...paymentMethods], entries: [...entries] },
+      quarantined: quarantined.map((row) => row.name),
     } as unknown as ImportState;
   });
 }

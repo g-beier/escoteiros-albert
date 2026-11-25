@@ -81,6 +81,8 @@ export class PlanContext {
   readonly statuses: StateStatus[];
   /** Materiais do inventário vistos em inventario-lotes.csv (nome comparável → controle). */
   readonly inventoryMaterials = new Map<string, { name: string; tracking: "lot" | "unit"; line: number }>();
+  /** Nomes comparáveis de quem está em quarentena (018). */
+  readonly quarantined: Set<string>;
 
   constructor(readonly state: ImportState, readonly options: PlanOptions) {
     this.people = state.people.map((person) => ({ id: person.id, name: person.name, birth: person.birth, branch: person.branch, active: person.active }));
@@ -96,6 +98,7 @@ export class PlanContext {
       return section ? [{ id: patrol.id, section, name: patrol.name, active: patrol.active }] : [];
     });
     this.byId = new Map(state.people.map((person) => [person.id, person]));
+    this.quarantined = new Set((state.quarantined ?? []).map(nameKey));
   }
 
   /**
@@ -237,6 +240,9 @@ function planPeople(file: ReadFile, ctx: PlanContext): PlannedFile {
     if (found.error) errors.push(found.error);
     const existing = found.person?.id ? ctx.byId.get(found.person.id) : undefined;
     if (found.person && seen.has(found.person)) errors.push(`mesma pessoa da linha ${seen.get(found.person)}`);
+    if (!found.person && name && ctx.quarantined.has(nameKey(name))) {
+      warnings.push("há um cadastro com este nome na lista de exclusão (Associados › Configurações › Excluídos): se for a mesma pessoa, restaure-o em vez de cadastrar de novo");
+    }
 
     const branch = str(v, "branch") ?? existing?.branch;
     if (!existing && !found.person && !str(v, "branch") && !row.errors.some((error) => error.startsWith("ramo"))) errors.push("ramo é obrigatório para cadastrar");

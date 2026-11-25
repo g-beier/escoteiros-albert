@@ -199,6 +199,10 @@ export type Tables = {
     registration: Enums["associate_registration"];
     nickname: string | null;
     life_notes: string | null;
+    deletion_due_on: string | null;
+    deletion_requested_at: string | null;
+    deletion_requested_by: string | null;
+    deletion_reason: string | null;
   };
   audit_events: {
     id: number;
@@ -770,20 +774,27 @@ export type Functions = {
   admin_set_module_role: { Args: { p_group_id: string; p_user_id: string; p_module: string; p_role: Enums["module_role"] }; Returns: undefined };
   associate_audience_of: { Args: { p_associate_id: string }; Returns: Enums["control_audience"] };
   associate_function_snapshot: { Args: { p_function_id: string }; Returns: Json };
+  associate_quarantined: { Args: { p_associate_id: string }; Returns: boolean };
   associate_snapshot: { Args: { p_associate_id: string }; Returns: Json };
   associates_add_function: { Args: { p_associate_id: string; p_kind: Enums["associate_function_kind"]; p_title: string; p_started_on: string; p_section_id?: string; p_elected?: boolean }; Returns: string };
+  associates_cancel_deletion: { Args: { p_associate_id: string }; Returns: undefined };
   associates_check_details: { Args: { p_name: string; p_birth_date: string; p_promise_date: string; p_joined_on: string; p_notes: string }; Returns: string };
   associates_check_function_section: { Args: { p_group_id: string; p_kind: Enums["associate_function_kind"]; p_section_id: string; p_current: string }; Returns: undefined };
   associates_check_placement: { Args: { p_group_id: string; p_branch: Enums["scout_branch"]; p_section_id: string; p_patrol_id: string }; Returns: undefined };
   associates_create: { Args: { p_group_id: string; p_name: string; p_branch: Enums["scout_branch"]; p_section_id: string; p_patrol_id: string; p_birth_date: string; p_promise_date: string; p_joined_on: string; p_notes: string }; Returns: string };
   associates_create_quick: { Args: { p_group_id: string; p_name: string; p_branch: Enums["scout_branch"]; p_section_id: string; p_patrol_id: string; p_birth_date: string; p_promise_date: string; p_joined_on: string; p_notes: string }; Returns: string };
   associates_delete_function: { Args: { p_function_id: string }; Returns: undefined };
+  associates_deletion_days: { Args: Record<string, never>; Returns: number };
   associates_end_function: { Args: { p_function_id: string; p_ended_on: string }; Returns: undefined };
   associates_function_taken: { Args: { p_associate_id: string; p_kind: Enums["associate_function_kind"]; p_section_id: string; p_title: string; p_except: string }; Returns: boolean };
   associates_leave: { Args: { p_associate_id: string; p_date: string; p_reason: string }; Returns: undefined };
   associates_move: { Args: { p_associate_id: string; p_date: string; p_branch: Enums["scout_branch"]; p_section_id: string; p_patrol_id: string }; Returns: string };
   associates_next_branch: { Args: { p_branch: Enums["scout_branch"] }; Returns: Enums["scout_branch"] };
+  associates_purge_due: { Args: Record<string, never>; Returns: number };
+  associates_quarantine: { Args: { p_group_id: string }; Returns: { id: string; name: string; branch: Enums["scout_branch"]; active: boolean; deletion_due_on: string; deletion_requested_at: string; requested_by: string; deletion_reason: string }[] };
+  associates_quarantined_names: { Args: { p_group_id: string }; Returns: string[] };
   associates_rejoin: { Args: { p_associate_id: string; p_date: string; p_reason: string }; Returns: undefined };
+  associates_request_deletion: { Args: { p_associate_id: string; p_reason: string }; Returns: string };
   associates_review: { Args: { p_group_id: string; p_associate_ids: string[] }; Returns: number };
   associates_role_of: { Args: { p_group_id: string }; Returns: Enums["module_role"] };
   associates_section_alert_rows: { Args: { p_group_id: string }; Returns: { id: string; name: string; active: boolean; branch: Enums["scout_branch"]; birth_date: string; promise_date: string; transition_started_on: string }[] };

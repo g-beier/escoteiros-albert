@@ -34,6 +34,7 @@ var names = {
   env: 'cae-geas-${environmentName}'
   app: 'ca-geas-${environmentName}'
   job: 'caj-geas-db-${environmentName}'
+  purgeJob: 'caj-geas-purge-${environmentName}'
   appIdentity: 'id-geas-app-${environmentName}'
   jobIdentity: 'id-geas-job-${environmentName}'
   registry: 'crgeas${token}'
@@ -525,9 +526,50 @@ resource job 'Microsoft.App/jobs@2025-01-01' = {
   dependsOn: [jobAcrPull, jobReadsAdminUrl, jobReadsAppPassword]
 }
 
+// Job agendado: exclusão definitiva dos associados que passaram da quarentena (migration 018), todo dia às 06:15 UTC.
+// Mesma imagem e identidade do Job de manutenção; só precisa da conexão de administrador.
+resource purgeJob 'Microsoft.App/jobs@2025-01-01' = {
+  name: names.purgeJob
+  location: location
+  tags: tags
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: { '${jobIdentity.id}': {} }
+  }
+  properties: {
+    environmentId: environment.id
+    workloadProfileName: 'Consumption'
+    configuration: {
+      triggerType: 'Schedule'
+      replicaTimeout: 600
+      replicaRetryLimit: 1
+      scheduleTriggerConfig: { cronExpression: '15 6 * * *', parallelism: 1, replicaCompletionCount: 1 }
+      registries: [{ server: registry.properties.loginServer, identity: jobIdentity.id }]
+      secrets: [
+        { name: 'database-admin-url', keyVaultUrl: secretDatabaseAdminUrl.properties.secretUri, identity: jobIdentity.id }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'purge'
+          image: empty(jobImage) ? placeholderJobImage : jobImage
+          args: empty(jobImage) ? [] : ['purge']
+          resources: { cpu: json('0.25'), memory: '0.5Gi' }
+          env: [
+            { name: 'DATABASE_ADMIN_URL', secretRef: 'database-admin-url' }
+          ]
+        }
+      ]
+    }
+  }
+  dependsOn: [jobAcrPull, jobReadsAdminUrl]
+}
+
 output registryLoginServer string = registry.properties.loginServer
 output registryName string = registry.name
 output appName string = app.name
 output jobName string = job.name
+output purgeJobName string = purgeJob.name
 output storageAccountUrl string = storage.properties.primaryEndpoints.blob
 output appUrl string = publicUrl
