@@ -89,7 +89,10 @@ export async function setAccountActive(db: Db, id: string, active: boolean) {
 
 // Rubricas: a árvore inteira (rascunho da tela) numa chamada.
 
-export type CategoryTreeNode = { key: string; id: string | null; parent: string; position: number; name: string; ledgerCode: string | null; active: boolean };
+export type CategoryTreeNode = { key: string; id: string | null; parent: string; position: number; name: string; ledgerCode: string | null; active: boolean;
+  /** Marcada "venda de itens" (Lojinha, 019). */
+  sellsItems: boolean;
+};
 
 /** Grava a árvore; devolve quantos rateios (e de quantos lançamentos) mudaram de rubrica por exclusões. */
 export async function saveCategoryTree(db: Db, groupId: string, nodes: CategoryTreeNode[], deleted: { id: string; target: string | null }[]) {

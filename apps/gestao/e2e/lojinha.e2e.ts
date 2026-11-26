@@ -21,8 +21,8 @@ test.beforeAll(() => {
     insert into public.inventory_materials(group_id, name, tracking, for_sale, sale_price_cents) values (${group}, ${literal(scarf)}, 'lot', true, 2500);
     insert into public.inventory_lots(group_id, material_id, location_id, quantity, condition)
     select ${group}, ${material}, l.id, 5, 'bom' from public.inventory_locations l where l.group_id = ${group} and l.name = ${literal(place)};
-    insert into public.categories(group_id, name, parent_id, kind, position, sells_items)
-    select ${group}, ${literal(category)}, c.id, 'receita', 999, true from public.categories c where c.group_id = ${group} and c.code = '1';
+    insert into public.categories(group_id, name, parent_id, kind, position)
+    select ${group}, ${literal(category)}, c.id, 'receita', 999 from public.categories c where c.group_id = ${group} and c.code = '1';
     select public.renumber_categories(${group});
   `);
 });
@@ -39,6 +39,16 @@ test.afterAll(() => {
 });
 
 test("venda com itens dá baixa no inventário e a exclusão devolve", async ({ page }) => {
+  await test.step("marca a rubrica como venda de itens e salva", async () => {
+    await page.goto("/financeiro/configuracoes/rubricas");
+    const escaped = category.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    await page.getByRole("button", { name: new RegExp(`^Ações de [\\d.]+ ${escaped}$`) }).click();
+    await page.getByRole("menuitem", { name: "Marcar venda de itens (Lojinha)" }).click();
+    await page.getByRole("region", { name: "Alterações não salvas" }).getByRole("button", { name: "Salvar alterações" }).click();
+    await expect(page.getByText("Rubricas salvas.")).toBeVisible();
+    expect(psql(`select sells_items from public.categories where group_id = ${group} and name = ${literal(category)};`)).toBe("t");
+  });
+
   await test.step("lança a venda com o item; o valor da rubrica vem dos itens", async () => {
     await page.goto("/financeiro/lancamentos/novo");
     await page.getByRole("radio", { name: "Entrada (receita)" }).click();

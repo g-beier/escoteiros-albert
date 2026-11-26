@@ -83,6 +83,8 @@ const treeSchema = z.object({
     key: z.string().min(1).max(64), id: z.uuid().nullable(), parent: z.string().min(1).max(64),
     position: z.number().int().min(0), name: z.string().trim().min(2, "Toda rubrica precisa de um nome com ao menos 2 caracteres.").max(100),
     ledgerCode: z.string().nullable(), active: z.boolean(),
+    /** Lojinha (019): sem este campo o zod o descarta e a marca volta a falso. */
+    sellsItems: z.boolean().default(false),
   })).max(2000),
   deleted: z.array(z.object({ id: z.uuid(), target: z.string().max(64).nullable() })).max(2000),
 });
