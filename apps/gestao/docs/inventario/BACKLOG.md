@@ -46,20 +46,32 @@ Modelo e vocabulário em `docs/modelo.md`.
 
 - Lote = material + divisão + condição + validade + **variação** (novo, opcional: "modelo antigo"). Comprar mais do mesmo soma no lote (valor pela média ponderada; dados da compra no movimento); transferência e mudança de condição somam num lote igual no destino (046). Os lotes idênticos que já existiam foram unificados. A carga da planilha dá uma variação às linhas com a mesma chave e observação ou valor diferentes, para continuarem separadas.
 
+## Concluído (2026-11-26, carga, lote, ordem e conferência)
+
+- Carga do inventário por `/importar` (`inventario-lotes.csv` e `inventario-pecas.csv`, 010), com as contagens de
+  2025 e 2026; substitui o inventário inteiro enquanto só houver movimentos importados.
+- Edição em lote na lista de Materiais (011): seleção por material × divisão, transferir, condição, baixa, família e
+  consumível numa transação.
+- Ordem manual dos materiais em cada divisão (017): o Editor arrasta em `/inventario/materiais/ordenar`; é a ordem
+  padrão da lista. A ordem das divisões também é por arrastar (as setas ↑ ↓ saíram).
+- Folha de conferência em PDF ("Imprimir" em Materiais): por divisão, com colunas em branco para contar e anotar.
+- Papéis: os cinco níveis comuns aos módulos (Colaborador = antigo chefe, Editor = antigo gestor), em `/usuarios`.
+
 ## A verificar
 
 - Barracas B1–B11: conciliar com as linhas de barraca das seções e mover cada peça para a sua divisão (hoje em "Almoxarifado › Barracas (a conferir)").
 
 ## Próximos
 
-### Passo 2 — Lojinha
+### Passo 2 — Lojinha (fora do go-live)
 
 - Produtos com variações (tamanho, tipo de lenço) e preço de venda; venda lançada no Financeiro (rubrica Lojinha, com os itens) gerando a saída; entrega gratuita (Acolhida, distintivos) registrada no Inventário, com o associado opcional.
 
-### Empréstimo e devolução
+### Empréstimo e devolução (fora do go-live)
 
 - Material que sai da sede e volta (não a retirada definitiva, que é baixa). Decidir antes de codar: quem leva (associado ou texto livre), prazo, se o emprestado continua contando na divisão (proposta: sim, com selo "emprestado"), e se material de atividade do calendário continua sem registro. Proposta: tabela `inventory_loans`, tipos de movimento `emprestimo`/`devolucao`, as duas ações no registro rápido e a lista "Emprestados".
 
-### Passo 4 — Conferência anual
+### Passo 4 — Conferência anual (antes da contagem de 2027)
 
-- Processo aberto pelo gestor; os chefes lançam divergências de quantidade e de condição, que viram ajustes. Histórico das contagens anuais (inclui 2024–2026 da planilha).
+- Processo aberto pelo Editor; os Colaboradores lançam divergências de quantidade e de condição, que viram ajustes.
+  Histórico das contagens anuais (inclui 2024–2026 da planilha). A folha impressa já existe; falta o processo no app.

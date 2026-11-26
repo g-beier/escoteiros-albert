@@ -119,6 +119,19 @@
 
 - **Rubricas** (`036_category_editing.sql`): a árvore é rubrica pai + posição e o código é derivado (`renumber_categories`); lançamentos apontam para o id, então renumerar não mexe em rateio. Configurações › Rubricas edita a árvore como rascunho no navegador (`lib/category-draft.ts`): arrastar pela alça (acima, abaixo ou dentro), renomear, conta contábil, criar, inativar e excluir, com os códigos recalculados na hora; nada grava até "Salvar alterações" (revisão quando há exclusão), que chama `save_category_tree` (tudo ou nada, auditado). Excluir leva os rateios para a rubrica de cima mais próxima que fica, com evento no histórico de cada lançamento. Raízes 1 e 2 fixas. Menu ⋯ por linha (subir/descer, mover para dentro de…) como alternativa ao arrastar. Mensalidade deixa de cair no código 1.1: usa só a rubrica configurada (grupos sem configuração ficaram com a 1.1 da data da migração). Testes `categories.sql`, `category-draft.test.ts` e `e2e/categories.e2e.ts`.
 
+## Concluído (2026-11-26, lote, importação e agrupar)
+
+- **Ações em lote** (012) na Movimentações (conta, forma de pagamento, documentos, revisado) e no Detalhamento (rubrica e
+  associado do rateio), até 500 por vez, auditadas com "em lote" no histórico.
+- **Importação de lançamentos por CSV** (013) em `/importar` (`lancamentos.csv`, um rateio por linha, só cria) e
+  conversor `npm run finance:csv` da planilha do grupo.
+- **Agrupar e desagrupar** lançamentos pelo Detalhamento (014): rateios marcados viram um lançamento, com formulário dos
+  dados; ou cada rateio vira o seu lançamento.
+- **Administrador do Financeiro** (015): lote e importação de lançamentos só para ele; o Editor revisa um a um e importa
+  só extratos OFX.
+- Escolha de colunas na Movimentações e no Detalhamento (cookie por visão), com larguras que se ajustam ao que fica.
+- Registro rápido de lançamento sem rubrica: o servidor usa a raiz Receitas/Despesas e quem revisa classifica.
+
 ## A verificar
 
 Com o contador:
@@ -133,7 +146,6 @@ No navegador (desktop e celular):
 - `/financeiro/configuracoes/contas` e `/financeiro/configuracoes/rubricas` (conta contábil), formulário com rateio misto (receita + despesa), seletor de rubrica e painel de filtros.
 - Início e rolagem da tabela de lançamentos.
 - `/financeiro/mensalidades/controle`: valores individuais, não pago, entradas/saídas/retornos.
-- `/financeiro/configuracoes/associados`: recadastrar as seções e patrulhas reais e atribuir aos associados (as seções em texto foram descartadas).
 - Celular: cartões de `/financeiro/lancamentos/movimentacoes` e `/detalhamento` (seleção, rodapé fixo); desktop com mais de 300 lançamentos carregados (virtualização, teclado).
 - Comprovantes: HEIC real e arquivo perto de 10 MB (fluxo básico coberto pelo e2e).
 - `/financeiro/lancamentos/movimentacoes`: "Limpar filtros" seguido de busca antes da navegação terminar pode trazer de volta o filtro antigo.

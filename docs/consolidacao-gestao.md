@@ -1,5 +1,9 @@
 # Gestão: consolidação de financeiro e inventario e camada de dados
 
+> **Histórico.** Consolidação concluída e Supabase removido (2026-11-21). As decisões abertas (seção 8) e os riscos
+> (seção 9) falam de deploys e do Supabase que não existem mais. Estado atual em `CLAUDE.md` e
+> `docs/CODEBASE_MAP.md`; próximos passos em `docs/plano-go-live.md`.
+
 > **2026-11-21:** o Supabase saiu (`docs/migracao-saida-supabase.md`, fase 1). Onde este plano cita `lib/server/supabase`,
 > `serviceDb()`, `untyped`/`sb` ou `auth/confirm`, hoje valem `lib/server/pg` (SQL com parâmetros e `rpc`), as funções de
 > usuários de `056_group_users.sql` e o login Google (`/auth/google`, `/auth/callback`). O texto abaixo é o histórico da consolidação.

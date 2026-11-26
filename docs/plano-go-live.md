@@ -6,15 +6,20 @@ valendo para o que fica depois. Infra e Azure: `.azure/deployment-plan.md`.
 
 ## Ordem
 
-1. **Papéis** (seção 1): pequeno, muda quem vê o quê; vem antes de dar acesso a mais gente.
-2. **Importação de associados por CSV** (seção 2): o Financeiro e os relatórios dependem das pessoas.
-3. **Importação do inventário por CSV** (seção 3), com as contagens de 2025 e 2026.
-4. **Vida escoteira** (seção 4): feito (004); falta importar a planilha.
-5. **Ir ao ar**: tela de consentimento do Google (página `/privacidade` pronta), Azure, domínio
+1. **Papéis** (seção 1): feito.
+2. **Importação de associados por CSV** (seção 2): feito.
+3. **Importação do inventário por CSV** (seção 3): feito.
+4. **Vida escoteira** (seção 4): feito, com a importação (009). Falta: avisos de estrela aos chefes no Início.
+5. **Ir ao ar** (seção 5): tela de consentimento do Google (página `/privacidade` pronta), Azure, domínio
    `gestao.escoteirosalbert.com.br`, carga real pelos CSVs, uso pela diretoria em paralelo às planilhas.
-6. **Antes da contagem de 2027**: conferência anual no Inventário (Passo 4 do backlog do inventário).
+6. **Antes da contagem de 2027**: conferência anual no Inventário (Passo 4 do backlog do inventário; a folha impressa
+   já existe).
 
-Fora por ora: módulo Ações (o rascunho `apps/gestao/docs/acoes/modelo.md` não existe mais; recomeça quando voltar),
+Entrou também, fora da lista (2026-11-26): ações em lote, importação, agrupamento de lançamentos e papel Administrador
+no Financeiro (012–015), situações de controle que seguem o público (016), edição em lote, ordem manual e folha de
+conferência no Inventário (011, 017), exclusão de associados com quarentena de 60 dias (018).
+
+Fora por ora: módulo Ações (rascunho `apps/gestao/docs/acoes/modelo.md` só no branch local `acoes/modelo`, commit `bae1171`),
 papel Secretaria/bloqueio da tesouraria no Associados, Lojinha, empréstimos, registro UEB e integrações financeiras.
 
 ## 1. Papéis
@@ -91,7 +96,8 @@ Comum aos três:
 - Grava por funções SQL auditadas; roda no app, contra qualquer banco (vale para produção).
 - Os CSVs são dados do grupo (com menores): nunca no repositório nem nos testes; os testes usam nomes fictícios.
 
-**A decidir:** se o Doc 13/14 trazem algo além de nascimento e promessa (devem sair do arquivo de pessoas).
+**A decidir:** se o Doc 13/14 trazem algo além de nascimento e promessa (devem sair do arquivo de pessoas). Decidir ao
+converter as planilhas reais (seção 5).
 
 ## 3. Importação do inventário (CSV)
 
@@ -133,3 +139,20 @@ Decisões:
 Importação: `vida-escoteira.csv` em `/importar` (migration 009; cores da planilha → linhas `período`, convertidas por
 fora seguindo `apps/gestao/docs/importacao.md`). Falta: avisos de estrela aos chefes no Início (como aniversários e
 transições).
+
+## 5. Ir ao ar
+
+Passos e estado em `.azure/deployment-plan.md` (etapa 1 feita; etapas 2 a 5 pendentes, nada criado no Azure).
+
+- **Azure:** ativar o crédito Nonprofit, login, conferir assinatura, políticas e cotas (etapa 2); provisionar (etapa 3);
+  homologar com dados fictícios e testar o restore do backup (etapa 4); corte (etapa 5).
+- **Google:** publicar a tela de consentimento OAuth (página `/privacidade` pronta).
+- **Domínio:** `gestao.escoteirosalbert.com.br`, certificado, CORS do Blob.
+- **Carga real:** `npm run associates:csv` e `inventory:csv` nas planilhas do grupo, vida escoteira e lançamentos
+  convertidos seguindo `apps/gestao/docs/importacao.md`, conferidos na pré-visualização de `/importar`. Os CSVs nunca
+  entram no repositório.
+- **Antes do corte:** cobrir com testes os ajustes da etapa 0 (troca de conta no recadastro, renovação do cookie,
+  redirects com `appUrl()`), que entraram sem testes.
+
+Perguntas em aberto: quem administra o DNS de `escoteirosalbert.com.br`; quem é o contato principal do crédito
+Nonprofit; movimentações de material por ano.
