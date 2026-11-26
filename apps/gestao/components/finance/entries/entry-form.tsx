@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconArrowDownLeft, IconArrowUpRight, IconPlus, IconTrash } from "@tabler/icons-react";
-import { createEntry, deleteEntry, updateEntry } from "@/app/actions";
+import { createEntry, createSaleDebt, deleteEntry, receiveDebt, updateEntry } from "@/app/actions";
 import { createEntryFromStatementLine } from "@/app/(financeiro)/financeiro/extrato/conciliar/actions";
 import { OptionCombobox, OptionSelect, type Option } from "@geas/ui/components/option-controls";
 import { Button } from "@geas/ui/components/button";
@@ -34,6 +34,8 @@ export type Catalogs = {
 type Direction = "entrada" | "saida";
 
 type SplitDraft = { key: number; categoryId: string; amount: string; description: string; associateId: string; items: SaleItemDraft[] };
+/** "Receber" uma dívida (022): o lançamento já vem com o associado, a rubrica da venda, a descrição e o que falta. */
+export type DebtReceivePrefill = { debtId: string; associateId: string; associateName: string; categoryId: string | null; description: string; openCents: number };
 /** Linha do extrato que origina o lançamento: data, valor e conta vêm dela (valor e conta ficam travados). */
 export type StatementLinePrefill = { id: string; date: string; name: string; totalCents: number; accountId: string; paymentMethodId: string };
 type Draft = { direction: Direction | null; date: string; name: string; total: string; paymentMethodId: string; accountId: string; document: string; documentFiled: boolean; notes: string; splits: SplitDraft[] };
@@ -41,7 +43,12 @@ type Draft = { direction: Direction | null; date: string; name: string; total: s
 let splitKey = 0;
 const emptySplit = (): SplitDraft => ({ key: ++splitKey, categoryId: "", amount: "", description: "", associateId: "", items: [] });
 
-function toDraft(entry: EditableEntry | null, fromLine?: StatementLinePrefill): Draft {
+function toDraft(entry: EditableEntry | null, fromLine?: StatementLinePrefill, receive?: DebtReceivePrefill): Draft {
+  if (!entry && receive) return {
+    direction: "entrada", date: new Date().toISOString().slice(0, 10), name: receive.associateName, total: centsToInput(receive.openCents),
+    paymentMethodId: "", accountId: "", document: "", documentFiled: false, notes: "",
+    splits: [{ ...emptySplit(), categoryId: receive.categoryId ?? "", amount: centsToInput(receive.openCents), description: receive.description, associateId: receive.associateId }],
+  };
   if (!entry && fromLine) return {
     direction: fromLine.totalCents < 0 ? "saida" : "entrada", date: fromLine.date, name: fromLine.name,
     total: centsToInput(Math.abs(fromLine.totalCents)), paymentMethodId: fromLine.paymentMethodId, accountId: fromLine.accountId,
@@ -74,10 +81,16 @@ function visibleOptions(items: CatalogItem[], used: string[]): Option[] {
     .map((item) => ({ value: item.id, label: item.active ? item.name : `${item.name} (inativo)` }));
 }
 
-export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { entry: EditableEntry | null; catalogs: Catalogs; canEdit: boolean; backHref: string; fromLine?: StatementLinePrefill }) {
+export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine, receive }: {
+  entry: EditableEntry | null; catalogs: Catalogs; canEdit: boolean; backHref: string; fromLine?: StatementLinePrefill;
+  /** "Receber" uma dívida de Devedores (022): ao salvar, quita com este lançamento o que falta dela. */
+  receive?: DebtReceivePrefill;
+}) {
   const router = useRouter();
-  const [draft, setDraft] = useState<Draft>(() => toDraft(entry, fromLine));
-  const [saved, setSaved] = useState<Draft>(() => toDraft(entry, fromLine));
+  const [draft, setDraft] = useState<Draft>(() => toDraft(entry, fromLine, receive));
+  const [saved, setSaved] = useState<Draft>(() => toDraft(entry, fromLine, receive));
+  /** Venda a pagar depois (022): vira dívida em Devedores em vez de lançamento. */
+  const [onCredit, setOnCredit] = useState(false);
   const locked = Boolean(fromLine);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -122,6 +135,12 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
   const mixed = incomeCents !== 0 && expenseCents !== 0;
   const balanced = totalCents !== 0 && splitCents === totalCents;
   const remaining = totalCents - splitCents;
+  // A pagar depois: só no lançamento novo de entrada com um rateio de venda com itens; o associado do rateio fica devendo.
+  const creditSplit = draft.splits.length === 1 ? draft.splits[0] : null;
+  const canCredit = !entry && !fromLine && !receive && draft.direction === "entrada" && creditSplit !== null && itemsOf(creditSplit).length > 0;
+  const credit = onCredit && canCredit;
+  const creditReady = credit && Boolean(creditSplit?.associateId) && (creditSplit?.description.trim().length ?? 0) >= 2
+    && itemsOf(creditSplit!).every((item) => item.lotId && Number(item.quantity) > 0);
 
   function chooseDirection(direction: Direction) {
     if (direction !== draft.direction) update({ direction });
@@ -134,9 +153,24 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
     updateSplit(last.key, { amount: centsToInput(Math.max(0, sign * (signedSplit(last) + remaining))) });
   }
 
+  function submitCredit() {
+    const split = creditSplit!;
+    const payload = {
+      date: draft.date, associateId: split.associateId, categoryId: split.categoryId, description: split.description, agreement: draft.notes.trim() || null,
+      items: itemsOf(split).map((item) => ({ lotId: item.lotId, quantity: Number(item.quantity), unitPriceCents: magnitude(item.price) })),
+    };
+    startTransition(async () => {
+      const result = await createSaleDebt(payload);
+      if (result.error) { toast.error(result.error); return; }
+      toast.success("Venda a pagar lançada em Devedores; o estoque já baixou.");
+      router.push(backHref);
+    });
+  }
+
   function submit(event: React.FormEvent) {
     event.preventDefault();
     if (readOnly) return;
+    if (credit) { submitCredit(); return; }
     const payload = {
       date: draft.date,
       name: draft.name,
@@ -150,9 +184,10 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
         items: itemsOf(s).map((item) => ({ lotId: item.lotId, quantity: Number(item.quantity), unitPriceCents: magnitude(item.price) })) })),
     };
     startTransition(async () => {
-      const result = entry ? await updateEntry(entry.id, payload) : fromLine ? await createEntryFromStatementLine(fromLine.id, payload) : await createEntry(payload);
+      const result = entry ? await updateEntry(entry.id, payload) : fromLine ? await createEntryFromStatementLine(fromLine.id, payload)
+        : receive ? await receiveDebt(receive.debtId, payload) : await createEntry(payload);
       if (result.error) { toast.error(result.error); return; }
-      if (!entry) { toast.success(fromLine ? "Lançamento criado e conciliado." : "Lançamento salvo."); router.push(backHref); return; }
+      if (!entry) { toast.success(fromLine ? "Lançamento criado e conciliado." : receive ? "Recebido: a dívida foi quitada em Devedores." : "Lançamento salvo."); router.push(backHref); return; }
       setSaved(draft);
       toast.success("Alterações salvas.");
     });
@@ -179,10 +214,10 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
       </div>
       <div className="grid items-start gap-3 sm:grid-cols-[10rem_minmax(0,1fr)_10rem]">
         <div className="grid gap-1.5"><Label htmlFor="entry-date">Data</Label><Input id="entry-date" type="date" value={draft.date} onChange={(e) => update({ date: e.target.value })} required /></div>
-        <div className="grid gap-1.5"><Label htmlFor="entry-name">Histórico</Label><Input id="entry-name" maxLength={200} placeholder="Quem pagou ou recebeu, emitente da nota…" value={draft.name} onChange={(e) => update({ name: e.target.value })} required /></div>
-        <div className="grid gap-1.5"><Label htmlFor="entry-total">Valor total (R$){draft.direction && <span className={cn("ml-1", draft.direction === "saida" ? "text-destructive" : "text-success")}>· {draft.direction === "saida" ? "saída" : "entrada"}</span>}</Label><Input id="entry-total" inputMode="decimal" placeholder="0,00" value={draft.total} onChange={(e) => update({ total: e.target.value })} readOnly={locked} title={locked ? "Valor da linha do extrato" : undefined} className="text-right num" required /></div>
+        {!credit && <div className="grid gap-1.5"><Label htmlFor="entry-name">Histórico</Label><Input id="entry-name" maxLength={200} placeholder="Quem pagou ou recebeu, emitente da nota…" value={draft.name} onChange={(e) => update({ name: e.target.value })} required /></div>}
+        {!credit && <div className="grid gap-1.5"><Label htmlFor="entry-total">Valor total (R$){draft.direction && <span className={cn("ml-1", draft.direction === "saida" ? "text-destructive" : "text-success")}>· {draft.direction === "saida" ? "saída" : "entrada"}</span>}</Label><Input id="entry-total" inputMode="decimal" placeholder="0,00" value={draft.total} onChange={(e) => update({ total: e.target.value })} readOnly={locked} title={locked ? "Valor da linha do extrato" : undefined} className="text-right num" required /></div>}
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+      {!credit && <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
         <div className="grid gap-1.5"><Label htmlFor="entry-payment">Forma de pagamento</Label><OptionSelect id="entry-payment" value={draft.paymentMethodId} onValueChange={choosePaymentMethod} options={options.paymentMethods} disabled={readOnly} /></div>
         <div className="grid gap-1.5"><Label htmlFor="entry-account">Conta</Label><OptionSelect id="entry-account" value={draft.accountId} onValueChange={(accountId) => update({ accountId })} options={options.accounts} placeholder="Escolha a conta…" disabled={readOnly || locked} /></div>
         <div className="grid gap-1.5"><Label htmlFor="entry-document">Documento (opcional)</Label><Input id="entry-document" maxLength={60} placeholder="NF 1234, recibo…" value={draft.document} onChange={(e) => update({ document: e.target.value })} /></div>
@@ -190,7 +225,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
           <Checkbox checked={draft.documentFiled} onCheckedChange={(checked) => update({ documentFiled: checked === true })} disabled={readOnly} />
           Documento arquivado
         </Label>
-      </div>
+      </div>}
     </fieldset>
 
     <fieldset disabled={readOnly} className="grid gap-2">
@@ -211,19 +246,27 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
         <span>Soma do rateio: <strong className="num">{money(splitCents / 100)}</strong>
           {mixed && <span className="ml-2 text-muted-foreground">(receitas <span className="num text-success">{money(incomeCents / 100)}</span>, despesas <span className="num text-destructive">{money(expenseCents / 100)}</span>)</span>}
         </span>
-        <span role="status" aria-live="polite" className={cn("font-semibold", balanced ? "text-success" : "text-destructive")}>
+        {!credit && <span role="status" aria-live="polite" className={cn("font-semibold", balanced ? "text-success" : "text-destructive")}>
           {balanced ? "✓ Valores conferem" : `Diferença: ${money(remaining / 100)}`}
-        </span>
+        </span>}
       </div>
-      {!readOnly && !balanced && remaining !== 0 && totalCents !== 0 && <Button type="button" variant="outline" size="sm" className="w-fit" onClick={fillRemaining}>Lançar diferença na última rubrica</Button>}
+      {!readOnly && !credit && !balanced && remaining !== 0 && totalCents !== 0 && <Button type="button" variant="outline" size="sm" className="w-fit" onClick={fillRemaining}>Lançar diferença na última rubrica</Button>}
     </fieldset>
+
+    {canCredit && !readOnly && <section aria-labelledby="entry-credit-title" className="grid gap-1.5 rounded-lg border border-dashed p-3">
+      <Label id="entry-credit-title" className="w-fit cursor-pointer gap-2 font-semibold">
+        <Checkbox checked={onCredit} onCheckedChange={(checked) => setOnCredit(checked === true)} /> A pagar depois (venda fiada)
+      </Label>
+      <p className="m-0 text-xs text-muted-foreground">Não entra dinheiro agora: a venda vira dívida do associado em Mensalidades › Devedores e o estoque baixa na hora. Quando ele pagar, use “Receber” na dívida.</p>
+      {credit && !creditSplit?.associateId && <p role="alert" className="m-0 text-xs font-semibold text-destructive">Escolha o associado no rateio: é quem fica devendo.</p>}
+    </section>}
 
     <div className="grid gap-1.5">
       <div className="flex items-baseline justify-between gap-2">
-        <Label htmlFor="entry-notes">Observações (opcional)</Label>
-        <span className="num text-xs text-muted-foreground" aria-live="polite">{draft.notes.length}/{NOTES_MAX}</span>
+        <Label htmlFor="entry-notes">{credit ? "Acordo (opcional)" : "Observações (opcional)"}</Label>
+        <span className="num text-xs text-muted-foreground" aria-live="polite">{draft.notes.length}/{credit ? 300 : NOTES_MAX}</span>
       </div>
-      <Textarea id="entry-notes" rows={5} maxLength={NOTES_MAX} value={draft.notes} readOnly={readOnly}
+      <Textarea id="entry-notes" rows={5} maxLength={credit ? 300 : NOTES_MAX} value={draft.notes} readOnly={readOnly}
         onChange={(e) => update({ notes: e.target.value })} className="min-h-28 resize-y" />
       <p className="m-0 text-xs text-muted-foreground">Algum detalhe do lançamento: combinado, quem autorizou, pendência… Entra na busca dos lançamentos.</p>
     </div>
@@ -232,7 +275,9 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
       <div>{entry && <Button type="button" variant="destructive" onClick={() => setConfirmDelete(true)}><IconTrash data-icon="inline-start" /> Excluir lançamento</Button>}</div>
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={() => entry && dirty ? setDraft(saved) : router.push(backHref)}>{entry && dirty ? "Descartar alterações" : "Voltar"}</Button>
-        <Button type="submit" size="lg" disabled={!draft.direction || !balanced || pending || (Boolean(entry) && !dirty)}>{pending ? "Salvando…" : entry ? "Salvar alterações" : "Salvar lançamento"}</Button>
+        {credit
+          ? <Button type="submit" size="lg" disabled={!creditReady || pending}>{pending ? "Salvando…" : "Lançar a pagar"}</Button>
+          : <Button type="submit" size="lg" disabled={!draft.direction || !balanced || pending || (Boolean(entry) && !dirty)}>{pending ? "Salvando…" : entry ? "Salvar alterações" : receive ? "Receber" : "Salvar lançamento"}</Button>}
       </div>
     </div>}
 

@@ -48,6 +48,14 @@ export function saleEntryId(row: Pick<Movement, "kind" | "write_off_reason" | "d
   return sale && typeof row.details.entry_id === "string" ? row.details.entry_id : null;
 }
 
+/** Link da venda (019, 022): o lançamento, ou Devedores quando a venda ficou a pagar (`details.debt_id`). */
+export function saleLink(row: Pick<Movement, "kind" | "write_off_reason" | "details">): { href: string; label: string } | null {
+  const entryId = saleEntryId(row);
+  if (entryId) return { href: `/financeiro/lancamentos/${entryId}`, label: "ver lançamento" };
+  const sale = (row.kind === "baixa" && row.write_off_reason === "venda") || (row.kind === "entrada" && row.details.sale_return === true);
+  return sale && typeof row.details.debt_id === "string" ? { href: "/financeiro/mensalidades/devedores", label: "ver em Devedores" } : null;
+}
+
 /** Lojinha (021): "à venda por R$ 25,00", "preço R$ 20,00 → R$ 25,00" ou "fora da venda". */
 export function lotSale(details: Record<string, unknown>): string {
   const before = (details.before ?? {}) as Record<string, unknown>;

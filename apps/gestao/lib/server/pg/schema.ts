@@ -293,6 +293,7 @@ export type Tables = {
     created_at: string;
     updated_by: string | null;
     updated_at: string;
+    category_id: string | null;
   };
   entry_attachments: {
     id: string;
@@ -308,23 +309,25 @@ export type Tables = {
   entry_sale_draws: {
     id: number;
     group_id: string;
-    entry_id: string;
+    entry_id: string | null;
     material_id: string;
     lot_id: string;
     quantity: number;
     created_at: string;
+    debt_id: string | null;
   };
   entry_sale_items: {
     id: string;
     group_id: string;
-    entry_id: string;
-    split_id: string;
+    entry_id: string | null;
+    split_id: string | null;
     material_id: string;
     quantity: number;
     unit_price_cents: number;
     position: number;
     created_at: string;
     lot_id: string;
+    debt_id: string | null;
   };
   entry_split_rows: {
     split_id: string | null;
@@ -884,6 +887,7 @@ export type Functions = {
   create_patrol: { Args: { p_section_id: string; p_name: string }; Returns: string };
   create_payment_method: { Args: { p_group_id: string; p_name: string }; Returns: string };
   create_quick_ledger_entry: { Args: { p_group_id: string; p_entry_date: string; p_name: string; p_payment_method_id: string; p_total_cents: number; p_category_id: string; p_description?: string; p_notes?: string }; Returns: string };
+  create_sale_debt: { Args: { p_group_id: string; p_associate_id: string; p_debt_date: string; p_category_id: string; p_description: string; p_agreement: string; p_items: Json }; Returns: string };
   create_section: { Args: { p_group_id: string; p_branch: Enums["scout_branch"]; p_name: string }; Returns: string };
   debt_money: { Args: { p_cents: number }; Returns: string };
   debt_payment_cents: { Args: { p_entry_id: string; p_associate_id: string }; Returns: number };
@@ -997,6 +1001,7 @@ export type Functions = {
   pay_debts: { Args: { p_group_id: string; p_associate_id: string; p_entry_id: string; p_allocations: Json }; Returns: undefined };
   preview_statement_lines: { Args: { p_account_id: string; p_period_from: string; p_period_to: string; p_lines: Json }; Returns: Json };
   realized_by_month: { Args: { p_group_id: string; p_year: number }; Returns: { category_id: string; month: number; amount_cents: number }[] };
+  receive_debt: { Args: { p_debt_id: string; p_entry_date: string; p_name: string; p_payment_method_id: string; p_document: string; p_document_filed: boolean; p_total_cents: number; p_splits: Json; p_account_id?: string; p_notes?: string }; Returns: string };
   reject_reconciliation_suggestion: { Args: { p_statement_line_id: string; p_ledger_entry_id: string }; Returns: undefined };
   relative_link_snapshot: { Args: { p_link_id: string }; Returns: Json };
   relatives_check_associate: { Args: { p_associate_id: string }; Returns: string };
@@ -1041,6 +1046,7 @@ export type Functions = {
   statement_line_fingerprint: { Args: { p_account_id: string; p_date: string; p_amount_cents: number; p_description: string; p_occurrence: number }; Returns: string };
   statement_line_snapshot: { Args: { p_line_id: string }; Returns: Json };
   sync_entry_sales: { Args: { p_entry_id: string }; Returns: undefined };
+  sync_sales: { Args: { p_entry_id: string; p_debt_id: string }; Returns: undefined };
   unlink_reconciliation: { Args: { p_statement_line_id: string }; Returns: undefined };
   update_account: { Args: { p_account_id: string; p_name: string; p_kind: Enums["account_kind"]; p_bank: string; p_branch: string; p_number: string; p_opening_balance_cents: number; p_opening_date: string; p_ledger_code: string }; Returns: undefined };
   update_category: { Args: { p_category_id: string; p_parent_id: string; p_name: string; p_ledger_code: string }; Returns: undefined };

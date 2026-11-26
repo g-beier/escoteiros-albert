@@ -12,6 +12,8 @@ const place = uniqueName("Lojinha");
 const scarf = uniqueName("Lenço");
 const category = uniqueName("Venda de lenços");
 const entry = uniqueName("Venda na reunião");
+const buyer = uniqueName("Comprador");
+const creditSale = uniqueName("Lenço fiado");
 const group = `(select m.group_id from public.memberships m join auth.users u on u.id = m.user_id where u.email = ${literal(E2E_ADMIN_EMAIL)})`;
 const badge = `${scarf} distintivo`;
 const material = `(select id from public.inventory_materials where group_id = ${group} and name = ${literal(scarf)})`;
@@ -30,6 +32,7 @@ test.beforeAll(() => {
     insert into public.categories(group_id, name, parent_id, kind, position)
     select ${group}, ${literal(category)}, c.id, 'receita', 999 from public.categories c where c.group_id = ${group} and c.code = '1';
     select public.renumber_categories(${group});
+    insert into public.associates(group_id, name, branch) values (${group}, ${literal(buyer)}, 'escoteiro');
   `);
 });
 
@@ -41,7 +44,8 @@ test.afterAll(() => {
     select set_config('request.jwt.claims', json_build_object('sub', u.id, 'role', 'authenticated')::text, true)
       from auth.users u where u.email = ${literal(E2E_ADMIN_EMAIL)};
     set local role authenticated;
-    select public.delete_ledger_entry(e.id) from public.ledger_entries e where e.group_id = ${literal(gid)} and e.name = ${literal(entry)};
+    select public.delete_ledger_entry(e.id) from public.ledger_entries e where e.group_id = ${literal(gid)} and e.name in (${literal(entry)}, ${literal(buyer)});
+    select public.delete_debt(d.id) from public.debts d where d.group_id = ${literal(gid)} and d.description = ${literal(creditSale)};
     commit;`);
   psql(`
     delete from public.entry_sale_draws where material_id = ${material};
@@ -50,6 +54,7 @@ test.afterAll(() => {
     delete from public.inventory_materials where id in ${ours};
     delete from public.inventory_locations where group_id = ${group} and name = ${literal(place)};
     delete from public.categories where group_id = ${group} and name = ${literal(category)};
+    delete from public.associates where group_id = ${group} and name = ${literal(buyer)};
   `);
 });
 
@@ -111,6 +116,45 @@ test("venda com itens dá baixa no inventário e a exclusão devolve", async ({ 
     await page.getByRole("dialog").getByRole("button", { name: "Excluir" }).click();
     await expect(page.getByText("Lançamento excluído.")).toBeVisible();
     expect(stock()).toBe(5);
+  });
+});
+
+test("venda a pagar depois vira dívida em Devedores; Receber quita", async ({ page }) => {
+  await test.step("lança a venda a pagar: sem lançamento, o estoque baixa", async () => {
+    await page.goto("/financeiro/lancamentos/novo");
+    await page.getByRole("radio", { name: "Entrada (receita)" }).click();
+    const split = page.getByRole("group", { name: "Rubrica 1" });
+    await split.getByRole("combobox", { name: "Rubrica" }).fill(category);
+    await page.getByRole("option", { name: category }).first().click();
+    await split.getByLabel("Descrição").fill(creditSale);
+    await split.getByRole("combobox", { name: "Associado (opcional)" }).fill(buyer);
+    await page.getByRole("option", { name: buyer }).click();
+    const items = page.getByRole("group", { name: "Itens vendidos da rubrica 1" });
+    await items.getByRole("button", { name: "Adicionar item" }).click();
+    await items.getByRole("combobox", { name: "Item" }).fill(scarf);
+    await page.getByRole("option", { name: new RegExp(`^${scarf} — `) }).click();
+    await page.getByRole("checkbox", { name: "A pagar depois (venda fiada)" }).click();
+    await expect(page.getByLabel("Histórico")).toHaveCount(0);
+    await page.getByRole("button", { name: "Lançar a pagar" }).click();
+    await expect(page.getByText("Venda a pagar lançada em Devedores; o estoque já baixou.")).toBeVisible();
+    expect(stock()).toBe(4);
+    expect(psql(`select amount_cents from public.debts where description = ${literal(creditSale)};`)).toBe("2500");
+  });
+
+  await test.step("em Devedores, a dívida mostra os itens; Receber quita", async () => {
+    await page.goto("/financeiro/mensalidades/devedores");
+    await page.getByRole("button", { name: new RegExp(`^${buyer}`) }).click();
+    await expect(page.getByText(new RegExp(`Venda: 1× ${scarf}`))).toBeVisible();
+    await page.getByRole("button", { name: new RegExp(`^Ações da dívida de .*: ${creditSale}$`) }).click();
+    await page.getByRole("menuitem", { name: "Receber…" }).click();
+    await expect(page.getByRole("heading", { name: "Receber dívida" })).toBeVisible();
+    await expect(page.getByLabel("Histórico")).toHaveValue(buyer);
+    await chooseOption(page, "Forma de pagamento", "PIX");
+    await chooseOption(page, "Conta", E2E_ACCOUNTS[0]);
+    await page.getByRole("button", { name: "Receber", exact: true }).click();
+    await expect(page.getByText("Recebido: a dívida foi quitada em Devedores.")).toBeVisible();
+    expect(psql(`select sum(p.amount_cents) from public.debt_payments p join public.debts d on d.id = p.debt_id where d.description = ${literal(creditSale)};`)).toBe("2500");
+    expect(stock()).toBe(4);
   });
 });
 

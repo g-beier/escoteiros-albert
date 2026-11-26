@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useMemo, useState, useTransition } from "react";
 import { Link } from "@geas/ui/components/link";
 import { toast } from "sonner";
-import { IconAlertTriangle, IconCash, IconChevronRight, IconDots, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconAlertTriangle, IconCash, IconChevronRight, IconDots, IconPackage, IconPencil, IconPlus, IconReceipt, IconTrash } from "@tabler/icons-react";
 import { debtPaymentOptions, deleteDebt, payDebts, saveDebt } from "@/app/(financeiro)/financeiro/mensalidades/actions";
 import { centsToInput, dateBR, money } from "@/lib/format";
 import { todayInSaoPaulo } from "@/lib/finance/fees";
@@ -157,6 +157,10 @@ function DebtRow({ debt, canEdit, onEdit, onRemove }: { debt: Debt; canEdit: boo
     <TableCell className="px-3 py-1.5 pl-9 num">{dateBR(debt.date)}</TableCell>
     <TableCell className="px-3 py-1.5">
       <div>{debt.description}</div>
+      {debt.items && debt.items.length > 0 && <div className="flex items-start gap-1 text-xs text-muted-foreground">
+        <IconPackage className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden />
+        <span><span className="font-semibold">Venda:</span> {debt.items.map((item) => `${item.quantity}× ${item.name} (${money(item.unitPriceCents / 100)})`).join(", ")}</span>
+      </div>}
       {debt.agreement && <div className="text-xs text-muted-foreground"><span className="font-semibold">Acordo:</span> {debt.agreement}</div>}
       {debt.payments && debt.payments.length > 0 && <div className="text-xs text-muted-foreground">
         Pago em {debt.payments.map((payment, index) => <span key={payment.entryId}>{index > 0 && ", "}
@@ -183,6 +187,7 @@ function DebtRow({ debt, canEdit, onEdit, onRemove }: { debt: Debt; canEdit: boo
         <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações da dívida de ${dateBR(debt.date)}: ${debt.description}`} />}><IconDots /></DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuGroup>
+            {status !== "quitada" && <DropdownMenuItem render={<Link href={`/financeiro/lancamentos/novo?receber=${debt.id}`} />}><IconReceipt /> Receber…</DropdownMenuItem>}
             <DropdownMenuItem onClick={onEdit}><IconPencil /> Editar</DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onClick={onRemove}><IconTrash /> Excluir</DropdownMenuItem>
           </DropdownMenuGroup>

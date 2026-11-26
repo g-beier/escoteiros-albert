@@ -11,7 +11,7 @@ import { ConditionPill } from "@/components/inventory/condition-pill";
 import { ReviewCheck, ReviewCheckAll, ReviewSelection } from "@/components/inventory/review";
 import { ReviewDetails } from "@/components/inventory/review-details";
 import type { MovementListRow } from "@/lib/inventory/model";
-import { movementDetail, saleEntryId, signedQuantity } from "@/lib/inventory/movements";
+import { movementDetail, saleLink, signedQuantity } from "@/lib/inventory/movements";
 import { MOVEMENT_LABELS, REVIEW_LABELS, timestampBR, type MovementKind, type ReviewStatus } from "@/lib/inventory/vocabulary";
 import * as locations from "@/lib/server/inventory/locations";
 import * as movements from "@/lib/server/inventory/movements";
@@ -102,8 +102,8 @@ export default async function Movements({ searchParams }: { searchParams: Promis
                 <TableCell className={CELL_CLASS}><Badge variant="outline">{MOVEMENT_LABELS[m.kind]}</Badge></TableCell>
                 <TableCell className={cn(CELL_CLASS, "num text-right font-semibold", quantity?.startsWith("−") && "text-destructive", quantity?.startsWith("+") && "text-success")}>{quantity ?? dash}</TableCell>
                 <TableCell className={cn(CELL_CLASS, "max-w-72")}>{from && to ? <>{from} <span className="text-muted-foreground">→</span> {to}</> : from ?? to ?? dash}</TableCell>
-                <TableCell className={cn(CELL_CLASS, "max-w-96 whitespace-normal")}><Detail row={m} dash={dash} />{member.finance.canRead && saleEntryId(m) && <> · <Link href={`/financeiro/lancamentos/${saleEntryId(m)}`}
-                  className="font-medium text-primary hover:underline">ver lançamento</Link></>}</TableCell>
+                <TableCell className={cn(CELL_CLASS, "max-w-96 whitespace-normal")}><Detail row={m} dash={dash} />{member.finance.canRead && saleLink(m) && <> · <Link href={saleLink(m)!.href}
+                  className="font-medium text-primary hover:underline">{saleLink(m)!.label}</Link></>}</TableCell>
                 <TableCell className={cn(CELL_CLASS, "max-w-64 truncate")} title={m.notes ?? undefined}>{m.notes || dash}</TableCell>
                 <TableCell className={CELL_CLASS}><span className="inline-flex items-center gap-1">
                   <Badge className={REVIEW_BADGE[m.review_status]}>{REVIEW_LABELS[m.review_status]}</Badge>

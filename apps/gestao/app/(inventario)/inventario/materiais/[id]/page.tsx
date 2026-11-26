@@ -9,7 +9,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { cn } from "@geas/ui/lib/utils";
 import { AppHeader } from "@/components/inventory/app-header";
 import { locationOptions } from "@/lib/inventory/locations";
-import { movementDetail, saleEntryId, signedQuantity } from "@/lib/inventory/movements";
+import { movementDetail, saleLink, signedQuantity } from "@/lib/inventory/movements";
 import { materialsBackHref, withBack } from "@/lib/inventory/material-list";
 import type { Lot, Movement, Unit } from "@/lib/inventory/model";
 import * as locationsData from "@/lib/server/inventory/locations";
@@ -145,9 +145,9 @@ export default async function MaterialDetail({ params, searchParams }: { params:
 
 /** "ver lançamento" da venda ou devolução (019), para quem lê o Financeiro. */
 function SaleEntryLink({ row, canRead }: { row: Movement; canRead: boolean }) {
-  const entryId = saleEntryId(row);
-  if (!entryId || !canRead) return null;
-  return <> · <Link href={`/financeiro/lancamentos/${entryId}`} className="font-medium text-primary hover:underline">ver lançamento</Link></>;
+  const link = saleLink(row);
+  if (!link || !canRead) return null;
+  return <> · <Link href={link.href} className="font-medium text-primary hover:underline">{link.label}</Link></>;
 }
 
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {

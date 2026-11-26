@@ -8,6 +8,7 @@ import type { EntryPage } from "@/lib/finance/entry-rows";
 import { parseEntrySort, parseFilters } from "@/lib/finance/filters";
 import { DataError } from "@/lib/server/db";
 import * as entries from "@/lib/server/finance/entries";
+import * as debts from "@/lib/server/finance/debts";
 import { financeAdminOrError, financeEditorOrError, memberOrError, type Member } from "@/lib/server/session";
 
 // Lançamentos (formulário, lista e ações em lote). As regras de quem pode o quê ficam nas funções SQL:
@@ -42,6 +43,36 @@ function readId(value: unknown, message = "Lançamento inválido.") {
 export async function createEntry(payload: unknown): Promise<Result> {
   return withMember(memberOrError, async ({ db, groupId }) => {
     const id = await entries.create(db, groupId, readEntry(payload));
+    revalidatePath("/", "layout");
+    return { success: true, id };
+  });
+}
+
+const saleDebtSchema = z.object({
+  date: z.iso.date({ message: "Informe a data." }),
+  associateId: z.uuid({ message: "Escolha o associado que fica devendo." }),
+  categoryId: z.uuid({ message: "Escolha a rubrica." }),
+  description: z.string().trim().min(2, "Descreva a venda.").max(200),
+  agreement: z.string().trim().max(300).nullable(),
+  items: z.array(z.object({ lotId: z.uuid(), quantity: z.number().int().positive(), unitPriceCents: z.number().int().nonnegative() }))
+    .min(1, "Informe os itens vendidos."),
+});
+
+/** Lojinha (022): venda a pagar depois. Vira dívida do associado em Devedores, com os itens; o estoque baixa na hora. */
+export async function createSaleDebt(payload: unknown): Promise<Result> {
+  return withMember(memberOrError, async ({ db, groupId }) => {
+    const parsed = saleDebtSchema.safeParse(payload);
+    if (!parsed.success) throw new InputError(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+    const id = await debts.createSale(db, groupId, parsed.data);
+    revalidatePath("/", "layout");
+    return { success: true, id };
+  });
+}
+
+/** "Receber" uma dívida (022): cria o lançamento e quita com ele o que falta. */
+export async function receiveDebt(debtId: unknown, payload: unknown): Promise<Result> {
+  return withMember(memberOrError, async ({ db }) => {
+    const id = await debts.receive(db, readId(debtId, "Dívida inválida."), readEntry(payload));
     revalidatePath("/", "layout");
     return { success: true, id };
   });

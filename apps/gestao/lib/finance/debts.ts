@@ -33,6 +33,9 @@ export type Debt = {
   payments: DebtPayment[] | null;
   /** Algum lançamento não comporta mais o alocado (lançamento editado): a tesouraria precisa corrigir. */
   paymentMismatch: boolean | null;
+  /** Venda a pagar (Lojinha, 022): rubrica da venda e itens vendidos (o valor é a soma deles). */
+  categoryId?: string | null;
+  items?: { name: string; quantity: number; unitPriceCents: number }[];
 };
 
 export type DebtStatus = "aberta" | "parcial" | "quitada";

@@ -28,6 +28,11 @@ export function categorySellsItems(categoryId: string, categories: Pick<Category
   return false;
 }
 
+/** Venda a pagar depois (022): vira dívida do associado em Devedores, com os itens; o estoque baixa na hora. */
+export type SaleDebtInput = {
+  date: string; associateId: string; categoryId: string; description: string; agreement: string | null; items: SaleItem[];
+};
+
 /** Soma dos itens (quantidade × preço). */
 export function saleItemsTotal(items: Pick<SaleItem, "quantity" | "unitPriceCents">[]): number {
   return items.reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0);
