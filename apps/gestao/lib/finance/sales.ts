@@ -1,12 +1,21 @@
 import type { CategoryItem } from "./categories";
 
-// Lojinha (019): itens vendidos num rateio de rubrica marcada "venda de itens" dão baixa no Inventário.
+// Lojinha (019, 021): itens vendidos num rateio de rubrica marcada "venda de itens" dão baixa no lote do Inventário.
 
-/** Material oferecido no lançamento: à venda (ou já vendido antes), com preço sugerido e saldo somado dos lotes. */
-export type SaleMaterial = { id: string; name: string; for_sale: boolean; sale_price_cents: number | null; stock: number };
+/**
+ * Lote oferecido no lançamento (`finance_sale_lots`): à venda com saldo, ou já vendido em algum lançamento (para editar
+ * os antigos), com material, variação, divisão e preço do lote.
+ */
+export type SaleLot = {
+  id: string; material_id: string; material_name: string; variant: string | null; location_path: string | null;
+  for_sale: boolean; sale_price_cents: number | null; quantity: number;
+};
 
-/** Item vendido num rateio (valores em centavos). */
-export type SaleItem = { materialId: string; quantity: number; unitPriceCents: number };
+/** Item vendido num rateio: o lote, a quantidade e o preço unitário (centavos). */
+export type SaleItem = { lotId: string; quantity: number; unitPriceCents: number };
+
+/** "Anel de lenço · couro" (material e variação do lote). */
+export const saleLotName = (lot: Pick<SaleLot, "material_name" | "variant">) => (lot.variant ? `${lot.material_name} · ${lot.variant}` : lot.material_name);
 
 /** A rubrica ou alguma acima dela está marcada "venda de itens" (mesma regra de `category_sells_items`). */
 export function categorySellsItems(categoryId: string, categories: Pick<CategoryItem, "id" | "parent_id" | "sells_items">[]): boolean {
@@ -25,9 +34,9 @@ export function saleItemsTotal(items: Pick<SaleItem, "quantity" | "unitPriceCent
 }
 
 /**
- * Quantidade disponível para o lançamento: saldo de hoje mais o que este lançamento já tinha vendido (ao editar, o que
- * já saiu volta antes de sair de novo).
+ * Quantidade disponível no lote para o lançamento: saldo de hoje mais o que este lançamento já tinha vendido dele (ao
+ * editar, o que já saiu volta antes de sair de novo).
  */
-export function availableFor(material: Pick<SaleMaterial, "id" | "stock">, savedItems: Pick<SaleItem, "materialId" | "quantity">[]): number {
-  return material.stock + savedItems.filter((item) => item.materialId === material.id).reduce((sum, item) => sum + item.quantity, 0);
+export function availableFor(lot: Pick<SaleLot, "id" | "quantity">, savedItems: Pick<SaleItem, "lotId" | "quantity">[]): number {
+  return lot.quantity + savedItems.filter((item) => item.lotId === lot.id).reduce((sum, item) => sum + item.quantity, 0);
 }

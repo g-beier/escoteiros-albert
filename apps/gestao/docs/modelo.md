@@ -42,9 +42,9 @@ Termos usados na interface, no código e na documentação. Quando um termo apar
 
 ## Itens vendidos (Lojinha)
 
-- Rubrica de receita marcada **venda de itens** em Configurações › Rubricas (menu ⋯; vale também para as de baixo): o rateio ganha a seção **Itens vendidos** (material à venda, quantidade, preço unitário sugerido pelo material). Com itens, o valor da rubrica é a soma deles.
-- O estoque acompanha o lançamento (019): salvar dá baixa no Inventário (motivo venda), editar baixa ou devolve a diferença, excluir devolve tudo. `entry_sale_items` (itens por rateio) e `entry_sale_draws` (quanto saiu de cada lote).
-- Os materiais oferecidos vêm de `finance_sale_materials` (legível por quem lê o Financeiro, mesmo sem acesso ao Inventário). Rubrica em lote, agrupar e desagrupar recusam rateios com itens; tirar a marca de uma rubrica com vendas é recusado.
+- Rubrica de receita marcada **venda de itens** em Configurações › Rubricas (menu ⋯; vale também para as de baixo): o rateio ganha a seção **Itens vendidos** (lote à venda do Inventário, quantidade, preço unitário sugerido pelo lote). Com itens, o valor da rubrica é a soma deles.
+- O estoque acompanha o lançamento (019): salvar dá baixa no lote vendido (motivo venda), editar baixa ou devolve a diferença ao mesmo lote, excluir devolve tudo (021). `entry_sale_items` (itens por rateio, com `lot_id`) e `entry_sale_draws` (quanto saiu de cada lote).
+- Os lotes oferecidos vêm de `finance_sale_lots` (legível por quem lê o Financeiro, mesmo sem acesso ao Inventário). Rubrica em lote, agrupar e desagrupar recusam rateios com itens; tirar a marca de uma rubrica com vendas é recusado.
 
 ## Fluxo
 

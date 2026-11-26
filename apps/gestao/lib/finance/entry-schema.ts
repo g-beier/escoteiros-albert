@@ -23,7 +23,7 @@ export const entrySchema = z.object({
     associateId: z.uuid().nullable(),
     /** Itens vendidos (só em rubrica que vende itens; a soma tem de dar o valor do rateio). */
     items: z.array(z.object({
-      materialId: z.uuid({ message: "Escolha o material vendido." }),
+      lotId: z.uuid({ message: "Escolha o item vendido." }),
       quantity: z.number().int().positive("Informe a quantidade de cada item vendido."),
       unitPriceCents: z.number().int().nonnegative("Informe o preço de cada item vendido."),
     })).optional(),
@@ -43,6 +43,6 @@ export function toRpcSplits(splits: EntryInput["splits"]) {
     amount_cents: s.amountCents,
     description: s.description,
     associate_id: s.associateId,
-    items: (s.items ?? []).map((item) => ({ material_id: item.materialId, quantity: item.quantity, unit_price_cents: item.unitPriceCents })),
+    items: (s.items ?? []).map((item) => ({ lot_id: item.lotId, quantity: item.quantity, unit_price_cents: item.unitPriceCents })),
   }));
 }

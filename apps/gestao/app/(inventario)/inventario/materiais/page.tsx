@@ -24,7 +24,6 @@ import * as movementsData from "@/lib/server/inventory/movements";
 import { MaterialFilters } from "@/components/inventory/materials/material-filters";
 import { StockEditor } from "@/components/inventory/materials/stock-editor";
 import { BulkSelection } from "@/components/inventory/materials/bulk";
-import { saleMarkLabel } from "@/components/inventory/sale-mark";
 import { IconSprite, SpriteIcon } from "@/components/shell/icon-sprite";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
@@ -87,14 +86,15 @@ export default async function Materials({ searchParams }: { searchParams: Promis
 
   // Alerta conta pelo total do material (mínimo e validade de todas as divisões), como no alerta do Início.
   const alerting = (m: MaterialRow) => m.below_minimum || (m.next_expiry !== null && daysUntil(m.next_expiry) <= EXPIRY_WARNING_DAYS);
-  // "Só à venda" (Lojinha): materiais marcados à venda no Financeiro.
-  const materials = new Map(materialData.filter((m) => (params.alerta !== "1" || alerting(m)) && (params.venda !== "1" || m.for_sale)).map((m) => [m.id, m]));
+  const materials = new Map(materialData.filter((m) => params.alerta !== "1" || alerting(m)).map((m) => [m.id, m]));
+  // "Só à venda" (Lojinha, 021): linhas (material × divisão) com algum lote à venda.
+  const onlySale = params.venda === "1";
   const previousOf = (materialId: string, locationId: string): [number | null, number | null] =>
     [counts.get(years[0])?.get(`${materialId}|${locationId}`) ?? null, counts.get(years[1])?.get(`${materialId}|${locationId}`) ?? null];
   const byLocation = new Map<string, Line[]>();
   for (const row of stock) {
     const material = materials.get(row.material_id);
-    if (!material) continue;
+    if (!material || (onlySale && !row.sale_quantity)) continue;
     const line: Line = { ...row, material, previous: previousOf(row.material_id, row.location_id), position: positions.get(`${row.location_id}|${row.material_id}`) ?? null };
     if (!matchesFilters(line, state)) continue;
     byLocation.set(row.location_id, [...(byLocation.get(row.location_id) ?? []), line]);
@@ -106,7 +106,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   const visible = new Set(filled.flatMap((location) => location.ancestors));
   const groups = scope.filter((location) => visible.has(location.id)).map((location) => ({ location, lines: (byLocation.get(location.id) ?? []).sort(order) }));
   const withStock = new Set(stock.map((row) => row.material_id));
-  const noStock: Line[] = showAll
+  const noStock: Line[] = showAll && !onlySale
     ? [...materials.values()].filter((m) => !withStock.has(m.id))
       .map((material): Line => ({
         material_id: material.id, location_id: "", quantity: 0, value_cents: 0, next_expiry: null, worst_condition: null, conditions: {},
@@ -324,8 +324,13 @@ function condition(value: Condition | null, detail?: string) {
 
 type StockActions = { pathOf: Map<string, string> };
 
-/** "À venda na Lojinha · R$ 25,00" (título e leitor de tela do ícone). */
-const saleLabel = (material: MaterialRow) => saleMarkLabel(material.sale_price_cents);
+/** "À venda na Lojinha: 5 un. · R$ 25,00" (ou a faixa de preço dos lotes à venda da divisão). */
+function saleLabel(line: Line) {
+  const min = line.min_sale_cents ?? null;
+  const max = line.max_sale_cents ?? min;
+  const price = min == null ? "sem preço" : min === max ? formatCents(min) : `${formatCents(min)} – ${formatCents(max!)}`;
+  return `À venda na Lojinha: ${line.sale_quantity} un. · ${price}`;
+}
 
 /**
  * Material numa divisão: as colunas visíveis, com os valores daquela divisão; para quem edita, o botão ± no fim.
@@ -356,8 +361,8 @@ function MaterialLine({ line, depth, columns, back, actions }: { line: Line; dep
     {actions && <td data-a="b"><input type="checkbox" data-sel="" value={`${material.id}|${line.location_id}`} aria-label={`Selecionar ${material.name}${line.location_id ? ` em ${actions.pathOf.get(line.location_id) ?? ""}` : " (sem estoque)"}`} /></td>}
     <td data-n="" style={indent(depth)}>
       <Link href={withBack(`/inventario/materiais/${material.id}`, back)} className="hover:underline">{material.name}</Link>
-      {material.for_sale && <span className="ml-1.5 inline-flex align-middle text-primary" title={saleLabel(material)}>
-        <SpriteIcon id="sale" className="size-3.5" /><span className="sr-only">{saleLabel(material)}</span></span>}
+      {line.sale_quantity ? <span className="ml-1.5 inline-flex align-middle text-primary" title={saleLabel(line)}>
+        <SpriteIcon id="sale" className="size-3.5" /><span className="sr-only">{saleLabel(line)}</span></span> : null}
       {(material.consumable || !material.active) && <span className="ml-2 inline-flex flex-wrap gap-1 align-middle">
         {material.consumable && <span data-tag="">Consumível</span>}
         {!material.active && <span data-tag="">Inativo</span>}

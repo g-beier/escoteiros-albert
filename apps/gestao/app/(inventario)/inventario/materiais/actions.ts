@@ -110,11 +110,6 @@ export async function saveMaterial(_previous: ActionResult, formData: FormData):
       minimumQuantity: integer(formData, "minimum", "o estoque mínimo", false), description: optional(formData, "description"),
       active: formData.get("active") !== "off",
     });
-    // Lojinha: só o Editor vê estes campos (a função SQL confere de novo).
-    if (formData.get("saleFields") === "on") {
-      const forSale = tracking === "lot" && formData.get("forSale") === "on";
-      await materials.setSale(db, savedId, forSale, forSale ? cents(formData, "salePrice") : null);
-    }
     revalidatePath("/inventario/materiais");
     revalidatePath(`/inventario/materiais/${savedId}`);
     revalidatePath("/inventario");
@@ -143,8 +138,24 @@ export async function addLot(_previous: ActionResult, formData: FormData) {
     const { merged } = await materials.addLot(db, {
       materialId: id(formData, "materialId"), locationId: optionalId(formData, "locationId"), quantity: integer(formData, "quantity", "a quantidade"),
       condition: oneOf(formData, "condition", CONDITIONS), expiresOn: date(formData, "expiresOn"), variant: optional(formData, "variant"), ...entry(formData),
+      ...sale(formData),
     });
     return merged ? "Somado ao lote igual que já existia." : "Lote adicionado.";
+  });
+}
+
+/** Lojinha (021): "À venda" e preço do lote (campos só para o Editor; a função SQL confere de novo). */
+function sale(formData: FormData) {
+  const forSale = formData.get("forSale") === "on";
+  return { forSale, salePriceCents: forSale ? cents(formData, "salePrice") : null };
+}
+
+/** Lojinha (021, Editor): põe à venda, muda o preço ou tira da venda o lote inteiro ou parte dele. */
+export async function setLotSale(_previous: ActionResult, formData: FormData) {
+  return record(formData, async (db) => {
+    const { forSale, salePriceCents } = sale(formData);
+    await materials.setLotSale(db, id(formData, "lotId"), forSale, salePriceCents, integer(formData, "quantity", "a quantidade"));
+    return forSale ? "Lote à venda na Lojinha." : "Lote fora da venda.";
   });
 }
 
@@ -212,7 +223,7 @@ export async function bulkEdit(_previous: ActionResult, formData: FormData): Pro
       if (!uuid.test(materialId) || (locationId && !uuid.test(locationId))) throw new InputError("Seleção inválida. Recarregue a página.");
       return { materialId, locationId: locationId || null };
     });
-    const stock = action === "transferir" || action === "condicao" || action === "baixa";
+    const stock = action === "transferir" || action === "condicao" || action === "baixa" || action === "venda";
     if (stock && !targets.some((t) => t.locationId)) throw new InputError("As linhas escolhidas não têm estoque.");
     const args: Record<string, string | boolean | null> =
       action === "transferir" ? { to_location_id: id(formData, "locationId") }
@@ -224,7 +235,7 @@ export async function bulkEdit(_previous: ActionResult, formData: FormData): Pro
     const changed = await materials.bulk(db, groupId, action, targets, args, optional(formData, "notes"));
     revalidatePath("/inventario/materiais");
     revalidatePath("/inventario");
-    const what = stock ? (changed === 1 ? "lote ou peça" : "lotes ou peças") : changed === 1 ? "material" : "materiais";
+    const what = action === "venda" ? (changed === 1 ? "lote" : "lotes") : stock ? (changed === 1 ? "lote ou peça" : "lotes ou peças") : changed === 1 ? "material" : "materiais";
     return changed ? `${BULK_DONE[action]}: ${changed} ${what}.` : "Nada mudou: as linhas escolhidas já estavam assim.";
   });
 }

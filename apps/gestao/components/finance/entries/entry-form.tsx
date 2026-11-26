@@ -20,7 +20,7 @@ import { centsToInput, money } from "@/lib/format";
 import { parseMoneyToCents } from "@/lib/money";
 import { cn } from "@geas/ui/lib/utils";
 import type { CategoryItem } from "@/lib/finance/categories";
-import { categorySellsItems, type SaleMaterial } from "@/lib/finance/sales";
+import { categorySellsItems, type SaleLot } from "@/lib/finance/sales";
 import { CategoryPicker } from "./category-picker";
 import { SaleItemsEditor, itemDraftsTotal, toItemDrafts, type SaleItemDraft } from "./sale-items";
 
@@ -28,8 +28,8 @@ export type CatalogItem = { id: string; name: string; active: boolean };
 export type PaymentMethodItem = CatalogItem & { default_account_id?: string | null };
 export type Catalogs = {
   categories: CategoryItem[]; paymentMethods: PaymentMethodItem[]; associates: CatalogItem[]; accounts: CatalogItem[];
-  /** Lojinha (019): materiais à venda para os itens vendidos. */
-  saleMaterials: SaleMaterial[];
+  /** Lojinha (021): lotes à venda para os itens vendidos. */
+  saleLots: SaleLot[];
 };
 type Direction = "entrada" | "saida";
 
@@ -147,7 +147,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
       notes: draft.notes,
       totalCents,
       splits: draft.splits.map((s) => ({ categoryId: s.categoryId, amountCents: signedSplit(s), description: s.description, associateId: s.associateId || null,
-        items: itemsOf(s).map((item) => ({ materialId: item.materialId, quantity: Number(item.quantity), unitPriceCents: magnitude(item.price) })) })),
+        items: itemsOf(s).map((item) => ({ lotId: item.lotId, quantity: Number(item.quantity), unitPriceCents: magnitude(item.price) })) })),
     };
     startTransition(async () => {
       const result = entry ? await updateEntry(entry.id, payload) : fromLine ? await createEntryFromStatementLine(fromLine.id, payload) : await createEntry(payload);
@@ -204,7 +204,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
         <div className="grid gap-1.5"><Label htmlFor={`split-associate-${index}`}>Associado (opcional)</Label><OptionCombobox id={`split-associate-${index}`} value={split.associateId} onValueChange={(associateId) => updateSplit(split.key, { associateId })} options={options.associates} placeholder={readOnly ? "—" : "Buscar associado…"} emptyText="Nenhum associado encontrado." disabled={readOnly} /></div>
         <div className="grid gap-1.5"><Label htmlFor={`split-amount-${index}`}>Valor (R$){split.categoryId && <span className={cn("ml-1", splitSign(split) < 0 ? "text-destructive" : "text-success")}>{splitSign(split) < 0 ? "−" : "+"}</span>}</Label><Input id={`split-amount-${index}`} inputMode="decimal" placeholder="0,00" value={itemsOf(split).length ? centsToInput(splitMagnitude(split)) : split.amount} onChange={(e) => updateSplit(split.key, { amount: e.target.value })} readOnly={itemsOf(split).length > 0} title={itemsOf(split).length ? "Soma dos itens vendidos" : undefined} className="text-right num" required /></div>
         {!readOnly && <Button type="button" variant="ghost" size="icon" aria-label={`Remover rubrica ${index + 1}`} disabled={draft.splits.length === 1} onClick={() => update({ splits: draft.splits.filter((s) => s.key !== split.key) })}><IconTrash /></Button>}
-        {sells.has(split.categoryId) && <SaleItemsEditor className="sm:col-span-full" index={index} items={split.items} materials={catalogs.saleMaterials}
+        {sells.has(split.categoryId) && <SaleItemsEditor className="sm:col-span-full" index={index} items={split.items} lots={catalogs.saleLots}
           savedItems={savedItems} readOnly={readOnly} onChange={(items) => updateSplit(split.key, { items })} />}
       </div>)}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
@@ -265,5 +265,5 @@ function DirectionButton({ value, current, onSelect, disabled }: { value: Direct
 
 function stripKeys(draft: Draft) {
   return { ...draft, splits: draft.splits.map((split) => [split.categoryId, split.amount, split.description, split.associateId,
-    split.items.map((item) => [item.materialId, item.quantity, item.price])]) };
+    split.items.map((item) => [item.lotId, item.quantity, item.price])]) };
 }

@@ -64,6 +64,7 @@ export default async function MaterialDetail({ params, searchParams }: { params:
   const unitLabel = new Map(units.map((row) => [row.id, row.tag ?? row.legacy_code ?? "peça"]));
   const locations = locationOptions(paths);
   const pending = movements.filter((row) => row.review_status === "para_revisar").length;
+  const saleLots = lots.filter((row) => row.for_sale);
 
   return <div className="shell">
     <AppHeader current={`/inventario/materiais/${id}`} member={member} />
@@ -82,8 +83,8 @@ export default async function MaterialDetail({ params, searchParams }: { params:
           </Fact>
           <Fact label="Valor estimado"><span className="num">{formatCents(Number(material.estimated_value_cents))}</span></Fact>
           {material.next_expiry && <Fact label="Próxima validade"><Expiry date={material.next_expiry} /></Fact>}
-          {material.for_sale && <Fact label="Lojinha">À venda · {material.sale_price_cents != null
-            ? <span className="num">{formatCents(material.sale_price_cents)}</span> : <span className="text-muted-foreground">sem preço</span>}</Fact>}
+          {saleLots.length > 0 && <Fact label="Lojinha">{saleLots.length === 1 ? "1 lote à venda" : `${saleLots.length} lotes à venda`} ·{" "}
+            <span className="num">{saleLots.reduce((sum, row) => sum + row.quantity, 0)}</span> un.</Fact>}
           {!material.active && <Fact label="Situação"><Badge variant="outline">Inativo</Badge></Fact>}
         </dl>
       </PageHeader>
@@ -95,11 +96,11 @@ export default async function MaterialDetail({ params, searchParams }: { params:
           : "Cada peça tem divisão, condição e etiqueta próprias."}>
           <SectionCount>{isLot ? `${lots.length} ${lots.length === 1 ? "lote" : "lotes"}` : `${units.filter((row) => !row.written_off_at).length} ${units.length === 1 ? "peça" : "peças"}`}</SectionCount>
           {member.inventory.canWrite && material.active && (isLot
-            ? <AddLotButton materialId={id} locations={locations} />
+            ? <AddLotButton materialId={id} locations={locations} canSell={member.inventory.canReview} />
             : <AddUnitButton materialId={id} locations={locations} nextTag={nextTag} familyCode={material.family_code} />)}
         </SectionHeader>
         {isLot
-          ? <LotsTable materialId={id} materialName={material.name} consumable={material.consumable} lots={lots} locations={locations} canEdit={member.inventory.canWrite} />
+          ? <LotsTable materialId={id} materialName={material.name} consumable={material.consumable} lots={lots} locations={locations} canEdit={member.inventory.canWrite} canSell={member.inventory.canReview} />
           : <UnitsTable materialId={id} units={units} locations={locations} canEdit={member.inventory.canWrite} nextTag={nextTag} familyCode={material.family_code} />}
       </SectionCard>
 

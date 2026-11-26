@@ -33,3 +33,12 @@ describe("saleEntryId (Lojinha)", () => {
     expect(saleEntryId(row("baixa", "venda", {}))).toBeNull();
   });
 });
+
+describe("lotSale (Lojinha)", () => {
+  const sale = (before: object, after: object) => movementDetail({ ...base, kind: "edicao", details: { action: "lot_sale", before, after } }).replace(/\s/g, " ");
+  it("descreve pôr à venda, mudar preço e tirar", () => {
+    expect(sale({ for_sale: false }, { for_sale: true, sale_price_cents: 2500 })).toBe("Lojinha: à venda por R$ 25,00");
+    expect(sale({ for_sale: true, sale_price_cents: 2000 }, { for_sale: true, sale_price_cents: 2500 })).toBe("Lojinha: preço R$ 20,00 → R$ 25,00");
+    expect(sale({ for_sale: true, sale_price_cents: 2000 }, { for_sale: false, sale_price_cents: null })).toBe("Lojinha: fora da venda");
+  });
+});

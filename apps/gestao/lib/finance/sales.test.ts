@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { availableFor, categorySellsItems, saleItemsTotal } from "./sales";
+import { availableFor, categorySellsItems, saleItemsTotal, saleLotName } from "./sales";
 
 describe("Lojinha", () => {
   const categories = [
@@ -14,7 +14,11 @@ describe("Lojinha", () => {
   it("soma dos itens", () => {
     expect(saleItemsTotal([{ quantity: 3, unitPriceCents: 2000 }, { quantity: 2, unitPriceCents: 500 }])).toBe(7000);
   });
-  it("disponível ao editar inclui o que o lançamento já vendeu", () => {
-    expect(availableFor({ id: "a", stock: 4 }, [{ materialId: "a", quantity: 3 }, { materialId: "b", quantity: 9 }])).toBe(7);
+  it("disponível ao editar inclui o que o lançamento já vendeu do lote", () => {
+    expect(availableFor({ id: "a", quantity: 4 }, [{ lotId: "a", quantity: 3 }, { lotId: "b", quantity: 9 }])).toBe(7);
+  });
+  it("nome do lote com a variação", () => {
+    expect(saleLotName({ material_name: "Anel de lenço", variant: "couro" })).toBe("Anel de lenço · couro");
+    expect(saleLotName({ material_name: "Lenço", variant: null })).toBe("Lenço");
   });
 });

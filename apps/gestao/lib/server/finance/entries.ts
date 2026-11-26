@@ -113,7 +113,7 @@ async function withAttachmentCounts<T extends { entry_id: string }>(db: Db, list
 
 type EntrySplitRow = {
   category_id: string; amount_cents: number; description: string; associate_id: string | null; created_at: string; id: string;
-  items: { material_id: string; quantity: number; unit_price_cents: number }[];
+  items: { lot_id: string; quantity: number; unit_price_cents: number }[];
 };
 
 /** Carrega um lançamento com seus rateios na ordem em que foram gravados (RLS restringe ao grupo). */
@@ -126,7 +126,7 @@ export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | nu
       e.updated_at, e.review_status,
       coalesce((select json_agg(json_build_object('id', s.id, 'category_id', s.category_id, 'amount_cents', s.amount_cents,
         'description', s.description, 'associate_id', s.associate_id, 'created_at', s.created_at,
-        'items', coalesce((select json_agg(json_build_object('material_id', i.material_id, 'quantity', i.quantity, 'unit_price_cents', i.unit_price_cents)
+        'items', coalesce((select json_agg(json_build_object('lot_id', i.lot_id, 'quantity', i.quantity, 'unit_price_cents', i.unit_price_cents)
           order by i.position) from public.entry_sale_items i where i.split_id = s.id), '[]')))
         from public.entry_splits s where s.entry_id = e.id), '[]') as entry_splits
     from public.ledger_entries e where e.id = ${id}`);
@@ -147,7 +147,7 @@ export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | nu
     toReview: data.review_status === "para_revisar",
     splits: splits.map((s) => ({
       categoryId: s.category_id, amountCents: s.amount_cents, description: s.description, associateId: s.associate_id,
-      items: s.items.map((item) => ({ materialId: item.material_id, quantity: item.quantity, unitPriceCents: Number(item.unit_price_cents) })),
+      items: s.items.map((item) => ({ lotId: item.lot_id, quantity: item.quantity, unitPriceCents: Number(item.unit_price_cents) })),
     })),
   };
 }

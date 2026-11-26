@@ -324,6 +324,7 @@ export type Tables = {
     unit_price_cents: number;
     position: number;
     created_at: string;
+    lot_id: string;
   };
   entry_split_rows: {
     split_id: string | null;
@@ -499,6 +500,8 @@ export type Tables = {
     created_at: string;
     updated_at: string;
     variant: string | null;
+    for_sale: boolean;
+    sale_price_cents: number | null;
   };
   inventory_material_positions: {
     group_id: string;
@@ -541,8 +544,6 @@ export type Tables = {
     created_by: string | null;
     created_at: string;
     updated_at: string;
-    for_sale: boolean;
-    sale_price_cents: number | null;
   };
   inventory_movements: {
     id: number;
@@ -578,6 +579,9 @@ export type Tables = {
     conditions: Json | null;
     min_unit_cents: number | null;
     max_unit_cents: number | null;
+    sale_quantity: number | null;
+    min_sale_cents: number | null;
+    max_sale_cents: number | null;
   };
   inventory_units: {
     id: string;
@@ -897,7 +901,7 @@ export type Functions = {
   fee_category_ids: { Args: { p_group_id: string }; Returns: string[] };
   fee_record_snapshot: { Args: { p_record_id: string }; Returns: Json };
   finance_role_of: { Args: { p_group_id: string }; Returns: Enums["module_role"] };
-  finance_sale_materials: { Args: { p_group_id: string }; Returns: { id: string; name: string; for_sale: boolean; sale_price_cents: number; stock: number }[] };
+  finance_sale_lots: { Args: { p_group_id: string }; Returns: { id: string; material_id: string; material_name: string; variant: string; location_path: string; condition: Enums["inventory_condition"]; expires_on: string; for_sale: boolean; sale_price_cents: number; quantity: number }[] };
   group_users: { Args: { p_group_id: string }; Returns: { user_id: string; email: string; last_sign_in_at: string; finance_role: Enums["module_role"]; inventory_role: Enums["module_role"]; associates_role: Enums["module_role"]; associate_id: string }[] };
   ignore_statement_line: { Args: { p_id: string; p_reason: string }; Returns: undefined };
   ignore_statement_lines: { Args: { p_ids: string[]; p_reason: string }; Returns: number };
@@ -927,7 +931,7 @@ export type Functions = {
   import_sections: { Args: { p_group_id: string; p_rows: Json }; Returns: Json };
   import_statement_lines: { Args: { p_account_id: string; p_profile_id: string; p_profile_settings: Json; p_file_name: string; p_period_from: string; p_period_to: string; p_opening_balance_cents: number; p_closing_balance_cents: number; p_lines: Json }; Returns: Json };
   import_text: { Args: { p_row: Json; p_key: string }; Returns: string };
-  inventory_add_lot: { Args: { p_material_id: string; p_location_id: string; p_quantity: number; p_condition: Enums["inventory_condition"]; p_unit_value_cents: number; p_expires_on: string; p_acquired_on: string; p_origin: Enums["inventory_origin"]; p_supplier: string; p_invoice: string; p_notes: string; p_variant?: string }; Returns: string };
+  inventory_add_lot: { Args: { p_material_id: string; p_location_id: string; p_quantity: number; p_condition: Enums["inventory_condition"]; p_unit_value_cents: number; p_expires_on: string; p_acquired_on: string; p_origin: Enums["inventory_origin"]; p_supplier: string; p_invoice: string; p_notes: string; p_variant?: string; p_for_sale?: boolean; p_sale_price_cents?: number }; Returns: string };
   inventory_add_unit: { Args: { p_material_id: string; p_location_id: string; p_tag: string; p_legacy_code: string; p_description: string; p_condition: Enums["inventory_condition"]; p_unit_value_cents: number; p_acquired_on: string; p_origin: Enums["inventory_origin"]; p_supplier: string; p_invoice: string; p_notes: string }; Returns: string };
   inventory_adjust_lot: { Args: { p_lot_id: string; p_quantity: number; p_notes: string }; Returns: undefined };
   inventory_bulk: { Args: { p_group_id: string; p_action: string; p_targets: Json; p_args: Json; p_notes?: string }; Returns: number };
@@ -938,7 +942,7 @@ export type Functions = {
   inventory_lock_lot: { Args: { p_lot_id: string }; Returns: Tables["inventory_lots"] };
   inventory_lock_unit: { Args: { p_unit_id: string }; Returns: Tables["inventory_units"] };
   inventory_log: { Args: { p_group_id: string; p_kind: Enums["inventory_movement_kind"]; p_material_id: string; p_lot_id: string; p_unit_id: string; p_quantity: number; p_from_location: string; p_to_location: string; p_from_condition: Enums["inventory_condition"]; p_to_condition: Enums["inventory_condition"]; p_reason: Enums["inventory_write_off_reason"]; p_notes: string; p_details: Json }; Returns: number };
-  inventory_matching_lot: { Args: { p_material_id: string; p_location_id: string; p_condition: Enums["inventory_condition"]; p_expires_on: string; p_variant: string; p_except: string }; Returns: Tables["inventory_lots"] };
+  inventory_matching_lot: { Args: { p_material_id: string; p_location_id: string; p_condition: Enums["inventory_condition"]; p_expires_on: string; p_variant: string; p_except: string; p_for_sale: boolean; p_sale_price_cents: number }; Returns: Tables["inventory_lots"] };
   inventory_merged_value: { Args: { p_value: number; p_quantity: number; p_added_value: number; p_added: number }; Returns: number };
   inventory_next_location_position: { Args: { p_group_id: string; p_parent_id: string }; Returns: number };
   inventory_next_tag: { Args: { p_family_id: string }; Returns: string };
@@ -953,9 +957,9 @@ export type Functions = {
   inventory_save_material: { Args: { p_group_id: string; p_id: string; p_family_id: string; p_name: string; p_tracking: Enums["inventory_tracking"]; p_consumable: boolean; p_minimum_quantity: number; p_description: string; p_active?: boolean }; Returns: string };
   inventory_search_normalize: { Args: { p_text: string }; Returns: string };
   inventory_set_lot_condition: { Args: { p_lot_id: string; p_condition: Enums["inventory_condition"]; p_quantity: number; p_notes: string }; Returns: string };
-  inventory_set_material_sale: { Args: { p_material_id: string; p_for_sale: boolean; p_sale_price_cents: number }; Returns: undefined };
+  inventory_set_lot_sale: { Args: { p_lot_id: string; p_for_sale: boolean; p_sale_price_cents: number; p_quantity?: number }; Returns: string };
   inventory_set_unit_condition: { Args: { p_unit_id: string; p_condition: Enums["inventory_condition"]; p_notes: string }; Returns: undefined };
-  inventory_split_lot: { Args: { p_lot: Tables["inventory_lots"]; p_quantity: number; p_location_id: string; p_condition: Enums["inventory_condition"] }; Returns: string };
+  inventory_split_lot: { Args: { p_lot: Tables["inventory_lots"]; p_quantity: number; p_location_id: string; p_condition: Enums["inventory_condition"] } | { p_lot: Tables["inventory_lots"]; p_quantity: number; p_location_id: string; p_condition: Enums["inventory_condition"]; p_for_sale: boolean; p_sale_price_cents: number }; Returns: string };
   inventory_transfer_lot: { Args: { p_lot_id: string; p_to_location_id: string; p_quantity: number; p_notes: string }; Returns: string };
   inventory_transfer_unit: { Args: { p_unit_id: string; p_to_location_id: string; p_notes: string }; Returns: undefined };
   inventory_update_lot: { Args: { p_lot_id: string; p_unit_value_cents: number; p_expires_on: string; p_acquired_on: string; p_origin: Enums["inventory_origin"]; p_supplier: string; p_invoice: string; p_notes: string; p_variant?: string }; Returns: undefined };

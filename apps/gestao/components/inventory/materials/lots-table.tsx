@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { IconDots, IconMinus, IconPlus } from "@tabler/icons-react";
+import { IconDots, IconMinus, IconPlus, IconShoppingBag } from "@tabler/icons-react";
 import { ConditionPill } from "@/components/inventory/condition-pill";
 import { Button } from "@geas/ui/components/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
@@ -9,19 +9,19 @@ import { Input } from "@geas/ui/components/input";
 import type { Option } from "@geas/ui/components/option-controls";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { cn } from "@geas/ui/lib/utils";
-import { adjustLot, setLotCondition, transferLot, updateLot } from "@/app/(inventario)/inventario/materiais/actions";
+import { adjustLot, setLotCondition, setLotSale, transferLot, updateLot } from "@/app/(inventario)/inventario/materiais/actions";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import { CONDITION_LABELS, EXPIRY_WARNING_DAYS, ORIGIN_LABELS, dateBR, daysUntil } from "@/lib/inventory/vocabulary";
 import { formatCents } from "@/lib/format";
 import { ActionDialog } from "@/components/shell/action-dialog";
-import { ConditionField, EntryFields, Field, LocationField, NotesField, QuantityField, VariantField } from "./fields";
+import { ConditionField, EntryFields, Field, LocationField, NotesField, QuantityField, SaleFields, VariantField } from "./fields";
 import { AddLotDialog, WithdrawDialog, withdrawLabel } from "./withdraw";
 
 import type { LotRow } from "@/lib/inventory/model";
 
 export type { LotRow };
 
-type Mode = "transfer" | "condition" | "adjust" | "writeOff" | "edit";
+type Mode = "transfer" | "condition" | "adjust" | "writeOff" | "edit" | "sale";
 
 /** Validade com destaque: vencida (vermelho) ou perto de vencer (amarelo). */
 export function Expiry({ date }: { date: string | null }) {
@@ -31,11 +31,11 @@ export function Expiry({ date }: { date: string | null }) {
   return <span className={cn("num", tone)} title={days < 0 ? "Vencido" : `Vence em ${days} dias`}>{dateBR(date)}{days < 0 && " (vencido)"}</span>;
 }
 
-export function AddLotButton({ materialId, locations }: { materialId: string; locations: Option[] }) {
+export function AddLotButton({ materialId, locations, canSell = false }: { materialId: string; locations: Option[]; canSell?: boolean }) {
   const [open, setOpen] = useState(false);
   return <>
     <Button size="sm" onClick={() => setOpen(true)}><IconPlus data-icon="inline-start" /> Adicionar lote</Button>
-    {open && <AddLotDialog materialId={materialId} locations={locations} onOpenChange={setOpen} />}
+    {open && <AddLotDialog materialId={materialId} locations={locations} canSell={canSell} onOpenChange={setOpen} />}
   </>;
 }
 
@@ -43,8 +43,10 @@ export function AddLotButton({ materialId, locations }: { materialId: string; lo
  * Lotes do material. A ação principal de cada lote é a saída (Consumir / Dar baixa); o resto fica no menu, com
  * "Corrigir contagem" por último: só para registro errado. Se a contagem corrigida for menor, o diálogo sugere a baixa.
  */
-export function LotsTable({ materialId, materialName, consumable, lots, locations, canEdit }: {
+export function LotsTable({ materialId, materialName, consumable, lots, locations, canEdit, canSell = false }: {
   materialId: string; materialName: string; consumable: boolean; lots: LotRow[]; locations: Option[]; canEdit: boolean;
+  /** Editor do Inventário: põe lotes à venda na Lojinha (021). */
+  canSell?: boolean;
 }) {
   const [active, setActive] = useState<{ mode: Mode; lot: LotRow; quantity?: number } | null>(null);
   const close = (open: boolean) => { if (!open) setActive(null); };
@@ -66,7 +68,10 @@ export function LotsTable({ materialId, materialName, consumable, lots, location
         {canEdit && <TableHead className={cn(HEAD_CLASS, "w-36")}><span className="sr-only">Ações</span></TableHead>}
       </TableRow></TableHeader>
       <TableBody>{lots.map((row) => <TableRow key={row.id}>
-        <TableCell className={cn(CELL_CLASS, "whitespace-normal")}>{row.path}{row.variant && <span className="block text-[11px] text-muted-foreground">Variação: {row.variant}</span>}</TableCell>
+        <TableCell className={cn(CELL_CLASS, "whitespace-normal")}>{row.path}{row.variant && <span className="block text-[11px] text-muted-foreground">Variação: {row.variant}</span>}
+          {row.for_sale && <span className="mt-0.5 flex items-center gap-1 text-[11px] font-semibold text-primary">
+            <IconShoppingBag className="size-3.5" aria-hidden /> À venda · {row.sale_price_cents != null ? <span className="num">{formatCents(row.sale_price_cents)}</span> : "sem preço"}
+          </span>}</TableCell>
         <TableCell className={cn(CELL_CLASS, "num text-right font-semibold")}>{row.quantity}</TableCell>
         <TableCell className={CELL_CLASS}><ConditionPill condition={row.condition} /></TableCell>
         <TableCell className={cn(CELL_CLASS, "num text-right")}>{row.unit_value_cents != null ? formatCents(row.unit_value_cents) : <span className="text-muted-foreground">—</span>}</TableCell>
@@ -84,6 +89,7 @@ export function LotsTable({ materialId, materialName, consumable, lots, location
                 <DropdownMenuItem onClick={() => setActive({ mode: "transfer", lot: row })}>Transferir</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setActive({ mode: "condition", lot: row })}>Mudar condição</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setActive({ mode: "edit", lot: row })}>Editar dados de entrada</DropdownMenuItem>
+                {canSell && <DropdownMenuItem onClick={() => setActive({ mode: "sale", lot: row })}>{row.for_sale ? "Lojinha: preço ou tirar da venda…" : "Pôr à venda na Lojinha…"}</DropdownMenuItem>}
                 {consumable && <DropdownMenuItem onClick={() => setActive({ mode: "writeOff", lot: row })}>Dar baixa (perda, descarte…)</DropdownMenuItem>}
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
@@ -117,6 +123,12 @@ export function LotsTable({ materialId, materialName, consumable, lots, location
 
     {lot && active.mode === "writeOff" && <WithdrawDialog materialId={materialId} materialName={materialName} consumable={consumable}
       lots={[lot]} defaultQuantity={active.quantity ?? 1} onOpenChange={close} />}
+
+    {lot && active.mode === "sale" && <ActionDialog open onOpenChange={close} title="Lojinha" action={setLotSale} submitLabel="Salvar" hidden={hidden}
+      description={`Lote em ${lot.path}${lot.variant ? ` (${lot.variant})` : ""}. Só parte das unidades? Informe a quantidade: elas viram um lote separado (ou somam num lote igual).`}>
+      <SaleFields prefix="lot-sale" forSale={lot.for_sale} priceCents={lot.sale_price_cents} />
+      <QuantityField id="lot-sale-quantity" max={lot.quantity} defaultValue={lot.quantity} />
+    </ActionDialog>}
 
     {lot && active.mode === "edit" && <ActionDialog open onOpenChange={close} title="Editar dados de entrada" action={updateLot} submitLabel="Salvar" hidden={hidden}
       description={`Lote em ${lot.path}.`}>

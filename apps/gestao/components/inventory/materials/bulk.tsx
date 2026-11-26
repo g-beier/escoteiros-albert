@@ -88,7 +88,7 @@ export function BulkSelection({ locations, families, canSell = false, children }
         <Button size="lg" variant="outline" onClick={() => setDialog("familia")}><IconCategory data-icon="inline-start" /> Alterar família</Button>
         <Button size="lg" variant="outline" disabled={!withStock} onClick={() => setDialog("condicao")}><IconCircleHalf2 data-icon="inline-start" /> Condição</Button>
         <Button size="lg" variant="outline" onClick={() => setDialog("consumivel")}><IconToolsKitchen2 data-icon="inline-start" /> Consumível</Button>
-        {canSell && <Button size="lg" variant="outline" onClick={() => setDialog("venda")}><IconShoppingBag data-icon="inline-start" /> À venda</Button>}
+        {canSell && <Button size="lg" variant="outline" disabled={!withStock} onClick={() => setDialog("venda")}><IconShoppingBag data-icon="inline-start" /> À venda</Button>}
         <Button size="lg" variant="outline" disabled={!withStock} onClick={() => setDialog("baixa")}><IconPackageExport data-icon="inline-start" /> Dar baixa</Button>
       </div>
     </div>}
@@ -117,7 +117,7 @@ export function BulkSelection({ locations, families, canSell = false, children }
         options={[{ value: "sim", label: "Sim: some com o uso (consumir)" }, { value: "nao", label: "Não: patrimônio (dar baixa)" }]} />
     </ActionDialog>}
     {dialog === "venda" && <ActionDialog {...common} title={`Lojinha: ${count}`} submitLabel="Salvar" hidden={hidden("venda")}
-      description={`${wholeMaterial} Só material por quantidade: os por peça ficam de fora. O preço de venda não muda (defina no cadastro do material).`}>
+      description={`Todos os lotes de cada linha (o material naquela divisão). Peças ficam de fora. Cada lote mantém o preço que tem; para dar preço ou separar só parte de um lote, use o menu do lote no material.${stockNote}`}>
       <SelectField id="bulk-sale" name="forSale" label="À venda na Lojinha" defaultValue="sim" className="sm:col-span-2"
         options={[{ value: "sim", label: "Sim: aparece nos itens vendidos do Financeiro" }, { value: "nao", label: "Não: tira da Lojinha" }]} />
     </ActionDialog>}

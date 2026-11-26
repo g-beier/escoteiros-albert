@@ -6,6 +6,7 @@ import { CONDITION_LABELS, TRACKING_LABELS, WRITE_OFF_LABELS, type Condition, ty
 
 export const EDIT_ACTIONS: Record<string, string> = {
   material_created: "Material cadastrado", material_updated: "Material editado", lot_updated: "Dados do lote editados", unit_updated: "Dados da peça editados",
+  lot_sale: "Lojinha",
 };
 
 type Detailed = Pick<Movement, "kind" | "from_condition" | "to_condition" | "write_off_reason" | "details">;
@@ -35,8 +36,6 @@ export function materialChanges(details: Record<string, unknown>): string[] {
   if (changed("tracking")) changes.push(`Controle: ${TRACKING_LABELS[before.tracking as Tracking] ?? "—"} → ${TRACKING_LABELS[after.tracking as Tracking] ?? "—"}`);
   if (changed("consumable")) changes.push(`Consumível: ${yesNo(before.consumable)} → ${yesNo(after.consumable)}`);
   if (changed("active")) changes.push(after.active ? "Reativado" : "Inativado");
-  if (changed("for_sale")) changes.push(after.for_sale ? "À venda na Lojinha" : "Fora da Lojinha");
-  if (changed("sale_price_cents")) changes.push(`Preço de venda: ${price(before.sale_price_cents)} → ${price(after.sale_price_cents)}`);
   return changes;
 }
 
@@ -47,6 +46,15 @@ export function materialChanges(details: Record<string, unknown>): string[] {
 export function saleEntryId(row: Pick<Movement, "kind" | "write_off_reason" | "details">): string | null {
   const sale = (row.kind === "baixa" && row.write_off_reason === "venda") || (row.kind === "entrada" && row.details.sale_return === true);
   return sale && typeof row.details.entry_id === "string" ? row.details.entry_id : null;
+}
+
+/** Lojinha (021): "à venda por R$ 25,00", "preço R$ 20,00 → R$ 25,00" ou "fora da venda". */
+export function lotSale(details: Record<string, unknown>): string {
+  const before = (details.before ?? {}) as Record<string, unknown>;
+  const after = (details.after ?? {}) as Record<string, unknown>;
+  if (!after.for_sale) return "fora da venda";
+  if (before.for_sale) return `preço ${price(before.sale_price_cents)} → ${price(after.sale_price_cents)}`;
+  return after.sale_price_cents == null ? "à venda, sem preço" : `à venda por ${price(after.sale_price_cents)}`;
 }
 
 /** O que mudou no movimento, sem a divisão (que tem coluna própria na lista). */
@@ -62,6 +70,7 @@ export function movementDetail(row: Detailed): string {
     case "baixa": return row.write_off_reason ? WRITE_OFF_LABELS[row.write_off_reason] : "";
     case "edicao": {
       const action = EDIT_ACTIONS[String(row.details.action)] ?? "Edição";
+      if (row.details.action === "lot_sale") return `${action}: ${lotSale(row.details)}`;
       const changes = row.details.action === "material_updated" ? materialChanges(row.details) : [];
       return changes.length ? `${action}: ${changes.join(" · ")}` : action;
     }

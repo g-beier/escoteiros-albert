@@ -6,7 +6,7 @@ import type { Condition, MovementChannel, MovementKind, Origin, ReviewStatus, Tr
 export type MaterialRow = {
   id: string; name: string; tracking: Tracking; consumable: boolean; minimum_quantity: number | null; active: boolean;
   quantity: number; next_expiry: string | null; below_minimum: boolean;
-  /** Lojinha (019/020): à venda no Financeiro e preço sugerido (centavos). */
+  /** Lojinha (021): tem lote à venda com saldo; menor preço entre eles. */
   for_sale: boolean; sale_price_cents: number | null;
 };
 
@@ -19,6 +19,8 @@ export type StockRow = {
   conditions: Partial<Record<Condition, number>>;
   /** Faixa do valor unitário (lotes e peças sem valor ficam de fora). */
   min_unit_cents: number | null; max_unit_cents: number | null;
+  /** Lojinha (021): quantidade à venda na divisão (null = nada) e faixa de preço dos lotes à venda. */
+  sale_quantity?: number | null; min_sale_cents?: number | null; max_sale_cents?: number | null;
 };
 
 /** Material no detalhe, com família e totais. */
@@ -33,8 +35,6 @@ export type Material = {
 export type MaterialDefaults = {
   id: string; name: string; family_id: string | null; tracking: Tracking; consumable: boolean;
   minimum_quantity: number | null; description: string | null; active: boolean;
-  /** Lojinha (019): à venda no Financeiro e preço sugerido (centavos). */
-  for_sale: boolean; sale_price_cents: number | null;
 };
 
 /** Lote com saldo; `path` é preenchido pela tela a partir das divisões. */
@@ -44,6 +44,8 @@ export type Lot = {
   supplier: string | null; invoice: string | null; notes: string | null;
   /** Variação do item ("modelo antigo"): lotes com variação diferente não se juntam. */
   variant: string | null;
+  /** Lojinha (021): lote à venda no Financeiro, com preço próprio; lote à venda só junta com lote à venda do mesmo preço. */
+  for_sale: boolean; sale_price_cents: number | null;
 };
 export type LotRow = Lot & { path: string };
 

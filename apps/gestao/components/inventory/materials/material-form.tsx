@@ -32,10 +32,8 @@ const MAX_UNITS_ON_CREATE = 50;
  * Cadastro e edição do material. O controle (peça/quantidade) só muda enquanto não há estoque.
  * No cadastro, a primeira entrada (lote ou peças) pode ser registrada junto.
  */
-export function MaterialForm({ families, locations = [], material, hasStock = false, canSell = false, back }: {
+export function MaterialForm({ families, locations = [], material, hasStock = false, back }: {
   families: Option[]; locations?: Option[]; material?: MaterialDefaults; hasStock?: boolean;
-  /** Editor do Inventário: marca o material à venda na Lojinha (itens vendidos no Financeiro). */
-  canSell?: boolean;
   /** Lista com filtros para onde o detalhe volta depois de salvar (`voltar`). */
   back?: string;
 }) {
@@ -46,7 +44,6 @@ export function MaterialForm({ families, locations = [], material, hasStock = fa
   const [consumable, setConsumable] = useState(material?.consumable ?? false);
   const [active, setActive] = useState(material?.active ?? true);
   const [withStock, setWithStock] = useState(false);
-  const [forSale, setForSale] = useState(material?.for_sale ?? false);
   const isLot = tracking === "lot";
   const creating = !material;
 
@@ -98,21 +95,6 @@ export function MaterialForm({ families, locations = [], material, hasStock = fa
       </div>}
     </div>}
     <input type="hidden" name="consumable" value={isLot && consumable ? "on" : "off"} />
-
-    {canSell && isLot && <section aria-labelledby="material-sale-title" className="grid gap-3 rounded-lg bg-muted/50 p-3">
-      <input type="hidden" name="saleFields" value="on" />
-      <div className="flex items-center gap-2">
-        <Checkbox id="material-for-sale" checked={forSale} onCheckedChange={(checked) => setForSale(checked === true)} />
-        <Label htmlFor="material-for-sale" id="material-sale-title">À venda na Lojinha</Label>
-        <input type="hidden" name="forSale" value={forSale ? "on" : "off"} />
-      </div>
-      <p className="m-0 text-xs text-muted-foreground">Aparece nos itens vendidos dos lançamentos de rubricas marcadas “venda de itens”; a venda dá baixa no estoque.</p>
-      {forSale && <Field id="material-sale-price" label="Preço de venda (unidade)">
-        <Input id="material-sale-price" name="salePrice" inputMode="decimal" placeholder="Ex.: 25,00" className="num sm:max-w-40"
-          defaultValue={material?.sale_price_cents != null ? (material.sale_price_cents / 100).toFixed(2).replace(".", ",") : ""} />
-        <span className="text-[11px] text-muted-foreground">Sugerido no lançamento; pode ser mudado em cada venda.</span>
-      </Field>}
-    </section>}
 
     <Field id="material-description" label="Descrição">
       <Textarea id="material-description" name="description" maxLength={500} rows={3} defaultValue={material?.description ?? ""} />

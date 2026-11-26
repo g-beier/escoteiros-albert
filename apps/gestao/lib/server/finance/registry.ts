@@ -13,16 +13,17 @@ import { rows, rpc, run } from "@/lib/server/pg/db";
 /** Cadastros usados pelo formulário de lançamento e pelos filtros (inclui os inativos, para os lançamentos antigos). */
 export async function entryCatalogs(db: Db, groupId: string): Promise<Catalogs> {
   return run(db, async (sql) => {
-    const [categories, paymentMethods, associates, accounts, saleMaterials] = await Promise.all([
+    const [categories, paymentMethods, associates, accounts, saleLots] = await Promise.all([
       sql`select id, name, active, code, kind, parent_id, sells_items from public.categories where group_id = ${groupId}`,
       sql`select id, name, active, default_account_id from public.payment_methods where group_id = ${groupId} order by name`,
       sql`select id, name, active from public.associates where group_id = ${groupId} order by name`,
       sql`select id, name, active from public.accounts where group_id = ${groupId} order by name`,
-      // Lojinha (019): materiais à venda, legíveis por quem lê o Financeiro mesmo sem acesso ao Inventário
-      sql`select id, name, for_sale, sale_price_cents::int as sale_price_cents, stock from public.finance_sale_materials(${groupId})`,
+      // Lojinha (021): lotes à venda, legíveis por quem lê o Financeiro mesmo sem acesso ao Inventário
+      sql`select id, material_id, material_name, variant, location_path, for_sale, sale_price_cents::int as sale_price_cents, quantity
+          from public.finance_sale_lots(${groupId})`,
     ]);
     return { categories: [...categories], paymentMethods: [...paymentMethods], associates: [...associates], accounts: [...accounts],
-      saleMaterials: [...saleMaterials] } as unknown as Catalogs;
+      saleLots: [...saleLots] } as unknown as Catalogs;
   });
 }
 
