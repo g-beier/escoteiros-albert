@@ -107,10 +107,12 @@ export default async function Home() {
   return <div className="shell">
     <GestaoHeader current="/" member={member} quick={canQuick} />
     <PageBody>
+      {/* Registro rápido é a ação principal do Início (primário, à direita); as demais, conforme as permissões, são
+          secundárias e ficam à esquerda dele. */}
       <PageHeader title="Início" hideTitle actions={<>
-        {canQuick && <Link href="/rapido" className={buttonVariants({ variant: "outline", size: "lg" })}><IconBolt data-icon="inline-start" /> Registro rápido</Link>}
-        {member.finance.canWrite && <NewEntryButton returnHref="" />}
+        {member.finance.canWrite && <NewEntryButton returnHref="" variant="outline" />}
         {member.inventory.canWrite && <Link href="/inventario/materiais/novo" className={buttonVariants({ variant: "outline", size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}
+        {canQuick && <Link href="/rapido" className={buttonVariants({ size: "lg" })}><IconBolt data-icon="inline-start" /> Registro rápido</Link>}
       </>} />
 
       {/* Mosaico: cada cartão com a altura que precisa, encaixado na coluna (3 em tela larga, 2 no tablet, 1 no celular). */}
@@ -159,22 +161,24 @@ export default async function Home() {
           <ul className="m-0 list-none p-0">{associates.dates.map((date) => <li key={`${date.associateId}-${date.kind}`} className="border-t first:border-t-0">
             <PersonLink href={associatesFull ? `/associados/${date.associateId}` : undefined} className={cn("flex items-center gap-3 px-4 py-2 text-sm", date.days < 0 && "text-muted-foreground")}>
               {date.kind === "aniversario" ? <IconCake className="size-4 shrink-0 text-primary" aria-hidden /> : <IconStar className="size-4 shrink-0 text-primary" aria-hidden />}
-              <span className="min-w-0 flex-1 truncate">{date.name}</span>
-              <span className="shrink-0 text-xs">{date.kind === "aniversario" ? `${date.years} anos` : `${date.years} ${date.years === 1 ? "ano" : "anos"} de promessa`}</span>
-              <span className={cn("w-24 shrink-0 text-right text-xs num", date.days === 0 && "font-semibold text-primary")}>{dayMonth(date.on)} · {relativeDay(date.days)}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate">{date.name}</span>
+                <span className="block truncate text-xs text-muted-foreground">{date.kind === "aniversario" ? `${date.years} anos` : `${date.years} ${date.years === 1 ? "ano" : "anos"} de promessa`}</span>
+              </span>
+              <span className={cn("shrink-0 text-right text-xs num", date.days === 0 && "font-semibold text-primary")}>
+                <span className="block">{dayMonth(date.on)}</span>
+                <span className="block">{relativeDay(date.days)}</span>
+              </span>
             </PersonLink>
           </li>)}</ul>
         </ListCard>}
 
         {associates.transitions.length > 0 && <ListCard title="Transição de ramo" titleId="transitions-title" href={associatesFull ? "/associados" : undefined} linkLabel="Associados">
           <ul className="m-0 list-none p-0">{associates.transitions.map((t) => <li key={t.associateId} className="border-t first:border-t-0">
-            <PersonLink href={associatesFull ? `/associados/${t.associateId}` : undefined} className="flex items-center gap-3 px-4 py-2 text-sm">
-              <span className="min-w-0 flex-1">
-                <span className="block truncate">{t.name}</span>
-                <span className="block truncate text-xs text-muted-foreground">{t.label}</span>
-              </span>
-              <Badge variant={TRANSITION_BADGE[t.level]} className="shrink-0" title={`Até ${dateBR(t.criticalOn)}`}>{t.text}</Badge>
-              <span className="w-32 shrink-0 text-right text-xs num">{ageYearsMonthsLabel(t.age)}</span>
+            <PersonLink href={associatesFull ? `/associados/${t.associateId}` : undefined} className="block px-4 py-2 text-sm">
+              <span className="block truncate">{t.name}</span>
+              <span className="block truncate text-xs text-muted-foreground">{t.label} · <span className="num">{ageYearsMonthsLabel(t.age)}</span></span>
+              <Badge variant={TRANSITION_BADGE[t.level]} className="mt-1 h-auto max-w-full whitespace-normal text-left" title={`Até ${dateBR(t.criticalOn)}`}>{t.text}</Badge>
             </PersonLink>
           </li>)}</ul>
         </ListCard>}

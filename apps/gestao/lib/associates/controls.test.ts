@@ -96,6 +96,13 @@ describe("matriz pessoa × item", () => {
     expect(matrixCell(leo, items[0], rows)).toMatchObject({ status: "a_remover" });
     expect(matrixCell(leo, items[1], rows)).toMatchObject({ applies: false });
   });
+  it("célula fora do público ignora situação antiga, menos \"a remover\"", () => {
+    const stale = statusMap([status("ana", "atv", "pendente"), status("eva", "atv", "a_remover")]);
+    const jovem: MatrixPerson = { ...eva, audiences: ["jovem"] };
+    expect(matrixCell(ana, items[1], stale)).toEqual({ status: "sem_registro", applies: false });
+    expect(rowHasPending(ana, [items[1]], stale)).toBe(false);
+    expect(matrixCell(jovem, items[1], stale)).toMatchObject({ status: "a_remover", applies: false });
+  });
   it("só pendências, rodapé e contagem por diretoria", () => {
     expect(rowHasPending(ana, items, rows)).toBe(false);
     expect(rowHasPending(eva, items, rows)).toBe(true);

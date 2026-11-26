@@ -146,6 +146,15 @@ export type StatusFilter = (typeof STATUS_FILTERS)[number];
 export const STATUS_LABELS: Record<StatusFilter, string> = { ativos: "Ativos", desligados: "Desligados", todos: "Todos" };
 export const statusFilter = (value: string | undefined): StatusFilter => (STATUS_FILTERS as readonly string[]).includes(value ?? "") ? value as StatusFilter : "ativos";
 
+/** Dias de quarentena entre o pedido de exclusão e a exclusão definitiva (018, `associates_deletion_days`). */
+export const DELETION_DAYS = 60;
+
+/** Associado em quarentena (Configurações › Excluídos). */
+export type QuarantinedAssociate = {
+  id: string; name: string; branch: ScoutBranch; active: boolean; deletion_due_on: string; deletion_requested_at: string;
+  requested_by: string | null; deletion_reason: string | null;
+};
+
 /** Hoje em São Paulo, `AAAA-MM-DD`. */
 export function todayISO(now = new Date()) {
   return now.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });

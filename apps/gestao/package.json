@@ -9,6 +9,7 @@
     "infra:status": "node scripts/db.mjs status",
     "infra:reset": "node scripts/db.mjs reset",
     "db:migrate": "node scripts/db.mjs migrate",
+    "db:purge": "node scripts/db.mjs purge",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -18,7 +19,11 @@
     "test:db": "node scripts/db.mjs test",
     "test:e2e": "playwright test",
     "export:transparency": "tsx scripts/export-transparency.ts",
-    "db:types": "node scripts/db-types.mjs"
+    "db:types": "node scripts/db-types.mjs",
+    "import:doc": "tsx scripts/import-doc.ts",
+    "inventory:csv": "tsx scripts/inventory/planilha-para-csv.ts",
+    "associates:csv": "tsx scripts/associates/planilhas-para-csv.ts",
+    "finance:csv": "tsx scripts/finance/planilha-para-csv.ts"
   },
   "dependencies": {
     "@azure/identity": "^4.14.1",

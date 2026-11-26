@@ -53,7 +53,8 @@ export function withBack(href: string, back: string | undefined) {
 /** Colunas da lista além de Material (sempre visível). `anterior1`/`anterior2` = contagens dos dois anos anteriores. */
 export const COLUMN_IDS = ["estado", "quantidade", "anterior1", "anterior2", "validade", "unitario", "total"] as const;
 export type ColumnId = (typeof COLUMN_IDS)[number];
-export type SortKey = "material" | ColumnId;
+/** `posicao` = ordem escolhida na divisão (017, padrão); `material` = nome. */
+export type SortKey = "posicao" | "material" | ColumnId;
 
 export const COLUMN_LABELS: Record<Exclude<ColumnId, "anterior1" | "anterior2">, string> = {
   estado: "Estado", quantidade: "Quantidade", validade: "Validade", unitario: "Valor unitário", total: "Valor total",
@@ -89,14 +90,14 @@ export type ListFilters = {
 export type ListState = ListFilters & { sort: SortKey; dir: SortDir };
 
 const CONDITIONS = Object.keys(CONDITION_LABELS) as Condition[];
-const SORT_KEYS: SortKey[] = ["material", ...COLUMN_IDS];
+const SORT_KEYS: SortKey[] = ["posicao", "material", ...COLUMN_IDS];
 
 /** Valores separados por vírgula, só os conhecidos. */
 const listOf = <T extends string>(raw: string | undefined, allowed: T[]) => (raw ?? "").split(",").filter((value): value is T => (allowed as string[]).includes(value));
 const cents = (raw: string | undefined) => (raw ? parseMoneyToCents(raw, { allowNegative: false }) : null);
 const integer = (raw: string | undefined) => (raw && /^\d+$/.test(raw) ? Number(raw) : null);
 
-/** Filtros e ordem lidos da URL; valores inválidos são ignorados. Padrão: material, A→Z. */
+/** Filtros e ordem lidos da URL; valores inválidos são ignorados. Padrão: a ordem escolhida em cada divisão (sem posição: no fim, A→Z). */
 export function parseListState(params: Params): ListState {
   const sort = read(params, "ordem") as SortKey | undefined;
   const dir = read(params, "dir");
@@ -106,7 +107,7 @@ export function parseListState(params: Params): ListState {
     expiry: listOf(read(params, "validade"), Object.keys(EXPIRY_LABELS) as ExpiryState[]),
     unitFrom: cents(read(params, "unitario_de")), unitTo: cents(read(params, "unitario_ate")),
     qtyFrom: integer(read(params, "qtd_de")), qtyTo: integer(read(params, "qtd_ate")),
-    sort: sort && SORT_KEYS.includes(sort) ? sort : "material",
+    sort: sort && SORT_KEYS.includes(sort) ? sort : "posicao",
     dir: dir === "desc" ? "desc" : "asc",
   };
 }
@@ -117,7 +118,9 @@ export function hasFilters(state: ListFilters) {
 
 /** Material numa divisão, como a lista mostra: estoque de lá e as contagens dos dois anos anteriores. */
 export type ListLine = Pick<StockRow, "quantity" | "value_cents" | "next_expiry" | "worst_condition" | "conditions" | "min_unit_cents" | "max_unit_cents">
-  & { material: Pick<MaterialRow, "name" | "minimum_quantity" | "below_minimum">; previous: [number | null, number | null] };
+  & { material: Pick<MaterialRow, "name" | "minimum_quantity" | "below_minimum">; previous: [number | null, number | null];
+    /** Posição escolhida na divisão (017); sem posição = fim da divisão, por nome. */
+    position?: number | null };
 
 export function minimumState(line: ListLine): MinimumState {
   return line.material.minimum_quantity == null ? "sem" : line.material.below_minimum ? "abaixo" : "ok";
@@ -147,6 +150,7 @@ export const CONDITION_RANK: Record<Condition, number> = { novo: 1, bom: 2, regu
 
 function sortValue(line: ListLine, key: SortKey): number | string | null {
   switch (key) {
+    case "posicao": return line.position ?? null;
     case "material": return line.material.name;
     case "estado": return line.worst_condition ? CONDITION_RANK[line.worst_condition] : null;
     case "quantidade": return line.quantity;

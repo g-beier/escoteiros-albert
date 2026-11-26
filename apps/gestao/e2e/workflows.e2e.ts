@@ -3,7 +3,7 @@ import { ATTACHMENTS_ENABLED } from "../lib/features";
 import { expect, test, type Page } from "@playwright/test";
 import { cleanupE2eGroup } from "./support/db";
 import { E2E_ACCOUNTS } from "./support/env";
-import { chooseOption, createEntry, entryRow, search, uniqueName } from "./support/entries";
+import { chooseOption, createEntry, entriesTable, entryRow, search, uniqueName } from "./support/entries";
 
 // Itens "No navegador" do BACKLOG (A verificar): mover em lote, comprovantes, importação OFX,
 // conciliação ("Criar lançamento" a partir da linha) e filtro Conciliado. Tudo no grupo E2E e desfeito no fim.
@@ -31,13 +31,93 @@ test("mover lançamentos selecionados para outra conta", async ({ page }) => {
   for (const name of names) await page.getByRole("checkbox", { name: `Selecionar ${name}` }).click();
   const bar = page.getByRole("region", { name: "Ações em lote" });
   await expect(bar).toContainText("2 lançamentos selecionados");
-  await chooseOption(page, "Mover para a conta", E2E_ACCOUNTS[1], bar);
-  await bar.getByRole("button", { name: "Mover" }).click();
+  await bar.getByRole("button", { name: "Mover de conta" }).click();
+  const dialog = page.getByRole("dialog");
+  await chooseOption(page, "Conta", E2E_ACCOUNTS[1], dialog);
+  await dialog.getByRole("button", { name: "Mover", exact: true }).click();
   await expect(page.getByText(`2 lançamentos movidos para ${E2E_ACCOUNTS[1]}.`)).toBeVisible();
   for (const name of names) await expect(entryRow(page, name)).toContainText(E2E_ACCOUNTS[1]);
   await page.reload();
   for (const name of names) await expect(entryRow(page, name)).toContainText(E2E_ACCOUNTS[1]);
   for (const name of names) await deleteFromDetail(page, name);
+});
+
+test("em lote: forma de pagamento e documentos (Movimentações); rubrica dos rateios (Detalhamento) e histórico", async ({ page }) => {
+  const tag = uniqueName("Lote2");
+  const names = [`${tag} um`, `${tag} dois`];
+  for (const name of names) {
+    await createEntry(page, { name, direction: "saida", total: "8,00", account: E2E_ACCOUNTS[0], category: "Telefone", description: "recarga" });
+  }
+  await page.goto("/financeiro/lancamentos/movimentacoes");
+  await search(page, tag);
+  for (const name of names) await page.getByRole("checkbox", { name: `Selecionar ${name}` }).click();
+  const bar = page.getByRole("region", { name: "Ações em lote" });
+  await bar.getByRole("button", { name: "Forma de pagamento" }).click();
+  await chooseOption(page, "Forma de pagamento", "Dinheiro", page.getByRole("dialog"));
+  await page.getByRole("dialog").getByRole("button", { name: "Trocar" }).click();
+  await expect(page.getByText("Forma de pagamento de 2 lançamentos trocada para Dinheiro.")).toBeVisible();
+  for (const name of names) await expect(entryRow(page, name)).toContainText("Dinheiro");
+  for (const name of names) await page.getByRole("checkbox", { name: `Selecionar ${name}` }).click();
+  await bar.getByRole("button", { name: "Documentos" }).click();
+  await page.getByRole("menuitem", { name: "Arquivados na pasta" }).click();
+  await expect(page.getByText("2 lançamentos com documentos arquivados.")).toBeVisible();
+
+  await page.goto("/financeiro/lancamentos/detalhamento");
+  await search(page, tag);
+  for (const name of names) await page.getByRole("checkbox", { name: `Selecionar ${name}: recarga` }).click();
+  await expect(bar).toContainText("2 rateios selecionados");
+  await bar.getByRole("button", { name: "Trocar rubrica" }).click();
+  await page.getByRole("dialog").getByLabel("Rubrica").fill("Redes sociais");
+  await page.getByRole("option", { name: /Redes sociais/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Trocar rubrica" }).click();
+  await expect(page.getByText("Rubrica trocada em 2 lançamentos.")).toBeVisible();
+  const splits = page.getByRole("region", { name: "Detalhamento" }).getByRole("table");
+  for (const name of names) await expect(splits.getByRole("row").filter({ hasText: name })).toContainText("Redes sociais");
+  await page.reload();
+  for (const name of names) await expect(splits.getByRole("row").filter({ hasText: name })).toContainText("Redes sociais");
+
+  // o histórico do lançamento registra a mudança em lote
+  await splits.getByRole("link", { name: names[0], exact: true }).first().click();
+  await expect(page.getByText("Lançamento alterado em lote").first()).toBeVisible();
+  for (const name of names) await deleteFromDetail(page, name);
+});
+
+test("importar lancamentos.csv, agrupar no Detalhamento e desagrupar", async ({ page }) => {
+  const tag = uniqueName("Planilha");
+  const [one, two] = [`${tag} um`, `${tag} dois`];
+  const csv = ["histórico;data;conta;forma de pagamento;valor;rubrica;descrição", `${one};15/03/2026;${E2E_ACCOUNTS[0]};PIX;12,00;2.1.2. Telefone;recarga um`,
+    `${two};15/03/2026;${E2E_ACCOUNTS[0]};PIX;8,00;2.1.2;recarga dois`].join("\n");
+  await page.goto("/importar");
+  await page.getByLabel("Arquivos CSV").setInputFiles({ name: "lancamentos.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") });
+  await page.getByRole("button", { name: "Importar 2 linhas" }).click();
+  await expect(page.getByText(/lancamentos\.csv: 2 novas/)).toBeVisible();
+
+  await page.goto("/financeiro/lancamentos/detalhamento");
+  await search(page, tag);
+  const splits = page.getByRole("region", { name: "Detalhamento" }).getByRole("table");
+  await expect(splits.getByRole("row").filter({ hasText: "recarga dois" })).toContainText("-R$ 8,00");
+  await page.getByRole("checkbox", { name: `Selecionar ${one}: recarga um` }).click();
+  await page.getByRole("checkbox", { name: `Selecionar ${two}: recarga dois` }).click();
+  const bar = page.getByRole("region", { name: "Ações em lote" });
+  await bar.getByRole("button", { name: "Agrupar", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  // o formulário começa com os dados do lançamento do primeiro rateio marcado; o histórico é escolhido aqui
+  await expect(dialog.getByLabel("Histórico")).toHaveValue(one);
+  await dialog.getByLabel("Histórico").fill(`${tag} junto`);
+  await dialog.getByRole("button", { name: "Agrupar", exact: true }).click();
+  await expect(page.getByText("2 lançamentos agrupados em um só.")).toBeVisible();
+  const merged = `${tag} junto`;
+  await expect(splits.getByRole("row").filter({ hasText: "recarga dois" })).toContainText(merged);
+  await expect(splits.getByRole("row").filter({ hasText: "recarga um" })).toContainText(merged);
+  await expect(splits.getByRole("row").filter({ hasText: two })).toHaveCount(0);
+
+  await page.getByRole("checkbox", { name: `Selecionar ${merged}: recarga dois` }).click();
+  await bar.getByRole("button", { name: "Desagrupar", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Desagrupar", exact: true }).click();
+  await expect(page.getByText("1 lançamento novo, um por rateio.")).toBeVisible();
+  await page.goto("/financeiro/lancamentos/movimentacoes");
+  await search(page, tag);
+  await expect(entriesTable(page).getByRole("row").filter({ has: page.getByRole("link", { name: merged, exact: true }) })).toHaveCount(2);
 });
 
 test("anexar, abrir e excluir um comprovante", async ({ page }) => {

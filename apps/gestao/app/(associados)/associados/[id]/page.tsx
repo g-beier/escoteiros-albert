@@ -73,7 +73,7 @@ export default async function AssociateDetail({ params }: { params: Promise<{ id
         description={associate.notes ?? undefined}
         actions={canEdit && <>
           <Link href={`/associados/${id}/editar`} className={buttonVariants({ variant: "outline", size: "lg" })}><IconPencil data-icon="inline-start" /> Editar</Link>
-          <AssociateActions associate={associate} catalog={catalog} today={today} />
+          <AssociateActions associate={associate} catalog={catalog} today={today} canDelete={member.associates.canReview} />
         </>}>
         <dl className="m-0 flex flex-wrap gap-x-6 gap-y-2 text-xs">
           <Fact label="Situação">{associate.active

@@ -63,6 +63,12 @@ Testes: pgTAP das permissões por papel (finance/associates/inventory), e2e com 
 
 ## 2. Importação de associados (CSV)
 
+**Feito (2026-11-24, branch `feat/importacao-csv`, migrations 006–010):** contrato único de CSV para todos os módulos
+em `apps/gestao/docs/importacao.md` (a conversão das planilhas é feita por fora, à mão ou com IA, seguindo o contrato) e
+tela comum `/importar` com pré-visualização e gravação numa transação (`import_batch`). Arquivos: `secoes`,
+`itens-controle`, `pessoas`, `funcoes`, `responsaveis`, `controle`, `vida-escoteira`, `inventario-lotes` e
+`inventario-pecas`, cada um com "Dados atuais" no mesmo formato. A proposta abaixo foi a base do contrato.
+
 Só CSV. Os dados vêm dos Docs 10, 13, 14 e 22 e de planilhas ainda por criar, então o formato precisa aceitar colunas
 novas sem mudar código.
 
@@ -88,6 +94,10 @@ Comum aos três:
 **A decidir:** se o Doc 13/14 trazem algo além de nascimento e promessa (devem sair do arquivo de pessoas).
 
 ## 3. Importação do inventário (CSV)
+
+**Feito (2026-11-24, migration 010):** `inventario-lotes.csv` (com colunas `contagem AAAA`) e `inventario-pecas.csv` em
+`/importar`, carga com substituição enquanto o inventário só tem movimentos importados. `planilha-para-csv.ts` já
+gera o formato do contrato; `importar-planilha.mjs` saiu. Texto original abaixo.
 
 Só CSV, com os materiais e as **quantidades contadas em 2025 e 2026**, para que em 2027 a conferência parta dessas
 contagens e ajuste os itens.
@@ -120,5 +130,6 @@ Decisões:
 - Eventos do histórico com data (Cruzeiro do Sul, Lis de Ouro…) e anotações sem data.
 - Linhas muito longas num ramo na planilha são históricos perdidos, a resgatar.
 
-Falta: importar a planilha atual (cores → períodos, anotações → eventos ou anotações); avisos de estrela aos chefes no
-Início (como aniversários e transições).
+Importação: `vida-escoteira.csv` em `/importar` (migration 009; cores da planilha → linhas `período`, convertidas por
+fora seguindo `apps/gestao/docs/importacao.md`). Falta: avisos de estrela aos chefes no Início (como aniversários e
+transições).

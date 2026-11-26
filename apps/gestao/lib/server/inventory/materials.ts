@@ -1,5 +1,5 @@
 import type {
-  EntryInput, ExpiringLot, Lot, Material, MaterialDefaults, MaterialInput, MaterialRow, MaterialSummary, StockRow, Unit,
+  BulkAction, BulkTarget, EntryInput, ExpiringLot, Lot, Material, MaterialDefaults, MaterialInput, MaterialRow, MaterialSummary, StockRow, Unit,
 } from "@/lib/inventory/model";
 import { searchTerms } from "@/lib/inventory/search";
 import type { Condition, WriteOffReason } from "@/lib/inventory/vocabulary";
@@ -30,6 +30,13 @@ export async function stockByLocation(db: Db, groupId: string): Promise<StockRow
   return rows<StockRow>(db, (sql) => sql`
     select material_id, location_id, quantity, value_cents, next_expiry, worst_condition, conditions, min_unit_cents, max_unit_cents
     from public.inventory_stock_by_location where group_id = ${groupId}`);
+}
+
+/** Ordem escolhida dos materiais em cada divisão (017): `divisão|material` → posição (0, 1, …). */
+export async function positions(db: Db, groupId: string): Promise<Map<string, number>> {
+  const list = await rows<{ location_id: string; material_id: string; position: number }>(db, (sql) => sql`
+    select location_id, material_id, position from public.inventory_material_positions where group_id = ${groupId}`);
+  return new Map(list.map((row) => [`${row.location_id}|${row.material_id}`, row.position]));
 }
 
 /** Contagens de alguns anos (conferência / planilha): ano → `material|divisão` → quantidade. */
@@ -181,5 +188,20 @@ export async function updateLot(db: Db, input: EntryInput & { lotId: string; exp
 export async function updateUnit(db: Db, input: EntryInput & { unitId: string; tag: string | null; legacyCode: string | null; description: string | null }) {
   await rpc(db, "inventory_update_unit", {
     p_unit_id: input.unitId, p_tag: input.tag, p_legacy_code: input.legacyCode, p_description: input.description, ...entry(input),
+  });
+}
+
+/**
+ * Edição em massa (011): cada linha (material numa divisão) passa pelas funções de sempre, numa transação só.
+ * Devolve quantos lotes/peças (estoque) ou materiais (cadastro) mudaram.
+ */
+/** Grava a ordem dos materiais de uma divisão (os de fora perdem a posição). Só Editor (inventory_order_materials). */
+export async function orderMaterials(db: Db, locationId: string, materialIds: string[]): Promise<number> {
+  return rpc(db, "inventory_order_materials", { p_location_id: locationId, p_material_ids: materialIds });
+}
+
+export async function bulk(db: Db, groupId: string, action: BulkAction, targets: BulkTarget[], args: Record<string, string | boolean | null>, notes: string | null): Promise<number> {
+  return rpc(db, "inventory_bulk", {
+    p_group_id: groupId, p_action: action, p_targets: targets.map((t) => ({ material_id: t.materialId, location_id: t.locationId })), p_args: args, p_notes: notes ?? undefined,
   });
 }

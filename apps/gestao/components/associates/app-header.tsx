@@ -1,10 +1,10 @@
-import { IconSettings } from "@tabler/icons-react";
-import { AppHeader as SharedHeader, UserMenu } from "@geas/ui";
-import { logout } from "@/app/(gestao)/login/actions";
+import { IconBolt, IconSettings } from "@tabler/icons-react";
+import { AppHeader as SharedHeader } from "@geas/ui";
+import { AccountMenu } from "@/components/shell/account-menu";
 import { Brand } from "@/components/shell/brand";
 import { roleLabel, type Member } from "@/lib/server/session";
 
-/** Configurações do módulo (engrenagem): seções e equipes, itens de controle, importação. */
+/** Configurações do módulo (engrenagem): seções e equipes, itens de controle. */
 export const ASSOCIATES_SETTINGS_HOME = "/associados/configuracoes/secoes";
 const isSettingsPath = (path: string) => path.startsWith("/associados/configuracoes");
 
@@ -20,7 +20,10 @@ const sections = [
 
 export function AppHeader({ current, member }: { current: string; member: Member }) {
   return <SharedHeader brand={<Brand module="associados" />} navigation={sections.map((item) => ({ href: item.href, label: item.label, active: item.match(current) }))}
-    utilities={[{ href: ASSOCIATES_SETTINGS_HOME, label: "Configurações", icon: <IconSettings size={18} />, active: isSettingsPath(current) }]}
-    account={<UserMenu email={member.user.email} role={roleLabel(member.associates)} logoutAction={logout}
-      usersHref={member.managesUsers ? "/usuarios" : undefined} active={current === "/usuarios"} />} />;
+    utilities={[
+      // Registro rápido (raio) para quem cadastra (Colaborador ou mais), como no Inventário e no Financeiro
+      ...(member.associates.canWrite ? [{ href: "/rapido", label: "Registro rápido", icon: <IconBolt size={18} />, active: false }] : []),
+      { href: ASSOCIATES_SETTINGS_HOME, label: "Configurações", icon: <IconSettings size={18} />, active: isSettingsPath(current) },
+    ]}
+    account={<AccountMenu member={member} role={roleLabel(member.associates)} current={current} />} />;
 }

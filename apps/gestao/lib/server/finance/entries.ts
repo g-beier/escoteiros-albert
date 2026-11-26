@@ -3,7 +3,7 @@ import { LEDGER_COLUMNS, PAGE_SIZE, SPLIT_COLUMNS, type EntryPage, type EntryVie
 import type { EditableEntry } from "@/lib/finance/entries";
 import { likePattern, type EntryFilters, type EntrySort, type EntrySortKey } from "@/lib/finance/filters";
 import type { Db } from "@/lib/server/db";
-import { count, one, rows, rpc, run, where, type Tx } from "@/lib/server/pg/db";
+import { count, one, rows, rpc, run, type Tx, value, where } from "@/lib/server/pg/db";
 import { ATTACHMENT_BUCKET } from "@/lib/finance/attachments";
 import { ATTACHMENTS_ENABLED } from "@/lib/features";
 import type { AuditRow } from "@/lib/finance/entry-history";
@@ -214,6 +214,15 @@ export async function setDocumentFiled(db: Db, entryId: string, filed: boolean) 
 /** Lançamento do registro rápido (049): uma rubrica, conta padrão da forma ou "A definir"; fica para revisar. */
 export type QuickEntryInput = { date: string; name: string; paymentMethodId: string; totalCents: number; categoryId: string; description: string | null; notes: string | null };
 
+/**
+ * Rubrica raiz do tipo (`1` Receitas, `2` Despesas): o registro rápido lança só como receita ou despesa, e quem revisa
+ * classifica depois. As raízes são as únicas rubricas referenciadas pelo código (os demais códigos mudam com a ordem).
+ */
+export async function rootCategory(db: Db, groupId: string, kind: "receita" | "despesa"): Promise<string | null> {
+  return await value<string>(db, (sql) => sql`
+    select id from public.categories where group_id = ${groupId} and code = ${kind === "receita" ? "1" : "2"} and kind = ${kind} and active`);
+}
+
 export async function createQuick(db: Db, groupId: string, input: QuickEntryInput): Promise<string> {
   return await rpc(db, "create_quick_ledger_entry", {
     p_group_id: groupId, p_entry_date: input.date, p_name: input.name, p_payment_method_id: input.paymentMethodId, p_total_cents: input.totalCents,
@@ -229,4 +238,41 @@ export async function review(db: Db, groupId: string, entryIds: string[]): Promi
 /** Move vários lançamentos para outra conta; conciliados perdem o vínculo. */
 export async function moveToAccount(db: Db, entryIds: string[], accountId: string) {
   return await rpc(db, "move_ledger_entries_account", { p_entry_ids: entryIds, p_account_id: accountId }) as unknown as { moved: number; unchanged: number; unlinked: number };
+}
+
+// Ações em lote (012): devolvem quantos lançamentos mudaram; os que já estavam assim ficam de fora.
+
+/** Documentos arquivados na pasta (ou pendentes). */
+export async function setDocumentsFiled(db: Db, groupId: string, entryIds: string[], filed: boolean): Promise<number> {
+  return await rpc(db, "set_entries_document_filed", { p_group_id: groupId, p_entry_ids: entryIds, p_filed: filed }) as number;
+}
+
+/** Forma de pagamento (não muda a conta nem a conciliação). */
+export async function setPaymentMethod(db: Db, groupId: string, entryIds: string[], paymentMethodId: string): Promise<number> {
+  return await rpc(db, "set_entries_payment_method", { p_group_id: groupId, p_entry_ids: entryIds, p_payment_method_id: paymentMethodId }) as number;
+}
+
+/** Rubrica dos rateios, no lugar (o vínculo com a mensalidade continua). */
+export async function setSplitsCategory(db: Db, groupId: string, splitIds: string[], categoryId: string): Promise<number> {
+  return await rpc(db, "set_splits_category", { p_group_id: groupId, p_split_ids: splitIds, p_category_id: categoryId }) as number;
+}
+
+/** Associado dos rateios (`null` tira). */
+export async function setSplitsAssociate(db: Db, groupId: string, splitIds: string[], associateId: string | null): Promise<number> {
+  return await rpc(db, "set_splits_associate", { p_group_id: groupId, p_split_ids: splitIds, p_associate_id: associateId as string }) as number;
+}
+
+/** Junta os lançamentos dos rateios num só, com os dados escolhidos (015); devolve o lançamento que ficou. */
+export async function mergeEntries(db: Db, groupId: string, splitIds: string[], entry: {
+  date: string; name: string; accountId: string; paymentMethodId: string; document: string; filed: boolean; notes: string;
+}): Promise<string> {
+  return await rpc(db, "merge_ledger_entries", {
+    p_group_id: groupId, p_split_ids: splitIds,
+    p_entry: { date: entry.date, name: entry.name, account_id: entry.accountId, payment_method_id: entry.paymentMethodId, document: entry.document, filed: entry.filed, notes: entry.notes },
+  }) as string;
+}
+
+/** Cada rateio marcado vira um lançamento próprio (014); devolve quantos foram criados. */
+export async function splitEntries(db: Db, groupId: string, splitIds: string[]): Promise<number> {
+  return await rpc(db, "split_ledger_entry_splits", { p_group_id: groupId, p_split_ids: splitIds }) as number;
 }

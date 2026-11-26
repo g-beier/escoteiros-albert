@@ -106,6 +106,28 @@ export async function rejoinAssociate(_previous: ActionResult, formData: FormDat
   });
 }
 
+/** Pede a exclusão (018): quarentena de 60 dias, depois apagado de vez. Só Editor; volta para a lista. */
+export async function requestDeletion(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
+  const result = await runAction(associatesEditorOrError, async ({ db }) => {
+    const associateId = id(formData, "associateId");
+    const reason = notes(formData, "reason", 200);
+    if (!reason) throw new InputError("Informe o motivo da exclusão.");
+    await associates.requestDeletion(db, associateId, reason);
+    revalidate();
+  });
+  if (result.error) return result;
+  redirect("/associados?excluido=1");
+}
+
+/** Restaura um associado em quarentena (Configurações › Excluídos). Só Editor. */
+export async function cancelDeletion(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
+  return runAction(associatesEditorOrError, async ({ db }) => {
+    await associates.cancelDeletion(db, id(formData, "associateId"));
+    revalidate();
+    return "Associado restaurado.";
+  });
+}
+
 // Funções do adulto (041): escotista (de uma seção, 052) ou dirigente, com cargo opcional; a função SQL recusa jovens.
 
 function functionInput(data: FormData): functions.FunctionInput {

@@ -6,7 +6,7 @@ export type Origin = "compra" | "doacao" | "fabricacao" | "nao_informada";
 export type WriteOffReason = "perda" | "extravio" | "descarte" | "doacao" | "consumo";
 export type MovementKind = "entrada" | "transferencia" | "condicao" | "ajuste" | "baixa" | "edicao";
 export type ReviewStatus = "para_revisar" | "revisado";
-export type MovementChannel = "web" | "rapido";
+export type MovementChannel = "web" | "rapido" | "importacao";
 
 export const CONDITION_LABELS: Record<Condition, string> = {
   novo: "Novo", bom: "Bom", regular: "Regular", ruim: "Ruim", manutencao: "Em manutenção", inservivel: "Inservível",
@@ -18,7 +18,7 @@ export const MOVEMENT_LABELS: Record<MovementKind, string> = {
   entrada: "Entrada", transferencia: "Transferência", condicao: "Condição", ajuste: "Ajuste", baixa: "Baixa", edicao: "Edição",
 };
 export const REVIEW_LABELS: Record<ReviewStatus, string> = { para_revisar: "Para revisar", revisado: "Revisado" };
-export const CHANNEL_LABELS: Record<MovementChannel, string> = { web: "Telas normais", rapido: "Registro rápido" };
+export const CHANNEL_LABELS: Record<MovementChannel, string> = { web: "Telas normais", rapido: "Registro rápido", importacao: "Importação por CSV" };
 
 const options = <T extends string>(labels: Record<T, string>) => (Object.entries(labels) as [T, string][]).map(([value, label]) => ({ value, label }));
 export const conditionOptions = options(CONDITION_LABELS);

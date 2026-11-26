@@ -16,6 +16,8 @@ O regulamento patrimonial do grupo está para ser aprovado em assembleia. Até l
 | **Família** | Agrupamento de materiais com o mesmo código de etiqueta (3 dígitos): todas as barracas = `001`, independentemente do modelo. | *(proposto)* |
 | **Etiqueta** | Código da peça no formato `GEAS-000-0000`: código da **família** e contagem dentro da família (4 dígitos). Opcional por enquanto: as etiquetas físicas ainda não existem, e o número é preenchido quando a etiqueta for colocada na peça (o app pode sugerir o próximo livre da família). Única no grupo, nunca reaproveitada; não muda quando a peça troca de divisão. | `inventory_units.tag` *(proposto)* |
 | **Divisão** | Onde o material fica guardado na sede, em árvore e com quantos níveis forem precisos: Diretoria › Estante, Diretoria › Armário de ferro, Cozinha › Estante de canecas › 2º nível, Tropa Escoteira › Patrulha Lobo, Distintivos e certificados. A ordem das divisões (e das subdivisões dentro de cada uma) é escolhida pelo gestor, não alfabética; as raízes são os locais macro, as abas da lista de materiais. É o "onde está", não o "de quem é": legalmente, tudo é do grupo, e as patrulhas também são lugar, não dono. Praticamente tudo fica na sede. | `inventory_locations` (`parent_id`, `position`) |
+| **Ordem na divisão** | Dentro de cada divisão, os materiais seguem a ordem escolhida pelo Editor (proximidade no lugar onde ficam guardados ou lógica dos itens), arrastando na tela Ordenar (link na lista de Materiais). Vale por divisão (o mesmo material pode ter posições diferentes em cada uma); material sem posição vai para o fim, por nome. É a ordem padrão da lista e do PDF de conferência. | `inventory_material_positions`, `inventory_order_materials` (017) |
+| **Folha de conferência** | PDF para imprimir (botão Imprimir em Materiais): por divisão, os materiais na ordem escolhida com quantidade, estado, validade e etiquetas das peças, e colunas em branco (Contado, Observação) para a contagem à mão; cada local macro em página nova, ou só a divisão escolhida. | `/inventario/relatorios/conferencia` |
 | **Condição** | Estado da peça ou do lote: novo, bom, regular, ruim, em manutenção, inservível ("ruim" é usado pelo grupo e falta no tipo atual). Num lote, todas as unidades têm a mesma condição: "2 ruins, 1 razoável, 1 ok" são três lotes. Também é conferida na conferência anual. | `inventory_condition` (acrescentar `ruim`) |
 | **Entrada** | Chegada do material ao grupo. Obrigatórios: data, origem (compra, doação, fabricação própria, não informada) e valor estimado. Opcionais: observação, fornecedor e nota fiscal. | colunas da peça / movimento *(proposto)* |
 | **Valor estimado** | Quanto vale cada unidade da peça ou do lote para o patrimônio; lotes do mesmo material podem ter valores diferentes. Diferente do **preço de venda** dos produtos da Lojinha. | *(proposto)* |
@@ -72,14 +74,17 @@ Fonte: planilha "Doc 31 – Inventário" (uma aba por área, quantidades de 2024
 - A coluna Categoria (só a Alcateia tem: Atividade, Compartilhado, Infraestrutura, Primeiros Socorros) não tem campo próprio no modelo: vai para a observação do lote.
 - A aba BARRACAS (B1 a B11, conferidas em 10/01/2026) vira peças com etiqueta, família Barracas (`001`): B1 = `GEAS-001-0001` … B11 = `GEAS-001-0011`, com o código antigo e a descrição de cada uma, no material "Barraca etiquetada" e na divisão provisória Almoxarifado › Barracas (a conferir). Falta conciliar com as linhas de barraca das abas das seções (que continuam como lotes), para não contar a mesma barraca duas vezes.
 - Descartados: a aba ALCATEIA TESTE e as linhas "a adquirir" (lista de compras, não patrimônio).
-- Lenços, camisetas, moletons e distintivos entram, por enquanto, como materiais por quantidade nas suas famílias; viram produtos com variações no passo 2 (Lojinha).
+- Lenços, camisetas, moletons e distintivos entram, por enquanto, como materiais por quantidade em subdivisões (Diretoria › Lenços, Distintivos e certificados › <grupo>…), sem família; viram produtos com variações no passo 2 (Lojinha).
 
-Scripts (só para o banco local de desenvolvimento; os CSV são dados do grupo e não são versionados):
+Conversor de referência (os CSV são dados do grupo e não são versionados):
 
 ```bash
-node apps/gestao/scripts/inventory/planilha-para-csv.mjs <planilha.xlsx> <pasta>     # gera inventario-lotes.csv e inventario-pecas.csv
-node apps/gestao/scripts/inventory/importar-planilha.mjs <pasta> --grupo "<nome>"     # apaga o inventário do grupo e importa pelas funções
+npm run inventory:csv --workspace=@geas/gestao -- <planilha.xlsx> <pasta>   # gera inventario-lotes.csv e inventario-pecas.csv
 ```
+
+Os dois arquivos seguem o contrato de importação (`apps/gestao/docs/importacao.md`) e entram pela tela **Importar**
+(`/importar`), em qualquer banco (local ou produção): a carga substitui o inventário inteiro, e só é aceita enquanto
+nada foi registrado pelo app (movimentos no canal `importacao`).
 
 ## Em aberto
 

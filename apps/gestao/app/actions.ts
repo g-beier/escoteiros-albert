@@ -8,7 +8,7 @@ import type { EntryPage } from "@/lib/finance/entry-rows";
 import { parseEntrySort, parseFilters } from "@/lib/finance/filters";
 import { DataError } from "@/lib/server/db";
 import * as entries from "@/lib/server/finance/entries";
-import { financeEditorOrError, memberOrError, type Member } from "@/lib/server/session";
+import { financeAdminOrError, financeEditorOrError, memberOrError, type Member } from "@/lib/server/session";
 
 // Lançamentos (formulário, lista e ações em lote). As regras de quem pode o quê ficam nas funções SQL:
 // aqui qualquer membro chama; o banco recusa quem não é Colaborador ou mais (Editor para conta e revisão).
@@ -83,7 +83,7 @@ export async function moveEntriesAccount(entryIds: unknown, accountId: unknown):
   const account = z.uuid().safeParse(accountId);
   if (!ids.success) return { error: ids.error.issues[0]?.message ?? "Seleção inválida." };
   if (!account.success) return { error: "Escolha a conta." };
-  return withMember(() => financeEditorOrError("Sem permissão para mudar a conta dos lançamentos."), async ({ db }) => {
+  return withMember(() => financeAdminOrError(), async ({ db }) => {
     const result = await entries.moveToAccount(db, ids.data, account.data);
     revalidatePath("/", "layout");
     return { moved: result.moved, unchanged: result.unchanged, unlinked: result.unlinked };
@@ -98,6 +98,91 @@ export async function reviewEntries(entryIds: unknown): Promise<{ error?: string
     const reviewed = await entries.review(db, groupId, ids.data);
     revalidatePath("/", "layout");
     return { reviewed };
+  });
+}
+
+const bulkIds = (input: unknown, what: string) => z.array(z.uuid()).min(1, `Selecione ao menos um ${what}.`).max(500, `Selecione no máximo 500 de cada vez.`).safeParse(input);
+type BulkResult = { error?: string; changed?: number };
+
+/** Lote: documentos arquivados na pasta ou pendentes. */
+export async function setEntriesFiled(entryIds: unknown, filed: unknown): Promise<BulkResult> {
+  const ids = bulkIds(entryIds, "lançamento");
+  if (!ids.success) return { error: ids.error.issues[0]?.message ?? "Seleção inválida." };
+  if (typeof filed !== "boolean") return { error: "Escolha arquivado ou pendente." };
+  return withMember(() => financeAdminOrError(), async ({ db, groupId }) => {
+    const changed = await entries.setDocumentsFiled(db, groupId, ids.data, filed);
+    revalidatePath("/", "layout");
+    return { changed };
+  });
+}
+
+/** Lote: forma de pagamento. */
+export async function setEntriesPaymentMethod(entryIds: unknown, paymentMethodId: unknown): Promise<BulkResult> {
+  const ids = bulkIds(entryIds, "lançamento");
+  const method = z.uuid().safeParse(paymentMethodId);
+  if (!ids.success) return { error: ids.error.issues[0]?.message ?? "Seleção inválida." };
+  if (!method.success) return { error: "Escolha a forma de pagamento." };
+  return withMember(() => financeAdminOrError(), async ({ db, groupId }) => {
+    const changed = await entries.setPaymentMethod(db, groupId, ids.data, method.data);
+    revalidatePath("/", "layout");
+    return { changed };
+  });
+}
+
+/** Lote (Detalhamento): rubrica dos rateios. */
+export async function setSplitsCategory(splitIds: unknown, categoryId: unknown): Promise<BulkResult> {
+  const ids = bulkIds(splitIds, "rateio");
+  const category = z.uuid().safeParse(categoryId);
+  if (!ids.success) return { error: ids.error.issues[0]?.message ?? "Seleção inválida." };
+  if (!category.success) return { error: "Escolha a rubrica." };
+  return withMember(() => financeAdminOrError(), async ({ db, groupId }) => {
+    const changed = await entries.setSplitsCategory(db, groupId, ids.data, category.data);
+    revalidatePath("/", "layout");
+    return { changed };
+  });
+}
+
+/** Lote (Detalhamento): associado dos rateios; vazio tira. */
+export async function setSplitsAssociate(splitIds: unknown, associateId: unknown): Promise<BulkResult> {
+  const ids = bulkIds(splitIds, "rateio");
+  const associate = z.union([z.uuid(), z.literal("")]).safeParse(associateId);
+  if (!ids.success) return { error: ids.error.issues[0]?.message ?? "Seleção inválida." };
+  if (!associate.success) return { error: "Associado inválido." };
+  return withMember(() => financeAdminOrError(), async ({ db, groupId }) => {
+    const changed = await entries.setSplitsAssociate(db, groupId, ids.data, associate.data || null);
+    revalidatePath("/", "layout");
+    return { changed };
+  });
+}
+
+/** Detalhamento: agrupa os lançamentos dos rateios marcados num só, com os dados preenchidos na tela. */
+const mergeSchema = z.object({
+  date: z.iso.date("Informe a data."), name: z.string().trim().min(2, "Informe o histórico (2 a 200 caracteres).").max(200, "Histórico: no máximo 200 caracteres."),
+  accountId: z.uuid("Escolha a conta."), paymentMethodId: z.uuid("Escolha a forma de pagamento."),
+  document: z.string().trim().max(60, "Documento: no máximo 60 caracteres."), filed: z.boolean(), notes: z.string().trim().max(2000, "Observações: no máximo 2.000 caracteres."),
+});
+export type MergeData = z.infer<typeof mergeSchema>;
+
+export async function mergeSplitEntries(splitIds: unknown, data: unknown): Promise<{ error?: string; entryId?: string }> {
+  const ids = bulkIds(splitIds, "rateio");
+  if (!ids.success) return { error: ids.error.issues[0]?.message ?? "Seleção inválida." };
+  const entry = mergeSchema.safeParse(data);
+  if (!entry.success) return { error: entry.error.issues[0]?.message ?? "Dados do lançamento inválidos." };
+  return withMember(() => financeAdminOrError(), async ({ db, groupId }) => {
+    const entryId = await entries.mergeEntries(db, groupId, ids.data, entry.data);
+    revalidatePath("/", "layout");
+    return { entryId };
+  });
+}
+
+/** Detalhamento: cada rateio marcado vira um lançamento próprio. */
+export async function splitSplitEntries(splitIds: unknown): Promise<BulkResult> {
+  const ids = bulkIds(splitIds, "rateio");
+  if (!ids.success) return { error: ids.error.issues[0]?.message ?? "Seleção inválida." };
+  return withMember(() => financeAdminOrError(), async ({ db, groupId }) => {
+    const changed = await entries.splitEntries(db, groupId, ids.data);
+    revalidatePath("/", "layout");
+    return { changed };
   });
 }
 

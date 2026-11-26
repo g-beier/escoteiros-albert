@@ -14,13 +14,13 @@ import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { activeFunctionKinds, scouterSections } from "@/lib/associates/controls";
 import { listGroups, matchesQuery, type ListGroup } from "@/lib/associates/list";
-import { ageInYears, ageLabel, BRANCH_TABS, isScoutBranch, statusFilter, todayISO, type AssociateProfile } from "@/lib/associates/model";
+import { ageInYears, ageLabel, BRANCH_TABS, DELETION_DAYS, isScoutBranch, statusFilter, todayISO, type AssociateProfile } from "@/lib/associates/model";
 import { dateBR } from "@/lib/format";
 import * as associatesData from "@/lib/server/associates/associates";
 import * as functionsData from "@/lib/server/associates/functions";
 import { pageSession } from "@/lib/server/session";
 
-type Search = { ramo?: string; situacao?: string; q?: string; revisao?: string };
+type Search = { ramo?: string; situacao?: string; q?: string; revisao?: string; excluido?: string };
 
 /**
  * Lista de associados: abas por ramo, um grupo por ramo (sem seções) e adultos em Escotistas, Dirigentes e Sem
@@ -78,6 +78,10 @@ export default async function AssociatesPage({ searchParams }: { searchParams: P
         <SectionTabs label="Ramos" tabs={BRANCH_TABS.map((t) => ({ href: hrefFor(t.value), label: t.label, active: t.value === branch }))} />
         <AssociateFilters />
       </PageHeader>
+      {params.excluido === "1" && <p role="status" className="surface m-0 mb-4 px-4 py-3 text-sm">
+        Cadastro excluído: some das telas agora e é apagado de vez em {DELETION_DAYS} dias. Até lá, dá para restaurar em{" "}
+        <Link href="/associados/configuracoes/excluidos" className="font-semibold text-primary hover:underline">Configurações › Excluídos</Link>.
+      </p>}
       <SectionCard>
         <SectionHeader title={branch ? tab.label : "Todos os associados"}>
           <SectionCount>

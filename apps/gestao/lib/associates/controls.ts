@@ -281,12 +281,14 @@ export type MatrixPerson = { id: string; name: string; active: boolean; audience
 export type MatrixCell = { status: CellStatus; applies: boolean; row?: ControlStatusRow };
 
 /**
- * Célula: fora do público do item é "não se aplica a este tipo de pessoa" (cinza), salvo se houver registro (ex.:
- * "a remover" de quem saiu da função); desligados sem registro não são cobrados (só os itens com registro contam).
+ * Célula: fora do público do item é "não se aplica a este tipo de pessoa" (cinza), salvo "a remover" (ação pendente,
+ * ex.: quem saiu da função); outra situação de fora do público é ignorada (o banco já a apaga quando o público muda,
+ * 016). Desligados sem registro não são cobrados (só os itens com registro contam).
  */
 export function matrixCell(person: MatrixPerson, item: ControlItem, rows: Map<string, ControlStatusRow>): MatrixCell {
-  const row = rows.get(statusKey(personKey(person), item.id));
   const applies = itemApplies(item, person.audiences);
+  const found = rows.get(statusKey(personKey(person), item.id));
+  const row = found && (applies || found.status === "a_remover") ? found : undefined;
   if (!row && (!applies || !person.active)) return { status: "sem_registro", applies: false };
   return { status: cellStatus(row), applies, row };
 }

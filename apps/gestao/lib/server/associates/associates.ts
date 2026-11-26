@@ -1,5 +1,4 @@
-import type { AssociateMove, AssociateMovement, AssociateProfile, Registration, ScoutBranch } from "@/lib/associates/model";
-import type { ExistingAssociate } from "@/lib/associates/import";
+import type { AssociateMove, AssociateMovement, AssociateProfile, QuarantinedAssociate, Registration, ScoutBranch } from "@/lib/associates/model";
 import type { Db } from "@/lib/server/db";
 import { count, one, rows, rpc, run } from "@/lib/server/pg/db";
 
@@ -12,6 +11,20 @@ const PROFILE_COLUMNS = "id, name, branch, active, section_id, section, patrol_i
 export async function list(db: Db, groupId: string): Promise<AssociateProfile[]> {
   return rows<AssociateProfile>(db, (sql) => sql`
     select ${sql.unsafe(PROFILE_COLUMNS)} from public.associate_profile_rows where group_id = ${groupId} order by name limit 10000`);
+}
+
+/**
+ * Busca de associados ativos pelo nome ou apelido (registro rápido): sem acento nem maiúsculas, todas as palavras
+ * precisam aparecer (`terms` já normalizados, como `searchTerms`). Até `limit` + 1 linhas, para saber se há mais.
+ */
+export async function search(db: Db, groupId: string, terms: string[], limit: number): Promise<AssociateProfile[]> {
+  if (!terms.length) return [];
+  return rows<AssociateProfile>(db, (sql) => sql`
+    select ${sql.unsafe(PROFILE_COLUMNS)} from public.associate_profile_rows p
+    where p.group_id = ${groupId} and p.active
+      and not exists (select 1 from unnest(${terms}::text[]) t
+        where position(t in public.inventory_search_normalize(p.name || ' ' || coalesce(p.nickname, ''))) = 0)
+    order by p.name limit ${limit + 1}`);
 }
 
 export async function get(db: Db, groupId: string, id: string): Promise<AssociateProfile | null> {
@@ -30,12 +43,6 @@ export async function history(db: Db, id: string): Promise<{ moves: AssociateMov
     ]);
     return { moves: [...moves] as unknown as AssociateMove[], movements: [...movements] as unknown as AssociateMovement[] };
   });
-}
-
-/** Cadastrados, para a conferência da importação por CSV (nome, ramo, seção, equipe, situação). */
-export async function existingForImport(db: Db, groupId: string): Promise<ExistingAssociate[]> {
-  return rows<ExistingAssociate>(db, (sql) => sql`
-    select id, name, branch, section, patrol, active from public.associate_profile_rows where group_id = ${groupId} order by name limit 10000`);
 }
 
 export type Dates = { birthDate: string | null; promiseDate: string | null; joinedOn: string | null };
@@ -96,15 +103,23 @@ export async function leave(db: Db, id: string, date: string, reason: string | n
   await rpc(db, "associates_leave", { p_associate_id: id, p_date: date, p_reason: reason });
 }
 
-export async function rejoin(db: Db, id: string, date: string, reason: string | null): Promise<void> {
-  await rpc(db, "associates_rejoin", { p_associate_id: id, p_date: date, p_reason: reason });
+/** Pede a exclusão (018): some das telas na hora e é apagado de vez depois da quarentena. Devolve a data da exclusão. */
+export async function requestDeletion(db: Db, id: string, reason: string): Promise<string> {
+  return rpc(db, "associates_request_deletion", { p_associate_id: id, p_reason: reason });
 }
 
-export type ImportRow = { id?: string; name: string; branch: ScoutBranch; section?: string | null; patrol?: string | null; active: boolean };
+/** Restaura um associado em quarentena. */
+export async function cancelDeletion(db: Db, id: string): Promise<void> {
+  await rpc(db, "associates_cancel_deletion", { p_associate_id: id });
+}
 
-/** Importação em massa (tudo ou nada): cadastra os novos e atualiza os com `id`. */
-export async function importRows(db: Db, groupId: string, rows: ImportRow[]): Promise<{ created: number; updated: number }> {
-  const data = await rpc(db, "import_associates", { p_group_id: groupId, p_rows: rows });
-  const result = (data ?? {}) as { created?: number; updated?: number };
-  return { created: Number(result.created ?? 0), updated: Number(result.updated ?? 0) };
+/** Associados em quarentena do grupo, do que sai antes ao que sai depois. Só Editor. */
+export async function quarantine(db: Db, groupId: string): Promise<QuarantinedAssociate[]> {
+  return rows<QuarantinedAssociate>(db, (sql) => sql`
+    select id, name, branch, active, deletion_due_on::text, deletion_requested_at::text, requested_by, deletion_reason
+    from public.associates_quarantine(${groupId})`);
+}
+
+export async function rejoin(db: Db, id: string, date: string, reason: string | null): Promise<void> {
+  await rpc(db, "associates_rejoin", { p_associate_id: id, p_date: date, p_reason: reason });
 }

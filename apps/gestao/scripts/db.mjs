@@ -236,11 +236,23 @@ function adminUrl() {
   return url;
 }
 
+/** Exclusão definitiva dos associados que passaram da quarentena (018); no Azure, o Job agendado roda `maintenance.mjs purge`. */
+async function purge(url) {
+  const sql = connect(url);
+  try {
+    const [{ purged }] = await sql`select public.associates_purge_due() as purged`;
+    console.log(`Associados excluídos de vez: ${purged}.`);
+  } finally {
+    await sql.end();
+  }
+}
+
 const commands = {
   start,
   stop: () => docker(["stop"]),
   migrate: () => migrate(adminUrl()),
   status: () => status(adminUrl()),
+  purge: () => purge(adminUrl()),
   reset,
   test,
 };

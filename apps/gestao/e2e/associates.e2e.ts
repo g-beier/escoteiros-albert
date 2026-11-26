@@ -4,19 +4,18 @@ import { E2E_ADMIN_EMAIL } from "./support/env";
 import { chooseOption, uniqueName } from "./support/entries";
 
 // Associados (040) no Gestão, como o administrador E2E (secretaria): seções e equipe, cadastro, passagem,
-// desligamento e reingresso; importação por CSV. Nomes únicos; tudo apagado no fim direto no banco.
+// desligamento e reingresso (a importação por CSV está em import.e2e.ts). Nomes únicos; tudo apagado no fim direto no banco.
 test.describe.configure({ mode: "serial" });
 
 const troop = uniqueName("Tropa");
 const patrol = uniqueName("Patrulha");
 const senior = uniqueName("Tropa Sênior");
 const person = uniqueName("Associado");
-const csvNames = [uniqueName("Associado CSV um"), uniqueName("Associado CSV dois")];
 const literal = (value: string) => `'${value.replaceAll("'", "''")}'`;
 const group = `(select m.group_id from public.memberships m join auth.users u on u.id = m.user_id where u.email = ${literal(E2E_ADMIN_EMAIL)})`;
 
 test.afterAll(() => {
-  const people = `(select id from public.associates where group_id = ${group} and name in (${[person, ...csvNames].map(literal).join(", ")}))`;
+  const people = `(select id from public.associates where group_id = ${group} and name = ${literal(person)})`;
   psql(`
     delete from public.associate_moves where associate_id in ${people};
     delete from public.associate_movements where associate_id in ${people};
@@ -112,23 +111,4 @@ test("secretaria: cadastrar, passagem, desligar e reingressar", async ({ page })
   await expect(page.getByText("Reingresso registrado.")).toBeVisible();
   await expect(periods.getByRole("row")).toHaveCount(3); // cabeçalho + 2 períodos
   await expect(page.getByRole("button", { name: "Desligar" })).toBeVisible();
-});
-
-test("importar CSV com conferência antes de gravar; endereço antigo do Financeiro redireciona", async ({ page }) => {
-  await page.goto("/financeiro/configuracoes/associados");
-  await expect(page).toHaveURL(/\/associados$/);
-
-  await page.goto("/associados/configuracoes/importar");
-  const csv = `nome;ramo;seção;patrulha;status\r\n${csvNames[0]};Lobinho;;;ativo\r\n${csvNames[1]};Escoteiro;;;inativo\r\nSem Ramo E2E;Astronauta;;;ativo\r\n`;
-  await page.getByLabel("Arquivo CSV").setInputFiles({ name: "associados.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") });
-  // a linha com ramo desconhecido aparece como erro e não entra
-  await expect(page.getByText("2 novos")).toBeVisible();
-  await expect(page.getByText("1 com erro")).toBeVisible();
-  await expect(page.getByRole("row").filter({ hasText: "Sem Ramo E2E" })).toContainText("Erro");
-  await page.getByRole("button", { name: "Importar 2 associados" }).click();
-  await expect(page.getByText(/^Associados importados: /)).toBeVisible();
-
-  await page.goto(`/associados?situacao=todos&q=${encodeURIComponent("Associado CSV")}`);
-  await expect(page.getByRole("row").filter({ has: page.getByRole("link", { name: csvNames[0] }) })).not.toContainText("Desligado");
-  await expect(page.getByRole("row").filter({ has: page.getByRole("link", { name: csvNames[1] }) })).toContainText("Desligado");
 });

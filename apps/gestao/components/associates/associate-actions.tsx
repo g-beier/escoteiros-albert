@@ -1,22 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { IconArrowsExchange, IconLogin2, IconLogout2 } from "@tabler/icons-react";
+import { IconArrowsExchange, IconLogin2, IconLogout2, IconTrash } from "@tabler/icons-react";
 import { Button } from "@geas/ui/components/button";
 import { Input } from "@geas/ui/components/input";
-import { moveAssociate, leaveAssociate, rejoinAssociate } from "@/app/(associados)/associados/actions";
+import { moveAssociate, leaveAssociate, rejoinAssociate, requestDeletion } from "@/app/(associados)/associados/actions";
 import { ActionDialog } from "@/components/shell/action-dialog";
-import { branchLabels, nextBranch, placementLabel, type AssociateProfile, type Placement } from "@/lib/associates/model";
+import { branchLabels, DELETION_DAYS, nextBranch, placementLabel, type AssociateProfile, type Placement } from "@/lib/associates/model";
 import { Field } from "./associate-form";
 import { PlacementFields, PlacementSelect, type Catalog } from "./placement-select";
 
-type Dialog = "passagem" | "desligar" | "reingressar" | null;
+type Dialog = "passagem" | "desligar" | "reingressar" | "excluir" | null;
 
 /**
  * Ações do detalhe: Passagem (só jovens, para o ramo seguinte) e Desligar (ativo) ou Reingressar (desligado), cada uma
- * num diálogo com data. Corrigir ramo, seção ou equipe é na edição do cadastro, sem passagem no histórico.
+ * num diálogo com data. Corrigir ramo, seção ou equipe é na edição do cadastro, sem passagem no histórico. Excluir (só
+ * Editor, `canDelete`): cadastro errado ou em duplicidade, com motivo; fica em quarentena antes de sumir de vez (018).
  */
-export function AssociateActions({ associate, catalog, today }: { associate: AssociateProfile; catalog: Catalog; today: string }) {
+export function AssociateActions({ associate, catalog, today, canDelete = false }: { associate: AssociateProfile; catalog: Catalog; today: string; canDelete?: boolean }) {
   const [open, setOpen] = useState<Dialog>(null);
   const current: Placement = { branch: associate.branch, sectionId: associate.section_id ?? "", patrolId: associate.patrol_id ?? "" };
   const next = nextBranch(associate.branch);
@@ -32,6 +33,7 @@ export function AssociateActions({ associate, catalog, today }: { associate: Ass
         <Button variant="outline" size="lg" onClick={() => setOpen("desligar")}><IconLogout2 data-icon="inline-start" /> Desligar</Button>
       </>
       : <Button variant="outline" size="lg" onClick={() => setOpen("reingressar")}><IconLogin2 data-icon="inline-start" /> Reingressar</Button>}
+    {canDelete && <Button variant="outline" size="lg" className="text-destructive" onClick={() => setOpen("excluir")}><IconTrash data-icon="inline-start" /> Excluir</Button>}
 
     <ActionDialog open={open === "passagem"} onOpenChange={onOpenChange} title="Passagem" action={moveAssociate} submitLabel="Registrar passagem" hidden={hidden}
       description={<>Cerimônia de passagem de {placementLabel(associate)} para o ramo {next ? branchLabels[next] : ""}, com a data. Para corrigir ramo, seção ou equipe, use Editar.</>}>
@@ -46,6 +48,14 @@ export function AssociateActions({ associate, catalog, today }: { associate: Ass
       description="Sai do efetivo a partir da data. O histórico fica; reingressar abre um novo período.">
       <DateField id="leave-date" label="Data do desligamento" today={today} />
       <ReasonField id="leave-reason" />
+    </ActionDialog>
+
+    <ActionDialog open={open === "excluir"} onOpenChange={onOpenChange} title={`Excluir ${associate.name}`} action={requestDeletion} submitLabel="Excluir cadastro" hidden={hidden} destructive
+      description={<>Para cadastro errado ou em duplicidade (quem saiu do grupo se <strong>desliga</strong>). Some das telas agora e fica {DELETION_DAYS} dias
+        em quarentena: até lá, dá para restaurar em Configurações › Excluídos; depois, é apagado de vez com funções, controle e vida escoteira.</>}>
+      <Field id="delete-reason" label="Motivo" className="sm:col-span-2">
+        <Input id="delete-reason" name="reason" required maxLength={200} placeholder="Ex.: cadastro em duplicidade de Ana Souza" />
+      </Field>
     </ActionDialog>
 
     <ActionDialog open={open === "reingressar"} onOpenChange={onOpenChange} title={`Reingressar ${associate.name}`} action={rejoinAssociate} submitLabel="Reingressar" hidden={hidden}

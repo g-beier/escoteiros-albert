@@ -1,12 +1,13 @@
 import { Link } from "@geas/ui/components/link";
 import { cookies } from "next/headers";
 import { Fragment } from "react";
-import { IconAlertTriangle, IconArrowsSort, IconBolt, IconClipboardCheck, IconPlus, IconPlusMinus } from "@tabler/icons-react";
+import { IconAlertTriangle, IconArrowsSort, IconBolt, IconClipboardCheck, IconPlus, IconPlusMinus, IconPrinter } from "@tabler/icons-react";
 import { PageBody, PageHeader, SectionTabs } from "@geas/ui";
 import { buttonVariants } from "@geas/ui/components/button";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { cn } from "@geas/ui/lib/utils";
+import type { Option } from "@geas/ui/components/option-controls";
 import { AppHeader } from "@/components/inventory/app-header";
 import { ColumnMenu, type ColumnFilter } from "@/components/inventory/materials/column-menu";
 import { HEAD_TRIGGER, HeadIcons } from "@/components/shell/column-head";
@@ -22,6 +23,7 @@ import * as materialsData from "@/lib/server/inventory/materials";
 import * as movementsData from "@/lib/server/inventory/movements";
 import { MaterialFilters } from "@/components/inventory/materials/material-filters";
 import { StockEditor } from "@/components/inventory/materials/stock-editor";
+import { BulkSelection } from "@/components/inventory/materials/bulk";
 import { IconSprite, SpriteIcon } from "@/components/shell/icon-sprite";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
@@ -33,7 +35,7 @@ import { pageSession } from "@/lib/server/session";
 
 type Line = ListLine & StockRow & { material: MaterialRow };
 type Row =
-  | { kind: "group"; key: string; level: "root" | "sub"; depth?: number; href?: string; label: string }
+  | { kind: "group"; key: string; level: "root" | "sub"; depth?: number; href?: string; label: string; orderHref?: string }
   | { kind: "line"; key: string; line: Line; depth: number };
 
 type Search = Record<string, string | undefined>;
@@ -49,7 +51,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   const currentYear = Number(new Date().toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" }).slice(0, 4));
   const years = [currentYear - 1, currentYear - 2] as const;
 
-  const [materialData, stock, paths, familyOptions, counts, cookieStore, toReview] = await Promise.all([
+  const [materialData, stock, paths, familyOptions, counts, cookieStore, toReview, positions] = await Promise.all([
     materialsData.list(db, groupId, { includeInactive: params.inativos === "1", familyId: params.familia, search: params.q }),
     materialsData.stockByLocation(db, groupId),
     locations.listPaths(db, groupId),
@@ -57,6 +59,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
     materialsData.countsOfYears(db, groupId, [...years]),
     cookies(),
     member.inventory.canReview ? movementsData.pendingCount(db, groupId) : Promise.resolve(0),
+    materialsData.positions(db, groupId),
   ]);
 
   // Colunas: as que existem (anos com contagem) menos as que o usuário ocultou.
@@ -90,7 +93,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   for (const row of stock) {
     const material = materials.get(row.material_id);
     if (!material) continue;
-    const line: Line = { ...row, material, previous: previousOf(row.material_id, row.location_id) };
+    const line: Line = { ...row, material, previous: previousOf(row.material_id, row.location_id), position: positions.get(`${row.location_id}|${row.material_id}`) ?? null };
     if (!matchesFilters(line, state)) continue;
     byLocation.set(row.location_id, [...(byLocation.get(row.location_id) ?? []), line]);
   }
@@ -118,10 +121,11 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   const here = materialsHref(params);
   // Abas mantêm busca, filtros e ordem; trocam só o local.
   const hrefFor = (divisao?: string) => materialsHref({ ...params, divisao });
+  // Padrão: a ordem escolhida em cada divisão. Material: ordem do local → A→Z → Z→A → ordem do local.
   const sortHref = (key: SortKey) => {
+    if (key === "material" && state.sort === "material" && state.dir === "desc") return materialsHref({ ...params, ordem: undefined, dir: undefined });
     const dir: SortDir = state.sort === key && state.dir === "asc" ? "desc" : "asc";
-    const isDefault = key === "material" && dir === "asc";
-    return materialsHref({ ...params, ordem: isDefault ? undefined : key, dir: isDefault || dir === "asc" ? undefined : dir });
+    return materialsHref({ ...params, ordem: key, dir: dir === "asc" ? undefined : dir });
   };
   const sortProps = (key: SortKey) => ({ active: state.sort === key, dir: state.dir, href: sortHref(key) });
   const tabs = [
@@ -130,7 +134,12 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   ];
   const heading = showAll ? "Todos os locais" : selected && selected.depth > 0 ? selected.path : root?.name ?? "Materiais";
   const canEdit = member.inventory.canWrite;
-  const span = columns.length + 1 + (canEdit ? 1 : 0);
+  // Ordenar os materiais de uma divisão (Editor), só na ordem do local: a tela de ordem volta para esta lista.
+  const orderHref = (locationId: string) =>
+    member.inventory.canReview && state.sort === "posicao" && byLocation.has(locationId) ? withBack(`/inventario/materiais/ordenar?divisao=${locationId}`, here) : undefined;
+  const span = columns.length + 1 + (canEdit ? 2 : 0);
+  // Edição em massa: divisões ativas (na ordem da árvore) e famílias para os diálogos da barra de ações.
+  const locationOptions = paths.filter((row) => row.active).map((row) => ({ value: row.id, label: row.path }));
   // Botão ± das linhas (material por quantidade): os lotes vêm do servidor ao clicar (StockEditor), não no HTML.
   const pathOf = new Map(paths.map((row) => [row.id, row.path]));
   const stockActions: StockActions | null = canEdit ? { pathOf } : null;
@@ -138,8 +147,8 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   const rows: Row[] = [
     ...groups.flatMap(({ location, lines: groupLines }): Row[] => [
       ...(location.depth === 0
-        ? showAll ? [{ kind: "group", key: location.id, level: "root", label: location.name } as const] : []
-        : [{ kind: "group", key: location.id, level: "sub", depth: location.depth, href: hrefFor(location.id), label: location.name } as const]),
+        ? showAll ? [{ kind: "group", key: location.id, level: "root", label: location.name, orderHref: orderHref(location.id) } as const] : []
+        : [{ kind: "group", key: location.id, level: "sub", depth: location.depth, href: hrefFor(location.id), label: location.name, orderHref: orderHref(location.id) } as const]),
       ...groupLines.map((line): Row => ({ kind: "line", key: `${line.location_id}-${line.material_id}`, line, depth: location.depth })),
     ]),
     ...(noStock.length > 0 ? [{ kind: "group", key: "sem-estoque", level: "root", label: "Sem estoque" } as const] : []),
@@ -154,6 +163,10 @@ export default async function Materials({ searchParams }: { searchParams: Promis
         actions={<>
           {toReview > 0 && <Link href="/inventario/movimentacoes?revisao=para_revisar" className="inline-flex items-center gap-1.5 rounded-full bg-caution-soft px-3 py-1 text-xs font-semibold text-caution hover:ring-1 hover:ring-current">
             <IconClipboardCheck className="size-4" aria-hidden /> {toReview} para revisar</Link>}
+          {/* PDF de conferência da aba atual (Todos ou a divisão), com a ordem escolhida e colunas para contar à mão. */}
+          <a href={`/inventario/relatorios/conferencia${selected ? `?divisao=${selected.id}` : ""}`} target="_blank" rel="noopener"
+            className={buttonVariants({ variant: "outline", size: "lg" })} title="Folha de conferência em PDF, na ordem de cada divisão">
+            <IconPrinter data-icon="inline-start" /> Imprimir</a>
           {member.inventory.canWrite && <Link href="/rapido" className={buttonVariants({ variant: "outline", size: "lg" })}><IconBolt data-icon="inline-start" /> Registro rápido</Link>}
           {member.inventory.canWrite && <Link href={withBack("/inventario/materiais/novo", here)} className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}
         </>}>
@@ -164,13 +177,18 @@ export default async function Materials({ searchParams }: { searchParams: Promis
         <SectionHeader title={heading}
           description={selected && selected.depth > 0 && root ? <>Só esta divisão e o que está dentro dela. <Link href={hrefFor(root.id)} className="font-semibold text-primary hover:underline">Ver {root.name} inteiro</Link></> : undefined}>
           <SectionCount>{distinct} {distinct === 1 ? "material" : "materiais"} · valor total <span className="num">{formatCents(total)}</span></SectionCount>
+          {root && selected?.depth === 0 && orderHref(root.id) && <Link href={orderHref(root.id)!} className={buttonVariants({ variant: "outline", size: "sm" })}>
+            <IconArrowsSort data-icon="inline-start" /> Ordenar {root.name}</Link>}
         </SectionHeader>
         {/* A tabela fica mesmo vazia: o cabeçalho tem os menus das colunas, para desfazer o filtro. Corpo em blocos
             (`cv-table`/`cv-rows` do tema): o navegador pula os que estão fora da tela. */}
         <IconSprite icons={SPRITE} />
-        <EditorFrame canEdit={canEdit}><div className="overflow-x-auto"><Table className={cn("cv-table min-w-[760px]", MAT_BODY)} style={cvCols(["minmax(12rem, 1fr)", ...columns.map((id) => HEADS[id].track), ...(canEdit ? ["2.5rem"] : [])])}>
+        <EditorFrame canEdit={canEdit} listKey={here} locations={locationOptions} families={familyOptions}><div className="overflow-x-auto"><Table className={cn("cv-table min-w-[760px]", MAT_BODY)} style={cvCols([...(canEdit ? ["2.25rem"] : []), "minmax(12rem, 1fr)", ...columns.map((id) => HEADS[id].track), ...(canEdit ? ["2.5rem"] : [])])}>
             <TableCaption className="sr-only">Materiais por divisão; a ordem escolhida vale dentro de cada divisão</TableCaption>
             <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
+              {canEdit && <TableHead className={cn(HEAD_CLASS, "w-9 px-1! text-center")}>
+                <input type="checkbox" data-sel-all="" aria-label="Selecionar todas as linhas da lista" title="Selecionar todas (Shift + clique numa linha marca o intervalo)" className="size-4 cursor-pointer accent-primary align-middle" />
+              </TableHead>}
               <SortHead label="Material" {...sortProps("material")} />
               {columns.map((id) => COLUMN_FILTERS[id]
                 ? <TableHead key={id} className={cn(HEAD_CLASS, HEADS[id].className)} aria-sort={state.sort === id ? (state.dir === "asc" ? "ascending" : "descending") : undefined}>
@@ -182,7 +200,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
             </TableRow></TableHeader>
             {chunk(rows).map((block, index) => <TableBody key={index} className="cv-rows" style={cvRows(block.length, "2.5rem")}>
               {block.map((row) => row.kind === "group"
-                ? <GroupRow key={row.key} level={row.level} depth={row.depth} columns={span} href={row.href}>{row.label}</GroupRow>
+                ? <GroupRow key={row.key} level={row.level} depth={row.depth} columns={span} href={row.href} orderHref={row.orderHref}>{row.label}</GroupRow>
                 : <MaterialLine key={row.key} line={row.line} depth={row.depth} columns={columns} back={here} actions={stockActions} />)}
             </TableBody>)}
             {rows.length === 0 && <TableBody><TableRow className="hover:bg-transparent">
@@ -240,11 +258,14 @@ function SortHead({ label, title, className, active, dir, href }: { label: strin
 const indent = (level: number) => ({ paddingLeft: `${0.75 + Math.max(level, 0) * 1.25}rem` });
 
 /** Linha de subtítulo: local macro (na aba Todos) ou subdivisão, recuada pelo nível. */
-function GroupRow({ level, depth = 0, columns, href, children }: { level: "root" | "sub"; depth?: number; columns: number; href?: string; children: React.ReactNode }) {
+function GroupRow({ level, depth = 0, columns, href, orderHref, children }: { level: "root" | "sub"; depth?: number; columns: number; href?: string; orderHref?: string; children: React.ReactNode }) {
   return <TableRow className="hover:bg-transparent">
     <TableCell colSpan={columns} style={level === "sub" ? indent(depth - 1) : undefined}
       className={cn(CELL_CLASS, level === "root" ? "bg-secondary pt-3 text-sm font-bold" : "bg-muted/60 text-xs font-semibold text-muted-foreground")}>
-      {href ? <Link href={href} className="hover:text-foreground hover:underline">{children}</Link> : children}
+      <span className="flex items-center justify-between gap-3">
+        {href ? <Link href={href} className="hover:text-foreground hover:underline">{children}</Link> : <span>{children}</span>}
+        {orderHref && <Link href={orderHref} className="text-xs font-medium text-primary hover:underline" aria-label={`Ordenar os materiais de ${children}`}>Ordenar</Link>}
+      </span>
     </TableCell>
   </TableRow>;
 }
@@ -252,7 +273,8 @@ function GroupRow({ level, depth = 0, columns, href, children }: { level: "root"
 const empty = <span className="text-muted-foreground">—</span>;
 
 /** Quem edita ganha o ouvinte único dos botões ± (StockEditor); quem só lê, a tabela pura. */
-const EditorFrame = ({ canEdit, children }: { canEdit: boolean; children: React.ReactNode }) => canEdit ? <StockEditor>{children}</StockEditor> : <>{children}</>;
+const EditorFrame = ({ canEdit, listKey, locations, families, children }: { canEdit: boolean; listKey: string; locations: Option[]; families: Option[]; children: React.ReactNode }) =>
+  canEdit ? <BulkSelection key={listKey} locations={locations} families={families}><StockEditor>{children}</StockEditor></BulkSelection> : <>{children}</>;
 
 const SPRITE = { "plus-minus": IconPlusMinus, alert: IconAlertTriangle };
 
@@ -266,7 +288,7 @@ const MAT_BODY = [
   "[&_tr[data-m]]:border-b [&_tr[data-m]]:transition-colors [&_tr[data-m]:hover]:bg-muted/50 [&_tr[data-off]]:opacity-60",
   "[&_tr[data-m]>td]:px-3 [&_tr[data-m]>td]:py-1.5 [&_tr[data-m]>td]:align-middle [&_tr[data-m]>td]:whitespace-nowrap [&_td[data-n]]:whitespace-normal!",
   "[&_td[data-a=c]]:text-center [&_td[data-a=r]]:text-right [&_td[data-a=q]]:text-center [&_td[data-a=q]]:font-semibold [&_td[data-a=m]]:text-center [&_td[data-a=m]]:text-muted-foreground",
-  "[&_td[data-a=b]]:px-1! [&_td[data-a=b]]:text-center",
+  "[&_td[data-a=b]]:px-1! [&_td[data-a=b]]:text-center [&_input[data-sel]]:size-4 [&_input[data-sel]]:cursor-pointer [&_input[data-sel]]:accent-primary [&_input[data-sel]]:align-middle [&_tr[data-m]:has(input[data-sel]:checked)]:bg-primary/5",
   "[&_[data-cond]]:inline-flex [&_[data-cond]]:items-center [&_[data-cond]]:gap-1.5 [&_[data-cond]]:rounded-full [&_[data-cond]]:px-2 [&_[data-cond]]:py-0.5 [&_[data-cond]]:text-xs [&_[data-cond]]:font-medium [&_[data-cond]]:whitespace-nowrap",
   "[&_[data-cond]]:before:size-1.5 [&_[data-cond]]:before:shrink-0 [&_[data-cond]]:before:rounded-full [&_[data-cond]]:before:bg-current [&_[data-cond]]:before:opacity-80 [&_[data-cond]]:before:content-['']",
   "[&_[data-cond=novo]]:bg-success [&_[data-cond=novo]]:text-white [&_[data-cond=bom]]:bg-success-soft [&_[data-cond=bom]]:text-success",
@@ -326,6 +348,7 @@ function MaterialLine({ line, depth, columns, back, actions }: { line: Line; dep
   };
   return <tr data-m={material.id} data-l={stock ? line.location_id : undefined} data-name={stock ? material.name : undefined}
     data-path={stock ? actions.pathOf.get(line.location_id) ?? "" : undefined} data-cons={stock && material.consumable ? "" : undefined} data-off={material.active ? undefined : ""}>
+    {actions && <td data-a="b"><input type="checkbox" data-sel="" value={`${material.id}|${line.location_id}`} aria-label={`Selecionar ${material.name}${line.location_id ? ` em ${actions.pathOf.get(line.location_id) ?? ""}` : " (sem estoque)"}`} /></td>}
     <td data-n="" style={indent(depth)}>
       <Link href={withBack(`/inventario/materiais/${material.id}`, back)} className="hover:underline">{material.name}</Link>
       {(material.consumable || !material.active) && <span className="ml-2 inline-flex flex-wrap gap-1 align-middle">

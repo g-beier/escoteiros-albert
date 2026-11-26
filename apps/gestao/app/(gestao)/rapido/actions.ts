@@ -121,15 +121,14 @@ const quickEntrySchema = z.object({
   date: z.iso.date("Informe a data."),
   name: z.string().trim().min(2, "Informe o histórico (quem pagou ou recebeu).").max(200, "Histórico: no máximo 200 caracteres."),
   paymentMethodId: z.uuid("Escolha a forma de pagamento."),
-  categoryId: z.uuid("Escolha a rubrica."),
   totalCents: z.number().int().refine((value) => value !== 0, "Informe o valor."),
   description: z.string().trim().max(200, "Descrição: no máximo 200 caracteres.").nullable(),
   notes: z.string().trim().max(2000, "Observações: no máximo 2.000 caracteres.").nullable(),
 });
 
 /**
- * Financeiro: lançamento com uma rubrica; a conta é a padrão da forma de pagamento (ou "A definir"). Devolve o id
- * para o navegador anexar o comprovante antes de voltar ao registro rápido.
+ * Financeiro: lançamento só como receita ou despesa (rubrica raiz pelo sinal do valor; quem revisa classifica); a conta é
+ * a padrão da forma de pagamento (ou "A definir"). Devolve o id para o navegador anexar o comprovante antes de voltar.
  */
 export async function quickEntry(payload: unknown): Promise<{ error?: string; id?: string }> {
   const parsed = quickEntrySchema.safeParse(payload);
@@ -137,7 +136,10 @@ export async function quickEntry(payload: unknown): Promise<{ error?: string; id
   let id = "";
   const result = await runAction(() => financeWriterOrError("Sem permissão para registrar lançamentos."), async ({ db, groupId }) => {
     const input = parsed.data;
-    id = await entries.createQuick(db, groupId, { ...input, description: input.description || null, notes: input.notes || null });
+    const kind = input.totalCents > 0 ? "receita" : "despesa";
+    const categoryId = await entries.rootCategory(db, groupId, kind);
+    if (!categoryId) throw new InputError(`A rubrica ${kind === "receita" ? "1 Receitas" : "2 Despesas"} não está ativa: fale com o administrador do Financeiro.`);
+    id = await entries.createQuick(db, groupId, { ...input, categoryId, description: input.description || null, notes: input.notes || null });
     revalidatePath("/", "layout");
   });
   return result.error ? { error: result.error } : { id };

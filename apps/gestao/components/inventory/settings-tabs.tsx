@@ -12,7 +12,10 @@ export function settingsCrumbs(current: SettingsTab): Crumb[] {
   return [{ label: "Inventário", href: "/inventario" }, { label: "Configurações", href: SETTINGS_HOME }, { label: SETTINGS_LABELS[current] }];
 }
 
-/** Configurações do Inventário: Divisões e Famílias para todos (o gestor edita). Usuários é a tela comum /usuarios. */
+/**
+ * Configurações do Inventário: Divisões e Famílias para todos (o gestor edita). Usuários e Importar são telas comuns,
+ * no menu da conta (Administração).
+ */
 export function SettingsTabs({ current }: { current: SettingsTab }) {
   const tabs = (Object.keys(SETTINGS_LABELS) as SettingsTab[])
     .map((tab) => ({ href: `/inventario/configuracoes/${tab}`, label: SETTINGS_LABELS[tab], active: tab === current }));

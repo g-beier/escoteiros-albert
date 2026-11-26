@@ -5,6 +5,7 @@
 //   node scripts/maintenance.mjs status      migrations aplicadas e pendentes
 //   node scripts/maintenance.mjs bootstrap   primeiro administrador e o grupo (só num banco sem grupo)
 //   node scripts/maintenance.mjs dump        pg_dump -Fc enviado ao contêiner `backups` do Blob Storage
+//   node scripts/maintenance.mjs purge       exclui de vez os associados que passaram da quarentena (Job agendado, diário)
 //
 // Variáveis:
 //   DATABASE_ADMIN_URL      o dono dos objetos (administrador do servidor), com sslmode=verify-full no Azure
@@ -117,12 +118,24 @@ async function dump() {
   }
 }
 
+/** Exclusão definitiva dos associados cuja quarentena acabou (018). Só a contagem vai para o log, nunca nomes. */
+async function purge() {
+  const sql = connect();
+  try {
+    const [{ purged }] = await sql`select public.associates_purge_due() as purged`;
+    console.log(`Associados excluídos de vez: ${purged}.`);
+  } finally {
+    await sql.end();
+  }
+}
+
 const commands = {
   setup,
   migrate: () => runMigrations("migrate"),
   status: () => runMigrations("status"),
   bootstrap,
   dump,
+  purge,
 };
 
 const command = commands[process.argv[2]];

@@ -98,7 +98,7 @@ select throws_like(format($$select public.link_reconciliation(array[%L]::uuid[],
   'B não concilia linha de A com lançamento seu');
 select throws_like(format($$select public.add_entry_attachment(%L, %L, 'x.pdf', 'application/pdf', 10)$$, :'entry_a', :'path_a'), '%permissão%', 'B não registra anexo em A');
 select throws_like(format($$select public.delete_entry_attachment(%L)$$, :'attach_a'), '%permissão%', 'B não exclui anexo de A');
-select throws_like(format($$select public.import_associates(%L, '[{"name":"Intruso","branch":"adulto"}]')$$, :'gid_a'), '%permissão%',
+select throws_like(format($$select public.import_batch(%L, '[{"kind":"pessoas","rows":[{"line":2,"name":"Intruso","branch":"adulto"}]}]')$$, :'gid_a'), '%permissão%',
   'B não importa associados em A');
 select throws_like(format($$select public.set_fee_record(%L, 2026, 4, 'pago', null, '{}')$$, :'assoc_a'), '%permissão%', 'B não registra mensalidade em A');
 select throws_like(format($$select public.set_fee_settings(%L, 'dia_fixo', 5, null)$$, :'gid_a'), '%permissão%', 'B não configura mensalidades de A');

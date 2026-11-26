@@ -36,7 +36,8 @@ describe("parseListState", () => {
   it("lê filtros e ordem, ignorando valores inválidos", () => {
     expect(parseListState({ estado: "ruim,xyz,bom", unitario_de: "10,50", unitario_ate: "-1", qtd_de: "2", qtd_ate: "a", ordem: "total", dir: "desc" }))
       .toEqual({ conditions: ["ruim", "bom"], minimum: [], expiry: [], unitFrom: 1050, unitTo: null, qtyFrom: 2, qtyTo: null, sort: "total", dir: "desc" });
-    expect(parseListState({ ordem: "foo" })).toMatchObject({ sort: "material", dir: "asc" });
+    expect(parseListState({ ordem: "foo" })).toMatchObject({ sort: "posicao", dir: "asc" });
+    expect(parseListState({ ordem: "material" })).toMatchObject({ sort: "material" });
   });
 });
 
@@ -80,6 +81,10 @@ describe("compareLines", () => {
   ];
   const names = (key: Parameters<typeof compareLines>[0], dir: "asc" | "desc") => [...rows].sort(compareLines(key, dir)).map((row) => row.material.name);
   it("por nome", () => expect(names("material", "asc")).toEqual(["Apito", "Bússola", "Corda"]));
+  it("pela posição escolhida; sem posição no fim, por nome", () => {
+    const placed = [{ ...rows[0], position: 1 }, rows[1], { ...rows[2], position: 0 }, line("Apito 2", {})];
+    expect([...placed].sort(compareLines("posicao", "asc")).map((row) => row.material.name)).toEqual(["Bússola", "Corda", "Apito", "Apito 2"]);
+  });
   it("por número, empate por nome", () => expect(names("quantidade", "asc")).toEqual(["Bússola", "Corda", "Apito"]));
   it("decrescente", () => expect(names("total", "desc")).toEqual(["Apito", "Bússola", "Corda"]));
   it("vazios no fim nos dois sentidos", () => {

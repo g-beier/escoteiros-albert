@@ -107,3 +107,9 @@ export type MaterialInput = {
   id: string | null; familyId: string | null; name: string; tracking: Tracking; consumable: boolean;
   minimumQuantity: number | null; description: string | null; active: boolean;
 };
+
+/** Ações da edição em massa na lista de Materiais (`inventory_bulk`, 011). */
+export const BULK_ACTIONS = ["transferir", "condicao", "baixa", "familia", "consumivel"] as const;
+export type BulkAction = (typeof BULK_ACTIONS)[number];
+/** Linha selecionada: o material numa divisão (`locationId` nulo = material sem estoque). */
+export type BulkTarget = { materialId: string; locationId: string | null };

@@ -132,7 +132,16 @@ type Nullable<T> = { [K in keyof T]: T[K] | null };
 export async function rpc<F extends keyof Functions & string>(db: Db, fn: F, args: Nullable<Functions[F]["Args"]>): Promise<Functions[F]["Returns"]> {
   const entries = Object.entries(args as Record<string, unknown>).filter(([, value]) => value !== undefined);
   if (![fn, ...entries.map(([name]) => name)].every((name) => /^[a-z_][a-z0-9_]*$/.test(name))) throw new DataError(`Nome inválido em ${fn}.`);
-  const signature = pick(fn, await overloads(fn), entries.map(([name]) => name));
+  const given = entries.map(([name]) => name);
+  let signature: Overload;
+  try {
+    signature = pick(fn, await overloads(fn), given);
+  } catch {
+    // O catálogo fica em cache no processo: depois de uma migration que muda a assinatura (com o servidor de pé, como
+    // no desenvolvimento), consulta o banco de novo uma vez antes de desistir.
+    catalog.delete(fn);
+    signature = pick(fn, await overloads(fn), given);
+  }
   const typeOf = new Map(signature.inArgs.map((arg) => [arg.name, arg.type]));
   // nomes e tipos vêm do catálogo (conferidos acima); os valores vão como parâmetros
   const list = entries.map(([name], i) => `${name} => $${i + 1}::${typeOf.get(name)}`).join(", ");

@@ -13,6 +13,7 @@ import { MultiFilter, useFilterSummary } from "./multi-filter";
 import { SortMenu, rangeSummary } from "./sort-menu";
 import { usePeriodFilter } from "./date-filter";
 import { AssociateFilter, useAssociateSummary } from "./associate-filter";
+import { ColumnsMenu } from "./columns";
 
 const FILTER_KEYS = ["de", "ate", "conta", "forma", "pasta", "conciliado", "associado", "divisao", "rubrica", "q", "ofx", "valor_de", "valor_ate"] as const;
 
@@ -111,5 +112,6 @@ export function EntryFilters({ view }: { view: EntryView }) {
     <FiltersDialog view={view} count={chips.length} />
     {chips.map((chip) => <Chip key={chip.key} label={chip.label} title={chip.title} onRemove={() => apply(chip.clear)} />)}
     {active && <Button variant="ghost" onClick={clear}><IconFilterOff data-icon="inline-start" /> Limpar filtros</Button>}
+    <div className="ml-auto max-md:hidden"><ColumnsMenu /></div>
   </section>;
 }

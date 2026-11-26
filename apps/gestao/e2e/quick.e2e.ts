@@ -30,11 +30,11 @@ test("lançamento rápido: entra para revisar e sai da lista ao revisar", async 
   await page.goto("/rapido");
   await expect(page.locator("html")).toHaveAttribute("data-app", "gestao");
   await page.getByRole("link", { name: /Lançamento financeiro/ }).click();
-  await page.getByRole("radio", { name: /Saída/ }).click();
+  await page.getByRole("radio", { name: /Despesa/ }).click();
+  // sem rubrica: entra em "2 Despesas" e quem revisa classifica
+  await expect(page.getByRole("combobox", { name: "Rubrica" })).toHaveCount(0);
   await page.getByLabel("Valor (R$)").fill("12,34");
   await page.getByLabel("Histórico").fill(name);
-  await page.getByRole("combobox", { name: "Rubrica" }).fill("Telefone");
-  await page.getByRole("option", { name: /Telefone/ }).first().click();
   await chooseOption(page, "Forma de pagamento", "PIX");
   // comprovantes desligados por padrão (lib/features.ts): sem o campo de arquivo
   if (ATTACHMENTS_ENABLED) {
@@ -55,6 +55,7 @@ test("lançamento rápido: entra para revisar e sai da lista ao revisar", async 
   await expect(row).toContainText("Revisar");
   await expect(row).toContainText("12,34");
   await row.getByRole("link", { name, exact: true }).click();
+  await expect(page.getByRole("combobox", { name: /Rubrica/ }).first()).toHaveValue(/Despesas/);
   // o comprovante enviado pelo celular já está no lançamento
   if (ATTACHMENTS_ENABLED) await expect(page.getByRole("region", { name: "Comprovantes" }).getByRole("link", { name: "recibo-rapido.pdf", exact: true })).toBeVisible();
   else await expect(page.getByRole("region", { name: "Comprovantes" })).toHaveCount(0);
@@ -82,4 +83,19 @@ test("associado rápido: cadastrado para um editor revisar", async ({ page }) =>
   await expect(page.getByRole("note")).toHaveCount(0);
   await page.goto("/associados?revisao=para_revisar");
   await expect(page.getByRole("row").filter({ hasText: person })).toHaveCount(0);
+});
+
+test("busca única: acha o associado (sem acento nem maiúsculas) e o menu Registrar tem o material novo", async ({ page }) => {
+  await page.goto("/rapido");
+  const register = page.getByRole("region", { name: "Registrar" }).or(page.locator("section").filter({ has: page.getByRole("heading", { name: "Registrar" }) }));
+  await expect(register.getByRole("link", { name: /Material novo/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Cadastrar material novo/ })).toHaveCount(0);
+  // o associado do teste anterior, buscado pela parte final do nome, sem acento e em minúsculas
+  const words = person.split(" ");
+  await page.getByLabel("Buscar material ou associado").fill(`associado rapido ${words.at(-1)!.toLowerCase()}`);
+  await page.getByRole("button", { name: "Buscar" }).click();
+  await expect(page.getByRole("heading", { name: "Associados" })).toBeVisible();
+  await page.getByRole("link", { name: new RegExp(person) }).click();
+  await expect(page).toHaveURL(/\/associados\/[0-9a-f-]{36}/);
+  await expect(page.getByRole("heading", { name: person })).toBeVisible();
 });

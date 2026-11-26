@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCsvRecords, readCsv, sniffCsvLayout } from "@/lib/finance/csv-reader";
+import { parseCsvRecords, readCsv, sniffCsvLayout } from "@/lib/csv-reader";
 
 describe("parseCsvRecords", () => {
   it("segue a RFC 4180: aspas, aspas escapadas, separador e quebra de linha dentro do campo", () => {

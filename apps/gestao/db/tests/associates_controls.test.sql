@@ -172,7 +172,8 @@ select lives_ok(format($$select public.delete_associate_movement(%L)$$, :'mov'),
 select is((select active from public.associates where id = :'lia'), true, 'volta a ativo pela entrada anterior');
 select public.add_associate_movement(:'lia', '2020-01-01', 'saida', 'Antiga') \gset
 select is((select active from public.associates where id = :'lia'), true, 'saída antiga não muda o estado');
-select public.import_associates(:'gid_a', jsonb_build_array(jsonb_build_object('id', :'lia', 'name', 'Lia Lobinha', 'branch', 'lobinho', 'active', false))) \gset
+select public.import_batch(:'gid_a', jsonb_build_array(jsonb_build_object('kind', 'pessoas', 'rows', jsonb_build_array(
+  jsonb_build_object('line', 2, 'id', :'lia', 'name', 'Lia Lobinha', 'situation', 'desligado', 'left', current_date, 'leftReason', 'Importação'))))) \gset
 select is((select active::text || '|' || (select kind || ':' || reason from public.associate_movements where associate_id = :'lia' and movement_date = current_date and kind = 'saida')
   from public.associates where id = :'lia'), 'false|saida:Importação', 'importação grava a saída');
 

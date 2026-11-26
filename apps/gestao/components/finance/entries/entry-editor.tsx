@@ -12,22 +12,38 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
 import { Badge } from "@geas/ui/components/badge";
 import { cn } from "@geas/ui/lib/utils";
 
-export type EntryOverride = { filed?: boolean; deleted?: boolean; accountName?: string; reconciled?: boolean; reviewed?: boolean };
-/** Lançamento marcado para ação em lote, com o que a barra precisa mostrar. */
-export type SelectedEntry = { accountName: string; reconciled: boolean };
+/**
+ * Mudanças já gravadas que a lista mostra sem recarregar as páginas carregadas. Chave: id do lançamento (campos do
+ * lançamento) ou do rateio (rubrica e associado, no Detalhamento).
+ */
+export type EntryOverride = {
+  filed?: boolean; deleted?: boolean; accountName?: string; reconciled?: boolean; reviewed?: boolean; paymentMethodName?: string;
+  category?: { name: string; code: string | null; kind: "receita" | "despesa" | null }; associateName?: string | null;
+};
+/** Linha marcada para ação em lote (lançamento em Movimentações, rateio no Detalhamento), com o que a barra precisa. */
+export type SelectedEntry = {
+  accountName?: string; reconciled?: boolean; amountCents?: number;
+  /** Rateio (Detalhamento): o lançamento dele, para agrupar com os dados de um dos lançamentos. */
+  entryId?: string; entryDate?: string; entryName?: string; paymentMethodName?: string; document?: string | null; filed?: boolean;
+};
 
 type ListApi = {
   canEdit: boolean;
+  /** Ações em lote (marcar linhas): só o Administrador do Financeiro (015). */
+  canBulk: boolean;
   overrides: Record<string, EntryOverride>;
   detailHref: (entryId: string) => string;
   requestDelete: (entryId: string) => void;
   toggleFiled: (entryId: string, filed: boolean) => void;
   busyEntryId: string | null;
-  /** Seleção para ações em lote (só tesouraria/administração, na visão Movimentações). */
+  /** Seleção para ações em lote (Editor ou mais): lançamentos em Movimentações, rateios no Detalhamento. */
   selected: Map<string, SelectedEntry>;
   setSelected: (entries: [string, SelectedEntry][], on: boolean) => void;
   clearSelection: () => void;
   override: (entryId: string, patch: EntryOverride) => void;
+  /** Sobe quando lançamentos são criados ou somem (agrupar, desagrupar): a lista recomeça da página nova do servidor. */
+  listVersion: number;
+  reloadList: () => void;
 };
 
 const EMPTY_SELECTION = new Map<string, SelectedEntry>();
@@ -42,7 +58,7 @@ function useList() {
 
 /** Ações rápidas da lista (documentos e exclusão) e links para a página de detalhes. */
 /** `returnHref`: caminho da visão atual com os filtros, para os detalhes voltarem ao mesmo lugar. */
-export function EntryListProvider({ canEdit, returnHref, children }: { canEdit: boolean; returnHref: string; children: React.ReactNode }) {
+export function EntryListProvider({ canEdit, canBulk, returnHref, children }: { canEdit: boolean; canBulk: boolean; returnHref: string; children: React.ReactNode }) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [busyEntryId, setBusyEntryId] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<string, EntryOverride>>({});
@@ -50,10 +66,12 @@ export function EntryListProvider({ canEdit, returnHref, children }: { canEdit: 
   const [selection, setSelection] = useState<{ query: string; entries: Map<string, SelectedEntry> }>({ query: returnHref, entries: new Map() });
   const selected = selection.query === returnHref ? selection.entries : EMPTY_SELECTION;
   const [pending, startTransition] = useTransition();
+  const [listVersion, setListVersion] = useState(0);
   const override = (entryId: string, patch: EntryOverride) => setOverrides((current) => ({ ...current, [entryId]: { ...current[entryId], ...patch } }));
 
   const api: ListApi = {
     canEdit,
+    canBulk,
     overrides,
     busyEntryId,
     detailHref: (entryId) => `/financeiro/lancamentos/${entryId}${returnHref ? `?voltar=${encodeURIComponent(returnHref)}` : ""}`,
@@ -68,6 +86,9 @@ export function EntryListProvider({ canEdit, returnHref, children }: { canEdit: 
     }),
     clearSelection: () => setSelection({ query: returnHref, entries: new Map() }),
     override,
+    listVersion,
+    // as linhas mudaram por inteiro: as marcas locais (overrides) não valem mais
+    reloadList: () => { setOverrides({}); setListVersion((v) => v + 1); },
     toggleFiled: (entryId, filed) => {
       setBusyEntryId(entryId);
       override(entryId, { filed });
@@ -107,8 +128,9 @@ export function EntryListProvider({ canEdit, returnHref, children }: { canEdit: 
   </ListContext.Provider>;
 }
 
-export function NewEntryButton({ returnHref }: { returnHref: string }) {
-  return <Link href={`/financeiro/lancamentos/novo${returnHref ? `?voltar=${encodeURIComponent(returnHref)}` : ""}`} className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo lançamento</Link>;
+/** `variant`: primário nas listas do Financeiro (é a ação delas); secundário onde outra ação é a principal (Início). */
+export function NewEntryButton({ returnHref, variant = "default" }: { returnHref: string; variant?: "default" | "outline" }) {
+  return <Link href={`/financeiro/lancamentos/novo${returnHref ? `?voltar=${encodeURIComponent(returnHref)}` : ""}`} className={buttonVariants({ variant, size: "lg" })}><IconPlus data-icon="inline-start" /> Novo lançamento</Link>;
 }
 
 export function useEntryOverrides() {
@@ -116,8 +138,12 @@ export function useEntryOverrides() {
 }
 
 export function useEntrySelection() {
-  const { canEdit, selected, setSelected, clearSelection, override } = useList();
-  return { canEdit, selected, setSelected, clearSelection, override };
+  const { canBulk, selected, setSelected, clearSelection, override, reloadList } = useList();
+  return { canBulk, selected, setSelected, clearSelection, override, reloadList };
+}
+
+export function useEntryListVersion() {
+  return useList().listVersion;
 }
 
 /** Abre os detalhes ao clicar, exceto quando o clique é em um controle interno ou seleciona texto. */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconCamera } from "@tabler/icons-react";
@@ -12,37 +12,28 @@ import { OptionSelect } from "@geas/ui/components/option-controls";
 import { RadioGroup, RadioGroupItem } from "@geas/ui/components/radio-group";
 import { Textarea } from "@geas/ui/components/textarea";
 import { quickEntry } from "@/app/(gestao)/rapido/actions";
-import { CategoryPicker } from "@/components/finance/entries/category-picker";
 import { upload } from "@/components/finance/entries/entry-attachments";
 import { ATTACHMENT_ACCEPT, attachmentProblem } from "@/lib/finance/attachments";
 import { ATTACHMENTS_ENABLED } from "@/lib/features";
-import type { CategoryItem } from "@/lib/finance/categories";
 import { parseMoneyToCents } from "@/lib/money";
 import { quickDoneHref } from "@/lib/quick";
 
-// Lançamento pelo registro rápido (celular): só o essencial, uma rubrica e o comprovante (se ligado, `lib/features.ts`). A conta é a padrão da
-// forma de pagamento (ou "A definir"); documento, rateio e conciliação a tesouraria completa na revisão.
+// Lançamento pelo registro rápido (celular): só o essencial, receita ou despesa (sem rubrica: entra em "1 Receitas" ou
+// "2 Despesas") e o comprovante (se ligado, `lib/features.ts`). A conta é a padrão da forma de pagamento (ou "A definir");
+// rubrica, documento, rateio e conciliação quem revisa completa.
 
 type Direction = "saida" | "entrada";
 const BIG = "h-11 text-sm";
 const Field = ({ id, label, children }: { id: string; label: string; children: React.ReactNode }) =>
   <div className="grid gap-1.5"><Label htmlFor={id}>{label}</Label>{children}</div>;
 
-export function QuickEntryForm({ categories, paymentMethods, today }: {
-  categories: CategoryItem[]; paymentMethods: { id: string; name: string; active: boolean }[]; today: string;
-}) {
+export function QuickEntryForm({ paymentMethods, today }: { paymentMethods: { id: string; name: string; active: boolean }[]; today: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [direction, setDirection] = useState<Direction>("saida");
-  const [categoryId, setCategoryId] = useState("");
   const [paymentMethodId, setPaymentMethodId] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [step, setStep] = useState<string | null>(null);
-  const kind = direction === "saida" ? "despesa" : "receita";
-  // trocar o tipo apaga a rubrica do outro tipo
-  const chosen = categories.find((c) => c.id === categoryId);
-  const validCategory = chosen && chosen.kind === kind ? categoryId : "";
-  const visible = useMemo(() => categories.filter((c) => c.active && c.kind === kind), [categories, kind]);
   const methods = paymentMethods.filter((m) => m.active).map((m) => ({ value: m.id, label: m.name }));
 
   function onFiles(event: React.ChangeEvent<HTMLInputElement>) {
@@ -57,12 +48,11 @@ export function QuickEntryForm({ categories, paymentMethods, today }: {
     const data = new FormData(event.currentTarget);
     const cents = Math.abs(parseMoneyToCents(String(data.get("total") ?? "")) ?? 0);
     if (!cents) { toast.error("Informe o valor."); return; }
-    if (!validCategory) { toast.error("Escolha a rubrica."); return; }
     if (!paymentMethodId) { toast.error("Escolha a forma de pagamento."); return; }
     startTransition(async () => {
       setStep("Salvando…");
       const result = await quickEntry({
-        date: data.get("date"), name: data.get("name"), paymentMethodId, categoryId: validCategory,
+        date: data.get("date"), name: data.get("name"), paymentMethodId,
         totalCents: direction === "saida" ? -cents : cents,
         description: String(data.get("description") ?? "") || null, notes: String(data.get("notes") ?? "") || null,
       });
@@ -79,8 +69,9 @@ export function QuickEntryForm({ categories, paymentMethods, today }: {
   return <form onSubmit={submit} className="grid gap-4">
     <fieldset className="m-0 grid gap-2 border-0 p-0">
       <legend className="mb-1.5 text-xs font-medium">Tipo</legend>
+      <p className="m-0 -mt-1 text-xs text-muted-foreground">A rubrica quem revisa escolhe depois.</p>
       <RadioGroup value={direction} onValueChange={(value) => setDirection(value as Direction)} className="grid gap-2 sm:grid-cols-2" aria-label="Tipo">
-        {([["saida", "Saída", "Pagamento, compra, reembolso"], ["entrada", "Entrada", "Recebimento, doação, venda"]] as const).map(([value, title, examples]) =>
+        {([["saida", "Despesa", "Pagamento, compra, reembolso"], ["entrada", "Receita", "Recebimento, doação, venda"]] as const).map(([value, title, examples]) =>
           <FieldLabel key={value} htmlFor={`quick-direction-${value}`} className="has-data-checked:border-primary">
             <ChoiceField orientation="horizontal">
               <FieldContent><FieldTitle>{title}</FieldTitle><FieldDescription className="italic">Ex.: {examples}</FieldDescription></FieldContent>
@@ -99,10 +90,6 @@ export function QuickEntryForm({ categories, paymentMethods, today }: {
     </div>
     <Field id="quick-name" label="Histórico">
       <Input id="quick-name" name="name" required minLength={2} maxLength={200} placeholder="Ex.: Mercado Bom Preço" autoComplete="off" className={BIG} />
-    </Field>
-    <Field id="quick-category" label="Rubrica">
-      <CategoryPicker id="quick-category" value={validCategory} onChange={setCategoryId} categories={visible} preferredKind={kind} usedIds={[]}
-        placeholder="Buscar rubrica…" />
     </Field>
     <Field id="quick-payment" label="Forma de pagamento">
       <OptionSelect id="quick-payment" value={paymentMethodId} onValueChange={setPaymentMethodId} options={methods} className={BIG} />
