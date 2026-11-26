@@ -111,7 +111,10 @@ async function withAttachmentCounts<T extends { entry_id: string }>(db: Db, list
   return list.map((row) => ({ ...row, attachment_count: counts.get(row.entry_id) ?? 0 }));
 }
 
-type EntrySplitRow = { category_id: string; amount_cents: number; description: string; associate_id: string | null; created_at: string; id: string };
+type EntrySplitRow = {
+  category_id: string; amount_cents: number; description: string; associate_id: string | null; created_at: string; id: string;
+  items: { material_id: string; quantity: number; unit_price_cents: number }[];
+};
 
 /** Carrega um lançamento com seus rateios na ordem em que foram gravados (RLS restringe ao grupo). */
 export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | null> {
@@ -122,7 +125,9 @@ export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | nu
     select e.id, e.entry_date, e.name, e.payment_method_id, e.account_id, e.document, e.document_filed, e.notes, e.total_cents, e.created_at,
       e.updated_at, e.review_status,
       coalesce((select json_agg(json_build_object('id', s.id, 'category_id', s.category_id, 'amount_cents', s.amount_cents,
-        'description', s.description, 'associate_id', s.associate_id, 'created_at', s.created_at))
+        'description', s.description, 'associate_id', s.associate_id, 'created_at', s.created_at,
+        'items', coalesce((select json_agg(json_build_object('material_id', i.material_id, 'quantity', i.quantity, 'unit_price_cents', i.unit_price_cents)
+          order by i.position) from public.entry_sale_items i where i.split_id = s.id), '[]')))
         from public.entry_splits s where s.entry_id = e.id), '[]') as entry_splits
     from public.ledger_entries e where e.id = ${id}`);
   if (!data) return null;
@@ -140,7 +145,10 @@ export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | nu
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     toReview: data.review_status === "para_revisar",
-    splits: splits.map((s) => ({ categoryId: s.category_id, amountCents: s.amount_cents, description: s.description, associateId: s.associate_id })),
+    splits: splits.map((s) => ({
+      categoryId: s.category_id, amountCents: s.amount_cents, description: s.description, associateId: s.associate_id,
+      items: s.items.map((item) => ({ materialId: item.material_id, quantity: item.quantity, unitPriceCents: Number(item.unit_price_cents) })),
+    })),
   };
 }
 

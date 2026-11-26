@@ -1,3 +1,4 @@
+import type { SaleItem } from "./sales";
 import type { EntryView } from "@/lib/finance/entry-rows";
 
 export type EditableEntry = {
@@ -14,7 +15,7 @@ export type EditableEntry = {
   updatedAt: string;
   /** Veio do registro rápido e ainda não foi revisado (049). */
   toReview?: boolean;
-  splits: { categoryId: string; amountCents: number; description: string; associateId: string | null }[];
+  splits: { categoryId: string; amountCents: number; description: string; associateId: string | null; items: SaleItem[] }[];
 };
 
 

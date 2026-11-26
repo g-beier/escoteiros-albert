@@ -21,14 +21,14 @@ O regulamento patrimonial do grupo está para ser aprovado em assembleia. Até l
 | **Condição** | Estado da peça ou do lote: novo, bom, regular, ruim, em manutenção, inservível ("ruim" é usado pelo grupo e falta no tipo atual). Num lote, todas as unidades têm a mesma condição: "2 ruins, 1 razoável, 1 ok" são três lotes. Também é conferida na conferência anual. | `inventory_condition` (acrescentar `ruim`) |
 | **Entrada** | Chegada do material ao grupo. Obrigatórios: data, origem (compra, doação, fabricação própria, não informada) e valor estimado. Opcionais: observação, fornecedor e nota fiscal. | colunas da peça / movimento *(proposto)* |
 | **Valor estimado** | Quanto vale cada unidade da peça ou do lote para o patrimônio; lotes do mesmo material podem ter valores diferentes. Diferente do **preço de venda** dos produtos da Lojinha. | *(proposto)* |
-| **Baixa** | Saída definitiva do patrimônio, com motivo: perda, extravio, descarte, doação ou consumo. Sem anexos (no máximo poucos, se o regulamento exigir). | movimento do tipo baixa *(proposto)* |
+| **Baixa** | Saída definitiva do patrimônio, com motivo: perda, extravio, descarte, doação, consumo ou **venda** (só pelo Financeiro, abaixo). Sem anexos (no máximo poucos, se o regulamento exigir). | movimento do tipo baixa *(proposto)* |
 | **Movimento** | Registro de toda mudança: entrada, troca de divisão, mudança de condição, ajuste de quantidade, baixa, venda e entrega da Lojinha. É o histórico e a base da revisão. | `inventory_movements` (a ampliar) |
 | **Revisão** | Dois status: **Para revisar** e **Revisado**. Todo movimento do colaborador (chefe), e todo movimento do **registro rápido** (mesmo do editor ou do administrador), vale na hora e fica **para revisar**; os do gestor e do administrador nas telas normais já nascem revisados. Qualquer gestor revisa, inclusive os próprios registros rápidos (Movimentações › Para revisar, em lote, com nota opcional; ou no histórico do material). Não há recusa: se algo estiver errado, o gestor conversa com quem registrou, corrige com um movimento normal (ajuste, condição, transferência, baixa) e marca o original como revisado com uma nota. | `inventory_movements.review_status`, `review_notes`; `inventory_review_movements` (044) |
 | **Registro rápido** | Parte do registro rápido comum aos módulos (`/rapido`, telas de celular) para registrar na hora, com poucos campos: retirar/consumir, entrada, mudar condição, transferir, ajustar contagem e cadastrar material novo (com a primeira entrada; valor e origem o gestor completa). Feitas rapidamente e sujeitas a erro: tudo fica para revisar. | `inventory_movements.channel = 'rapido'`; `inventory_quick` (045) |
 | **Contagem anual** | Quantidade contada de um material numa divisão num ano (uma por ano). A planilha trouxe 2024 a 2026; a conferência registra as próximas. A lista de materiais mostra a do ano anterior. Só o gestor registra. | `inventory_counts` |
 | **Conferência** | Processo anual (no mínimo), aberto pelo diretor no começo do ano ("Conferência 2027"): os chefes, com as seções, conferem as divisões e lançam as **divergências** de quantidade e de condição; as divergências viram ajustes. | `inventory_audits` *(proposto)* |
-| **Produto (Lojinha)** | Cadastro à parte do patrimônio, de itens vendidos ou entregues (lenço, camiseta, distintivo), com **variações** (tamanho, tipo de lenço), preço de venda e estoque numa divisão (ex.: Diretoria › Armário de ferro). Cadastrado no Inventário pelo gestor ou pela tesouraria. | *(proposto)* |
-| **Venda (Lojinha)** | Lançada no Financeiro, na rubrica Lojinha, escolhendo os produtos e variações vendidos na lista de produtos à venda; gera a saída do tipo **venda** no Inventário. A compra de reposição também é lançada no Financeiro e gera a entrada. | *(proposto)* |
+| **Material à venda (Lojinha)** | Material por quantidade marcado **à venda na Lojinha** pelo Editor, com **preço de venda** opcional (sugerido no lançamento, diferente do valor estimado). Variações (tamanho, tipo de lenço) são materiais ou lotes distintos (`variant`). | `inventory_materials.for_sale`, `sale_price_cents`; `inventory_set_material_sale` (019) |
+| **Venda (Lojinha)** | Lançada no Financeiro numa rubrica de receita marcada **venda de itens** (vale para as filhas): o rateio lista os **itens vendidos** (material, quantidade, preço), cuja soma é o valor do rateio. Salvar dá **baixa** com motivo venda (lote que vence antes primeiro; canal `financeiro`; fica para revisar para quem não é Editor do Inventário); editar ou excluir o lançamento devolve a diferença ao mesmo lote (movimento de entrada "devolução de venda"). Rubrica em lote, agrupar e desagrupar não mexem em rateios com itens. Compra de reposição: ainda não gera entrada (lançar a entrada no Inventário). | `entry_sale_items`, `entry_sale_draws`, `sync_entry_sales` (019) |
 | **Entrega (Lojinha)** | Saída sem venda, como o lenço da Acolhida do jovem novo. Registrada no Inventário; o associado que recebeu é opcional. | *(proposto)* |
 | **Distintivos e certificados** | Divisão própria com distintivos, insígnias, cordões e certificados, agrupados por família (promessa, especialidades, progressão…). Nunca são vendidos: saem sempre por **entrega**, como o lenço da Acolhida. | *(proposto)* |
 
@@ -39,14 +39,14 @@ Os níveis são os mesmos nos três módulos (`memberships.inventory_role`, migr
 | Papel no Inventário | Pode |
 |---|---|
 | **Administrador** | Tudo o que o editor pode, mais gerenciar os usuários do Inventário. |
-| **Editor** (ex.: diretor de patrimônio) | Cadastra e movimenta sem passar por revisão nas telas normais (no registro rápido, fica para revisar); revisa os movimentos dos colaboradores e os do registro rápido; mantém divisões e famílias; abre e fecha a conferência; cadastra produtos da Lojinha. |
+| **Editor** (ex.: diretor de patrimônio) | Cadastra e movimenta sem passar por revisão nas telas normais (no registro rápido, fica para revisar); revisa os movimentos dos colaboradores e os do registro rápido; mantém divisões e famílias; abre e fecha a conferência; marca materiais à venda na Lojinha e o preço. |
 | **Colaborador** (o chefe) | Cadastra e movimenta material (telas normais ou registro rápido): vale na hora e fica para revisar; lança divergências na conferência. |
 | **Consulta** | Só vê. |
 | **Sem acesso** | Não vê o Inventário. |
 
 Movimentos do editor e do administrador nas telas normais já nascem revisados; no registro rápido, ficam para revisar.
 
-A tesouraria lança vendas e compras da Lojinha no Financeiro e também cadastra produtos no Inventário; para isso, quem é da tesouraria precisa de um papel no Inventário (Editor, ou Colaborador com revisão).
+A tesouraria lança as vendas da Lojinha no Financeiro sem precisar de papel no Inventário (o banco dá a baixa pelo lançamento; o Editor do Inventário revisa). Marcar material à venda e o preço é do Editor do Inventário.
 
 ## Fora do escopo por enquanto
 

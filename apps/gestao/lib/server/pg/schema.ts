@@ -20,7 +20,7 @@ export type Enums = {
   inventory_origin: "compra" | "doacao" | "fabricacao" | "nao_informada";
   inventory_review_status: "para_revisar" | "revisado";
   inventory_tracking: "unit" | "lot";
-  inventory_write_off_reason: "perda" | "extravio" | "descarte" | "doacao" | "consumo";
+  inventory_write_off_reason: "perda" | "extravio" | "descarte" | "doacao" | "consumo" | "venda";
   module_role: "none" | "viewer" | "contributor" | "editor" | "admin";
   relative_kinship: "mae" | "pai" | "outro";
   scout_branch: "filhote" | "lobinho" | "escoteiro" | "senior" | "pioneiro" | "adulto";
@@ -225,6 +225,7 @@ export type Tables = {
     parent_id: string | null;
     ledger_code: unknown | null;
     position: number;
+    sells_items: boolean;
   };
   control_item_audiences: {
     item_id: string;
@@ -302,6 +303,26 @@ export type Tables = {
     content_type: string;
     size_bytes: number;
     uploaded_by: string | null;
+    created_at: string;
+  };
+  entry_sale_draws: {
+    id: number;
+    group_id: string;
+    entry_id: string;
+    material_id: string;
+    lot_id: string;
+    quantity: number;
+    created_at: string;
+  };
+  entry_sale_items: {
+    id: string;
+    group_id: string;
+    entry_id: string;
+    split_id: string;
+    material_id: string;
+    quantity: number;
+    unit_price_cents: number;
+    position: number;
     created_at: string;
   };
   entry_split_rows: {
@@ -518,6 +539,8 @@ export type Tables = {
     created_by: string | null;
     created_at: string;
     updated_at: string;
+    for_sale: boolean;
+    sale_price_cents: number | null;
   };
   inventory_movements: {
     id: number;
@@ -821,6 +844,7 @@ export type Functions = {
   can_write_attachment_object: { Args: { p_name: string }; Returns: boolean };
   can_write_finance: { Args: { p_group_id: string }; Returns: boolean };
   category_code_key: { Args: { p_code: string }; Returns: number[] };
+  category_sells_items: { Args: { p_category_id: string }; Returns: boolean };
   category_snapshot: { Args: { p_category_id: string }; Returns: Json };
   category_subtree: { Args: { p_category_id: string }; Returns: { id: string; depth: number }[] };
   check_category_kind_fits: { Args: { p_ids: string[]; p_kind: Enums["category_kind"] }; Returns: undefined };
@@ -871,6 +895,7 @@ export type Functions = {
   fee_category_ids: { Args: { p_group_id: string }; Returns: string[] };
   fee_record_snapshot: { Args: { p_record_id: string }; Returns: Json };
   finance_role_of: { Args: { p_group_id: string }; Returns: Enums["module_role"] };
+  finance_sale_materials: { Args: { p_group_id: string }; Returns: { id: string; name: string; for_sale: boolean; sale_price_cents: number; stock: number }[] };
   group_users: { Args: { p_group_id: string }; Returns: { user_id: string; email: string; last_sign_in_at: string; finance_role: Enums["module_role"]; inventory_role: Enums["module_role"]; associates_role: Enums["module_role"]; associate_id: string }[] };
   ignore_statement_line: { Args: { p_id: string; p_reason: string }; Returns: undefined };
   ignore_statement_lines: { Args: { p_ids: string[]; p_reason: string }; Returns: number };
@@ -926,6 +951,7 @@ export type Functions = {
   inventory_save_material: { Args: { p_group_id: string; p_id: string; p_family_id: string; p_name: string; p_tracking: Enums["inventory_tracking"]; p_consumable: boolean; p_minimum_quantity: number; p_description: string; p_active?: boolean }; Returns: string };
   inventory_search_normalize: { Args: { p_text: string }; Returns: string };
   inventory_set_lot_condition: { Args: { p_lot_id: string; p_condition: Enums["inventory_condition"]; p_quantity: number; p_notes: string }; Returns: string };
+  inventory_set_material_sale: { Args: { p_material_id: string; p_for_sale: boolean; p_sale_price_cents: number }; Returns: undefined };
   inventory_set_unit_condition: { Args: { p_unit_id: string; p_condition: Enums["inventory_condition"]; p_notes: string }; Returns: undefined };
   inventory_split_lot: { Args: { p_lot: Tables["inventory_lots"]; p_quantity: number; p_location_id: string; p_condition: Enums["inventory_condition"] }; Returns: string };
   inventory_transfer_lot: { Args: { p_lot_id: string; p_to_location_id: string; p_quantity: number; p_notes: string }; Returns: string };
@@ -1008,6 +1034,7 @@ export type Functions = {
   statement_description_key: { Args: { p_description: string }; Returns: string };
   statement_line_fingerprint: { Args: { p_account_id: string; p_date: string; p_amount_cents: number; p_description: string; p_occurrence: number }; Returns: string };
   statement_line_snapshot: { Args: { p_line_id: string }; Returns: Json };
+  sync_entry_sales: { Args: { p_entry_id: string }; Returns: undefined };
   unlink_reconciliation: { Args: { p_statement_line_id: string }; Returns: undefined };
   update_account: { Args: { p_account_id: string; p_name: string; p_kind: Enums["account_kind"]; p_bank: string; p_branch: string; p_number: string; p_opening_balance_cents: number; p_opening_date: string; p_ledger_code: string }; Returns: undefined };
   update_category: { Args: { p_category_id: string; p_parent_id: string; p_name: string; p_ledger_code: string }; Returns: undefined };

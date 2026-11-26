@@ -20,20 +20,26 @@ import { centsToInput, money } from "@/lib/format";
 import { parseMoneyToCents } from "@/lib/money";
 import { cn } from "@geas/ui/lib/utils";
 import type { CategoryItem } from "@/lib/finance/categories";
+import { categorySellsItems, type SaleMaterial } from "@/lib/finance/sales";
 import { CategoryPicker } from "./category-picker";
+import { SaleItemsEditor, itemDraftsTotal, toItemDrafts, type SaleItemDraft } from "./sale-items";
 
 export type CatalogItem = { id: string; name: string; active: boolean };
 export type PaymentMethodItem = CatalogItem & { default_account_id?: string | null };
-export type Catalogs = { categories: CategoryItem[]; paymentMethods: PaymentMethodItem[]; associates: CatalogItem[]; accounts: CatalogItem[] };
+export type Catalogs = {
+  categories: CategoryItem[]; paymentMethods: PaymentMethodItem[]; associates: CatalogItem[]; accounts: CatalogItem[];
+  /** Lojinha (019): materiais à venda para os itens vendidos. */
+  saleMaterials: SaleMaterial[];
+};
 type Direction = "entrada" | "saida";
 
-type SplitDraft = { key: number; categoryId: string; amount: string; description: string; associateId: string };
+type SplitDraft = { key: number; categoryId: string; amount: string; description: string; associateId: string; items: SaleItemDraft[] };
 /** Linha do extrato que origina o lançamento: data, valor e conta vêm dela (valor e conta ficam travados). */
 export type StatementLinePrefill = { id: string; date: string; name: string; totalCents: number; accountId: string; paymentMethodId: string };
 type Draft = { direction: Direction | null; date: string; name: string; total: string; paymentMethodId: string; accountId: string; document: string; documentFiled: boolean; notes: string; splits: SplitDraft[] };
 
 let splitKey = 0;
-const emptySplit = (): SplitDraft => ({ key: ++splitKey, categoryId: "", amount: "", description: "", associateId: "" });
+const emptySplit = (): SplitDraft => ({ key: ++splitKey, categoryId: "", amount: "", description: "", associateId: "", items: [] });
 
 function toDraft(entry: EditableEntry | null, fromLine?: StatementLinePrefill): Draft {
   if (!entry && fromLine) return {
@@ -52,7 +58,8 @@ function toDraft(entry: EditableEntry | null, fromLine?: StatementLinePrefill): 
     document: entry.document,
     documentFiled: entry.documentFiled,
     notes: entry.notes,
-    splits: entry.splits.map((s) => ({ key: ++splitKey, categoryId: s.categoryId, amount: centsToInput(Math.abs(s.amountCents)), description: s.description, associateId: s.associateId ?? "" })),
+    splits: entry.splits.map((s) => ({ key: ++splitKey, categoryId: s.categoryId, amount: centsToInput(Math.abs(s.amountCents)), description: s.description,
+      associateId: s.associateId ?? "", items: toItemDrafts(s.items ?? []) })),
   };
 }
 
@@ -95,12 +102,19 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
   const usedCategoryIds = useMemo(() => saved.splits.map((s) => s.categoryId).filter(Boolean), [saved]);
 
   const categoryKinds = useMemo(() => new Map(catalogs.categories.map((c) => [c.id, c.kind])), [catalogs.categories]);
+  /** Rubricas que vendem itens do inventário (a marca vale para as filhas). */
+  const sells = useMemo(() => new Set(catalogs.categories.filter((c) => categorySellsItems(c.id, catalogs.categories)).map((c) => c.id)), [catalogs.categories]);
+  /** Itens vendidos do lançamento salvo: o que já saiu do estoque volta antes de sair de novo ao editar. */
+  const savedItems = useMemo(() => entry?.splits.flatMap((s) => s.items ?? []) ?? [], [entry]);
+  const itemsOf = (split: SplitDraft) => (sells.has(split.categoryId) ? split.items : []);
+  /** Com itens vendidos, o valor do rateio é a soma deles. */
+  const splitMagnitude = (split: SplitDraft) => (itemsOf(split).length ? itemDraftsTotal(itemsOf(split)) : magnitude(split.amount));
   /** Receita soma, despesa subtrai; rubrica sem tipo (antiga) ou ainda não escolhida segue entrada/saída. */
   const splitSign = (split: SplitDraft) => {
     const kind = categoryKinds.get(split.categoryId);
     return kind === "receita" ? 1 : kind === "despesa" ? -1 : directionSign(draft.direction);
   };
-  const signedSplit = (split: SplitDraft) => splitSign(split) * magnitude(split.amount);
+  const signedSplit = (split: SplitDraft) => splitSign(split) * splitMagnitude(split);
   const totalCents = draft.direction ? directionSign(draft.direction) * magnitude(draft.total) : 0;
   const splitCents = draft.splits.reduce((sum, s) => sum + signedSplit(s), 0);
   const incomeCents = draft.splits.reduce((sum, s) => sum + Math.max(0, signedSplit(s)), 0);
@@ -132,7 +146,8 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
       documentFiled: draft.documentFiled,
       notes: draft.notes,
       totalCents,
-      splits: draft.splits.map((s) => ({ categoryId: s.categoryId, amountCents: signedSplit(s), description: s.description, associateId: s.associateId || null })),
+      splits: draft.splits.map((s) => ({ categoryId: s.categoryId, amountCents: signedSplit(s), description: s.description, associateId: s.associateId || null,
+        items: itemsOf(s).map((item) => ({ materialId: item.materialId, quantity: Number(item.quantity), unitPriceCents: magnitude(item.price) })) })),
     };
     startTransition(async () => {
       const result = entry ? await updateEntry(entry.id, payload) : fromLine ? await createEntryFromStatementLine(fromLine.id, payload) : await createEntry(payload);
@@ -187,8 +202,10 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine }: { en
         <div className="grid gap-1.5"><Label htmlFor={`split-category-${index}`}>Rubrica</Label><CategoryPicker id={`split-category-${index}`} value={split.categoryId} onChange={(categoryId) => updateSplit(split.key, { categoryId })} categories={catalogs.categories} preferredKind={kindFor(draft.direction)} usedIds={usedCategoryIds} placeholder="Buscar receita ou despesa…" disabled={readOnly} /></div>
         <div className="grid gap-1.5"><Label htmlFor={`split-description-${index}`}>Descrição</Label><Input id={`split-description-${index}`} maxLength={200} placeholder="Ex.: Lanche do acampamento" value={split.description} onChange={(e) => updateSplit(split.key, { description: e.target.value })} required /></div>
         <div className="grid gap-1.5"><Label htmlFor={`split-associate-${index}`}>Associado (opcional)</Label><OptionCombobox id={`split-associate-${index}`} value={split.associateId} onValueChange={(associateId) => updateSplit(split.key, { associateId })} options={options.associates} placeholder={readOnly ? "—" : "Buscar associado…"} emptyText="Nenhum associado encontrado." disabled={readOnly} /></div>
-        <div className="grid gap-1.5"><Label htmlFor={`split-amount-${index}`}>Valor (R$){split.categoryId && <span className={cn("ml-1", splitSign(split) < 0 ? "text-destructive" : "text-success")}>{splitSign(split) < 0 ? "−" : "+"}</span>}</Label><Input id={`split-amount-${index}`} inputMode="decimal" placeholder="0,00" value={split.amount} onChange={(e) => updateSplit(split.key, { amount: e.target.value })} className="text-right num" required /></div>
+        <div className="grid gap-1.5"><Label htmlFor={`split-amount-${index}`}>Valor (R$){split.categoryId && <span className={cn("ml-1", splitSign(split) < 0 ? "text-destructive" : "text-success")}>{splitSign(split) < 0 ? "−" : "+"}</span>}</Label><Input id={`split-amount-${index}`} inputMode="decimal" placeholder="0,00" value={itemsOf(split).length ? centsToInput(splitMagnitude(split)) : split.amount} onChange={(e) => updateSplit(split.key, { amount: e.target.value })} readOnly={itemsOf(split).length > 0} title={itemsOf(split).length ? "Soma dos itens vendidos" : undefined} className="text-right num" required /></div>
         {!readOnly && <Button type="button" variant="ghost" size="icon" aria-label={`Remover rubrica ${index + 1}`} disabled={draft.splits.length === 1} onClick={() => update({ splits: draft.splits.filter((s) => s.key !== split.key) })}><IconTrash /></Button>}
+        {sells.has(split.categoryId) && <SaleItemsEditor className="sm:col-span-full" index={index} items={split.items} materials={catalogs.saleMaterials}
+          savedItems={savedItems} readOnly={readOnly} onChange={(items) => updateSplit(split.key, { items })} />}
       </div>)}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
         <span>Soma do rateio: <strong className="num">{money(splitCents / 100)}</strong>
@@ -247,5 +264,6 @@ function DirectionButton({ value, current, onSelect, disabled }: { value: Direct
 }
 
 function stripKeys(draft: Draft) {
-  return { ...draft, splits: draft.splits.map((split) => [split.categoryId, split.amount, split.description, split.associateId]) };
+  return { ...draft, splits: draft.splits.map((split) => [split.categoryId, split.amount, split.description, split.associateId,
+    split.items.map((item) => [item.materialId, item.quantity, item.price])]) };
 }

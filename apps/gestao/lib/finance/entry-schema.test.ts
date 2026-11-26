@@ -40,7 +40,19 @@ describe("entrySchema", () => {
 
 describe("toRpcSplits", () => {
   it("converte para o formato da função SQL", () => {
-    expect(toRpcSplits(base.splits)[1]).toEqual({ category_id: id, amount_cents: 2000, description: "Lanche", associate_id: null });
+    expect(toRpcSplits(base.splits)[1]).toEqual({ category_id: id, amount_cents: 2000, description: "Lanche", associate_id: null, items: [] });
+  });
+  it("leva os itens vendidos", () => {
+    const split = { ...base.splits[1], items: [{ materialId: id, quantity: 2, unitPriceCents: 1000 }] };
+    expect(toRpcSplits([split])[0].items).toEqual([{ material_id: id, quantity: 2, unit_price_cents: 1000 }]);
+  });
+});
+
+describe("itens vendidos", () => {
+  const withItems = (unitPriceCents: number) => ({ ...base, splits: [base.splits[0], { ...base.splits[1], items: [{ materialId: id, quantity: 2, unitPriceCents }] }] });
+  it("a soma tem de dar o valor do rateio", () => {
+    expect(entrySchema.safeParse(withItems(1000)).success).toBe(true);
+    expect(entrySchema.safeParse(withItems(900)).error?.issues[0]?.message).toMatch(/itens vendidos/);
   });
 });
 

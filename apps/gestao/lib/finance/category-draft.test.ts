@@ -68,3 +68,19 @@ describe("category draft", () => {
     expect(payload.nodes.some((node) => node.key === "d" || node.key === "old")).toBe(false);
   });
 });
+
+describe("venda de itens (Lojinha)", () => {
+  it("marca vale para as de baixo, só em receitas, e vai no payload", () => {
+    let draft = createDraft(saved);
+    [draft] = addNode(draft, "r1", "Lenços");
+    draft = updateNode(draft, "r1", { sellsItems: true });
+    const rows = draftRows(draft);
+    expect(rows.filter((row) => row.sells).map((row) => row.node.name)).toEqual(["Mensalidades", "Lenços"]);
+    expect(draftChanges(draft, createDraft(saved)).toggled).toBe(1);
+    expect(draftPayload(draft).nodes.find((node) => node.key === "r1")?.sellsItems).toBe(true);
+    // em Despesas, a marca não vale nem é gravada
+    const moved = updateNode(createDraft(saved), "x", { sellsItems: true });
+    expect(draftRows(moved).find((row) => row.node.key === "x")?.sells).toBe(false);
+    expect(draftPayload(moved).nodes.find((node) => node.key === "x")?.sellsItems).toBe(false);
+  });
+});

@@ -8,7 +8,7 @@ import { InputError, runAction } from "@/lib/action";
 import { isScoutBranch } from "@/lib/associates/model";
 import { QUICK_DONE, type QuickKind } from "@/lib/inventory/quick";
 import { quickDoneHref } from "@/lib/quick";
-import { CONDITION_LABELS, WRITE_OFF_LABELS, type Condition, type Tracking, type WriteOffReason } from "@/lib/inventory/vocabulary";
+import { CONDITION_LABELS, MANUAL_WRITE_OFF_LABELS, type Condition, type Tracking, type WriteOffReason } from "@/lib/inventory/vocabulary";
 import * as associates from "@/lib/server/associates/associates";
 import * as entries from "@/lib/server/finance/entries";
 import * as quick from "@/lib/server/inventory/quick";
@@ -56,7 +56,7 @@ function build(kind: QuickKind, data: FormData, groupId: string): quick.QuickAct
   switch (kind) {
     case "retirar": {
       const target = item(data);
-      const reason = oneOf<WriteOffReason>(data, "reason", WRITE_OFF_LABELS, "Escolha o motivo da retirada.");
+      const reason = oneOf<Exclude<WriteOffReason, "venda">>(data, "reason", MANUAL_WRITE_OFF_LABELS, "Escolha o motivo da retirada.");
       return target.kind === "lot"
         ? { action: "write_off_lot", lot_id: target.id, quantity: quantity(data), reason, notes }
         : { action: "write_off_unit", unit_id: target.id, reason, notes };

@@ -30,7 +30,7 @@ export default async function EditMaterial({ params, searchParams }: { params: P
       {!member.inventory.canReview && <ReviewNotice />}
       <SectionCard>
         <SectionHeader title="Material" />
-        <div className="p-4"><MaterialForm families={familyOptions} material={material} hasStock={hasStock} back={back} /></div>
+        <div className="p-4"><MaterialForm families={familyOptions} material={material} hasStock={hasStock} canSell={member.inventory.canReview} back={back} /></div>
       </SectionCard>
     </PageBody>
   </div>;

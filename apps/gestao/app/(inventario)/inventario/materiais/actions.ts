@@ -110,6 +110,11 @@ export async function saveMaterial(_previous: ActionResult, formData: FormData):
       minimumQuantity: integer(formData, "minimum", "o estoque mínimo", false), description: optional(formData, "description"),
       active: formData.get("active") !== "off",
     });
+    // Lojinha: só o Editor vê estes campos (a função SQL confere de novo).
+    if (formData.get("saleFields") === "on") {
+      const forSale = tracking === "lot" && formData.get("forSale") === "on";
+      await materials.setSale(db, savedId, forSale, forSale ? cents(formData, "salePrice") : null);
+    }
     revalidatePath("/inventario/materiais");
     revalidatePath(`/inventario/materiais/${savedId}`);
     revalidatePath("/inventario");

@@ -54,8 +54,9 @@ export default async function SettingsPage({ params }: { params: Promise<{ aba: 
   // rascunho da tela de rubricas; ao salvar, o refresh traz o estado novo e a tela recomeça dele
   const savedCategories: SavedCategory[] = tree.map((c) => ({
     id: c.id, parent_id: c.parent_id, code: c.code, name: c.name, kind: c.kind, ledger_code: c.ledger_code, active: c.active, usage: c.usage,
+    sells_items: c.sells_items,
   }));
-  const categoriesVersion = savedCategories.map((c) => [c.id, c.parent_id, c.code, c.name, c.ledger_code, c.active, c.usage].join("|")).join(";");
+  const categoriesVersion = savedCategories.map((c) => [c.id, c.parent_id, c.code, c.name, c.ledger_code, c.active, c.sells_items, c.usage].join("|")).join(";");
 
   return <div className="shell">
     <AppHeader member={membership} current="/financeiro/configuracoes" />

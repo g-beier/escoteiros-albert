@@ -25,7 +25,7 @@ export default async function NewMaterial({ searchParams }: { searchParams: Prom
       {!member.inventory.canReview && <ReviewNotice />}
       <SectionCard>
         <SectionHeader title="Material" />
-        <div className="p-4"><MaterialForm families={familyOptions} locations={locationOptions(paths)} back={back} /></div>
+        <div className="p-4"><MaterialForm families={familyOptions} locations={locationOptions(paths)} canSell={member.inventory.canReview} back={back} /></div>
       </SectionCard>
     </PageBody>
   </div>;

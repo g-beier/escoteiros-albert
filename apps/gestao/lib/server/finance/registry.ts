@@ -13,13 +13,16 @@ import { rows, rpc, run } from "@/lib/server/pg/db";
 /** Cadastros usados pelo formulário de lançamento e pelos filtros (inclui os inativos, para os lançamentos antigos). */
 export async function entryCatalogs(db: Db, groupId: string): Promise<Catalogs> {
   return run(db, async (sql) => {
-    const [categories, paymentMethods, associates, accounts] = await Promise.all([
-      sql`select id, name, active, code, kind, parent_id from public.categories where group_id = ${groupId}`,
+    const [categories, paymentMethods, associates, accounts, saleMaterials] = await Promise.all([
+      sql`select id, name, active, code, kind, parent_id, sells_items from public.categories where group_id = ${groupId}`,
       sql`select id, name, active, default_account_id from public.payment_methods where group_id = ${groupId} order by name`,
       sql`select id, name, active from public.associates where group_id = ${groupId} order by name`,
       sql`select id, name, active from public.accounts where group_id = ${groupId} order by name`,
+      // Lojinha (019): materiais à venda, legíveis por quem lê o Financeiro mesmo sem acesso ao Inventário
+      sql`select id, name, for_sale, sale_price_cents::int as sale_price_cents, stock from public.finance_sale_materials(${groupId})`,
     ]);
-    return { categories: [...categories], paymentMethods: [...paymentMethods], associates: [...associates], accounts: [...accounts] } as unknown as Catalogs;
+    return { categories: [...categories], paymentMethods: [...paymentMethods], associates: [...associates], accounts: [...accounts],
+      saleMaterials: [...saleMaterials] } as unknown as Catalogs;
   });
 }
 
@@ -30,7 +33,7 @@ export type PaymentMethodItem = { id: string; name: string; active: boolean; usa
 export async function settingsCatalogs(db: Db, groupId: string) {
   return run(db, async (sql) => {
     const [categories, paymentMethods, accounts] = await Promise.all([
-      sql`select c.id, c.name, c.active, c.code, c.kind, c.parent_id, c.ledger_code,
+      sql`select c.id, c.name, c.active, c.code, c.kind, c.parent_id, c.ledger_code, c.sells_items,
             (select count(*) from public.entry_splits s where s.category_id = c.id) as usage
           from public.categories c where c.group_id = ${groupId}`,
       sql`select p.id, p.name, p.active, p.default_account_id,

@@ -30,6 +30,8 @@ export type Material = {
 export type MaterialDefaults = {
   id: string; name: string; family_id: string | null; tracking: Tracking; consumable: boolean;
   minimum_quantity: number | null; description: string | null; active: boolean;
+  /** Lojinha (019): à venda no Financeiro e preço sugerido (centavos). */
+  for_sale: boolean; sale_price_cents: number | null;
 };
 
 /** Lote com saldo; `path` é preenchido pela tela a partir das divisões. */

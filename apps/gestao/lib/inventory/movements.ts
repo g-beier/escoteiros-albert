@@ -1,3 +1,4 @@
+import { formatCents } from "@/lib/format";
 import type { Movement } from "./model";
 import { CONDITION_LABELS, TRACKING_LABELS, WRITE_OFF_LABELS, type Condition, type Tracking } from "./vocabulary";
 
@@ -13,6 +14,7 @@ const condition = (value: Condition | null) => (value ? CONDITION_LABELS[value] 
 const quantityOf = (value: unknown) => (typeof value === "number" ? value : null);
 const text = (value: unknown) => (value == null || value === "" ? "—" : String(value));
 const yesNo = (value: unknown) => (value ? "sim" : "não");
+const price = (value: unknown) => (typeof value === "number" ? formatCents(value) : "—");
 
 /** Ajuste: quantidade antes e depois (gravadas em `details.from` / `details.to`). */
 export function adjustment(details: Record<string, unknown>) {
@@ -33,13 +35,15 @@ export function materialChanges(details: Record<string, unknown>): string[] {
   if (changed("tracking")) changes.push(`Controle: ${TRACKING_LABELS[before.tracking as Tracking] ?? "—"} → ${TRACKING_LABELS[after.tracking as Tracking] ?? "—"}`);
   if (changed("consumable")) changes.push(`Consumível: ${yesNo(before.consumable)} → ${yesNo(after.consumable)}`);
   if (changed("active")) changes.push(after.active ? "Reativado" : "Inativado");
+  if (changed("for_sale")) changes.push(after.for_sale ? "À venda na Lojinha" : "Fora da Lojinha");
+  if (changed("sale_price_cents")) changes.push(`Preço de venda: ${price(before.sale_price_cents)} → ${price(after.sale_price_cents)}`);
   return changes;
 }
 
 /** O que mudou no movimento, sem a divisão (que tem coluna própria na lista). */
 export function movementDetail(row: Detailed): string {
   switch (row.kind) {
-    case "entrada": return row.to_condition ? condition(row.to_condition) : "";
+    case "entrada": return row.details.sale_return ? "Devolução de venda (lançamento editado ou excluído)" : row.to_condition ? condition(row.to_condition) : "";
     case "transferencia": return "";
     case "condicao": return `${condition(row.from_condition)} → ${condition(row.to_condition)}`;
     case "ajuste": {

@@ -59,6 +59,7 @@ export async function get(db: Db, groupId: string, id: string): Promise<Material
 export async function getForEdit(db: Db, groupId: string, id: string): Promise<{ material: MaterialDefaults; hasStock: boolean } | null> {
   const material = await one<MaterialDefaults & { has_stock: boolean }>(db, (sql) => sql`
     select m.id, m.name, m.family_id, m.tracking, m.consumable, m.minimum_quantity, m.description, m.active,
+      m.for_sale, m.sale_price_cents::int as sale_price_cents,
       exists (select 1 from public.inventory_lots l where l.material_id = m.id)
         or exists (select 1 from public.inventory_units u where u.material_id = m.id) as has_stock
     from public.inventory_materials m where m.id = ${id} and m.group_id = ${groupId}`);
@@ -128,6 +129,11 @@ export async function save(db: Db, groupId: string, input: MaterialInput): Promi
     p_group_id: groupId, p_id: input.id, p_family_id: input.familyId, p_name: input.name, p_tracking: input.tracking,
     p_consumable: input.consumable, p_minimum_quantity: input.minimumQuantity, p_description: input.description, p_active: input.active,
   });
+}
+
+/** Lojinha (019, Editor): material à venda no lançamento financeiro e preço sugerido. */
+export async function setSale(db: Db, materialId: string, forSale: boolean, salePriceCents: number | null): Promise<void> {
+  await rpc(db, "inventory_set_material_sale", { p_material_id: materialId, p_for_sale: forSale, p_sale_price_cents: salePriceCents });
 }
 
 /**

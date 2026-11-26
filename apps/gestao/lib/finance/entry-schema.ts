@@ -21,9 +21,18 @@ export const entrySchema = z.object({
     amountCents: nonZeroCents,
     description: z.string().trim().min(2, "Descreva cada rubrica.").max(200),
     associateId: z.uuid().nullable(),
+    /** Itens vendidos (só em rubrica que vende itens; a soma tem de dar o valor do rateio). */
+    items: z.array(z.object({
+      materialId: z.uuid({ message: "Escolha o material vendido." }),
+      quantity: z.number().int().positive("Informe a quantidade de cada item vendido."),
+      unitPriceCents: z.number().int().nonnegative("Informe o preço de cada item vendido."),
+    })).optional(),
   })).min(1, "Informe ao menos uma rubrica."),
 }).refine((value) => value.splits.reduce((sum, split) => sum + split.amountCents, 0) === value.totalCents, {
   message: "A soma das rubricas deve ser igual ao total do lançamento.",
+}).refine((value) => value.splits.every((split) => !split.items?.length
+  || split.items.reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0) === split.amountCents), {
+  message: "A soma dos itens vendidos deve ser igual ao valor da rubrica.",
 });
 
 export type EntryInput = z.infer<typeof entrySchema>;
@@ -34,5 +43,6 @@ export function toRpcSplits(splits: EntryInput["splits"]) {
     amount_cents: s.amountCents,
     description: s.description,
     associate_id: s.associateId,
+    items: (s.items ?? []).map((item) => ({ material_id: item.materialId, quantity: item.quantity, unit_price_cents: item.unitPriceCents })),
   }));
 }
