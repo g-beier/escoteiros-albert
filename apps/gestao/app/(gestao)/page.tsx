@@ -1,7 +1,7 @@
 import { Link } from "@geas/ui/components/link";
 import type { ReactNode } from "react";
 import { IconArrowRight, IconAward, IconBolt, IconExternalLink, IconCake, IconCircleCheck, IconPlus, IconStar } from "@tabler/icons-react";
-import { PageBody, PageHeader } from "@geas/ui";
+import { PageBody, PageHeader, SectionTabs } from "@geas/ui";
 import { buttonVariants } from "@geas/ui/components/button";
 import { Badge } from "@geas/ui/components/badge";
 import { ListCard, StatCard } from "@geas/ui/components/stat-card";
@@ -36,7 +36,8 @@ const dayMonth = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
  * Início geral: o que precisa de atenção nos módulos (só o que tem algo a fazer), os vencimentos de registro, as datas e
  * transições dos associados e um cartão por módulo com os números principais. Os detalhes ficam no Resumo de cada módulo (/financeiro, /inventario).
  */
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ avisos?: string }> }) {
+  const { avisos } = await searchParams;
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
   const { db, groupId } = member;
@@ -53,7 +54,7 @@ export default async function Home() {
     finance ? financeHome.overdueFees(db, groupId, year) : Promise.resolve([]),
     member.finance.canReview ? financeHome.openStatementLines(db, groupId) : Promise.resolve(0),
     inventoryOverview(db, groupId, today, member.inventory.canReview),
-    associatesFull ? associatesOverview(db, groupId, today) : sectionOverview(db, groupId, today),
+    associatesFull ? associatesOverview(db, groupId, today, { associateId: member.associateId, wholeGroup: avisos === "grupo" }) : sectionOverview(db, groupId, today),
     member.finance.canReview ? entriesToReview(db, groupId) : Promise.resolve(0),
     member.associates.canReview ? associatesToReview(db, groupId) : Promise.resolve(0),
   ]);
@@ -66,6 +67,13 @@ export default async function Home() {
   const expired = associates.expiries.filter((e) => e.days < 0).length;
   const expiring = associates.expiries.length - expired;
   const starsLate = associates.stars.filter((s) => s.star.dueOn <= today).length;
+  // Escotista com acesso ao Associados: avisos da própria seção (padrão) ou do grupo todo.
+  const sectionLabel = associates.sections.length === 1 ? associates.sections[0].name : "Minhas seções";
+  const scopeTabs = associatesFull && associates.sections.length > 0 ? <SectionTabs label="Avisos de associados" tabs={[
+    { href: "/", label: sectionLabel, active: associates.sectionOnly },
+    { href: "/?avisos=grupo", label: "Grupo todo", active: !associates.sectionOnly },
+  ]} /> : undefined;
+  const scopeNote = associates.sectionOnly && associates.sections.length > 0 ? ` (${associates.sections.map((s) => s.name).join(", ")})` : "";
   const canQuick = member.finance.canWrite || member.inventory.canWrite || member.associates.canWrite;
   const alerts: Alert[] = ([
     { module: "financeiro", count: entriesReview, label: plural(entriesReview, "lançamento para revisar", "lançamentos para revisar"),
@@ -99,9 +107,9 @@ export default async function Home() {
   // Listas vazias viram uma linha em "Sem novidades", em vez de uma caixa vazia cada.
   const quiet = [
     ...(associatesFull && associates.expiries.length === 0 ? [{ title: "Vencimentos de registro", text: `nenhum vencido nem vencendo em ${VALIDITY_WARNING_DAYS} dias` }] : []),
-    ...(associatesFull && associates.stars.length === 0 ? [{ title: "Estrelas de atividade", text: `nenhuma a entregar nem completando em ${STAR_NOTICE_DAYS} dias` }] : []),
-    ...(associates.dates.length === 0 ? [{ title: "Aniversários e promessas", text: `nenhum entre ${DATES_BEFORE_DAYS} dias atrás e ${DATES_AFTER_DAYS} à frente` }] : []),
-    ...(associates.transitions.length === 0 ? [{ title: "Transição de ramo", text: "nenhum jovem em período de transição" }] : []),
+    ...(associatesFull && associates.stars.length === 0 ? [{ title: "Estrelas de atividade", text: `nenhuma a entregar nem completando em ${STAR_NOTICE_DAYS} dias${scopeNote}` }] : []),
+    ...(associates.dates.length === 0 ? [{ title: "Aniversários e promessas", text: `nenhum entre ${DATES_BEFORE_DAYS} dias atrás e ${DATES_AFTER_DAYS} à frente${scopeNote}` }] : []),
+    ...(associates.transitions.length === 0 ? [{ title: "Transição de ramo", text: `nenhum jovem em período de transição${scopeNote}` }] : []),
   ];
 
   return <div className="shell">
@@ -109,7 +117,7 @@ export default async function Home() {
     <PageBody>
       {/* Registro rápido é a ação principal do Início (primário, à direita); as demais, conforme as permissões, são
           secundárias e ficam à esquerda dele. */}
-      <PageHeader title="Início" hideTitle actions={<>
+      <PageHeader title="Início" hideTitle tabs={scopeTabs} actions={<>
         {member.finance.canWrite && <NewEntryButton returnHref="" variant="outline" />}
         {member.inventory.canWrite && <Link href="/inventario/materiais/novo" className={buttonVariants({ variant: "outline", size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}
         {canQuick && <Link href="/rapido" className={buttonVariants({ size: "lg" })}><IconBolt data-icon="inline-start" /> Registro rápido</Link>}
