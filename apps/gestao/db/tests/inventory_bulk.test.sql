@@ -1,6 +1,6 @@
 -- pgTAP: edição em massa da lista de Materiais (011, inventory_bulk). Rode com `npm run test:db`.
 begin;
-select plan(17);
+select plan(22);
 \ir _fixture.psql
 
 select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
@@ -47,6 +47,16 @@ select throws_like(format($$select public.inventory_bulk(%L, 'familia', jsonb_bu
 select is(public.inventory_bulk(:'gid_a', 'consumivel', jsonb_build_array(jsonb_build_object('material_id', :'fosforo')), jsonb_build_object('value', true)), 1, 'marca consumível');
 select throws_like(format($$select public.inventory_bulk(%L, 'consumivel', jsonb_build_array(jsonb_build_object('material_id', %L)), jsonb_build_object('value', true))$$, :'gid_a', :'barraca'),
   '%controlado por peça%', 'peça não vira consumível');
+
+-- Lojinha (020): à venda em lote, sem mexer no preço; peça fica de fora.
+select public.inventory_set_material_sale(:'panela', false, 1000);
+select is(public.inventory_bulk(:'gid_a', 'venda', jsonb_build_array(jsonb_build_object('material_id', :'panela'), jsonb_build_object('material_id', :'fosforo'),
+  jsonb_build_object('material_id', :'barraca')), jsonb_build_object('value', true)), 2, 'marca à venda os dois por quantidade');
+select is((select sale_price_cents from public.inventory_materials where id = :'panela'), 1000::bigint, 'preço de venda mantido');
+select is((select for_sale from public.inventory_materials where id = :'barraca'), false, 'peça pulada');
+select is(public.inventory_bulk(:'gid_a', 'venda', jsonb_build_array(jsonb_build_object('material_id', :'panela')), jsonb_build_object('value', true)), 0, 'já à venda: nada muda');
+select is(public.inventory_bulk(:'gid_a', 'venda', jsonb_build_array(jsonb_build_object('material_id', :'panela'), jsonb_build_object('material_id', :'fosforo')),
+  jsonb_build_object('value', false)), 2, 'tira da venda');
 
 -- Permissão e isolamento.
 select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset

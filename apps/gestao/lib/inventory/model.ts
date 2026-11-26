@@ -6,6 +6,8 @@ import type { Condition, MovementChannel, MovementKind, Origin, ReviewStatus, Tr
 export type MaterialRow = {
   id: string; name: string; tracking: Tracking; consumable: boolean; minimum_quantity: number | null; active: boolean;
   quantity: number; next_expiry: string | null; below_minimum: boolean;
+  /** Lojinha (019/020): à venda no Financeiro e preço sugerido (centavos). */
+  for_sale: boolean; sale_price_cents: number | null;
 };
 
 /** Quantidade e valor de um material numa divisão (inventory_stock_by_location). */
@@ -22,6 +24,7 @@ export type StockRow = {
 /** Material no detalhe, com família e totais. */
 export type Material = {
   id: string; name: string; tracking: Tracking; consumable: boolean; minimum_quantity: number | null; description: string | null; active: boolean;
+  for_sale: boolean; sale_price_cents: number | null;
   family_id: string | null; family_name: string | null; family_code: string | null;
   quantity: number; estimated_value_cents: number; next_expiry: string | null; below_minimum: boolean;
 };
@@ -111,7 +114,7 @@ export type MaterialInput = {
 };
 
 /** Ações da edição em massa na lista de Materiais (`inventory_bulk`, 011). */
-export const BULK_ACTIONS = ["transferir", "condicao", "baixa", "familia", "consumivel"] as const;
+export const BULK_ACTIONS = ["transferir", "condicao", "baixa", "familia", "consumivel", "venda"] as const;
 export type BulkAction = (typeof BULK_ACTIONS)[number];
 /** Linha selecionada: o material numa divisão (`locationId` nulo = material sem estoque). */
 export type BulkTarget = { materialId: string; locationId: string | null };

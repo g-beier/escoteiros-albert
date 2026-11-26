@@ -9,7 +9,7 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { cn } from "@geas/ui/lib/utils";
 import { AppHeader } from "@/components/inventory/app-header";
 import { locationOptions } from "@/lib/inventory/locations";
-import { movementDetail, signedQuantity } from "@/lib/inventory/movements";
+import { movementDetail, saleEntryId, signedQuantity } from "@/lib/inventory/movements";
 import { materialsBackHref, withBack } from "@/lib/inventory/material-list";
 import type { Lot, Movement, Unit } from "@/lib/inventory/model";
 import * as locationsData from "@/lib/server/inventory/locations";
@@ -82,6 +82,8 @@ export default async function MaterialDetail({ params, searchParams }: { params:
           </Fact>
           <Fact label="Valor estimado"><span className="num">{formatCents(Number(material.estimated_value_cents))}</span></Fact>
           {material.next_expiry && <Fact label="Próxima validade"><Expiry date={material.next_expiry} /></Fact>}
+          {material.for_sale && <Fact label="Lojinha">À venda · {material.sale_price_cents != null
+            ? <span className="num">{formatCents(material.sale_price_cents)}</span> : <span className="text-muted-foreground">sem preço</span>}</Fact>}
           {!material.active && <Fact label="Situação"><Badge variant="outline">Inativo</Badge></Fact>}
         </dl>
       </PageHeader>
@@ -122,6 +124,7 @@ export default async function MaterialDetail({ params, searchParams }: { params:
               <TableCell className={cn(CELL_CLASS, "num text-right")}>{signedQuantity(row) ?? "—"}</TableCell>
               <TableCell className={cn(CELL_CLASS, "whitespace-normal")}>
                 {describe(row, pathOf, unitLabel)}
+                <SaleEntryLink row={row} canRead={member.finance.canRead} />
                 {row.notes && <span className="block text-muted-foreground">{row.notes}</span>}
               </TableCell>
               <TableCell className={CELL_CLASS}>
@@ -137,6 +140,13 @@ export default async function MaterialDetail({ params, searchParams }: { params:
       </SectionCard>
     </PageBody>
   </div>;
+}
+
+/** "ver lançamento" da venda ou devolução (019), para quem lê o Financeiro. */
+function SaleEntryLink({ row, canRead }: { row: Movement; canRead: boolean }) {
+  const entryId = saleEntryId(row);
+  if (!entryId || !canRead) return null;
+  return <> · <Link href={`/financeiro/lancamentos/${entryId}`} className="font-medium text-primary hover:underline">ver lançamento</Link></>;
 }
 
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {

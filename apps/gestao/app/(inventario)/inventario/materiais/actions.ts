@@ -219,6 +219,7 @@ export async function bulkEdit(_previous: ActionResult, formData: FormData): Pro
       : action === "condicao" ? { condition: oneOf(formData, "condition", CONDITIONS) ?? (() => { throw new InputError("Escolha a condição."); })() }
       : action === "baixa" ? { reason: reason(formData) }
       : action === "familia" ? { family_id: optionalId(formData, "familyId") }
+      : action === "venda" ? { value: (() => { const v = text(formData, "forSale"); if (v !== "sim" && v !== "nao") throw new InputError("Escolha se fica à venda."); return v === "sim"; })() }
       : { value: (() => { const v = text(formData, "consumable"); if (v !== "sim" && v !== "nao") throw new InputError("Escolha consumível ou não."); return v === "sim"; })() };
     const changed = await materials.bulk(db, groupId, action, targets, args, optional(formData, "notes"));
     revalidatePath("/inventario/materiais");
@@ -230,6 +231,7 @@ export async function bulkEdit(_previous: ActionResult, formData: FormData): Pro
 
 const BULK_DONE: Record<BulkAction, string> = {
   transferir: "Transferido", condicao: "Condição registrada", baixa: "Baixa registrada", familia: "Família alterada", consumivel: "Cadastro alterado",
+  venda: "Lojinha atualizada",
 };
 
 /**

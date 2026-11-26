@@ -525,6 +525,8 @@ export type Tables = {
     below_minimum: boolean | null;
     updated_at: string | null;
     search_text: string | null;
+    for_sale: boolean | null;
+    sale_price_cents: number | null;
   };
   inventory_materials: {
     id: string;

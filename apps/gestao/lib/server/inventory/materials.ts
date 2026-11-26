@@ -18,7 +18,8 @@ export async function list(db: Db, groupId: string, filters: MaterialFilters): P
   // Busca ampliada (043): cada palavra precisa aparecer em algum campo (nome, descrição, família, lotes, peças).
   const patterns = searchTerms(filters.search).map((term) => `%${term.replace(/[%_\\]/g, (c) => `\\${c}`)}%`);
   return rows<MaterialRow>(db, (sql) => sql`
-    select id, name, tracking, consumable, minimum_quantity, active, quantity, next_expiry, below_minimum
+    select id, name, tracking, consumable, minimum_quantity, active, quantity, next_expiry, below_minimum,
+      for_sale, sale_price_cents::int as sale_price_cents
     from public.inventory_material_rows where group_id = ${groupId}
       ${filters.includeInactive ? sql`` : sql`and active`}
       ${filters.familyId ? sql`and family_id = ${filters.familyId}` : sql``}
@@ -51,7 +52,7 @@ export async function countsOfYears(db: Db, groupId: string, years: number[]): P
 export async function get(db: Db, groupId: string, id: string): Promise<Material | null> {
   return one<Material>(db, (sql) => sql`
     select id, name, tracking, consumable, minimum_quantity, description, active, family_id, family_name, family_code, quantity,
-      estimated_value_cents, next_expiry, below_minimum
+      estimated_value_cents, next_expiry, below_minimum, for_sale, sale_price_cents::int as sale_price_cents
     from public.inventory_material_rows where id = ${id} and group_id = ${groupId}`);
 }
 

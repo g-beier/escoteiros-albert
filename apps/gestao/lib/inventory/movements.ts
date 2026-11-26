@@ -40,6 +40,15 @@ export function materialChanges(details: Record<string, unknown>): string[] {
   return changes;
 }
 
+/**
+ * Lançamento financeiro da venda (019): baixa com motivo venda ou devolução de venda guardam `details.entry_id`.
+ * Para o link "ver lançamento" (só para quem lê o Financeiro).
+ */
+export function saleEntryId(row: Pick<Movement, "kind" | "write_off_reason" | "details">): string | null {
+  const sale = (row.kind === "baixa" && row.write_off_reason === "venda") || (row.kind === "entrada" && row.details.sale_return === true);
+  return sale && typeof row.details.entry_id === "string" ? row.details.entry_id : null;
+}
+
 /** O que mudou no movimento, sem a divisão (que tem coluna própria na lista). */
 export function movementDetail(row: Detailed): string {
   switch (row.kind) {

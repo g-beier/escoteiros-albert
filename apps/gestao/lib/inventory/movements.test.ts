@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { movementDetail, signedQuantity } from "./movements";
+import { movementDetail, saleEntryId, signedQuantity } from "./movements";
 
 const base = { from_condition: null, to_condition: null, write_off_reason: null, details: {}, quantity: null } as const;
 
@@ -19,5 +19,17 @@ describe("detalhe do movimento", () => {
   it("baixa mostra o motivo; entrada, a condição", () => {
     expect(movementDetail({ ...base, kind: "baixa", write_off_reason: "perda" })).toBe("Perda");
     expect(movementDetail({ ...base, kind: "entrada", to_condition: "novo" })).toBe("Novo");
+  });
+});
+
+describe("saleEntryId (Lojinha)", () => {
+  const row = (kind: "baixa" | "entrada" | "ajuste", write_off_reason: "venda" | "consumo" | null, details: Record<string, unknown>) =>
+    ({ kind, write_off_reason, details });
+  it("só baixa de venda e devolução de venda levam ao lançamento", () => {
+    expect(saleEntryId(row("baixa", "venda", { entry_id: "e1" }))).toBe("e1");
+    expect(saleEntryId(row("entrada", null, { sale_return: true, entry_id: "e1" }))).toBe("e1");
+    expect(saleEntryId(row("baixa", "consumo", { entry_id: "e1" }))).toBeNull();
+    expect(saleEntryId(row("entrada", null, { entry_id: "e1" }))).toBeNull();
+    expect(saleEntryId(row("baixa", "venda", {}))).toBeNull();
   });
 });

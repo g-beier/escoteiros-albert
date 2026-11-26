@@ -12,13 +12,16 @@ const scarf = uniqueName("Lenço");
 const category = uniqueName("Venda de lenços");
 const entry = uniqueName("Venda na reunião");
 const group = `(select m.group_id from public.memberships m join auth.users u on u.id = m.user_id where u.email = ${literal(E2E_ADMIN_EMAIL)})`;
+const badge = `${scarf} distintivo`;
 const material = `(select id from public.inventory_materials where group_id = ${group} and name = ${literal(scarf)})`;
+const ours = `(select id from public.inventory_materials where group_id = ${group} and name in (${literal(scarf)}, ${literal(badge)}))`;
 const stock = () => Number(psql(`select sum(quantity) from public.inventory_lots where material_id = ${material};`));
 
 test.beforeAll(() => {
   psql(`
     insert into public.inventory_locations(group_id, name, position) values (${group}, ${literal(place)}, 9999);
     insert into public.inventory_materials(group_id, name, tracking, for_sale, sale_price_cents) values (${group}, ${literal(scarf)}, 'lot', true, 2500);
+    insert into public.inventory_materials(group_id, name, tracking) values (${group}, ${literal(badge)}, 'lot');
     insert into public.inventory_lots(group_id, material_id, location_id, quantity, condition)
     select ${group}, ${material}, l.id, 5, 'bom' from public.inventory_locations l where l.group_id = ${group} and l.name = ${literal(place)};
     insert into public.categories(group_id, name, parent_id, kind, position)
@@ -28,11 +31,20 @@ test.beforeAll(() => {
 });
 
 test.afterAll(() => {
+  // Venda que ficou de um teste interrompido: excluir pela função devolve o estoque e apaga os itens.
+  const gid = psql(`select ${group};`);
+  psql(`
+    begin;
+    select set_config('request.jwt.claims', json_build_object('sub', u.id, 'role', 'authenticated')::text, true)
+      from auth.users u where u.email = ${literal(E2E_ADMIN_EMAIL)};
+    set local role authenticated;
+    select public.delete_ledger_entry(e.id) from public.ledger_entries e where e.group_id = ${literal(gid)} and e.name = ${literal(entry)};
+    commit;`);
   psql(`
     delete from public.entry_sale_draws where material_id = ${material};
-    delete from public.inventory_movements where material_id = ${material};
-    delete from public.inventory_lots where material_id = ${material};
-    delete from public.inventory_materials where id = ${material};
+    delete from public.inventory_movements where material_id in ${ours};
+    delete from public.inventory_lots where material_id in ${ours};
+    delete from public.inventory_materials where id in ${ours};
     delete from public.inventory_locations where group_id = ${group} and name = ${literal(place)};
     delete from public.categories where group_id = ${group} and name = ${literal(category)};
   `);
@@ -78,7 +90,16 @@ test("venda com itens dá baixa no inventário e a exclusão devolve", async ({ 
     expect(psql(`select count(*) from public.inventory_movements where material_id = ${material} and kind = 'baixa' and write_off_reason = 'venda' and channel = 'financeiro';`)).toBe("1");
   });
 
+  await test.step("detalhe do material: Lojinha e link para o lançamento no histórico", async () => {
+    await page.goto(`/inventario/materiais/${psql(`select ${material};`)}`);
+    await expect(page.getByText("À venda · R$ 25,00")).toBeVisible();
+    await page.getByRole("link", { name: "ver lançamento" }).first().click();
+    await expect(page).toHaveURL(/\/financeiro\/lancamentos\/[0-9a-f-]{36}/);
+    await expect(page.getByRole("heading", { name: entry })).toBeVisible();
+  });
+
   await test.step("excluir o lançamento devolve o item ao lote", async () => {
+    await page.goto("/financeiro/lancamentos/movimentacoes");
     await search(page, entry);
     await entryRow(page, entry).getByRole("link", { name: entry, exact: true }).click();
     await expect(page.getByRole("group", { name: "Itens vendidos da rubrica 1" }).getByRole("combobox", { name: "Material" })).toHaveValue(new RegExp(scarf));
@@ -86,5 +107,34 @@ test("venda com itens dá baixa no inventário e a exclusão devolve", async ({ 
     await page.getByRole("dialog").getByRole("button", { name: "Excluir" }).click();
     await expect(page.getByText("Lançamento excluído.")).toBeVisible();
     expect(stock()).toBe(5);
+  });
+});
+
+test("marca à venda em lote, ícone ao lado do nome e filtro Só à venda", async ({ page }) => {
+  const sale = page.getByRole("checkbox", { name: "Só à venda" });
+  await page.goto(`/inventario/materiais?q=${encodeURIComponent(scarf)}`);
+  await expect(page.getByTitle(/^À venda na Lojinha/)).toHaveCount(1);
+
+  await test.step("os dois em lote: só o distintivo muda", async () => {
+    await page.getByRole("checkbox", { name: new RegExp(`^Selecionar ${scarf} em `) }).check();
+    await page.getByRole("checkbox", { name: `Selecionar ${badge} (sem estoque)` }).check();
+    await page.getByRole("region", { name: "Ações com os materiais selecionados" }).getByRole("button", { name: "À venda" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Salvar" }).click();
+    await expect(page.getByText("Lojinha atualizada: 1 material.")).toBeVisible();
+    await expect(page.getByTitle(/^À venda na Lojinha/)).toHaveCount(2);
+    expect(psql(`select sale_price_cents from public.inventory_materials where id = ${material};`)).toBe("2500");
+  });
+
+  await test.step("Só à venda e tirar da venda em lote", async () => {
+    await sale.click();
+    await expect(page).toHaveURL(/venda=1/);
+    await expect(page.getByRole("link", { name: badge, exact: true })).toBeVisible();
+    await page.getByRole("checkbox", { name: "Selecionar todas as linhas da lista" }).check();
+    await page.getByRole("region", { name: "Ações com os materiais selecionados" }).getByRole("button", { name: "À venda" }).click();
+    await page.getByRole("dialog").getByLabel("À venda na Lojinha").click();
+    await page.getByRole("option", { name: /^Não/ }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Salvar" }).click();
+    await expect(page.getByText("Lojinha atualizada: 2 materiais.")).toBeVisible();
+    await expect(page.getByText("Nenhum material encontrado.")).toBeVisible();
   });
 });

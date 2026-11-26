@@ -1,7 +1,7 @@
 import { Link } from "@geas/ui/components/link";
 import { cookies } from "next/headers";
 import { Fragment } from "react";
-import { IconAlertTriangle, IconArrowsSort, IconBolt, IconClipboardCheck, IconPlus, IconPlusMinus, IconPrinter } from "@tabler/icons-react";
+import { IconAlertTriangle, IconArrowsSort, IconBolt, IconClipboardCheck, IconPlus, IconPlusMinus, IconPrinter, IconShoppingBag } from "@tabler/icons-react";
 import { PageBody, PageHeader, SectionTabs } from "@geas/ui";
 import { buttonVariants } from "@geas/ui/components/button";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
@@ -24,6 +24,7 @@ import * as movementsData from "@/lib/server/inventory/movements";
 import { MaterialFilters } from "@/components/inventory/materials/material-filters";
 import { StockEditor } from "@/components/inventory/materials/stock-editor";
 import { BulkSelection } from "@/components/inventory/materials/bulk";
+import { saleMarkLabel } from "@/components/inventory/sale-mark";
 import { IconSprite, SpriteIcon } from "@/components/shell/icon-sprite";
 import { SetupNeeded } from "@/components/shell/setup-needed";
 import { CELL_CLASS, HEAD_CLASS } from "@/components/shell/table-head";
@@ -86,7 +87,8 @@ export default async function Materials({ searchParams }: { searchParams: Promis
 
   // Alerta conta pelo total do material (mínimo e validade de todas as divisões), como no alerta do Início.
   const alerting = (m: MaterialRow) => m.below_minimum || (m.next_expiry !== null && daysUntil(m.next_expiry) <= EXPIRY_WARNING_DAYS);
-  const materials = new Map(materialData.filter((m) => params.alerta !== "1" || alerting(m)).map((m) => [m.id, m]));
+  // "Só à venda" (Lojinha): materiais marcados à venda no Financeiro.
+  const materials = new Map(materialData.filter((m) => (params.alerta !== "1" || alerting(m)) && (params.venda !== "1" || m.for_sale)).map((m) => [m.id, m]));
   const previousOf = (materialId: string, locationId: string): [number | null, number | null] =>
     [counts.get(years[0])?.get(`${materialId}|${locationId}`) ?? null, counts.get(years[1])?.get(`${materialId}|${locationId}`) ?? null];
   const byLocation = new Map<string, Line[]>();
@@ -183,7 +185,7 @@ export default async function Materials({ searchParams }: { searchParams: Promis
         {/* A tabela fica mesmo vazia: o cabeçalho tem os menus das colunas, para desfazer o filtro. Corpo em blocos
             (`cv-table`/`cv-rows` do tema): o navegador pula os que estão fora da tela. */}
         <IconSprite icons={SPRITE} />
-        <EditorFrame canEdit={canEdit} listKey={here} locations={locationOptions} families={familyOptions}><div className="overflow-x-auto"><Table className={cn("cv-table min-w-[760px]", MAT_BODY)} style={cvCols([...(canEdit ? ["2.25rem"] : []), "minmax(12rem, 1fr)", ...columns.map((id) => HEADS[id].track), ...(canEdit ? ["2.5rem"] : [])])}>
+        <EditorFrame canEdit={canEdit} canSell={member.inventory.canReview} listKey={here} locations={locationOptions} families={familyOptions}><div className="overflow-x-auto"><Table className={cn("cv-table min-w-[760px]", MAT_BODY)} style={cvCols([...(canEdit ? ["2.25rem"] : []), "minmax(12rem, 1fr)", ...columns.map((id) => HEADS[id].track), ...(canEdit ? ["2.5rem"] : [])])}>
             <TableCaption className="sr-only">Materiais por divisão; a ordem escolhida vale dentro de cada divisão</TableCaption>
             <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
               {canEdit && <TableHead className={cn(HEAD_CLASS, "w-9 px-1! text-center")}>
@@ -273,10 +275,10 @@ function GroupRow({ level, depth = 0, columns, href, orderHref, children }: { le
 const empty = <span className="text-muted-foreground">—</span>;
 
 /** Quem edita ganha o ouvinte único dos botões ± (StockEditor); quem só lê, a tabela pura. */
-const EditorFrame = ({ canEdit, listKey, locations, families, children }: { canEdit: boolean; listKey: string; locations: Option[]; families: Option[]; children: React.ReactNode }) =>
-  canEdit ? <BulkSelection key={listKey} locations={locations} families={families}><StockEditor>{children}</StockEditor></BulkSelection> : <>{children}</>;
+const EditorFrame = ({ canEdit, canSell, listKey, locations, families, children }: { canEdit: boolean; canSell: boolean; listKey: string; locations: Option[]; families: Option[]; children: React.ReactNode }) =>
+  canEdit ? <BulkSelection key={listKey} locations={locations} families={families} canSell={canSell}><StockEditor>{children}</StockEditor></BulkSelection> : <>{children}</>;
 
-const SPRITE = { "plus-minus": IconPlusMinus, alert: IconAlertTriangle };
+const SPRITE = { "plus-minus": IconPlusMinus, alert: IconAlertTriangle, sale: IconShoppingBag };
 
 /**
  * Estilo das linhas de material, uma vez só no `<table>` (variantes do Tailwind), e não repetido em cada linha: no App
@@ -322,6 +324,9 @@ function condition(value: Condition | null, detail?: string) {
 
 type StockActions = { pathOf: Map<string, string> };
 
+/** "À venda na Lojinha · R$ 25,00" (título e leitor de tela do ícone). */
+const saleLabel = (material: MaterialRow) => saleMarkLabel(material.sale_price_cents);
+
 /**
  * Material numa divisão: as colunas visíveis, com os valores daquela divisão; para quem edita, o botão ± no fim.
  * `<tr>`/`<td>` simples (sem as classes de TableRow/TableCell em cada célula); o material e a divisão vão no `<tr>`
@@ -351,6 +356,8 @@ function MaterialLine({ line, depth, columns, back, actions }: { line: Line; dep
     {actions && <td data-a="b"><input type="checkbox" data-sel="" value={`${material.id}|${line.location_id}`} aria-label={`Selecionar ${material.name}${line.location_id ? ` em ${actions.pathOf.get(line.location_id) ?? ""}` : " (sem estoque)"}`} /></td>}
     <td data-n="" style={indent(depth)}>
       <Link href={withBack(`/inventario/materiais/${material.id}`, back)} className="hover:underline">{material.name}</Link>
+      {material.for_sale && <span className="ml-1.5 inline-flex align-middle text-primary" title={saleLabel(material)}>
+        <SpriteIcon id="sale" className="size-3.5" /><span className="sr-only">{saleLabel(material)}</span></span>}
       {(material.consumable || !material.active) && <span className="ml-2 inline-flex flex-wrap gap-1 align-middle">
         {material.consumable && <span data-tag="">Consumível</span>}
         {!material.active && <span data-tag="">Inativo</span>}

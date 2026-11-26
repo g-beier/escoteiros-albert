@@ -1,6 +1,7 @@
 import { Link } from "@geas/ui/components/link";
 import { notFound, redirect } from "next/navigation";
 import { IconChevronRight } from "@tabler/icons-react";
+import { SaleMark } from "@/components/inventory/sale-mark";
 import { PageBody, PageHeader } from "@geas/ui";
 import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { cn } from "@geas/ui/lib/utils";
@@ -44,7 +45,7 @@ export default async function QuickMaterial({ params, searchParams }: { params: 
   return <div className="shell">
     <GestaoHeader current={`/rapido/inventario/${id}`} member={member} quick />
     <PageBody width="narrow">
-      <PageHeader title={chosen ? chosen.label : material.name}
+      <PageHeader title={chosen ? chosen.label : <>{material.name}{material.for_sale && <SaleMark priceCents={material.sale_price_cents} className="ml-2" />}</>}
         crumbs={chosen ? [...crumbs, { label: material.name, href: `/rapido/inventario/${id}` }, { label: chosen.label }] : [...crumbs, { label: material.name }]}
         description={chosen ? material.name : <span className={cn("num", material.below_minimum && "text-destructive")}>{material.quantity} em estoque{material.minimum_quantity != null && ` (mínimo ${material.minimum_quantity})`}</span>} />
       {chosen

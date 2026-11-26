@@ -10,7 +10,7 @@ export const MATERIALS_PATH = "/inventario/materiais";
 
 /** Chaves da query da lista, na ordem em que entram na URL. */
 export const LIST_KEYS = [
-  "divisao", "q", "familia", "alerta", "inativos", "estado", "unitario_de", "unitario_ate", "qtd_de", "qtd_ate", "minimo", "validade", "ordem", "dir",
+  "divisao", "q", "familia", "alerta", "venda", "inativos", "estado", "unitario_de", "unitario_ate", "qtd_de", "qtd_ate", "minimo", "validade", "ordem", "dir",
 ] as const;
 export type ListKey = (typeof LIST_KEYS)[number];
 

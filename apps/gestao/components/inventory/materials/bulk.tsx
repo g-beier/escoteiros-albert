@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import { IconArrowsTransferUp, IconCategory, IconCircleHalf2, IconPackageExport, IconToolsKitchen2, IconX } from "@tabler/icons-react";
+import { IconArrowsTransferUp, IconCategory, IconCircleHalf2, IconPackageExport, IconShoppingBag, IconToolsKitchen2, IconX } from "@tabler/icons-react";
 import { Button } from "@geas/ui/components/button";
 import type { Option } from "@geas/ui/components/option-controls";
 import { bulkEdit } from "@/app/(inventario)/inventario/materiais/actions";
@@ -16,7 +16,11 @@ import { NotesField, SelectField } from "./fields";
  * Shift + clique marca o intervalo desde a última caixa clicada. Com algo marcado, aparece a barra de ações no rodapé.
  * A página monta este componente com `key` = endereço da lista: trocar filtro ou aba começa uma seleção nova.
  */
-export function BulkSelection({ locations, families, children }: { locations: Option[]; families: Option[]; children: ReactNode }) {
+export function BulkSelection({ locations, families, canSell = false, children }: {
+  locations: Option[]; families: Option[];
+  /** Editor do Inventário: marca ou tira materiais da Lojinha (à venda no Financeiro). */
+  canSell?: boolean; children: ReactNode;
+}) {
   const frame = useRef<HTMLDivElement>(null);
   const last = useRef<number | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
@@ -84,6 +88,7 @@ export function BulkSelection({ locations, families, children }: { locations: Op
         <Button size="lg" variant="outline" onClick={() => setDialog("familia")}><IconCategory data-icon="inline-start" /> Alterar família</Button>
         <Button size="lg" variant="outline" disabled={!withStock} onClick={() => setDialog("condicao")}><IconCircleHalf2 data-icon="inline-start" /> Condição</Button>
         <Button size="lg" variant="outline" onClick={() => setDialog("consumivel")}><IconToolsKitchen2 data-icon="inline-start" /> Consumível</Button>
+        {canSell && <Button size="lg" variant="outline" onClick={() => setDialog("venda")}><IconShoppingBag data-icon="inline-start" /> À venda</Button>}
         <Button size="lg" variant="outline" disabled={!withStock} onClick={() => setDialog("baixa")}><IconPackageExport data-icon="inline-start" /> Dar baixa</Button>
       </div>
     </div>}
@@ -110,6 +115,11 @@ export function BulkSelection({ locations, families, children }: { locations: Op
       description={`${wholeMaterial} Consumível é só para material por quantidade.`}>
       <SelectField id="bulk-consumable" name="consumable" label="Consumível" defaultValue="sim" className="sm:col-span-2"
         options={[{ value: "sim", label: "Sim: some com o uso (consumir)" }, { value: "nao", label: "Não: patrimônio (dar baixa)" }]} />
+    </ActionDialog>}
+    {dialog === "venda" && <ActionDialog {...common} title={`Lojinha: ${count}`} submitLabel="Salvar" hidden={hidden("venda")}
+      description={`${wholeMaterial} Só material por quantidade: os por peça ficam de fora. O preço de venda não muda (defina no cadastro do material).`}>
+      <SelectField id="bulk-sale" name="forSale" label="À venda na Lojinha" defaultValue="sim" className="sm:col-span-2"
+        options={[{ value: "sim", label: "Sim: aparece nos itens vendidos do Financeiro" }, { value: "nao", label: "Não: tira da Lojinha" }]} />
     </ActionDialog>}
   </>;
 }
