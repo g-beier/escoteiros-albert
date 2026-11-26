@@ -148,9 +148,8 @@ export async function deleteAssociateMovement(movementId: unknown): Promise<FeeR
 
 // Devedores ---------------------------------------------------------------------------------
 
-const debtSchema = z.object({
-  id: z.union([z.uuid(), z.literal("")]).transform((v) => v || null),
-  associateId: z.uuid({ message: "Escolha o associado." }),
+const debtLineSchema = z.object({
+  id: z.uuid({ message: "Dívida inválida." }),
   date: z.iso.date({ message: "Informe a data." }),
   amount: z.string().trim().transform((value, ctx) => {
     const cents = parseMoneyToCents(value);
@@ -159,18 +158,25 @@ const debtSchema = z.object({
   }),
   categoryId: z.uuid({ message: "Escolha a rubrica da dívida (mensalidade, lojinha, atividade…)." }),
   description: z.string().trim().min(2, "Descrição: ao menos 2 caracteres.").max(200, "Descrição: no máximo 200 caracteres."),
-  agreement: z.string().trim().max(300, "Acordo: no máximo 300 caracteres."),
 });
 
-/** Anota (sem `id`) ou edita uma dívida: associado, data, valor, rubrica, descrição e acordo (023). */
-export async function saveDebt(payload: unknown): Promise<FeeResult> {
-  const parsed = debtSchema.safeParse(payload);
+/** Edita uma linha da conta: data, valor, rubrica e descrição (024). */
+export async function updateDebtLine(payload: unknown): Promise<FeeResult> {
+  const parsed = debtLineSchema.safeParse(payload);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  const { id, associateId, date, amount, categoryId, description, agreement } = parsed.data;
-  const error = await write(DEBTS, (db, groupId) => debts.save(db, groupId, {
-    id, associateId, date, amountCents: amount, categoryId, description, agreement: agreement || null,
-  }));
-  return error ? { error } : done(id ? "Dívida salva." : "Dívida anotada.");
+  const { id, date, amount, categoryId, description } = parsed.data;
+  const error = await write(DEBTS, (db) => debts.updateLine(db, { id, date, amountCents: amount, categoryId, description }));
+  return error ? { error } : done("Dívida salva.");
+}
+
+/** Acordo de pagamento da conta do associado (024). */
+export async function setDebtAgreement(associateId: unknown, agreement: unknown): Promise<FeeResult> {
+  const id = z.uuid().safeParse(associateId);
+  const text = z.string().trim().max(300, "Acordo: no máximo 300 caracteres.").safeParse(agreement ?? "");
+  if (!id.success) return { error: "Associado inválido." };
+  if (!text.success) return { error: text.error.issues[0]?.message ?? "Acordo inválido." };
+  const error = await write(DEBTS, (db, groupId) => debts.setAgreement(db, groupId, id.data, text.data || null));
+  return error ? { error } : done("Acordo salvo.");
 }
 
 export async function deleteDebt(debtId: unknown): Promise<FeeResult> {

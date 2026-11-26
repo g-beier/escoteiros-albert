@@ -1,8 +1,8 @@
 /**
- * Devedores (Mensalidades › Devedores; 038, 023): dívida é uma conta a receber do associado numa rubrica de receita
- * (mensalidade, lojinha, atividades…). Só é paga por rateios ligados a ela (`entry_splits.debt_id`), na rubrica e no
- * associado dela. Nasce à mão, da diferença de um lançamento, de uma venda a pagar ou do "Não pago" da mensalidade.
- * Lidas por `debt_rows`, que entrega associado, pagamentos e lançamento de origem nulos para a consulta.
+ * Devedores (Mensalidades › Devedores; 023, 024): conta a receber por associado. Cada `Debt` é uma linha da conta, numa
+ * rubrica de receita (mensalidade, lojinha, atividades…), paga só por rateios ligados a ela (`entry_splits.debt_id`),
+ * com pagamento parcial livre. Nasce em "Nova dívida", como linha de dívida num lançamento ou no "Não pago" da
+ * mensalidade. O acordo é da conta. Lidas por `debt_rows` (associado, pagamentos e origem nulos para a consulta).
  */
 
 export type DebtOrigin = "manual" | "lancamento" | "venda" | "mensalidade";
@@ -20,6 +20,7 @@ export type Debt = {
   amountCents: number;
   paidCents: number;
   description: string;
+  /** Acordo da conta do associado (024; o mesmo em todas as linhas dele). */
   agreement: string | null;
   /** Nulos para a consulta. */
   associateId: string | null;
@@ -74,6 +75,8 @@ export type DebtorGroup = {
   paidCents: number;
   openCents: number;
   openCount: number;
+  /** Acordo da conta. */
+  agreement: string | null;
 };
 
 /**
@@ -84,7 +87,7 @@ export function groupDebts(debts: Debt[]): DebtorGroup[] {
   const groups = new Map<string, DebtorGroup>();
   for (const debt of debts) {
     const key = debt.associateId ?? `devedor-${debt.debtorNumber}`;
-    const group = groups.get(key) ?? { key, label: debt.associateName ?? `Devedor ${debt.debtorNumber}`, associateId: debt.associateId, debts: [], amountCents: 0, paidCents: 0, openCents: 0, openCount: 0 };
+    const group = groups.get(key) ?? { key, label: debt.associateName ?? `Devedor ${debt.debtorNumber}`, associateId: debt.associateId, debts: [], amountCents: 0, paidCents: 0, openCents: 0, openCount: 0, agreement: debt.agreement };
     group.debts.push(debt);
     group.amountCents += debt.amountCents;
     group.paidCents += debt.paidCents;
@@ -103,4 +106,22 @@ const MONTHS = ["jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", 
 export function debtOriginLabel(debt: Pick<Debt, "origin" | "feeYear" | "feeMonth">): string {
   if (debt.origin === "mensalidade" && debt.feeYear && debt.feeMonth) return `Mensalidade ${MONTHS[debt.feeMonth - 1]}/${debt.feeYear}`;
   return DEBT_ORIGIN_LABELS[debt.origin];
+}
+
+/** Linha em aberto para receber: o que falta e a ordem (mais antiga primeiro). */
+export type OpenLine = { id: string; date: string; openCents: number };
+
+/**
+ * Repartição sugerida de um recebimento pelas linhas em aberto da conta, da mais antiga para a mais nova, até o que
+ * falta em cada uma (024). Devolve só as linhas que recebem algo; o que passar do total em aberto fica de fora.
+ */
+export function suggestAllocation(amountCents: number, lines: OpenLine[]): { id: string; amountCents: number }[] {
+  let left = Math.max(amountCents, 0);
+  const result: { id: string; amountCents: number }[] = [];
+  for (const line of [...lines].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))) {
+    const give = Math.min(Math.max(line.openCents, 0), left);
+    if (give > 0) result.push({ id: line.id, amountCents: give });
+    left -= give;
+  }
+  return result;
 }

@@ -28,9 +28,13 @@ export function categorySellsItems(categoryId: string, categories: Pick<Category
   return false;
 }
 
-/** Venda a pagar depois (022): vira dívida do associado em Devedores, com os itens; o estoque baixa na hora. */
-export type SaleDebtInput = {
-  date: string; associateId: string; categoryId: string; description: string; agreement: string | null; items: SaleItem[];
+/**
+ * Linhas de dívida sem lançamento no caixa (024): "Nova dívida" em Devedores e lançamento sem valor recebido. Com itens
+ * vendidos, o valor é a soma deles e o estoque baixa na hora.
+ */
+export type DebtLinesInput = {
+  date: string;
+  lines: { associateId: string; categoryId: string; description: string; amountCents: number | null; items: SaleItem[] }[];
 };
 
 /** Soma dos itens (quantidade × preço). */

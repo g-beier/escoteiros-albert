@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { debtOpenCents, debtOriginLabel, debtStatus, debtTotals, groupDebts, type Debt } from "./debts";
+import { debtOpenCents, debtOriginLabel, debtStatus, debtTotals, groupDebts, suggestAllocation, type Debt } from "./debts";
 
 const debt = (amountCents: number, paidCents: number, debtorNumber = 1, associateName: string | null = null): Debt => ({
   id: `${amountCents}-${paidCents}-${debtorNumber}`, date: "2026-03-01", amountCents, paidCents, description: "x", agreement: null,
@@ -23,6 +23,13 @@ describe("debts", () => {
     const groups = groupDebts([debt(1000, 0, 1, "Bia"), debt(5000, 1000, 2, "Ana"), debt(2000, 0, 1, "Bia"), debt(500, 500, 3, "Caio")]);
     expect(groups.map((g) => [g.label, g.openCents, g.openCount, g.debts.length])).toEqual([["Ana", 4000, 1, 1], ["Bia", 3000, 2, 2], ["Caio", 0, 0, 1]]);
     expect(groupDebts([debt(100, 100, 2), debt(100, 100, 1)]).map((g) => g.label)).toEqual(["Devedor 1", "Devedor 2"]);
+  });
+
+  it("suggests a payment oldest first, up to what each line owes", () => {
+    const lines = [{ id: "b", date: "2026-04-02", openCents: 3500 }, { id: "a", date: "2026-04-01", openCents: 3000 }, { id: "c", date: "2026-05-01", openCents: 10000 }];
+    expect(suggestAllocation(5000, lines)).toEqual([{ id: "a", amountCents: 3000 }, { id: "b", amountCents: 2000 }]);
+    expect(suggestAllocation(20000, lines).reduce((sum, line) => sum + line.amountCents, 0)).toBe(16500);
+    expect(suggestAllocation(0, lines)).toEqual([]);
   });
 
   it("origin label", () => {

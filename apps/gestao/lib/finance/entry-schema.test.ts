@@ -42,9 +42,13 @@ describe("toRpcSplits", () => {
   it("converte para o formato da função SQL", () => {
     expect(toRpcSplits(base.splits)[1]).toEqual({ category_id: id, amount_cents: 2000, description: "Lanche", associate_id: null, debt_id: null, items: [] });
   });
+  it("linhas de dívida vão depois, como kind divida", () => {
+    const rpc = toRpcSplits(base.splits, [{ debtId: null, categoryId: id, description: "Lenço", associateId: id, amountCents: 2000 }]);
+    expect(rpc[2]).toEqual({ kind: "divida", debt_id: null, category_id: id, description: "Lenço", associate_id: id, amount_cents: 2000 });
+  });
   it("leva os itens vendidos", () => {
     const split = { ...base.splits[1], items: [{ lotId: id, quantity: 2, unitPriceCents: 1000 }] };
-    expect(toRpcSplits([split])[0].items).toEqual([{ lot_id: id, quantity: 2, unit_price_cents: 1000 }]);
+    expect((toRpcSplits([split])[0] as { items: unknown }).items).toEqual([{ lot_id: id, quantity: 2, unit_price_cents: 1000 }]);
   });
 });
 

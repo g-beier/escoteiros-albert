@@ -1,7 +1,8 @@
--- pgTAP: Lojinha a pagar depois (022, 023): a venda vira dívida do associado com os itens, o estoque baixa na hora, o
--- recebimento é um lançamento com rateio ligado à dívida, e excluir a dívida devolve os itens. Rode com `npm run test:db`.
+-- pgTAP: Lojinha fiada (022–024): venda toda a pagar vira linha na conta do associado com os itens (o estoque baixa na
+-- hora); venda paga em parte = rateio do que entrou + linha de dívida no mesmo lançamento; o recebimento é rateio ligado
+-- à linha; excluir a linha devolve os itens. Rode com `npm run test:db`.
 begin;
-select plan(20);
+select plan(23);
 \ir _fixture.psql
 
 select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
@@ -18,8 +19,8 @@ select id as cat_outra from public.categories where group_id = :'gid_a' and kind
 
 -- Venda a pagar pela tesouraria (…f0a2, Editor do Financeiro sem papel no Inventário).
 select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
-select public.create_sale_debt(:'gid_a', :'assoc_a', '2026-05-01', :'cat_loja', 'Lenço da promessa', 'paga na próxima reunião',
-  jsonb_build_array(jsonb_build_object('lot_id', :'lote', 'quantity', 2, 'unit_price_cents', 3500))) as debt \gset
+select (public.create_debt_lines(:'gid_a', '2026-05-01', jsonb_build_array(jsonb_build_object('associate_id', :'assoc_a', 'category_id', :'cat_loja',
+  'description', 'Lenço da promessa', 'items', jsonb_build_array(jsonb_build_object('lot_id', :'lote', 'quantity', 2, 'unit_price_cents', 3500))))))[1] as debt \gset
 select is((select (amount_cents, category_id = :'cat_loja', associate_id = :'assoc_a', origin)::text from public.debts where id = :'debt'), '(7000,t,t,venda)',
   'dívida de venda com o valor dos itens, a rubrica e o associado');
 select is((select quantity from public.inventory_lots where id = :'lote'), 8, 'estoque baixou na venda');
@@ -30,14 +31,14 @@ select is((select count(*)::int from public.ledger_entries where group_id = :'gi
 select is((select amount_cents - paid_cents from public.debt_rows(:'gid_a') where id = :'debt'), 7000::bigint, 'em Devedores, aberta');
 
 -- Recusas
-select throws_like(format($$select public.create_sale_debt(%L, %L, '2026-05-01', %L, 'Lenço', null, jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 1, 'unit_price_cents', 3500)))$$,
-  :'gid_a', :'assoc_a', :'cat_outra', :'lote'), 'Escolha uma rubrica de venda de itens', 'rubrica que não vende');
-select throws_like(format($$select public.create_sale_debt(%L, %L, '2026-05-01', %L, 'Lenço', null, jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 1, 'unit_price_cents', 3500)))$$,
+select throws_like(format($$select public.create_debt_lines(%L, '2026-05-01', jsonb_build_array(jsonb_build_object('associate_id', %L, 'category_id', %L, 'description', 'Lenço', 'items', jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 1, 'unit_price_cents', 3500)))))$$,
+  :'gid_a', :'assoc_a', :'cat_outra', :'lote'), '%não vende itens%', 'rubrica que não vende');
+select throws_like(format($$select public.create_debt_lines(%L, '2026-05-01', jsonb_build_array(jsonb_build_object('associate_id', %L, 'category_id', %L, 'description', 'Lenço', 'items', jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 1, 'unit_price_cents', 3500)))))$$,
   :'gid_a', :'assoc_a', :'cat_loja', :'fora'), 'Lote à venda inválido', 'lote fora da venda');
-select throws_like(format($$select public.create_sale_debt(%L, %L, '2026-05-01', %L, 'Lenço', null, jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 9, 'unit_price_cents', 3500)))$$,
+select throws_like(format($$select public.create_debt_lines(%L, '2026-05-01', jsonb_build_array(jsonb_build_object('associate_id', %L, 'category_id', %L, 'description', 'Lenço', 'items', jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 9, 'unit_price_cents', 3500)))))$$,
   :'gid_a', :'assoc_a', :'cat_loja', :'lote'), 'Estoque insuficiente%', 'sem estoque');
-select throws_like(format($$select public.save_debt(%L, %L, %L, '2026-05-01', 5000, %L, 'Lenço da promessa', null)$$,
-  :'gid_a', :'debt', :'assoc_a', :'cat_loja'), 'Dívida de venda%', 'valor de dívida com itens não muda');
+select throws_like(format($$select public.update_debt_line(%L, '2026-05-01', 5000, %L, 'Lenço da promessa')$$,
+  :'debt', :'cat_loja'), 'Dívida de venda%', 'valor de dívida com itens não muda');
 reset role;
 select throws_like(format($$delete from public.debts where id = %L$$, :'debt'), '%exclua em Devedores%', 'exclusão direta recusada');
 
@@ -59,7 +60,7 @@ select throws_like(format($$select public.create_ledger_entry(%L, '2026-05-20', 
 
 -- Quem só consulta não vende a pagar.
 select tests.login('00000000-0000-0000-0000-00000000f0a3') \gset
-select throws_like(format($$select public.create_sale_debt(%L, %L, '2026-05-01', %L, 'Lenço', null, jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 1, 'unit_price_cents', 3500)))$$,
+select throws_like(format($$select public.create_debt_lines(%L, '2026-05-01', jsonb_build_array(jsonb_build_object('associate_id', %L, 'category_id', %L, 'description', 'Lenço', 'items', jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 1, 'unit_price_cents', 3500)))))$$,
   :'gid_a', :'assoc_a', :'cat_loja', :'lote'), 'Sem permissão%', 'consulta não lança');
 
 -- Excluir a dívida devolve os itens ao lote (sem pagamentos)
@@ -69,6 +70,20 @@ select public.delete_ledger_entry(:'pay1');
 select public.delete_ledger_entry(:'pay2');
 select lives_ok(format($$select public.delete_debt(%L)$$, :'debt'), 'exclui a dívida');
 select is((select quantity from public.inventory_lots where id = :'lote'), 10, 'itens de volta ao lote');
+
+-- Venda de R$ 70 (2 lenços) paga em parte: R$ 10 entram no caixa, R$ 60 ficam na conta como linha de dívida
+select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
+select public.create_ledger_entry(:'gid_a', '2026-06-01', 'Venda parcial', :'pix_a', null, false, 1000,
+  jsonb_build_array(jsonb_build_object('category_id', :'cat_loja', 'amount_cents', 1000, 'description', 'Lenços', 'associate_id', :'assoc_a',
+      'items', jsonb_build_array(jsonb_build_object('lot_id', :'lote', 'quantity', 2, 'unit_price_cents', 3500))),
+    jsonb_build_object('kind', 'divida', 'category_id', :'cat_loja', 'amount_cents', 6000, 'description', 'Lenços', 'associate_id', :'assoc_a')), :'acc_a') as parcial \gset
+select is((select (origin, amount_cents)::text from public.debts where origin_entry_id = :'parcial'), '(venda,6000)', 'linha de venda com o que falta');
+select is((select quantity from public.inventory_lots where id = :'lote'), 8, 'os dois lenços saíram');
+select throws_like(format($$select public.create_ledger_entry(%L, '2026-06-01', 'Venda errada', %L, null, false, 1000,
+  jsonb_build_array(jsonb_build_object('category_id', %L, 'amount_cents', 1000, 'description', 'Lenços', 'associate_id', %L,
+      'items', jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 2, 'unit_price_cents', 3500))),
+    jsonb_build_object('kind', 'divida', 'category_id', %L, 'amount_cents', 5000, 'description', 'Lenços', 'associate_id', %L)), %L)$$,
+  :'gid_a', :'pix_a', :'cat_loja', :'assoc_a', :'lote', :'cat_loja', :'assoc_a', :'acc_a'), '%não confere%', 'itens = recebido + linha de dívida');
 
 select * from finish();
 rollback;

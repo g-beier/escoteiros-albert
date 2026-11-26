@@ -23,15 +23,21 @@ export const entrySchema = z.object({
     associateId: z.uuid().nullable(),
     /** Dívida que este rateio paga (023): mesma rubrica e associado da dívida. */
     debtId: z.uuid().nullable().optional(),
-    /** Só ao criar (023): diferença que fica a pagar e vira dívida do associado do rateio, na mesma rubrica. */
-    dueCents: z.number().int().nonnegative().optional(),
-    /** Itens vendidos (só em rubrica que vende itens; a soma = valor do rateio + o que ficou a pagar). */
+    /** Itens vendidos (só em rubrica que vende itens; a soma = valor do rateio + linhas de dívida da mesma rubrica). */
     items: z.array(z.object({
       lotId: z.uuid({ message: "Escolha o item vendido." }),
       quantity: z.number().int().positive("Informe a quantidade de cada item vendido."),
       unitPriceCents: z.number().int().nonnegative("Informe o preço de cada item vendido."),
     })).optional(),
   })).min(1, "Informe ao menos uma rubrica."),
+  /** Linhas de dívida (024): o que fica a pagar, na conta do associado; fora do caixa e do total. */
+  debtLines: z.array(z.object({
+    debtId: z.uuid().nullable().optional(),
+    categoryId: z.uuid({ message: "Escolha a rubrica de cada linha de dívida." }),
+    description: z.string().trim().min(2, "Descreva cada linha de dívida.").max(200),
+    associateId: z.uuid({ message: "Escolha o associado de cada linha de dívida." }),
+    amountCents: z.number().int().positive("Informe o valor de cada linha de dívida."),
+  })).default([]),
 }).refine((value) => value.splits.reduce((sum, split) => sum + split.amountCents, 0) === value.totalCents, {
   message: "A soma das rubricas deve ser igual ao total do lançamento.",
 }).refine((value) => value.splits.every((split) => !split.items?.length || split.debtId
@@ -41,14 +47,20 @@ export const entrySchema = z.object({
 
 export type EntryInput = z.infer<typeof entrySchema>;
 
-export function toRpcSplits(splits: EntryInput["splits"]) {
-  return splits.map((s) => ({
-    category_id: s.categoryId,
-    amount_cents: s.amountCents,
-    description: s.description,
-    associate_id: s.associateId,
-    debt_id: s.debtId ?? null,
-    ...(s.dueCents ? { due_cents: s.dueCents } : {}),
-    items: (s.items ?? []).map((item) => ({ lot_id: item.lotId, quantity: item.quantity, unit_price_cents: item.unitPriceCents })),
-  }));
+/** Rateios do caixa e, depois, as linhas de dívida (`kind: "divida"`, 024), no formato de `write_entry_splits`. */
+export function toRpcSplits(splits: EntryInput["splits"], debtLines: EntryInput["debtLines"] = []) {
+  return [
+    ...splits.map((s) => ({
+      category_id: s.categoryId,
+      amount_cents: s.amountCents,
+      description: s.description,
+      associate_id: s.associateId,
+      debt_id: s.debtId ?? null,
+      items: (s.items ?? []).map((item) => ({ lot_id: item.lotId, quantity: item.quantity, unit_price_cents: item.unitPriceCents })),
+    })),
+    ...debtLines.map((line) => ({
+      kind: "divida", debt_id: line.debtId ?? null, category_id: line.categoryId, description: line.description,
+      associate_id: line.associateId, amount_cents: line.amountCents,
+    })),
+  ];
 }

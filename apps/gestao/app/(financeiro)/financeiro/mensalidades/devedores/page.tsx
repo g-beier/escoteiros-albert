@@ -6,6 +6,7 @@ import { fetchDebts } from "@/lib/server/finance/debts";
 import { listForPicker } from "@/lib/server/finance/associates";
 import { entryCatalogs } from "@/lib/server/finance/registry";
 import { categoryLabel, sortCategories } from "@/lib/finance/categories";
+import { categorySellsItems } from "@/lib/finance/sales";
 import { pageSession } from "@/lib/server/session";
 
 export const metadata = { title: "Devedores · GEAS Financeiro" };
@@ -25,16 +26,17 @@ export default async function DebtsPage() {
   const byId = new Map((catalogs?.categories ?? []).map((c) => [c.id, c]));
   const categories = sortCategories((catalogs?.categories ?? []).filter((c) => c.kind === "receita" && c.active && c.parent_id))
     .map((c) => ({ value: c.id, label: categoryLabel(c, byId) }));
+  const sellIds = (catalogs?.categories ?? []).filter((c) => categorySellsItems(c.id, catalogs!.categories)).map((c) => c.id);
 
   return <div className="shell">
     <AppHeader member={member} current="/financeiro/mensalidades/devedores" />
     <PageBody width="narrow">
       <PageHeader title="Mensalidades" tabs={<FeeTabs current="devedores" />} crumbs={feeCrumbs("devedores")}
         description={member.finance.canReview
-          ? "O que cada associado deve, por rubrica (mensalidade, lojinha, atividades…). Só é pago por rateios ligados à dívida, que entram na rubrica dela (use “Receber…”). A consulta vê as dívidas e os valores, mas não de quem são."
+          ? "A conta a receber de cada associado: tudo o que ele deve, linha a linha, cada uma na sua rubrica (mensalidade, lojinha, atividades…). Pagamentos parciais abatem as linhas pelos rateios ligados a elas (use “Receber…”). A consulta vê as dívidas e os valores, mas não de quem são."
           : "Dívidas anotadas pela tesouraria, sem o nome dos associados."} />
       {error && <p role="alert" className="m-0 rounded-lg bg-destructive/10 px-3 py-2 text-destructive">Não foi possível carregar as dívidas: {error}</p>}
-      <DebtsManager debts={debts} canEdit={member.finance.canReview} categories={categories}
+      <DebtsManager debts={debts} canEdit={member.finance.canReview} categories={categories} sellIds={sellIds} saleLots={catalogs?.saleLots ?? []}
         associates={associates.map((a) => ({ value: a.id, label: a.section ? `${a.name} (${a.section})` : a.name, active: a.active }))} />
     </PageBody>
   </div>;

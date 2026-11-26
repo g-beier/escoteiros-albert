@@ -19,11 +19,9 @@ export type EditableEntry = {
     categoryId: string; amountCents: number; description: string; associateId: string | null; items: SaleItem[];
     /** Dívida que o rateio paga (023). */
     debtId: string | null;
-    /** O que ficou a pagar quando o lançamento foi criado (dívida gerada pela diferença, 023); não muda ao editar. */
-    dueCents: number;
   }[];
-  /** Dívidas que a diferença deste lançamento gerou (023). */
-  originDebts?: { id: string; description: string; amountCents: number }[];
+  /** Linhas de dívida que este lançamento gerou (024): editáveis no formulário. */
+  debtLines?: { debtId: string; categoryId: string; description: string; associateId: string; amountCents: number; paidCents: number }[];
 };
 
 

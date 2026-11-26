@@ -17,8 +17,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const DEBTS_HREF = "/financeiro/mensalidades/devedores";
 
-export default async function NewEntryPage({ searchParams }: { searchParams: Promise<{ voltar?: string; linha?: string; receber?: string }> }) {
-  const { voltar, linha, receber } = await searchParams;
+export default async function NewEntryPage({ searchParams }: { searchParams: Promise<{ voltar?: string; linha?: string; receber?: string; divida?: string }> }) {
+  const { voltar, linha, receber, divida } = await searchParams;
   const { member, db, canEdit, catalogs } = await loadEntryContext();
   if (!canEdit) notFound();
 
@@ -28,14 +28,12 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
     line = await statementLine(db, linha);
     if (!line) notFound();
   }
-  // "Receber" em Devedores (022): a dívida preenche associado, rubrica, descrição e o que falta; ao salvar, quita.
+  // "Receber" em Devedores (024): `receber` = associado; um rateio ligado a cada linha em aberto (ou só a `divida`).
   let receive: DebtReceivePrefill | undefined;
   if (receber && UUID.test(receber) && !line) {
     if (!member.finance.canReview) notFound();
-    const debt = await receivable(db, member.groupId, receber);
-    if (!debt) notFound();
-    receive = { debtId: debt.id, associateId: debt.associate_id, associateName: debt.associate_name, categoryId: debt.category_id,
-      description: debt.description, openCents: Number(debt.open_cents) };
+    receive = await receivable(db, member.groupId, receber, divida && UUID.test(divida) ? divida : undefined) ?? undefined;
+    if (!receive) notFound();
   }
   const backHref = line ? safeReconciliationHref(voltar) : receive ? DEBTS_HREF : listHref(voltar);
   const fromLine: StatementLinePrefill | undefined = line ? {
@@ -51,7 +49,7 @@ export default async function NewEntryPage({ searchParams }: { searchParams: Pro
           : receive ? [{ label: "Mensalidades", href: "/financeiro/mensalidades" }, { label: "Devedores", href: DEBTS_HREF }, { label: "Receber" }]
           : [{ label: "Lançamentos", href: backHref }, { label: "Novo lançamento" }]}
         description={receive
-          ? <>{receive.associateName}: <strong>{receive.description}</strong>, falta <span className="num">{money(receive.openCents / 100)}</span>. Confira a forma de pagamento e a conta; ao salvar, o lançamento quita a dívida (até o que falta). O associado precisa continuar no rateio.</>
+          ? <>{receive.associateName}: <span className="num">{money(receive.lines.reduce((sum, l) => sum + l.openCents, 0) / 100)}</span> em aberto ({receive.lines.length} {receive.lines.length === 1 ? "dívida" : "dívidas"}). Recebeu menos? Mude o valor de cada rateio (ou tire rateios) e o total: cada rateio abate a sua dívida. Confira a forma de pagamento e a conta.</>
           : line
           ? <>A partir do extrato: <strong>{line.description}</strong> em <span className="num">{dateBR(line.line_date)}</span>, <span className="num">{money(Number(line.amount_cents) / 100)}</span>. Valor e conta vêm da linha; distribua o valor entre as rubricas. Ao salvar, o lançamento já fica conciliado.</>
           : "Informe o histórico, a conta e a forma de pagamento e distribua o valor total entre as rubricas, cada uma com sua descrição."} />

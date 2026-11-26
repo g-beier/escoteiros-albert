@@ -1,7 +1,7 @@
 import type { Debt, DebtOrigin, DebtPayment, OpenDebt } from "@/lib/finance/debts";
-import { saleLotName, type SaleDebtInput } from "@/lib/finance/sales";
+import { saleLotName, type DebtLinesInput } from "@/lib/finance/sales";
 import type { Db } from "@/lib/server/db";
-import { one, rows, rpc } from "@/lib/server/pg/db";
+import { rows, rpc } from "@/lib/server/pg/db";
 
 // Devedores (Mensalidades › Devedores; 038, 023): leitura por `debt_rows`; pagamentos são rateios ligados à dívida.
 
@@ -52,32 +52,43 @@ export async function openDebts(db: Db, groupId: string): Promise<OpenDebt[]> {
   return list.map((debt) => ({ ...debt, open_cents: Number(debt.open_cents) }));
 }
 
-/** Venda a pagar depois (022): dívida do associado com os itens; o estoque baixa na hora. */
-export async function createSale(db: Db, groupId: string, input: SaleDebtInput): Promise<string> {
-  return await rpc(db, "create_sale_debt", {
-    p_group_id: groupId, p_associate_id: input.associateId, p_debt_date: input.date, p_category_id: input.categoryId,
-    p_description: input.description, p_agreement: input.agreement,
-    p_items: input.items.map((item) => ({ lot_id: item.lotId, quantity: item.quantity, unit_price_cents: item.unitPriceCents })) as never,
-  }) as string;
+/** Linhas de dívida sem lançamento no caixa (024): cada uma na conta do seu associado; itens vendidos baixam o estoque. */
+export async function createLines(db: Db, groupId: string, input: DebtLinesInput): Promise<string[]> {
+  return await rpc(db, "create_debt_lines", {
+    p_group_id: groupId, p_debt_date: input.date,
+    p_lines: input.lines.map((line) => ({
+      associate_id: line.associateId, category_id: line.categoryId, description: line.description, amount_cents: line.amountCents,
+      items: line.items.map((item) => ({ lot_id: item.lotId, quantity: item.quantity, unit_price_cents: item.unitPriceCents })),
+    })) as never,
+  }) as string[];
 }
 
-/** Dívida para "Receber": associado, rubrica, descrição e quanto falta (Editor; null se não achar ou já quitada). */
-export async function receivable(db: Db, groupId: string, debtId: string) {
-  return one<{ id: string; associate_id: string; associate_name: string; category_id: string; description: string; open_cents: number }>(db, (sql) => sql`
-    select r.id, r.associate_id, r.associate_name, r.category_id, r.description, (r.amount_cents - r.paid_cents)::int as open_cents
-    from public.debt_rows(${groupId}) r where r.id = ${debtId} and r.associate_id is not null and r.amount_cents > r.paid_cents`);
+/** Conta para "Receber" (Editor): associado e as linhas em aberto (todas, ou só `lineId`), mais antigas primeiro. */
+export async function receivable(db: Db, groupId: string, associateId: string, lineId?: string) {
+  const lines = await rows<{ id: string; associate_name: string; category_id: string; description: string; debt_date: string; open_cents: number }>(db, (sql) => sql`
+    select r.id, r.associate_name, r.category_id, r.description, r.debt_date, (r.amount_cents - r.paid_cents)::int as open_cents
+    from public.debt_rows(${groupId}) r
+    where r.associate_id = ${associateId} and r.amount_cents > r.paid_cents ${lineId ? sql`and r.id = ${lineId}` : sql``}
+    order by r.debt_date, r.id`);
+  if (!lines.length) return null;
+  return {
+    associateId, associateName: lines[0].associate_name,
+    lines: lines.map((line) => ({ debtId: line.id, categoryId: line.category_id, description: line.description, date: line.debt_date, openCents: Number(line.open_cents) })),
+  };
 }
 
-export type DebtInput = {
-  id: string | null; associateId: string; date: string; amountCents: number; categoryId: string; description: string; agreement: string | null;
-};
+export type DebtLineUpdate = { id: string; date: string; amountCents: number; categoryId: string; description: string };
 
-/** Anota (sem `id`) ou edita uma dívida: associado, data, valor, rubrica, descrição e acordo. */
-export async function save(db: Db, groupId: string, input: DebtInput) {
-  await rpc(db, "save_debt", {
-    p_group_id: groupId, p_id: input.id, p_associate_id: input.associateId, p_debt_date: input.date, p_amount_cents: input.amountCents,
-    p_category_id: input.categoryId, p_description: input.description, p_agreement: input.agreement,
+/** Edita uma linha da conta: data, valor, rubrica e descrição (024). */
+export async function updateLine(db: Db, input: DebtLineUpdate) {
+  await rpc(db, "update_debt_line", {
+    p_id: input.id, p_debt_date: input.date, p_amount_cents: input.amountCents, p_category_id: input.categoryId, p_description: input.description,
   });
+}
+
+/** Acordo de pagamento da conta do associado (024). */
+export async function setAgreement(db: Db, groupId: string, associateId: string, agreement: string | null) {
+  await rpc(db, "set_debt_agreement", { p_group_id: groupId, p_associate_id: associateId, p_agreement: agreement });
 }
 
 export async function remove(db: Db, debtId: string) {

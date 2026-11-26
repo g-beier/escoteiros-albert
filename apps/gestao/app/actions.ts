@@ -48,24 +48,28 @@ export async function createEntry(payload: unknown): Promise<Result> {
   });
 }
 
-const saleDebtSchema = z.object({
+const debtLinesSchema = z.object({
   date: z.iso.date({ message: "Informe a data." }),
-  associateId: z.uuid({ message: "Escolha o associado que fica devendo." }),
-  categoryId: z.uuid({ message: "Escolha a rubrica." }),
-  description: z.string().trim().min(2, "Descreva a venda.").max(200),
-  agreement: z.string().trim().max(300).nullable(),
-  items: z.array(z.object({ lotId: z.uuid(), quantity: z.number().int().positive(), unitPriceCents: z.number().int().nonnegative() }))
-    .min(1, "Informe os itens vendidos."),
+  lines: z.array(z.object({
+    associateId: z.uuid({ message: "Escolha o associado de cada linha de dívida." }),
+    categoryId: z.uuid({ message: "Escolha a rubrica de cada linha de dívida." }),
+    description: z.string().trim().min(2, "Descreva cada linha de dívida.").max(200),
+    amountCents: z.number().int().positive().nullable(),
+    items: z.array(z.object({ lotId: z.uuid(), quantity: z.number().int().positive(), unitPriceCents: z.number().int().nonnegative() })).default([]),
+  })).min(1, "Informe ao menos uma linha de dívida."),
 });
 
-/** Lojinha (022): venda a pagar depois. Vira dívida do associado em Devedores, com os itens; o estoque baixa na hora. */
-export async function createSaleDebt(payload: unknown): Promise<Result> {
+/**
+ * Dívidas sem lançamento no caixa (024): "Nova dívida" em Devedores e lançamento sem valor recebido. Cada linha vai para
+ * a conta do seu associado; itens vendidos baixam o estoque na hora.
+ */
+export async function createDebtLines(payload: unknown): Promise<Result> {
   return withMember(memberOrError, async ({ db, groupId }) => {
-    const parsed = saleDebtSchema.safeParse(payload);
+    const parsed = debtLinesSchema.safeParse(payload);
     if (!parsed.success) throw new InputError(parsed.error.issues[0]?.message ?? "Dados inválidos.");
-    const id = await debts.createSale(db, groupId, parsed.data);
+    await debts.createLines(db, groupId, parsed.data);
     revalidatePath("/", "layout");
-    return { success: true, id };
+    return { success: true };
   });
 }
 

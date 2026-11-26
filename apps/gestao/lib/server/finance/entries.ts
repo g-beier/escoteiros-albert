@@ -133,14 +133,9 @@ export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | nu
     from public.ledger_entries e where e.id = ${id}`);
   if (!data) return null;
   const splits = [...data.entry_splits].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
-  // Dívidas que a diferença deste lançamento gerou (023): o "a pagar" volta para o primeiro rateio da mesma rubrica e associado.
-  const origin = await rows<{ id: string; description: string; amount_cents: number; category_id: string; associate_id: string }>(db, (sql) => sql`
-    select id, description, amount_cents::int as amount_cents, category_id, associate_id from public.debts where origin_entry_id = ${id}`);
-  const due = new Map<number, number>();
-  for (const debt of origin) {
-    const index = splits.findIndex((s) => s.category_id === debt.category_id && s.associate_id === debt.associate_id);
-    if (index >= 0) due.set(index, (due.get(index) ?? 0) + Number(debt.amount_cents));
-  }
+  // Linhas de dívida que este lançamento gerou (024; função própria: o Colaborador não lê `debts`).
+  const lines = await rows<{ id: string; category_id: string; description: string; associate_id: string; amount_cents: number; paid_cents: number }>(db, (sql) => sql`
+    select id, category_id, description, associate_id, amount_cents::int as amount_cents, paid_cents::int as paid_cents from public.entry_debt_lines(${id})`);
   return {
     id: data.id,
     date: data.entry_date,
@@ -154,12 +149,13 @@ export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | nu
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     toReview: data.review_status === "para_revisar",
-    splits: splits.map((s, index) => ({
+    splits: splits.map((s) => ({
       categoryId: s.category_id, amountCents: s.amount_cents, description: s.description, associateId: s.associate_id,
       items: s.items.map((item) => ({ lotId: item.lot_id, quantity: item.quantity, unitPriceCents: Number(item.unit_price_cents) })),
-      debtId: s.debt_id, dueCents: due.get(index) ?? 0,
+      debtId: s.debt_id,
     })),
-    originDebts: origin.map((debt) => ({ id: debt.id, description: debt.description, amountCents: Number(debt.amount_cents) })),
+    debtLines: lines.map((line) => ({ debtId: line.id, categoryId: line.category_id, description: line.description, associateId: line.associate_id,
+      amountCents: Number(line.amount_cents), paidCents: Number(line.paid_cents) })),
   };
 }
 
@@ -207,7 +203,7 @@ export async function countInAccount(db: Db, groupId: string, accountId: string)
 const entryArgs = (input: EntryInput) => ({
   p_entry_date: input.date, p_name: input.name, p_payment_method_id: input.paymentMethodId, p_account_id: input.accountId,
   p_document: input.document || null, p_document_filed: input.documentFiled, p_total_cents: input.totalCents,
-  p_splits: toRpcSplits(input.splits), p_notes: input.notes?.trim() || null,
+  p_splits: toRpcSplits(input.splits, input.debtLines), p_notes: input.notes?.trim() || null,
 });
 
 /** Cria o lançamento com os rateios numa transação; devolve o id. */
