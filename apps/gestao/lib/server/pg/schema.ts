@@ -841,6 +841,7 @@ export type Functions = {
   associates_update: { Args: { p_associate_id: string; p_name: string; p_birth_date: string; p_promise_date: string; p_joined_on: string; p_notes: string; p_registration: Enums["associate_registration"]; p_nickname: string; p_branch?: Enums["scout_branch"]; p_section_id?: string; p_patrol_id?: string }; Returns: undefined };
   associates_update_function: { Args: { p_function_id: string; p_kind: Enums["associate_function_kind"]; p_section_id: string; p_title: string; p_started_on: string; p_ended_on: string; p_elected?: boolean }; Returns: undefined };
   attachment_path_entry: { Args: { p_name: string }; Returns: { group_id: string; entry_id: string } | null };
+  brl: { Args: { p_cents: number }; Returns: string };
   bulk_audit_entries: { Args: { p_group_id: string; p_before: Json }; Returns: number };
   bulk_ids: { Args: { p_ids: string[]; p_what: string }; Returns: string[] };
   bulk_lock_entries: { Args: { p_group_id: string; p_entry_ids: string[] }; Returns: undefined };

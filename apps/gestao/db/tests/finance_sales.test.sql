@@ -71,7 +71,7 @@ select is((select quantity from public.finance_sale_lots(:'gid_a') where id = :'
 select throws_like(format($$select public.create_ledger_entry(%L, '2026-05-02', 'Venda', %L, null, false, 1000,
   jsonb_build_array(jsonb_build_object('category_id', %L, 'amount_cents', 1000, 'description', 'venda',
     'items', jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 1, 'unit_price_cents', 900)))), %L)$$,
-  :'gid_a', :'pix_a', :'cat_loja', :'couro', :'acc_a'), '%soma dos itens vendidos não confere%', 'soma diferente do rateio');
+  :'gid_a', :'pix_a', :'cat_loja', :'couro', :'acc_a'), 'Os itens vendidos de % somam R$ 9,00; recebido R$ 10,00 + a pagar R$ 0,00', 'soma diferente do rateio');
 select throws_like(format($$select public.create_ledger_entry(%L, '2026-05-02', 'Venda', %L, null, false, 1500,
   jsonb_build_array(jsonb_build_object('category_id', %L, 'amount_cents', 1500, 'description', 'venda',
     'items', jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 1, 'unit_price_cents', 1500)))), %L)$$,

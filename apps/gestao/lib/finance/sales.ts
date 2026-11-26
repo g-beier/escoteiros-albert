@@ -49,3 +49,23 @@ export function saleItemsTotal(items: Pick<SaleItem, "quantity" | "unitPriceCent
 export function availableFor(lot: Pick<SaleLot, "id" | "quantity">, savedItems: Pick<SaleItem, "lotId" | "quantity">[]): number {
   return lot.quantity + savedItems.filter((item) => item.lotId === lot.id).reduce((sum, item) => sum + item.quantity, 0);
 }
+
+/** Balanço da venda numa rubrica (025): itens vendidos = recebido no caixa (rateios) + a pagar (linhas de dívida). */
+export type SaleBalance = { categoryId: string; itemsCents: number; receivedCents: number; owedCents: number; missingCents: number };
+
+/**
+ * Por rubrica com itens vendidos no lançamento: soma dos itens, do que entrou nos rateios dessa rubrica e das linhas de
+ * dívida dela; `missingCents` = itens − recebido − a pagar (positivo: falta lançar; negativo: passou). Sem casar associado.
+ */
+export function saleBalance(
+  splits: { categoryId: string; amountCents: number; itemsCents: number }[],
+  debtLines: { categoryId: string; amountCents: number }[],
+): SaleBalance[] {
+  const categories = [...new Set(splits.filter((s) => s.itemsCents > 0).map((s) => s.categoryId))];
+  return categories.map((categoryId) => {
+    const itemsCents = splits.filter((s) => s.categoryId === categoryId).reduce((sum, s) => sum + s.itemsCents, 0);
+    const receivedCents = splits.filter((s) => s.categoryId === categoryId).reduce((sum, s) => sum + s.amountCents, 0);
+    const owedCents = debtLines.filter((l) => l.categoryId === categoryId).reduce((sum, l) => sum + l.amountCents, 0);
+    return { categoryId, itemsCents, receivedCents, owedCents, missingCents: itemsCents - receivedCents - owedCents };
+  });
+}

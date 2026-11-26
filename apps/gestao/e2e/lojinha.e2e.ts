@@ -185,6 +185,38 @@ test("venda paga em parte e venda toda fiada viram dívida da conta; Receber qui
   });
 });
 
+test("venda com rateio sem associado: itens = recebido + dívida adicionada à mão", async ({ page }) => {
+  await page.goto("/financeiro/lancamentos/novo");
+  await page.getByRole("radio", { name: "Entrada (receita)" }).click();
+  await page.getByLabel("Histórico").fill(creditSale);
+  await page.getByLabel(/^Valor total/).fill("5,00");
+  await chooseOption(page, "Forma de pagamento", "PIX");
+  await chooseOption(page, "Conta", E2E_ACCOUNTS[0]);
+  const split = page.getByRole("group", { name: "Rubrica 1", exact: true });
+  await split.getByRole("combobox", { name: "Rubrica" }).fill(category);
+  await page.getByRole("option", { name: category }).first().click();
+  await split.getByLabel("Descrição").fill(`${creditSale} balcão`);
+  const items = page.getByRole("group", { name: "Itens vendidos da rubrica 1" });
+  await items.getByRole("button", { name: "Adicionar item" }).click();
+  await items.getByRole("combobox", { name: "Item" }).fill(scarf);
+  await page.getByRole("option", { name: new RegExp(`^${scarf} — `) }).click();
+  await expect(split.getByLabel(/^Valor \(R\$\)/)).toHaveValue("25,00");
+
+  await page.getByRole("button", { name: "Adicionar dívida" }).click();
+  const line = page.getByRole("group", { name: "Dívida 1" });
+  await line.getByRole("combobox", { name: "Associado" }).fill(buyer);
+  await page.getByRole("option", { name: buyer }).click();
+  await line.getByLabel("Valor (R$)").fill("20,00");
+  // o rateio da Lojinha acompanha: itens R$ 25 − dívida R$ 20 = R$ 5 recebidos
+  await expect(split.getByLabel(/^Valor \(R\$\)/)).toHaveValue("5,00");
+  await expect(split).toContainText("Itens da rubrica R$ 25,00 = recebido R$ 5,00 + a pagar R$ 20,00");
+  await expect(page.getByText("✓ Valores conferem")).toBeVisible();
+  await page.getByRole("button", { name: "Salvar lançamento" }).click();
+  await expect(page.getByText("Lançamento salvo; as linhas de dívida foram para Devedores.")).toBeVisible();
+  expect(psql(`select (d.amount_cents, d.origin)::text from public.debts d join public.ledger_entries e on e.id = d.origin_entry_id
+    where d.description = ${literal(`${creditSale} balcão`)} and d.associate_id = (select id from public.associates where name = ${literal(buyer)});`)).toBe("(2000,venda)");
+});
+
 test("lotes à venda em lote, ícone na linha e filtro Só à venda", async ({ page }) => {
   const sale = page.getByRole("checkbox", { name: "Só à venda" });
   const bar = page.getByRole("region", { name: "Ações com os materiais selecionados" });

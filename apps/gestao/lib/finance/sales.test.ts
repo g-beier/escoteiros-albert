@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { availableFor, categorySellsItems, saleItemsTotal, saleLotName } from "./sales";
+import { availableFor, categorySellsItems, saleBalance, saleItemsTotal, saleLotName } from "./sales";
 
 describe("Lojinha", () => {
   const categories = [
@@ -20,5 +20,12 @@ describe("Lojinha", () => {
   it("nome do lote com a variação", () => {
     expect(saleLotName({ material_name: "Anel de lenço", variant: "couro" })).toBe("Anel de lenço · couro");
     expect(saleLotName({ material_name: "Lenço", variant: null })).toBe("Lenço");
+  });
+  it("balanço da venda por rubrica: itens = recebido + a pagar, sem casar associado", () => {
+    expect(saleBalance([{ categoryId: "loja", amountCents: 1500, itemsCents: 3500 }], [{ categoryId: "loja", amountCents: 2000 }]))
+      .toEqual([{ categoryId: "loja", itemsCents: 3500, receivedCents: 1500, owedCents: 2000, missingCents: 0 }]);
+    expect(saleBalance([{ categoryId: "loja", amountCents: 1000, itemsCents: 3500 }, { categoryId: "loja", amountCents: 500, itemsCents: 0 },
+      { categoryId: "outra", amountCents: 900, itemsCents: 0 }], [])[0].missingCents).toBe(2000);
+    expect(saleBalance([{ categoryId: "x", amountCents: 900, itemsCents: 0 }], [])).toEqual([]);
   });
 });

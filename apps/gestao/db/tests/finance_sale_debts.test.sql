@@ -2,7 +2,7 @@
 -- hora); venda paga em parte = rateio do que entrou + linha de dívida no mesmo lançamento; o recebimento é rateio ligado
 -- à linha; excluir a linha devolve os itens. Rode com `npm run test:db`.
 begin;
-select plan(23);
+select plan(26);
 \ir _fixture.psql
 
 select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
@@ -83,7 +83,22 @@ select throws_like(format($$select public.create_ledger_entry(%L, '2026-06-01', 
   jsonb_build_array(jsonb_build_object('category_id', %L, 'amount_cents', 1000, 'description', 'Lenços', 'associate_id', %L,
       'items', jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 2, 'unit_price_cents', 3500))),
     jsonb_build_object('kind', 'divida', 'category_id', %L, 'amount_cents', 5000, 'description', 'Lenços', 'associate_id', %L)), %L)$$,
-  :'gid_a', :'pix_a', :'cat_loja', :'assoc_a', :'lote', :'cat_loja', :'assoc_a', :'acc_a'), '%não confere%', 'itens = recebido + linha de dívida');
+  :'gid_a', :'pix_a', :'cat_loja', :'assoc_a', :'lote', :'cat_loja', :'assoc_a', :'acc_a'), 'Os itens vendidos de % somam R$ 70,00; recebido R$ 10,00 + a pagar R$ 50,00',
+  'itens = recebido + linha de dívida');
+
+-- Rateio sem associado (quem pagou) + linha de dívida do associado (quem deve), na mesma rubrica: fecha por rubrica (025)
+select lives_ok(format($$select public.create_ledger_entry(%L, '2026-06-02', 'Venda sem associado', %L, null, false, 1500,
+  jsonb_build_array(jsonb_build_object('category_id', %L, 'amount_cents', 1500, 'description', 'Lenço',
+      'items', jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 1, 'unit_price_cents', 3500))),
+    jsonb_build_object('kind', 'divida', 'category_id', %L, 'amount_cents', 2000, 'description', 'Lenço', 'associate_id', %L)), %L)$$,
+  :'gid_a', :'pix_a', :'cat_loja', :'lote', :'cat_loja', :'assoc_a', :'acc_a'), 'R$ 35 = R$ 15 recebido (sem associado) + R$ 20 na conta');
+select is((select origin::text from public.debts where description = 'Lenço' and amount_cents = 2000), 'venda', 'a linha é de venda');
+select lives_ok(format($$select public.create_ledger_entry(%L, '2026-06-03', 'Venda em dois rateios', %L, null, false, 1500,
+  jsonb_build_array(jsonb_build_object('category_id', %L, 'amount_cents', 1000, 'description', 'Lenço pix',
+      'items', jsonb_build_array(jsonb_build_object('lot_id', %L, 'quantity', 1, 'unit_price_cents', 3500))),
+    jsonb_build_object('category_id', %L, 'amount_cents', 500, 'description', 'Lenço dinheiro'),
+    jsonb_build_object('kind', 'divida', 'category_id', %L, 'amount_cents', 2000, 'description', 'Lenço resto', 'associate_id', %L)), %L)$$,
+  :'gid_a', :'pix_a', :'cat_loja', :'lote', :'cat_loja', :'cat_loja', :'assoc_a', :'acc_a'), 'dois rateios na rubrica (R$ 10 + R$ 5) + linha R$ 20');
 
 select * from finish();
 rollback;

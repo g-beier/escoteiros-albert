@@ -22,7 +22,7 @@ import { centsToInput, dateBR, money } from "@/lib/format";
 import { parseMoneyToCents } from "@/lib/money";
 import { cn } from "@geas/ui/lib/utils";
 import type { CategoryItem } from "@/lib/finance/categories";
-import { categorySellsItems, type SaleLot } from "@/lib/finance/sales";
+import { categorySellsItems, saleBalance, type SaleLot } from "@/lib/finance/sales";
 import { CategoryPicker } from "./category-picker";
 import { SaleItemsEditor, itemDraftsTotal, toItemDrafts, type SaleItemDraft } from "./sale-items";
 
@@ -37,8 +37,11 @@ export type Catalogs = {
 };
 type Direction = "entrada" | "saida";
 
-/** Rateio do caixa. `debtId` = a linha da conta que ele paga (rubrica e associado dela). */
-type SplitDraft = { key: number; categoryId: string; amount: string; description: string; associateId: string; items: SaleItemDraft[]; debtId: string };
+/**
+ * Rateio do caixa. `debtId` = a linha da conta que ele paga (rubrica e associado dela). Com itens vendidos, `auto` = o
+ * valor acompanha a sugestão (itens − linhas de dívida − outros rateios da rubrica) até a pessoa digitar outro.
+ */
+type SplitDraft = { key: number; categoryId: string; amount: string; description: string; associateId: string; items: SaleItemDraft[]; debtId: string; auto: boolean };
 /**
  * Linha de dívida (024): o que fica a pagar, na conta do associado, fora do caixa e do total. Num rateio com itens
  * vendidos da mesma rubrica e associado, os itens somam o rateio + estas linhas.
@@ -57,7 +60,7 @@ type Draft = {
 };
 
 let splitKey = 0;
-const emptySplit = (): SplitDraft => ({ key: ++splitKey, categoryId: "", amount: "", description: "", associateId: "", items: [], debtId: "" });
+const emptySplit = (): SplitDraft => ({ key: ++splitKey, categoryId: "", amount: "", description: "", associateId: "", items: [], debtId: "", auto: true });
 const today = () => new Date().toISOString().slice(0, 10);
 
 function toDraft(entry: EditableEntry | null, fromLine?: StatementLinePrefill, receive?: DebtReceivePrefill): Draft {
@@ -84,7 +87,7 @@ function toDraft(entry: EditableEntry | null, fromLine?: StatementLinePrefill, r
     documentFiled: entry.documentFiled,
     notes: entry.notes,
     splits: entry.splits.map((s) => ({ key: ++splitKey, categoryId: s.categoryId, amount: centsToInput(Math.abs(s.amountCents)), description: s.description,
-      associateId: s.associateId ?? "", items: toItemDrafts(s.items ?? []), debtId: s.debtId ?? "" })),
+      associateId: s.associateId ?? "", items: toItemDrafts(s.items ?? []), debtId: s.debtId ?? "", auto: false })),
     debtLines: (entry.debtLines ?? []).map((line) => ({ key: ++splitKey, debtId: line.debtId, categoryId: line.categoryId, description: line.description,
       associateId: line.associateId, amount: centsToInput(line.amountCents), paidCents: line.paidCents })),
   };
@@ -116,8 +119,29 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine, receiv
   const readOnly = !canEdit;
   const dirty = JSON.stringify(stripKeys(draft)) !== JSON.stringify(stripKeys(saved));
 
-  const update = (patch: Partial<Draft>) => { setDraft((current) => ({ ...current, ...patch })); };
+  /** Rubricas que vendem itens do inventário (a marca vale para as filhas). */
+  const sells = useMemo(() => new Set(catalogs.categories.filter((c) => categorySellsItems(c.id, catalogs.categories)).map((c) => c.id)), [catalogs.categories]);
+  const update = (patch: Partial<Draft>) => { setDraft((current) => suggestSales({ ...current, ...patch })); };
   const updateSplit = (key: number, patch: Partial<SplitDraft>) => update({ splits: draft.splits.map((s) => s.key === key ? { ...s, ...patch } : s) });
+  /**
+   * Valor sugerido dos rateios com itens que a pessoa não mexeu (025): itens da rubrica − linhas de dívida da rubrica −
+   * outros rateios da rubrica. Os itens fecham por rubrica, sem casar associado.
+   */
+  function suggestSales(next: Draft): Draft {
+    const itemsIn = (split: SplitDraft) => (sells.has(split.categoryId) && !split.debtId ? itemDraftsTotal(split.items) : 0);
+    let changed = false;
+    const splits = next.splits.map((split) => {
+      if (!split.auto || itemsIn(split) === 0) return split;
+      const others = next.splits.filter((s) => s.key !== split.key && s.categoryId === split.categoryId);
+      const items = next.splits.filter((s) => s.categoryId === split.categoryId).reduce((sum, s) => sum + itemsIn(s), 0);
+      const owed = next.debtLines.filter((l) => l.categoryId === split.categoryId).reduce((sum, l) => sum + magnitude(l.amount), 0);
+      const amount = centsToInput(Math.max(items - owed - others.reduce((sum, s) => sum + magnitude(s.amount), 0), 0));
+      if (amount === split.amount) return split;
+      changed = true;
+      return { ...split, amount };
+    });
+    return changed ? { ...next, splits } : next;
+  }
   const updateLine = (key: number, patch: Partial<DebtLineDraft>) => update({ debtLines: draft.debtLines.map((l) => l.key === key ? { ...l, ...patch } : l) });
 
   const options = useMemo(() => ({
@@ -135,17 +159,12 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine, receiv
   const usedCategoryIds = useMemo(() => [...saved.splits, ...saved.debtLines].map((s) => s.categoryId).filter(Boolean), [saved]);
 
   const categoryKinds = useMemo(() => new Map(catalogs.categories.map((c) => [c.id, c.kind])), [catalogs.categories]);
-  /** Rubricas que vendem itens do inventário (a marca vale para as filhas). */
-  const sells = useMemo(() => new Set(catalogs.categories.filter((c) => categorySellsItems(c.id, catalogs.categories)).map((c) => c.id)), [catalogs.categories]);
   /** Itens vendidos do lançamento salvo: o que já saiu do estoque volta antes de sair de novo ao editar. */
   const savedItems = useMemo(() => entry?.splits.flatMap((s) => s.items ?? []) ?? [], [entry]);
   const itemsOf = (split: SplitDraft) => (sells.has(split.categoryId) && !split.debtId ? split.items : []);
   const associateName = (id: string) => catalogs.associates.find((a) => a.id === id)?.name ?? "o associado";
-  /** Linhas de dívida da mesma rubrica e associado do rateio: com itens vendidos, ficam a pagar do total dos itens. */
-  const debtFor = (split: SplitDraft) => draft.debtLines.filter((l) => l.categoryId === split.categoryId && l.associateId === split.associateId)
-    .reduce((sum, l) => sum + magnitude(l.amount), 0);
-  /** O que entrou no rateio: com itens vendidos, a soma deles menos as linhas de dívida da mesma rubrica e associado. */
-  const splitMagnitude = (split: SplitDraft) => (itemsOf(split).length ? Math.max(itemDraftsTotal(itemsOf(split)) - debtFor(split), 0) : magnitude(split.amount));
+  /** O que entrou no rateio (com ou sem itens: o valor digitado ou sugerido). */
+  const splitMagnitude = (split: SplitDraft) => magnitude(split.amount);
 
   /** Linhas em aberto do associado do rateio, mais a que ele já paga (mesmo quitada por ele). */
   const debtOptions = (split: SplitDraft): Option[] => {
@@ -176,10 +195,16 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine, receiv
   const balanced = totalCents !== 0 && splitCents === totalCents;
   const remaining = totalCents - splitCents;
   const linesReady = draft.debtLines.every((l) => l.categoryId && l.associateId && l.description.trim().length >= 2 && magnitude(l.amount) > 0);
+  // Venda por rubrica (025): itens = recebido nos rateios + a pagar nas linhas de dívida, da mesma rubrica.
+  const balances = saleBalance(
+    draft.splits.map((s) => ({ categoryId: s.categoryId, amountCents: splitMagnitude(s), itemsCents: itemsOf(s).length ? itemDraftsTotal(itemsOf(s)) : 0 })),
+    draft.debtLines.map((l) => ({ categoryId: l.categoryId, amountCents: magnitude(l.amount) })));
+  const balanceOf = (categoryId: string) => balances.find((b) => b.categoryId === categoryId);
+  const salesReady = balances.every((b) => b.missingCents === 0);
 
-  // "Criar dívida com a diferença": entrou menos do que os rateios somam; a diferença vira linha de dívida do último rateio
-  // de entrada com associado (que não paga dívida), na mesma rubrica e descrição.
-  const dueSplit = [...draft.splits].reverse().find((s) => categoryKinds.get(s.categoryId) === "receita" && s.associateId && !s.debtId) ?? null;
+  // "Criar dívida com a diferença": entrou menos do que os rateios somam; a diferença vira linha de dívida na rubrica do
+  // último rateio de entrada que não paga dívida (o associado vem dele, ou fica para escolher na linha).
+  const dueSplit = [...draft.splits].reverse().find((s) => categoryKinds.get(s.categoryId) === "receita" && !s.debtId) ?? null;
   const canDue = !fromLine && !receive && draft.direction === "entrada" && remaining < 0 && dueSplit !== null && splitMagnitude(dueSplit) + remaining >= 0;
   // Só dívida: lançamento novo de entrada sem valor recebido e com linhas de dívida (venda ou cobrança toda a pagar).
   const onlyDebt = !entry && !fromLine && !receive && draft.direction === "entrada" && magnitude(draft.total) === 0 && draft.debtLines.length > 0
@@ -196,7 +221,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine, receiv
     updateSplit(last.key, { amount: centsToInput(Math.max(0, sign * (signedSplit(last) + remaining))) });
   }
 
-  /** A diferença vira linha de dívida; num rateio sem itens, o valor dele cai para o que entrou. */
+  /** A diferença vira linha de dívida na rubrica do rateio, e o valor do rateio cai para o que entrou. */
   function dueRemaining() {
     if (!dueSplit) return;
     const due = -remaining;
@@ -204,8 +229,14 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine, receiv
       amount: centsToInput(due), paidCents: 0 };
     update({
       debtLines: [...draft.debtLines, line],
-      splits: itemsOf(dueSplit).length ? draft.splits : draft.splits.map((s) => s.key === dueSplit.key ? { ...s, amount: centsToInput(splitMagnitude(s) - due) } : s),
+      splits: draft.splits.map((s) => s.key === dueSplit.key ? { ...s, amount: centsToInput(splitMagnitude(s) - due), auto: false } : s),
     });
+  }
+
+  /** Os itens da rubrica passam do recebido + a pagar: a falta vira linha de dívida nessa rubrica. */
+  function owedMissing(split: SplitDraft, missingCents: number) {
+    update({ debtLines: [...draft.debtLines, { key: ++splitKey, debtId: "", categoryId: split.categoryId, description: split.description,
+      associateId: split.associateId, amount: centsToInput(missingCents), paidCents: 0 }] });
   }
 
   function addDebtLine() {
@@ -214,13 +245,15 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine, receiv
       associateId: from?.associateId ?? "", amount: "", paidCents: 0 }] });
   }
 
-  /** Lança só as linhas de dívida (nada entrou): cada uma leva os itens vendidos do rateio da mesma rubrica e associado. */
+  // Só dívida com itens: uma linha por rubrica com itens (os itens dão o valor dela).
+  const onlyDebtSales = balances.every((b) => draft.debtLines.filter((l) => l.categoryId === b.categoryId).length === 1);
+  /** Lança só as linhas de dívida (nada entrou): a linha de cada rubrica leva os itens vendidos dela. */
   function submitOnlyDebt() {
     const payload = {
       date: draft.date,
       lines: draft.debtLines.map((l) => {
-        const sale = draft.splits.find((s) => s.categoryId === l.categoryId && s.associateId === l.associateId && itemsOf(s).length > 0);
-        const items = sale ? itemsOf(sale).map((item) => ({ lotId: item.lotId, quantity: Number(item.quantity), unitPriceCents: magnitude(item.price) })) : [];
+        const items = draft.splits.filter((s) => s.categoryId === l.categoryId).flatMap((s) => itemsOf(s))
+          .map((item) => ({ lotId: item.lotId, quantity: Number(item.quantity), unitPriceCents: magnitude(item.price) }));
         return { associateId: l.associateId, categoryId: l.categoryId, description: l.description, amountCents: items.length ? null : magnitude(l.amount), items };
       }),
     };
@@ -308,6 +341,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine, receiv
           Documento arquivado
         </Label>
       </div>}
+      {onlyDebt && !onlyDebtSales && <p role="alert" className="m-0 text-xs font-semibold text-destructive">Sem valor recebido, use uma linha de dívida por rubrica com itens vendidos (os itens dão o valor dela).</p>}
       {onlyDebt && <p className="m-0 text-xs text-muted-foreground">Nada entrou agora: ao salvar, só as linhas de dívida vão para a conta dos associados em Devedores (os itens vendidos baixam do estoque). Quando pagarem, use “Receber…”.</p>}
     </fieldset>
 
@@ -325,7 +359,7 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine, receiv
         <div className="grid gap-1.5"><Label htmlFor={`split-category-${index}`}>Rubrica</Label><CategoryPicker id={`split-category-${index}`} value={split.categoryId} onChange={(categoryId) => updateSplit(split.key, { categoryId })} categories={catalogs.categories} preferredKind={kindFor(draft.direction)} usedIds={usedCategoryIds} placeholder="Buscar receita ou despesa…" disabled={readOnly || Boolean(split.debtId)} /></div>
         <div className="grid gap-1.5"><Label htmlFor={`split-description-${index}`}>Descrição</Label><Input id={`split-description-${index}`} maxLength={200} placeholder="Ex.: Lanche do acampamento" value={split.description} onChange={(e) => updateSplit(split.key, { description: e.target.value })} required={!onlyDebt} /></div>
         <div className="grid gap-1.5"><Label htmlFor={`split-associate-${index}`}>Associado (opcional)</Label><OptionCombobox id={`split-associate-${index}`} value={split.associateId} onValueChange={(associateId) => updateSplit(split.key, { associateId, debtId: "" })} options={options.associates} placeholder={readOnly ? "—" : "Buscar associado…"} emptyText="Nenhum associado encontrado." disabled={readOnly} /></div>
-        <div className="grid gap-1.5"><Label htmlFor={`split-amount-${index}`}>Valor (R$){split.categoryId && <span className={cn("ml-1", splitSign(split) < 0 ? "text-destructive" : "text-success")}>{splitSign(split) < 0 ? "−" : "+"}</span>}</Label><Input id={`split-amount-${index}`} inputMode="decimal" placeholder="0,00" value={itemsOf(split).length ? centsToInput(splitMagnitude(split)) : split.amount} onChange={(e) => updateSplit(split.key, { amount: e.target.value })} readOnly={itemsOf(split).length > 0} title={itemsOf(split).length ? "Soma dos itens vendidos menos as linhas de dívida da mesma rubrica" : undefined} className="text-right num" required={!onlyDebt} /></div>
+        <div className="grid gap-1.5"><Label htmlFor={`split-amount-${index}`}>Valor (R$){split.categoryId && <span className={cn("ml-1", splitSign(split) < 0 ? "text-destructive" : "text-success")}>{splitSign(split) < 0 ? "−" : "+"}</span>}</Label><Input id={`split-amount-${index}`} inputMode="decimal" placeholder="0,00" value={split.amount} onChange={(e) => updateSplit(split.key, { amount: e.target.value, auto: false })} title={itemsOf(split).length ? "Sugerido: itens vendidos − linhas de dívida − outros rateios da rubrica" : undefined} className="text-right num" required={!onlyDebt} /></div>
         {!readOnly && <Button type="button" variant="ghost" size="icon" aria-label={`Remover rubrica ${index + 1}`} disabled={draft.splits.length === 1} onClick={() => update({ splits: draft.splits.filter((s) => s.key !== split.key) })}><IconTrash /></Button>}
         {draft.direction === "entrada" && split.associateId && debtOptions(split).length > 0 && <div className="grid gap-1.5 sm:col-span-full sm:max-w-xl">
           <Label htmlFor={`split-debt-${index}`}>Paga a dívida (opcional)</Label>
@@ -333,8 +367,18 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine, receiv
             emptyLabel="Não: receita avulsa" disabled={readOnly} />
           {split.debtId && <span className="text-[11px] text-muted-foreground">A rubrica é a da dívida. O valor entra nela e abate o que falta em Devedores.</span>}
         </div>}
-        {itemsOf(split).length > 0 && debtFor(split) > 0 && <p className="m-0 text-xs sm:col-span-full">
-          Itens <strong className="num">{money(itemDraftsTotal(itemsOf(split)) / 100)}</strong> · recebido <strong className="num">{money(splitMagnitude(split) / 100)}</strong> · a pagar <strong className="num text-destructive">{money(debtFor(split) / 100)}</strong> (linha de dívida abaixo)</p>}
+        {itemsOf(split).length > 0 && (() => {
+          const balance = balanceOf(split.categoryId);
+          if (!balance) return null;
+          const ok = balance.missingCents === 0;
+          return <p role="status" className={cn("m-0 flex flex-wrap items-center gap-2 text-xs sm:col-span-full", ok ? "text-success" : "text-destructive")}>
+            <span>Itens da rubrica <strong className="num">{money(balance.itemsCents / 100)}</strong> {ok ? "=" : "≠"} recebido <strong className="num">{money(balance.receivedCents / 100)}</strong>
+              {" "}+ a pagar <strong className="num">{money(balance.owedCents / 100)}</strong>
+              {!ok && <>: {balance.missingCents > 0 ? "faltam" : "passam"} <strong className="num">{money(Math.abs(balance.missingCents) / 100)}</strong></>}</span>
+            {!ok && balance.missingCents > 0 && !readOnly && <Button type="button" variant="outline" size="sm" onClick={() => owedMissing(split, balance.missingCents)}>
+              Lançar {money(balance.missingCents / 100)} como dívida</Button>}
+          </p>;
+        })()}
         {sells.has(split.categoryId) && !split.debtId && <SaleItemsEditor className="sm:col-span-full" index={index} items={split.items} lots={catalogs.saleLots}
           savedItems={savedItems} readOnly={readOnly} onChange={(items) => updateSplit(split.key, { items })} />}
       </div>)}
@@ -383,8 +427,8 @@ export function EntryForm({ entry, catalogs, canEdit, backHref, fromLine, receiv
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={() => entry && dirty ? setDraft(saved) : router.push(backHref)}>{entry && dirty ? "Descartar alterações" : "Voltar"}</Button>
         {onlyDebt
-          ? <Button type="submit" size="lg" disabled={!linesReady || pending}>{pending ? "Salvando…" : "Lançar dívida"}</Button>
-          : <Button type="submit" size="lg" disabled={!draft.direction || !balanced || !linesReady || pending || (Boolean(entry) && !dirty)}>{pending ? "Salvando…" : entry ? "Salvar alterações" : receive ? "Receber" : "Salvar lançamento"}</Button>}
+          ? <Button type="submit" size="lg" disabled={!linesReady || !onlyDebtSales || pending}>{pending ? "Salvando…" : "Lançar dívida"}</Button>
+          : <Button type="submit" size="lg" disabled={!draft.direction || !balanced || !linesReady || !salesReady || pending || (Boolean(entry) && !dirty)}>{pending ? "Salvando…" : entry ? "Salvar alterações" : receive ? "Receber" : "Salvar lançamento"}</Button>}
       </div>
     </div>}
 
