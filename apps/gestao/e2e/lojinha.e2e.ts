@@ -152,8 +152,8 @@ test("venda a pagar depois vira dívida em Devedores; Receber quita", async ({ p
     await chooseOption(page, "Forma de pagamento", "PIX");
     await chooseOption(page, "Conta", E2E_ACCOUNTS[0]);
     await page.getByRole("button", { name: "Receber", exact: true }).click();
-    await expect(page.getByText("Recebido: a dívida foi quitada em Devedores.")).toBeVisible();
-    expect(psql(`select sum(p.amount_cents) from public.debt_payments p join public.debts d on d.id = p.debt_id where d.description = ${literal(creditSale)};`)).toBe("2500");
+    await expect(page.getByText("Recebimento lançado na dívida (Devedores).")).toBeVisible();
+    expect(psql(`select sum(s.amount_cents) from public.entry_splits s join public.debts d on d.id = s.debt_id where d.description = ${literal(creditSale)};`)).toBe("2500");
     expect(stock()).toBe(4);
   });
 });

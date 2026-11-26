@@ -21,7 +21,11 @@ export const entrySchema = z.object({
     amountCents: nonZeroCents,
     description: z.string().trim().min(2, "Descreva cada rubrica.").max(200),
     associateId: z.uuid().nullable(),
-    /** Itens vendidos (só em rubrica que vende itens; a soma tem de dar o valor do rateio). */
+    /** Dívida que este rateio paga (023): mesma rubrica e associado da dívida. */
+    debtId: z.uuid().nullable().optional(),
+    /** Só ao criar (023): diferença que fica a pagar e vira dívida do associado do rateio, na mesma rubrica. */
+    dueCents: z.number().int().nonnegative().optional(),
+    /** Itens vendidos (só em rubrica que vende itens; a soma = valor do rateio + o que ficou a pagar). */
     items: z.array(z.object({
       lotId: z.uuid({ message: "Escolha o item vendido." }),
       quantity: z.number().int().positive("Informe a quantidade de cada item vendido."),
@@ -30,9 +34,9 @@ export const entrySchema = z.object({
   })).min(1, "Informe ao menos uma rubrica."),
 }).refine((value) => value.splits.reduce((sum, split) => sum + split.amountCents, 0) === value.totalCents, {
   message: "A soma das rubricas deve ser igual ao total do lançamento.",
-}).refine((value) => value.splits.every((split) => !split.items?.length
-  || split.items.reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0) === split.amountCents), {
-  message: "A soma dos itens vendidos deve ser igual ao valor da rubrica.",
+}).refine((value) => value.splits.every((split) => !split.items?.length || split.debtId
+  || split.items.reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0) >= split.amountCents), {
+  message: "A soma dos itens vendidos não pode ser menor que o valor da rubrica.",
 });
 
 export type EntryInput = z.infer<typeof entrySchema>;
@@ -43,6 +47,8 @@ export function toRpcSplits(splits: EntryInput["splits"]) {
     amount_cents: s.amountCents,
     description: s.description,
     associate_id: s.associateId,
+    debt_id: s.debtId ?? null,
+    ...(s.dueCents ? { due_cents: s.dueCents } : {}),
     items: (s.items ?? []).map((item) => ({ lot_id: item.lotId, quantity: item.quantity, unit_price_cents: item.unitPriceCents })),
   }));
 }

@@ -8,7 +8,7 @@ Grade anual (`/mensalidades?ano=AAAA`) de **março a dezembro** por associado, i
 |---|---|---|
 | **Pago** | registrado (com vínculo opcional a rateios) | ✓ verde |
 | **Atenção** | registrado, com nota (pagou parte, prometeu…) | ! amarelo |
-| **Não pago** | registrado, com nota: dívida confirmada | ✗ vermelho cheio |
+| **Não pago** | registrado, com nota: dívida confirmada; cria a dívida do mês em Devedores (rubrica de mensalidade, valor do mês; sem rubrica ou sem valor do ano configurados, fica só a marcação). Recebida a dívida (rateio ligado a ela), o mês passa a Pago | ✗ vermelho cheio |
 | **Isento** | registrado, com nota opcional: mês que não se cobra (ok sem ser pago) | ✓ em círculo, verde claro |
 | **Atrasado** | calculado: passou do vencimento sem registro | ✗ vermelho |
 | **Sugestão** | calculada: rateio de mensalidade do associado ainda sem caixinha | ✓ tracejado |

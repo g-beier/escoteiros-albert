@@ -114,6 +114,7 @@ async function withAttachmentCounts<T extends { entry_id: string }>(db: Db, list
 type EntrySplitRow = {
   category_id: string; amount_cents: number; description: string; associate_id: string | null; created_at: string; id: string;
   items: { lot_id: string; quantity: number; unit_price_cents: number }[];
+  debt_id: string | null;
 };
 
 /** Carrega um lançamento com seus rateios na ordem em que foram gravados (RLS restringe ao grupo). */
@@ -125,13 +126,21 @@ export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | nu
     select e.id, e.entry_date, e.name, e.payment_method_id, e.account_id, e.document, e.document_filed, e.notes, e.total_cents, e.created_at,
       e.updated_at, e.review_status,
       coalesce((select json_agg(json_build_object('id', s.id, 'category_id', s.category_id, 'amount_cents', s.amount_cents,
-        'description', s.description, 'associate_id', s.associate_id, 'created_at', s.created_at,
+        'description', s.description, 'associate_id', s.associate_id, 'created_at', s.created_at, 'debt_id', s.debt_id,
         'items', coalesce((select json_agg(json_build_object('lot_id', i.lot_id, 'quantity', i.quantity, 'unit_price_cents', i.unit_price_cents)
           order by i.position) from public.entry_sale_items i where i.split_id = s.id), '[]')))
         from public.entry_splits s where s.entry_id = e.id), '[]') as entry_splits
     from public.ledger_entries e where e.id = ${id}`);
   if (!data) return null;
   const splits = [...data.entry_splits].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+  // Dívidas que a diferença deste lançamento gerou (023): o "a pagar" volta para o primeiro rateio da mesma rubrica e associado.
+  const origin = await rows<{ id: string; description: string; amount_cents: number; category_id: string; associate_id: string }>(db, (sql) => sql`
+    select id, description, amount_cents::int as amount_cents, category_id, associate_id from public.debts where origin_entry_id = ${id}`);
+  const due = new Map<number, number>();
+  for (const debt of origin) {
+    const index = splits.findIndex((s) => s.category_id === debt.category_id && s.associate_id === debt.associate_id);
+    if (index >= 0) due.set(index, (due.get(index) ?? 0) + Number(debt.amount_cents));
+  }
   return {
     id: data.id,
     date: data.entry_date,
@@ -145,10 +154,12 @@ export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | nu
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     toReview: data.review_status === "para_revisar",
-    splits: splits.map((s) => ({
+    splits: splits.map((s, index) => ({
       categoryId: s.category_id, amountCents: s.amount_cents, description: s.description, associateId: s.associate_id,
       items: s.items.map((item) => ({ lotId: item.lot_id, quantity: item.quantity, unitPriceCents: Number(item.unit_price_cents) })),
+      debtId: s.debt_id, dueCents: due.get(index) ?? 0,
     })),
+    originDebts: origin.map((debt) => ({ id: debt.id, description: debt.description, amountCents: Number(debt.amount_cents) })),
   };
 }
 

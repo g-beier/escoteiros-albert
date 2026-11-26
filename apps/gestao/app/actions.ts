@@ -69,15 +69,6 @@ export async function createSaleDebt(payload: unknown): Promise<Result> {
   });
 }
 
-/** "Receber" uma dívida (022): cria o lançamento e quita com ele o que falta. */
-export async function receiveDebt(debtId: unknown, payload: unknown): Promise<Result> {
-  return withMember(memberOrError, async ({ db }) => {
-    const id = await debts.receive(db, readId(debtId, "Dívida inválida."), readEntry(payload));
-    revalidatePath("/", "layout");
-    return { success: true, id };
-  });
-}
-
 export async function updateEntry(entryId: unknown, payload: unknown): Promise<Result> {
   return withMember(memberOrError, async ({ db }) => {
     const id = readId(entryId);

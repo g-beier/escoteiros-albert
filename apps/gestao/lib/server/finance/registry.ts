@@ -5,6 +5,7 @@ import { toAccountRpc } from "@/lib/finance/accounts";
 import type { CategoryItem } from "@/lib/finance/categories";
 import type { ProfileImport } from "@/lib/finance/import-flow";
 import type { Db } from "@/lib/server/db";
+import { openDebts } from "@/lib/server/finance/debts";
 import { rows, rpc, run } from "@/lib/server/pg/db";
 
 // Cadastros do Financeiro: contas, formas de pagamento, rubricas e perfis de leitura. Escritas pelas funções
@@ -24,7 +25,7 @@ export async function entryCatalogs(db: Db, groupId: string): Promise<Catalogs> 
     ]);
     return { categories: [...categories], paymentMethods: [...paymentMethods], associates: [...associates], accounts: [...accounts],
       saleLots: [...saleLots] } as unknown as Catalogs;
-  });
+  }).then(async (catalogs) => ({ ...catalogs, openDebts: await openDebts(db, groupId) }));
 }
 
 export type CategoryWithUsage = CategoryItem & { ledger_code: string | null; usage: number };

@@ -40,7 +40,7 @@ describe("entrySchema", () => {
 
 describe("toRpcSplits", () => {
   it("converte para o formato da função SQL", () => {
-    expect(toRpcSplits(base.splits)[1]).toEqual({ category_id: id, amount_cents: 2000, description: "Lanche", associate_id: null, items: [] });
+    expect(toRpcSplits(base.splits)[1]).toEqual({ category_id: id, amount_cents: 2000, description: "Lanche", associate_id: null, debt_id: null, items: [] });
   });
   it("leva os itens vendidos", () => {
     const split = { ...base.splits[1], items: [{ lotId: id, quantity: 2, unitPriceCents: 1000 }] };
