@@ -7,7 +7,7 @@ import { ageInYearsMonths, type AssociateProfile, type ScoutBranch } from "./mod
 export const DATES_BEFORE_DAYS = 5;
 export const DATES_AFTER_DAYS = 15;
 /** Registros (itens de controle com validade) que vencem nestes dias aparecem no Início, com os já vencidos. */
-export const VALIDITY_WARNING_DAYS = 30;
+export const VALIDITY_WARNING_DAYS = 35;
 
 /**
  * Faixas dos ramos (POR): Filhote dos 5 aos 7 (se o grupo tiver o ramo; aí o Lobinho começa aos 7, com transição a

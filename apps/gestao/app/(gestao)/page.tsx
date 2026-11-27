@@ -22,7 +22,7 @@ import { ALL_DATES, currentYear } from "@/lib/finance/filters";
 import { todayInSaoPaulo } from "@/lib/finance/fees";
 import { dateBR, formatCents } from "@/lib/format";
 import { EXPIRY_WARNING_DAYS } from "@/lib/inventory/vocabulary";
-import { DATES_AFTER_DAYS, DATES_BEFORE_DAYS, relativeDay, VALIDITY_WARNING_DAYS } from "@/lib/associates/alerts";
+import { relativeDay, VALIDITY_WARNING_DAYS } from "@/lib/associates/alerts";
 import { ageYearsMonthsLabel } from "@/lib/associates/model";
 import { lifeBranchShort, STAR_NOTICE_DAYS } from "@/lib/associates/scout-life";
 import { overview as associatesOverview, sectionOverview } from "@/lib/server/associates/home";
@@ -222,13 +222,13 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
   // Listas vazias viram uma linha em "Sem novidades", em vez de uma caixa vazia cada.
   const quiet = [
     ...(associatesFull && associates.expiries.length === 0
-      ? [{ title: "Vencimentos de registro", text: `nenhum vencido nem vencendo em ${VALIDITY_WARNING_DAYS} dias` }]
+      ? [{ title: "Vencimentos de registro", text: `nenhum vencimento de registro próximo` }]
       : []),
     ...(associates.stars.length === 0
       ? [
           {
             title: "Estrelas de atividade",
-            text: `nenhuma a entregar nem completando em ${STAR_NOTICE_DAYS} dias${scopeNote}`,
+            text: `nenhuma estrela de atividade`,
           },
         ]
       : []),
@@ -236,7 +236,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
       ? [
           {
             title: "Aniversários e promessas",
-            text: `nenhum entre ${DATES_BEFORE_DAYS} dias atrás e ${DATES_AFTER_DAYS} à frente${scopeNote}`,
+            text: `nenhum aniversário ou aniversário de promessa`,
           },
         ]
       : []),
