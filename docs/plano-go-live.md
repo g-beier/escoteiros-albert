@@ -70,6 +70,9 @@ confirma.
 | P7 | O acesso (e-mail) não tem ligação com o cadastro de associados | `memberships.associate_id` (por grupo; um associado adulto no máximo por acesso, e vice-versa), escolhido pelo administrador em `/usuarios`. Seções do chefe = seções das suas funções de escotista ativas (`associate_functions`: `kind = 'escotista'`, `section_id`, `ended_on` vazio ou futuro), calculadas na hora: mudou a função, mudam os avisos. Serve também para mostrar o nome no lugar do e-mail e, depois, para a vida escoteira de cada um |
 | P8 | Cada módulo com papéis e rótulos próprios (Tesoureiro/Financeiro, Gestor/Chefe, Diretoria) e um administrador do grupo | Os cinco níveis acima em `memberships.finance_role`/`inventory_role`/`associates_role` (tipo `module_role`). Sem administrador do grupo: cada módulo tem os seus, que em `/usuarios` mudam só os seus módulos; quem fica sem acesso a todos sai do grupo. Ligar o acesso ao associado é do administrador do Associados |
 
+Ajuste de P3 (027, 2026-11-27): quem lê o Financeiro também lê a tabela `associates` (nomes nos lançamentos,
+mensalidades e devedores), mesmo sem acesso ao Associados; as demais tabelas do Associados continuam fechadas.
+
 Testes: pgTAP das permissões por papel (finance/associates/inventory), e2e com um usuário de cada perfil da tabela.
 
 ## 2. Importação de associados (CSV)
