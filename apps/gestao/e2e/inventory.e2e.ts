@@ -218,13 +218,13 @@ test("lista: filtros por estado e valor, ordem e colunas; o detalhe volta com tu
 
   // menu do Valor unitário: faixa acima do valor do lote some; abaixo aparece
   await columnMenu("Valor unitário").click();
-  await page.getByLabel("De (R$)").fill("2.000");
+  await page.getByLabel("De", { exact: true }).fill("2.000");
   await page.getByRole("button", { name: "Aplicar" }).click();
   await expect(page.getByText("Nenhum material encontrado.")).toBeVisible();
   await columnMenu("Valor unitário").click();
-  await expect(page.getByLabel("De (R$)")).toHaveValue("2.000");
-  await page.getByLabel("De (R$)").fill("1.000");
-  await page.getByLabel("De (R$)").press("Enter");
+  await expect(page.getByLabel("De", { exact: true })).toHaveValue("2.000,00");
+  await page.getByLabel("De", { exact: true }).fill("1.000");
+  await page.getByLabel("De", { exact: true }).press("Enter");
   await expect(page).toHaveURL(/unitario_de=1\.000/);
   await expect(line).toBeVisible();
 

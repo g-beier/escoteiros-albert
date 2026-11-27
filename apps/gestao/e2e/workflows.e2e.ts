@@ -209,7 +209,7 @@ test("importar OFX, criar lançamento pela conciliação, filtrar Conciliado e d
     const line = page.getByRole("region", { name: "Extrato" }).getByRole("listitem").filter({ hasText: "1.500,00" });
     await line.getByRole("link", { name: "Criar lançamento" }).click();
     await expect(page).toHaveURL(/\/financeiro\/lancamentos\/novo\?linha=/);
-    await expect(page.getByLabel(/^Valor total/)).toHaveValue("1500,00");
+    await expect(page.getByLabel(/^Valor total/)).toHaveValue("1.500,00");
     await page.getByLabel("Histórico").fill(name);
     if (!(await page.getByLabel("Forma de pagamento", { exact: true }).textContent())?.includes("PIX"))
       await chooseOption(page, "Forma de pagamento", "PIX");
@@ -220,7 +220,7 @@ test("importar OFX, criar lançamento pela conciliação, filtrar Conciliado e d
       .first()
       .click();
     await split.getByLabel("Descrição").fill("mensalidades de outubro");
-    await split.getByLabel(/^Valor \(R\$\)/).fill("1500,00");
+    await split.getByLabel(/^Valor/).fill("1500,00");
     await page.getByRole("button", { name: "Salvar lançamento" }).click();
     await expect(page.getByText("Lançamento criado e conciliado.")).toBeVisible();
     await expect(page).toHaveURL(/\/financeiro\/extrato\/conciliar\?/);

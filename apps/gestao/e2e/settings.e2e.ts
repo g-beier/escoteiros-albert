@@ -25,7 +25,7 @@ test("contas: cadastrar, editar e inativar", async ({ page }) => {
   await dialog.getByLabel("Nome").fill(account);
   await chooseOption(page, "Tipo", "Poupança", dialog);
   await dialog.getByLabel("Banco (opcional)").fill("Banco E2E");
-  await dialog.getByLabel("Saldo inicial (R$)").fill("1.234,56");
+  await dialog.getByLabel("Saldo inicial", { exact: true }).fill("1.234,56");
   await dialog.getByLabel("Data de início").fill("2026-01-01");
   await dialog.getByRole("button", { name: "Cadastrar conta" }).click();
   await expect(page.getByText(`Conta “${account}” cadastrada.`)).toBeVisible();
@@ -36,7 +36,7 @@ test("contas: cadastrar, editar e inativar", async ({ page }) => {
   await expect(row).toContainText("Ativa");
 
   await row.getByRole("button", { name: `Editar ${account}` }).click();
-  await page.getByRole("dialog").getByLabel("Saldo inicial (R$)").fill("100,00");
+  await page.getByRole("dialog").getByLabel("Saldo inicial", { exact: true }).fill("100,00");
   await page.getByRole("dialog").getByRole("button", { name: "Salvar conta" }).click();
   await expect(page.getByText(`Conta “${account}” salva.`)).toBeVisible();
   await expect(row).toContainText("R$ 100,00");

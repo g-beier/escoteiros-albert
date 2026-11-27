@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@geas/ui/components/dialog";
 import { Input } from "@geas/ui/components/input";
+import { MoneyInput } from "@geas/ui/components/money-input";
 import { Label } from "@geas/ui/components/label";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@geas/ui/components/table";
 import { ACCOUNT_KINDS, accountDetails, type Account, type AccountKind } from "@/lib/finance/accounts";
@@ -213,14 +214,12 @@ function AccountForm({ account, onDone }: { account: AccountItem | null; onDone:
       </div>
       <div className="grid items-start gap-3 sm:grid-cols-2">
         <div className="grid gap-1.5">
-          <Label htmlFor={field("opening-balance")}>Saldo inicial (R$)</Label>
-          <Input
+          <Label htmlFor={field("opening-balance")}>Saldo inicial</Label>
+          <MoneyInput
             id={field("opening-balance")}
             name="openingBalance"
-            inputMode="decimal"
-            placeholder="0,00"
+            allowNegative
             defaultValue={account ? centsToInput(account.opening_balance_cents) : ""}
-            className="text-right num"
           />
         </div>
         <div className="grid gap-1.5">

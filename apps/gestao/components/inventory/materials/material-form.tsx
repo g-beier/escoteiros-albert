@@ -11,6 +11,7 @@ import {
   FieldTitle,
 } from "@geas/ui/components/field";
 import { Input } from "@geas/ui/components/input";
+import { MoneyInput } from "@geas/ui/components/money-input";
 import { Label } from "@geas/ui/components/label";
 import { OptionSelect, type Option } from "@geas/ui/components/option-controls";
 import { RadioGroup, RadioGroupItem } from "@geas/ui/components/radio-group";
@@ -227,7 +228,7 @@ export function MaterialForm({
                 </Field>
               )}
               <Field id="entry-value" label="Valor estimado (unidade)">
-                <Input id="entry-value" name="value" inputMode="decimal" placeholder="Ex.: 35,00" className="num" />
+                <MoneyInput id="entry-value" name="value" />
               </Field>
               <Field id="entry-acquired" label="Data de entrada">
                 <Input id="entry-acquired" name="acquiredOn" type="date" className="num" />

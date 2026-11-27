@@ -8,6 +8,7 @@ import {
   transitionOf,
   transitionRules,
   transitions,
+  VALIDITY_WARNING_DAYS,
   transitionWindow,
   upcomingDates,
 } from "./alerts";
@@ -197,7 +198,11 @@ describe("transitions", () => {
 });
 
 describe("registrationExpiries e relativeDay", () => {
-  it("vencidos e vencendo em 30 dias, de associados ativos com situação ok; vencidos primeiro", () => {
+  it("vencidos e vencendo na janela de aviso, de associados ativos com situação ok; vencidos primeiro", () => {
+    const today = "2026-11-19";
+    const plusDays = (days: number) =>
+      new Date(Date.parse(`${today}T12:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+    const lastDay = plusDays(VALIDITY_WARNING_DAYS);
     const people = [
       { id: "a", name: "Ana", active: true },
       { id: "b", name: "Bia", active: true },
@@ -212,9 +217,9 @@ describe("registrationExpiries e relativeDay", () => {
     });
     const list = registrationExpiries(
       [
-        row("a", "2026-12-19"),
+        row("a", lastDay),
         row("b", "2026-11-10"),
-        row("a", "2026-12-20"),
+        row("a", plusDays(VALIDITY_WARNING_DAYS + 1)),
         row("b", null),
         row("c", "2026-11-01"),
         row("b", "2026-11-20", "pendente"),
@@ -223,12 +228,12 @@ describe("registrationExpiries e relativeDay", () => {
       ],
       people,
       items,
-      "2026-11-19",
+      today,
     );
     expect(list.map((e) => `${e.name} ${e.validUntil} ${e.days}`)).toEqual([
       "Bia 2026-11-10 -9",
       "Ana 2026-11-19 0",
-      "Ana 2026-12-19 30",
+      `Ana ${lastDay} ${VALIDITY_WARNING_DAYS}`,
     ]);
     expect(list[0].item).toBe("Validade do registro");
   });

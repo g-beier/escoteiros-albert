@@ -105,7 +105,8 @@ rode o servidor com `E2E_LOGIN=1` (só em `next dev`): a tela de login mostra um
 ```bash
 npm run db:migrate --workspace=@geas/gestao   # aplica migrations novas sem apagar dados
 npm run db:types --workspace=@geas/gestao     # regenera lib/server/pg/schema.ts depois de uma migration
-npm run infra:reset                           # recria o banco do zero (apaga tudo; refaça o primeiro acesso)
+npm run infra:reset                           # recria o banco do zero (apaga tudo) com o grupo e diretoria@escoteirosalbert.com.br
+                                              # como Administrador de todos os módulos (BOOTSTRAP_ADMIN_EMAIL muda)
 npm run infra:status                          # migrations aplicadas e pendentes
 npm run infra:stop                            # para os containers (os dados ficam nos volumes)
 ```

@@ -1,3 +1,5 @@
+import { formatInputCents } from "@geas/ui/lib/money";
+
 export function money(value: number | string) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -34,12 +36,9 @@ export function formatCents(cents: number | string | null | undefined) {
   return money(Number(cents ?? 0) / 100);
 }
 
-/** Centavos para o formato editável do formulário (ex.: -1005 → "-10,05"; ausente → ""). */
+/** Centavos para o formato do campo de valor (`MoneyInput`): -123456 → "-1.234,56"; ausente → "". */
 export function centsToInput(cents: number | null | undefined) {
-  if (cents == null) return "";
-  const sign = cents < 0 ? "-" : "";
-  const abs = Math.abs(cents);
-  return `${sign}${Math.floor(abs / 100)},${String(abs % 100).padStart(2, "0")}`;
+  return formatInputCents(cents);
 }
 
 /** "a1b2c3…f9e8": o FITID do Nubank é um UUID; o começo e o fim bastam para reconhecer. */

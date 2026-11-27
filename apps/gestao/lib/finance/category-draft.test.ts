@@ -37,6 +37,21 @@ const codes = (draft: ReturnType<typeof createDraft>) =>
   Object.fromEntries(draftRows(draft).map((row) => [row.node.name, row.code]));
 
 describe("category draft", () => {
+  it("keeps the simples transferência fixed first, numbered .0", () => {
+    const transfer = { ...cat("t", "2.0", "Simples transferência", "d"), transfer: true };
+    let draft = createDraft([...saved, transfer]);
+    expect(codes(draft)).toMatchObject({ "Simples transferência": "2.0", Programa: "2.1", Administrativas: "2.2" });
+    expect(draftChanges(draft, draft).moved).toBe(0);
+    expect(dropError(draft, "t", "p", "inside")).toMatch(/não muda de lugar/);
+    expect(dropError(draft, "t", "r1", "after")).toMatch(/não muda de lugar/);
+    expect(dropError(draft, "x", "t", "before")).toMatch(/sempre em primeiro/);
+    expect(dropError(draft, "x", "t", "after")).toBeNull();
+    draft = moveNode(draft, "x", "d", "inside");
+    expect(codes(draft)).toMatchObject({ "Simples transferência": "2.0", Programa: "2.1", Administrativas: "2.2" });
+    draft = moveNode(draft, "x", "t", "after");
+    expect(codes(draft)).toMatchObject({ "Simples transferência": "2.0", Administrativas: "2.1", Programa: "2.2" });
+  });
+
   it("rebuilds the tree in code order, legacy without code at the end", () => {
     const rows = draftRows(createDraft(saved));
     expect(rows.map((row) => row.code)).toEqual(["1", "1.1", "2", "2.1", "2.1.1", "2.1.2", "2.2", null]);

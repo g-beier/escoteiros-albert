@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Checkbox } from "@geas/ui/components/checkbox";
 import { Input } from "@geas/ui/components/input";
+import { MoneyInput } from "@geas/ui/components/money-input";
 import { Label } from "@geas/ui/components/label";
 import { OptionSelect, type Option } from "@geas/ui/components/option-controls";
 import { Textarea } from "@geas/ui/components/textarea";
@@ -123,14 +124,7 @@ export function EntryFields({
   return (
     <>
       <Field id={`${prefix}-value`} label={valueLabel}>
-        <Input
-          id={`${prefix}-value`}
-          name="value"
-          inputMode="decimal"
-          placeholder="Ex.: 35,00"
-          defaultValue={centsToInput(defaults.unit_value_cents)}
-          className="num"
-        />
+        <MoneyInput id={`${prefix}-value`} name="value" defaultValue={centsToInput(defaults.unit_value_cents)} />
       </Field>
       <Field id={`${prefix}-acquired`} label="Data de entrada">
         <Input
@@ -259,12 +253,10 @@ export function SaleFields({
       </div>
       {checked && (
         <Field id={`${prefix}-sale-price`} label="Preço de venda (unidade)">
-          <Input
+          <MoneyInput
             id={`${prefix}-sale-price`}
             name="salePrice"
-            inputMode="decimal"
-            placeholder="Ex.: 25,00"
-            className="num sm:max-w-40"
+            groupClassName="sm:max-w-40"
             defaultValue={priceCents != null ? centsToInput(priceCents) : ""}
           />
         </Field>

@@ -50,7 +50,7 @@ test("devedores: nova dívida com duas linhas, acordo da conta, receber uma e ex
         .first()
         .click();
       await line.getByLabel("Descrição").fill(text);
-      await line.getByLabel("Valor (R$)").fill(value);
+      await line.getByLabel("Valor", { exact: true }).fill(value);
     }
     await expect(dialog).toContainText("Total: R$ 160,00");
     await dialog.getByRole("button", { name: "Anotar dívida" }).click();
@@ -122,12 +122,14 @@ test("lançamento: a diferença vira linha de dívida; depois, Receber da conta 
     await split.getByLabel("Descrição").fill(name);
     await split.getByRole("combobox", { name: "Associado (opcional)" }).fill(associate);
     await page.getByRole("option", { name: associate }).click();
-    await split.getByLabel(/^Valor \(R\$\)/).fill("100,00");
+    await split.getByLabel(/^Valor/).fill("100,00");
     await page
       .getByRole("button", { name: new RegExp(`^Criar dívida com a diferença \\(R\\$\\s40,00\\) de ${associate}`) })
       .click();
-    await expect(page.getByRole("group", { name: "Dívida 1" }).getByLabel("Valor (R$)")).toHaveValue("40,00");
-    await expect(split.getByLabel(/^Valor \(R\$\)/)).toHaveValue("60,00");
+    await expect(page.getByRole("group", { name: "Dívida 1" }).getByLabel("Valor", { exact: true })).toHaveValue(
+      "40,00",
+    );
+    await expect(split.getByLabel(/^Valor/)).toHaveValue("60,00");
     await expect(page.getByText("✓ Valores conferem")).toBeVisible();
     await page.getByRole("button", { name: "Salvar lançamento" }).click();
     await expect(page.getByText("Lançamento salvo; as linhas de dívida foram para Devedores.")).toBeVisible();
@@ -149,7 +151,7 @@ test("lançamento: a diferença vira linha de dívida; depois, Receber da conta 
       await who.fill(associate);
       await page.getByRole("option", { name: associate }).click();
     }
-    await dialog.getByLabel("Valor recebido (R$)").fill("30,00");
+    await dialog.getByLabel("Valor recebido", { exact: true }).fill("30,00");
     await expect(dialog).toContainText("Repartido: R$ 30,00");
     await dialog.getByRole("button", { name: "Adicionar ao lançamento" }).click();
     await page.getByLabel("Histórico").fill(receipt);

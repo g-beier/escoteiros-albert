@@ -49,6 +49,7 @@ import {
   DropdownMenuTrigger,
 } from "@geas/ui/components/dropdown-menu";
 import { Input } from "@geas/ui/components/input";
+import { MoneyInput } from "@geas/ui/components/money-input";
 import { Label } from "@geas/ui/components/label";
 import { OptionCombobox, type Option } from "@geas/ui/components/option-controls";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
@@ -624,15 +625,12 @@ function NewDebtForm({
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor={`debt-new-amount-${index}`}>Valor (R$)</Label>
-            <Input
+            <Label htmlFor={`debt-new-amount-${index}`}>Valor</Label>
+            <MoneyInput
               id={`debt-new-amount-${index}`}
-              inputMode="decimal"
-              placeholder="0,00"
-              className="text-right num"
               value={sells.has(line.categoryId) && line.items.length ? centsToInput(valueOf(line)) : line.amount}
               readOnly={sells.has(line.categoryId) && line.items.length > 0}
-              onChange={(event) => set(line.key, { amount: event.target.value })}
+              onValueChange={(amount) => set(line.key, { amount })}
               required
             />
           </div>
@@ -743,16 +741,8 @@ function LineForm({ debt, categories, onDone }: { debt: Debt; categories: Option
           />
         </div>
         <div className="grid gap-1.5">
-          <Label htmlFor={field("amount")}>Valor (R$)</Label>
-          <Input
-            id={field("amount")}
-            inputMode="decimal"
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-            readOnly={fromOrigin}
-            className="text-right num"
-            required
-          />
+          <Label htmlFor={field("amount")}>Valor</Label>
+          <MoneyInput id={field("amount")} value={amount} onValueChange={setAmount} readOnly={fromOrigin} required />
         </div>
       </div>
       <div className="grid gap-1.5">

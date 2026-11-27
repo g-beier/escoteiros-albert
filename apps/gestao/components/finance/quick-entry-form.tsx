@@ -13,6 +13,7 @@ import {
   FieldTitle,
 } from "@geas/ui/components/field";
 import { Input } from "@geas/ui/components/input";
+import { MoneyInput } from "@geas/ui/components/money-input";
 import { Label } from "@geas/ui/components/label";
 import { OptionSelect } from "@geas/ui/components/option-controls";
 import { RadioGroup, RadioGroupItem } from "@geas/ui/components/radio-group";
@@ -129,16 +130,8 @@ export function QuickEntryForm({
         </RadioGroup>
       </fieldset>
       <div className="grid items-start gap-4 sm:grid-cols-2">
-        <Field id="quick-total" label="Valor (R$)">
-          <Input
-            id="quick-total"
-            name="total"
-            inputMode="decimal"
-            placeholder="0,00"
-            required
-            autoComplete="off"
-            className={`${BIG} text-right num`}
-          />
+        <Field id="quick-total" label="Valor">
+          <MoneyInput id="quick-total" name="total" required groupClassName="h-11" className="text-sm" />
         </Field>
         <Field id="quick-date" label="Data">
           <Input

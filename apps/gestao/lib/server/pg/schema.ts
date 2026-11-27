@@ -227,6 +227,7 @@ export type Tables = {
     ledger_code: unknown | null;
     position: number;
     sells_items: boolean;
+    transfer: boolean;
   };
   control_item_audiences: {
     item_id: string;

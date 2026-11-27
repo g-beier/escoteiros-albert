@@ -34,6 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@geas/ui/components/dropdown-menu";
 import { Input } from "@geas/ui/components/input";
+import { MoneyInput } from "@geas/ui/components/money-input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@geas/ui/components/tooltip";
 import { Label } from "@geas/ui/components/label";
 import { branchLabels, isScoutBranch } from "@/lib/associates/model";
@@ -1056,16 +1057,8 @@ function PriceForm({
       </DialogHeader>
       <div className="flex flex-wrap gap-3">
         <div className="grid gap-1.5">
-          <Label htmlFor="price-monthly">Mensalidade (R$)</Label>
-          <Input
-            id="price-monthly"
-            inputMode="decimal"
-            placeholder="Ex.: 40,00"
-            value={monthly}
-            onChange={(e) => setMonthly(e.target.value)}
-            className="w-32 text-right num"
-            required
-          />
+          <Label htmlFor="price-monthly">Mensalidade</Label>
+          <MoneyInput id="price-monthly" value={monthly} onValueChange={setMonthly} groupClassName="w-32" required />
         </div>
         <div className="grid min-w-56 flex-1 gap-1.5">
           <Label htmlFor="price-reason">Motivo</Label>
