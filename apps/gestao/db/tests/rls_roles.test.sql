@@ -1,8 +1,8 @@
 -- pgTAP: papéis dentro do mesmo grupo (A). Consulta lê tudo e não escreve nada; tesouraria escreve
--- lançamentos, cadastros, extrato e associados, mas não administra usuários nem lê a auditoria;
+-- lançamentos, cadastros, extrato e associados (estes só pelas funções auditadas), mas não administra usuários nem lê a auditoria;
 -- administração faz tudo, inclusive papéis e remoções. Rode com `npm run test:db` (pg_prove no container, `scripts/db.mjs test`).
 begin;
-select plan(69);
+select plan(70);
 \ir _fixture.psql
 
 -- ================================================================ consulta (viewer)
@@ -80,10 +80,11 @@ select lives_ok(format($$select public.create_account(%L, 'Conta Tesouraria', 'c
 select lives_ok(format($$select public.create_category(%L, %L, 'Rubrica Tesouraria', null)$$, :'gid_a', :'cat_a'), 'tesouraria cria rubrica');
 select lives_ok(format($$select public.create_payment_method(%L, 'Forma Tesouraria')$$, :'gid_a'), 'tesouraria cria forma de pagamento');
 select lives_ok(format($$select public.ignore_statement_lines(array[%L]::uuid[], 'tarifa')$$, :'line_a2'), 'tesouraria ignora linha do extrato');
-select lives_ok(format($$insert into public.associates(group_id, name, branch) values (%L, 'Novo Tesouraria', 'adulto')$$, :'gid_a'),
-  'tesouraria insere associado direto (política editors manage associates)');
-select is(tests.affected(format($$update public.associates set name = name where id = %L$$, :'assoc_a')), 1,
-  'tesouraria altera associado direto');
+select throws_ok(format($$insert into public.associates(group_id, name, branch) values (%L, 'Novo Tesouraria', 'adulto')$$, :'gid_a'),
+  '42501', null, 'tesouraria não insere associado direto (026: só pelas funções auditadas)');
+select is(tests.affected(format($$update public.associates set name = name where id = %L$$, :'assoc_a')), 0,
+  'tesouraria não altera associado direto');
+select ok(exists(select 1 from public.associates where id = :'assoc_a'), 'tesouraria continua lendo associates');
 select lives_ok(format($$select public.set_fee_record(%L, 2026, 4, 'atencao', 'metade', '{}')$$, :'assoc_a'), 'tesouraria registra mensalidade');
 select throws_like(format($$select public.admin_add_member(%L, 'rls.novo.a@exemplo.org', 'viewer')$$, :'gid_a'),
   'Apenas administradores%', 'tesouraria não cadastra usuário');

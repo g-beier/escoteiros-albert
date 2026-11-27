@@ -29,7 +29,9 @@ select is(tests.affected(format($$update public.sections set name = name where g
 select is(tests.affected(format($$delete from public.patrols where section_id = %L$$, :'tropa_a')), 0, 'sem DELETE direto em patrols');
 select throws_ok(format($$insert into public.patrols(group_id, section_id, name) values (%L, %L, 'Direta')$$, :'gid_a', :'tropa_a'), '42501', null, 'sem INSERT direto em patrols');
 
--- Associado: seção do mesmo ramo e patrulha da mesma seção (chaves compostas).
+-- Associado: seção do mesmo ramo e patrulha da mesma seção (chaves compostas). Como postgres: o app só escreve
+-- `associates` pelas funções auditadas (026), aqui se testam as restrições da tabela.
+select tests.logout() \gset
 select lives_ok(format($$update public.associates set section_id = %L where id = %L$$, :'sec_a', :'assoc_a'), 'lobinho na alcateia');
 select throws_ok(format($$update public.associates set section_id = %L where id = %L$$, :'tropa_a', :'assoc_a'), '23503', null, 'lobinho não entra na tropa');
 select throws_ok(format($$update public.associates set patrol_id = %L where id = %L$$, :'pat_a', :'assoc_a'), '23503', null, 'patrulha de outra seção recusada');

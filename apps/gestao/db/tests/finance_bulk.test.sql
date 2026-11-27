@@ -10,7 +10,7 @@ select id as cat_r2 from public.categories where group_id = :'gid_a' and kind = 
   and not (id = any(public.fee_category_ids(:'gid_a'))) order by code desc limit 1 \gset
 select id as cat_d from public.categories where group_id = :'gid_a' and kind = 'despesa' and active order by code limit 1 \gset
 select id as cat_d2 from public.categories where group_id = :'gid_a' and kind = 'despesa' and active order by code desc limit 1 \gset
-insert into public.associates(group_id, name, branch) values (:'gid_a', 'Outro Associado', 'escoteiro') returning id as assoc_2 \gset
+select public.associates_create(:'gid_a', 'Outro Associado', 'escoteiro', null, null, null, null, null, null) as assoc_2 \gset
 select public.create_ledger_entry(:'gid_a', '2026-04-01', 'Papelaria', :'pix_a', null, false, -3000,
   jsonb_build_array(jsonb_build_object('category_id', :'cat_d', 'amount_cents', -2000, 'description', 'cartolina'),
                     jsonb_build_object('category_id', :'cat_d', 'amount_cents', -1000, 'description', 'cola')), :'acc_a') as e1 \gset

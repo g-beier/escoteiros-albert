@@ -188,7 +188,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
         module: "associados",
         count: starsLate,
         label: plural(starsLate, "estrela de atividade a entregar", "estrelas de atividade a entregar"),
-        href: "/associados/vida-escoteira?ver=entregar",
+        href: associatesFull ? "/associados/vida-escoteira?ver=entregar" : "/#stars-title",
       },
       {
         module: "associados",
@@ -224,7 +224,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
     ...(associatesFull && associates.expiries.length === 0
       ? [{ title: "Vencimentos de registro", text: `nenhum vencido nem vencendo em ${VALIDITY_WARNING_DAYS} dias` }]
       : []),
-    ...(associatesFull && associates.stars.length === 0
+    ...(associates.stars.length === 0
       ? [
           {
             title: "Estrelas de atividade",
@@ -337,19 +337,19 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
             </ListCard>
           )}
 
-          {associatesFull && associates.stars.length > 0 && (
+          {associates.stars.length > 0 && (
             <ListCard
               title="Estrelas de atividade a entregar"
               titleId="stars-title"
-              href="/associados/vida-escoteira?ver=entregar"
+              href={associatesFull ? "/associados/vida-escoteira?ver=entregar" : undefined}
               linkLabel="Vida escoteira"
             >
               <ul className="m-0 list-none p-0">
                 {associates.stars.map((s) => (
                   <li key={s.associateId} className="border-t first:border-t-0">
-                    <Link
-                      href={`/associados/${s.associateId}/vida-escoteira`}
-                      className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted"
+                    <PersonLink
+                      href={associatesFull ? `/associados/${s.associateId}/vida-escoteira` : undefined}
+                      className="flex items-center gap-3 px-4 py-2 text-sm"
                     >
                       <IconAward className="size-4 shrink-0 text-primary" aria-hidden />
                       <span className="min-w-0 flex-1">
@@ -361,7 +361,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ a
                       <Badge variant={s.star.dueOn <= today ? "caution" : "info"} className="shrink-0">
                         {s.star.dueOn <= today ? `desde ${dateBR(s.star.dueOn)}` : `em ${dateBR(s.star.dueOn)}`}
                       </Badge>
-                    </Link>
+                    </PersonLink>
                   </li>
                 ))}
               </ul>

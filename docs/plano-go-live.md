@@ -9,7 +9,7 @@ valendo para o que fica depois. Infra e Azure: `.azure/deployment-plan.md`.
 1. **Papéis** (seção 1): feito.
 2. **Importação de associados por CSV** (seção 2): feito.
 3. **Importação do inventário por CSV** (seção 3): feito.
-4. **Vida escoteira** (seção 4): feito, com a importação (009). Falta: avisos de estrela aos chefes no Início.
+4. **Vida escoteira** (seção 4): feito, com a importação (009) e os avisos de estrela aos chefes no Início (026).
 5. **Ir ao ar** (seção 5): tela de consentimento do Google (página `/privacidade` pronta), Azure, domínio
    `gestao.escoteirosalbert.com.br`, carga real pelos CSVs, uso pela diretoria em paralelo às planilhas.
 6. **Antes da contagem de 2027**: conferência anual no Inventário (Passo 4 do backlog do inventário; a folha impressa
@@ -19,8 +19,14 @@ Entrou também, fora da lista (2026-11-26): ações em lote, importação, agrup
 no Financeiro (012–015), situações de controle que seguem o público (016), edição em lote, ordem manual e folha de
 conferência no Inventário (011, 017), exclusão de associados com quarentena de 60 dias (018).
 
+Em 2026-11-27: avisos do Início só das seções do escotista com acesso ao Associados (abas "<seção>" | "Grupo todo"),
+Lojinha (019–021: lote à venda com preço, vendido pelo lançamento do Financeiro com baixa no estoque), Devedores como
+conta a receber por associado (022–025: linhas de dívida por rubrica, venda fiada, mensalidade não paga, pagamento
+parcial, acordo na conta), estrelas de atividade aos chefes sem acesso ao Associados e escrita em `associates` só pelas
+funções auditadas (026).
+
 Fora por ora: módulo Ações (rascunho `apps/gestao/docs/acoes/modelo.md` só no branch local `acoes/modelo`, commit `bae1171`),
-papel Secretaria/bloqueio da tesouraria no Associados, Lojinha, empréstimos, registro UEB e integrações financeiras.
+papel Secretaria/bloqueio da tesouraria no Associados, empréstimos, registro UEB e integrações financeiras.
 
 ## 1. Papéis
 
@@ -137,8 +143,9 @@ Decisões:
 - Linhas muito longas num ramo na planilha são históricos perdidos, a resgatar.
 
 Importação: `vida-escoteira.csv` em `/importar` (migration 009; cores da planilha → linhas `período`, convertidas por
-fora seguindo `apps/gestao/docs/importacao.md`). Falta: avisos de estrela aos chefes no Início (como aniversários e
-transições).
+fora seguindo `apps/gestao/docs/importacao.md`). Avisos de estrela aos chefes no Início (026): o chefe sem acesso ao
+Associados vê as estrelas a entregar dos jovens das suas seções, como os aniversários e as transições
+(`associates_section_star_rows`, só os dados que a conta usa).
 
 ## 5. Ir ao ar
 

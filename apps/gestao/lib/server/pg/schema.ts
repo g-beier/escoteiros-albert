@@ -836,6 +836,7 @@ export type Functions = {
   associates_review: { Args: { p_group_id: string; p_associate_ids: string[] }; Returns: number };
   associates_role_of: { Args: { p_group_id: string }; Returns: Enums["module_role"] };
   associates_section_alert_rows: { Args: { p_group_id: string }; Returns: { id: string; name: string; active: boolean; branch: Enums["scout_branch"]; birth_date: string; promise_date: string; transition_started_on: string }[] };
+  associates_section_star_rows: { Args: { p_group_id: string }; Returns: { associate_id: string; periods: Json; stars: Json; exclusions: Json }[] };
   associates_seed_control_items: { Args: { p_group_id: string }; Returns: number };
   associates_set_transition: { Args: { p_associate_id: string; p_date: string }; Returns: undefined };
   associates_update: { Args: { p_associate_id: string; p_name: string; p_birth_date: string; p_promise_date: string; p_joined_on: string; p_notes: string; p_registration: Enums["associate_registration"]; p_nickname: string; p_branch?: Enums["scout_branch"]; p_section_id?: string; p_patrol_id?: string }; Returns: undefined };

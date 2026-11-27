@@ -5,8 +5,8 @@ import { createEntry, entryRow, uniqueName } from "./support/entries";
 import { pageAs } from "./support/members";
 
 // Chefe (002, 003): sem acesso ao Financeiro nem ao Associados, Colaborador no Inventário, ligado a um associado adulto escotista
-// de uma seção. Vê no Início só os jovens dessa seção, sem link para o cadastro, e os módulos sem acesso somem e
-// devolvem para o Início. Nomes fictícios; tudo é apagado no fim.
+// de uma seção. Vê no Início só os jovens dessa seção (aniversários e estrelas de atividade), sem link para o cadastro,
+// e os módulos sem acesso somem e devolvem para o Início. Nomes fictícios; tudo é apagado no fim.
 const stamp = Date.now().toString(36);
 const chief = `e2e.chefe.${stamp}@example.org`;
 const contributor = `e2e.colaborador.${stamp}@example.org`;
@@ -52,13 +52,16 @@ test.beforeAll(() => {
     on conflict (group_id, user_id) do update set finance_role = 'none', inventory_role = 'none', associates_role = 'viewer';`);
   const chiefId = psql(`select id from auth.users where email = ${literal(chief)};`);
   const readerId = psql(`select id from auth.users where email = ${literal(reader)};`);
-  // aniversário hoje: aparece em "Aniversários e promessas"
+  // aniversário hoje: aparece em "Aniversários e promessas"; promessa há um ano e um mês (fora da janela das datas),
+  // no grupo desde antes dela: a 1ª estrela venceu há 30 dias e aparece em "Estrelas de atividade a entregar"
+  const promise = "(current_date - interval '1 year' - interval '30 days')::date";
+  const joined = "(current_date - interval '1 year' - interval '40 days')::date";
   asAdmin(`
     select public.create_section(${literal(gid)}, 'escoteiro', ${literal(`${E2E_PREFIX} Tropa ${stamp}`)}) as tropa \\gset
     select public.create_section(${literal(gid)}, 'lobinho', ${literal(`${E2E_PREFIX} Alcateia ${stamp}`)}) as alcateia \\gset
     select public.associates_create(${literal(gid)}, ${literal(scouter)}, 'adulto', null, null, null, null, null, null) as chefe \\gset
-    select public.associates_create(${literal(gid)}, ${literal(youth)}, 'escoteiro', :'tropa', null, (current_date - interval '12 years')::date, null, null, null);
-    select public.associates_create(${literal(gid)}, ${literal(other)}, 'lobinho', :'alcateia', null, (current_date - interval '8 years')::date, null, null, null);
+    select public.associates_create(${literal(gid)}, ${literal(youth)}, 'escoteiro', :'tropa', null, (current_date - interval '12 years')::date, ${promise}, ${joined}, null);
+    select public.associates_create(${literal(gid)}, ${literal(other)}, 'lobinho', :'alcateia', null, (current_date - interval '8 years')::date, ${promise}, ${joined}, null);
     select public.associates_add_function(:'chefe', 'escotista', null, current_date, :'tropa');
     select public.admin_link_member_associate(${literal(gid)}, ${literal(chiefId)}, :'chefe');
     select public.associates_create(${literal(gid)}, ${literal(scouterReader)}, 'adulto', null, null, null, null, null, null) as escotista \\gset
@@ -93,6 +96,19 @@ test("chefe vê só o Inventário e os avisos da própria seção", async ({ bro
     await expect(dates).toContainText(youth);
     await expect(dates).not.toContainText(other);
     await expect(dates.getByRole("link", { name: new RegExp(youth) })).toHaveCount(0);
+  });
+
+  await test.step("estrela de atividade só do jovem da seção do chefe, sem link", async () => {
+    const stars = page.getByRole("region", { name: "Estrelas de atividade a entregar" });
+    await expect(stars).toContainText(youth);
+    await expect(stars).toContainText("1ª estrela");
+    await expect(stars).not.toContainText(other);
+    await expect(stars.getByRole("link")).toHaveCount(0);
+    const attention = page.getByRole("region", { name: "Precisa de atenção" });
+    await expect(attention.getByRole("link", { name: /estrela de atividade a entregar/ })).toHaveAttribute(
+      "href",
+      "/#stars-title",
+    );
   });
 
   await test.step("módulos sem acesso voltam para o Início", async () => {
