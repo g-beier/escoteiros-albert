@@ -12,12 +12,20 @@ import { BRANCH_COLORS, ROLE_COLORS } from "./reports";
 export const LIFE_SOURCES = ["manual", "automatico", "cadastro", "planilha"] as const;
 export type LifeSource = (typeof LIFE_SOURCES)[number];
 export const lifeSourceLabels: Record<LifeSource, string> = {
-  manual: "à mão", automatico: "automático", cadastro: "sugestão do cadastro", planilha: "planilha",
+  manual: "à mão",
+  automatico: "automático",
+  cadastro: "sugestão do cadastro",
+  planilha: "planilha",
 };
 
 /** Período de `associate_life_periods`. `adulto` = escotista ou dirigente; `place` vazio = este grupo. */
 export type LifePeriod = {
-  id: string; branch: ScoutBranch; started_on: string; ended_on: string | null; place: string | null; source: LifeSource;
+  id: string;
+  branch: ScoutBranch;
+  started_on: string;
+  ended_on: string | null;
+  place: string | null;
+  source: LifeSource;
 };
 /** Linha de `associate_stars`: ramo corrigido e entrega de uma estrela. */
 export type StarRecord = { star: number; branch: ScoutBranch | null; delivered_on: string | null };
@@ -28,26 +36,37 @@ export type LifeEvent = { id: string; event_date: string; title: string; descrip
 export const EXCLUSION_REASONS = ["frequencia", "licenca", "suspensao", "outro"] as const;
 export type ExclusionReason = (typeof EXCLUSION_REASONS)[number];
 export const exclusionReasonLabels: Record<ExclusionReason, string> = {
-  frequencia: "Frequência de até 70%", licenca: "Licença acima de 60 dias", suspensao: "Suspensão disciplinar", outro: "Outro motivo",
+  frequencia: "Frequência de até 70%",
+  licenca: "Licença acima de 60 dias",
+  suspensao: "Suspensão disciplinar",
+  outro: "Outro motivo",
 };
 /** Período não contabilizado (`associate_life_exclusions`, 005): [início, fim), descontado da contagem. */
-export type LifeExclusion = { id: string; started_on: string; ended_on: string; reason: ExclusionReason; note: string | null };
+export type LifeExclusion = {
+  id: string;
+  started_on: string;
+  ended_on: string;
+  reason: ExclusionReason;
+  note: string | null;
+};
 
 /** Dias antes da estrela em que o aviso de entrega começa (e fica até a entrega). */
 export const STAR_NOTICE_DAYS = 15;
 /** Funções de adulto que contam para o tempo de atividade. */
 export const COUNTING_FUNCTIONS = ["escotista", "dirigente"] as const;
 
-/** Rótulo do ramo do período: o adulto aparece como "Escotista ou dirigente". */
-export const lifeBranchLabel = (branch: ScoutBranch) => (branch === "adulto" ? "Escotista ou dirigente" : branchLabels[branch]);
+/** Rótulo do ramo do período: o adulto aparece como "Voluntário". */
+export const lifeBranchLabel = (branch: ScoutBranch) => (branch === "adulto" ? "Voluntário" : branchLabels[branch]);
 /** Rótulo curto (barras, estrelas). */
 export const lifeBranchShort = (branch: ScoutBranch) => (branch === "adulto" ? "Adulto" : branchLabels[branch]);
 /** Cor do período: a do ramo; adulto (escotista ou dirigente) em azul, como na planilha. */
-export const lifeBranchColor = (branch: ScoutBranch) => (branch === "adulto" ? ROLE_COLORS.dirigente : BRANCH_COLORS[branch]);
+export const lifeBranchColor = (branch: ScoutBranch) =>
+  branch === "adulto" ? ROLE_COLORS.dirigente : BRANCH_COLORS[branch];
 
 // Datas --------------------------------------------------------------------------------------------------------------
 
-const toTime = (iso: string) => Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)));
+const toTime = (iso: string) =>
+  Date.UTC(Number(iso.slice(0, 4)), Number(iso.slice(5, 7)) - 1, Number(iso.slice(8, 10)));
 const fromTime = (time: number) => new Date(time).toISOString().slice(0, 10);
 const DAY = 86_400_000;
 export const daysBetween = (from: string, to: string) => Math.round((toTime(to) - toTime(from)) / DAY);
@@ -71,8 +90,11 @@ type Segment = { branch: ScoutBranch; start: string; end: string | null };
  * Períodos em ordem, cortados na promessa (o que vem antes não conta) e sem os trechos não contabilizados
  * (`exclusions`), que viram lacunas.
  */
-export function countedSegments(periods: Pick<LifePeriod, "branch" | "started_on" | "ended_on">[], promiseDate: string | null,
-  exclusions: Pick<LifeExclusion, "started_on" | "ended_on">[] = []): Segment[] {
+export function countedSegments(
+  periods: Pick<LifePeriod, "branch" | "started_on" | "ended_on">[],
+  promiseDate: string | null,
+  exclusions: Pick<LifeExclusion, "started_on" | "ended_on">[] = [],
+): Segment[] {
   if (!promiseDate) return [];
   const segments = [...periods]
     .sort((a, b) => a.started_on.localeCompare(b.started_on))
@@ -82,7 +104,10 @@ export function countedSegments(periods: Pick<LifePeriod, "branch" | "started_on
 }
 
 /** Tira de cada trecho os intervalos [início, fim) não contabilizados, partindo o trecho quando o corte cai no meio. */
-export function subtractExclusions(segments: Segment[], exclusions: Pick<LifeExclusion, "started_on" | "ended_on">[]): Segment[] {
+export function subtractExclusions(
+  segments: Segment[],
+  exclusions: Pick<LifeExclusion, "started_on" | "ended_on">[],
+): Segment[] {
   const cuts = [...exclusions].sort((a, b) => a.started_on.localeCompare(b.started_on));
   const result: Segment[] = [];
   for (const segment of segments) {
@@ -122,7 +147,10 @@ export function starDates(segments: Segment[], upTo: string): string[] {
       if (i > 0) shift += daysBetween(segments[i - 1].end as string, segments[i].start);
       const candidate = addDays(addYears(base, n), shift);
       const end = segments[i].end;
-      if (end === null || candidate <= end) { due = candidate; break; }
+      if (end === null || candidate <= end) {
+        due = candidate;
+        break;
+      }
     }
     if (!due) break;
     dates.push(due);
@@ -173,14 +201,19 @@ function mostDays(days: Map<ScoutBranch, number>, order: ScoutBranch[]): ScoutBr
  */
 export function starBranch(segments: Segment[], from: string, due: string): ScoutBranch | null {
   const order = [...new Set(segments.map((s) => s.branch))];
-  return mostDays(branchDays(segments, from, due, true), order) ?? mostDays(branchDays(segments, from, due, false), order);
+  return (
+    mostDays(branchDays(segments, from, due, true), order) ?? mostDays(branchDays(segments, from, due, false), order)
+  );
 }
 
 export type StarStatus = "entregue" | "pendente" | "proxima" | "futura";
 export type Star = {
-  n: number; dueOn: string;
+  n: number;
+  dueOn: string;
   /** Ramo mostrado: o corrigido, senão o calculado. */
-  branch: ScoutBranch | null; computedBranch: ScoutBranch | null; overridden: boolean;
+  branch: ScoutBranch | null;
+  computedBranch: ScoutBranch | null;
+  overridden: boolean;
   /** Data da entrega registrada nesta estrela (as anteriores a uma entrega ficam `entregue` sem data). */
   deliveredOn: string | null;
   status: StarStatus;
@@ -210,10 +243,19 @@ export type LifeSummary = {
 };
 
 /** Resumo da vida escoteira de uma pessoa em `today`. */
-export function lifeSummary({ periods, promiseDate, records = [], exclusions = [], today }: {
-  periods: Pick<LifePeriod, "branch" | "started_on" | "ended_on">[]; promiseDate: string | null; records?: StarRecord[];
+export function lifeSummary({
+  periods,
+  promiseDate,
+  records = [],
+  exclusions = [],
+  today,
+}: {
+  periods: Pick<LifePeriod, "branch" | "started_on" | "ended_on">[];
+  promiseDate: string | null;
+  records?: StarRecord[];
   /** Períodos não contabilizados (005): descontados como lacunas. */
-  exclusions?: Pick<LifeExclusion, "started_on" | "ended_on">[]; today: string;
+  exclusions?: Pick<LifeExclusion, "started_on" | "ended_on">[];
+  today: string;
 }): LifeSummary {
   const segments = countedSegments(periods, promiseDate, exclusions);
   const noticeUntil = addDays(today, STAR_NOTICE_DAYS);
@@ -224,21 +266,44 @@ export function lifeSummary({ periods, promiseDate, records = [], exclusions = [
     const n = index + 1;
     const record = byNumber.get(n);
     const computedBranch = starBranch(segments, index === 0 ? segments[0].start : dates[index - 1], dueOn);
-    const status: StarStatus = n <= lastDelivered ? "entregue" : dueOn <= noticeUntil ? "pendente" : dueOn > today && index === dates.length - 1 ? "proxima" : "futura";
+    const status: StarStatus =
+      n <= lastDelivered
+        ? "entregue"
+        : dueOn <= noticeUntil
+          ? "pendente"
+          : dueOn > today && index === dates.length - 1
+            ? "proxima"
+            : "futura";
     return {
-      n, dueOn, computedBranch, branch: record?.branch ?? computedBranch, overridden: Boolean(record?.branch),
-      deliveredOn: record?.delivered_on ?? null, status,
+      n,
+      dueOn,
+      computedBranch,
+      branch: record?.branch ?? computedBranch,
+      overridden: Boolean(record?.branch),
+      deliveredOn: record?.delivered_on ?? null,
+      status,
     };
   });
   const done = stars.filter((s) => s.dueOn <= today);
   const byBranch: Partial<Record<ScoutBranch, number>> = {};
   for (const star of done) if (star.branch) byBranch[star.branch] = (byBranch[star.branch] ?? 0) + 1;
-  const hasGaps = segments.some((s, i) => i > 0 && segments[i - 1].end !== null && (segments[i - 1].end as string) < s.start);
+  const hasGaps = segments.some(
+    (s, i) => i > 0 && segments[i - 1].end !== null && (segments[i - 1].end as string) < s.start,
+  );
   return {
-    promiseDate, countFrom: segments[0]?.start ?? null, years: done.length, days: countedDays(segments, today), stars,
-    pending: stars.filter((s) => s.status === "pendente" && s.dueOn <= today).at(-1) ?? stars.find((s) => s.status === "pendente") ?? null,
+    promiseDate,
+    countFrom: segments[0]?.start ?? null,
+    years: done.length,
+    days: countedDays(segments, today),
+    stars,
+    pending:
+      stars.filter((s) => s.status === "pendente" && s.dueOn <= today).at(-1) ??
+      stars.find((s) => s.status === "pendente") ??
+      null,
     next: stars.find((s) => s.dueOn > today) ?? null,
-    byBranch, hasGaps, open: periods.some((p) => p.ended_on === null),
+    byBranch,
+    hasGaps,
+    open: periods.some((p) => p.ended_on === null),
   };
 }
 
@@ -251,10 +316,16 @@ export const yearsLabel = (count: number) => `${count} ${count === 1 ? "ano" : "
 
 type FunctionLike = Pick<AssociateFunction, "kind" | "started_on" | "ended_on">;
 const counts = (fn: FunctionLike, on: string) =>
-  (COUNTING_FUNCTIONS as readonly string[]).includes(fn.kind) && (!fn.started_on || fn.started_on <= on) && (!fn.ended_on || fn.ended_on > on);
+  (COUNTING_FUNCTIONS as readonly string[]).includes(fn.kind) &&
+  (!fn.started_on || fn.started_on <= on) &&
+  (!fn.ended_on || fn.ended_on > on);
 
 /** Ramo que deveria estar vigente hoje (mesma regra de `life_expected_branch`, 004). */
-export function expectedBranch(associate: { branch: ScoutBranch; active: boolean }, functions: FunctionLike[], today: string): ScoutBranch | null {
+export function expectedBranch(
+  associate: { branch: ScoutBranch; active: boolean },
+  functions: FunctionLike[],
+  today: string,
+): ScoutBranch | null {
   if (!associate.active) return null;
   if (associate.branch !== "adulto") return associate.branch;
   return functions.some((fn) => counts(fn, today)) ? "adulto" : null;
@@ -270,32 +341,62 @@ export type LifeMismatch =
  * Compara o período vigente com o cadastro de hoje. A data sugerida é o último evento do cadastro que explica a
  * diferença (entrada, passagem, saída, início ou fim de função), se cair depois do que já está registrado; senão, hoje.
  */
-export function lifeMismatch({ associate, periods, functions, moves, movements, today }: {
-  associate: { branch: ScoutBranch; active: boolean }; periods: LifePeriod[]; functions: FunctionLike[];
-  moves: Pick<AssociateMove, "move_date">[]; movements: Pick<AssociateMovement, "kind" | "movement_date">[]; today: string;
+export function lifeMismatch({
+  associate,
+  periods,
+  functions,
+  moves,
+  movements,
+  today,
+}: {
+  associate: { branch: ScoutBranch; active: boolean };
+  periods: LifePeriod[];
+  functions: FunctionLike[];
+  moves: Pick<AssociateMove, "move_date">[];
+  movements: Pick<AssociateMovement, "kind" | "movement_date">[];
+  today: string;
 }): LifeMismatch | null {
   const expected = expectedBranch(associate, functions, today);
   const open = periods.find((p) => p.ended_on === null) ?? null;
   if ((open?.branch ?? null) === expected) return null;
-  const floor = open ? open.started_on : periods.reduce((last, p) => maxDate(last, p.ended_on ?? p.started_on), "0000-00-00");
+  const floor = open
+    ? open.started_on
+    : periods.reduce((last, p) => maxDate(last, p.ended_on ?? p.started_on), "0000-00-00");
   const latest = (dates: (string | null | undefined)[]) => {
-    const valid = dates.filter((d): d is string => Boolean(d) && (d as string) >= floor && (d as string) <= today).sort();
+    const valid = dates
+      .filter((d): d is string => Boolean(d) && (d as string) >= floor && (d as string) <= today)
+      .sort();
     return valid.at(-1) ?? today;
   };
   const counting = functions.filter((fn) => (COUNTING_FUNCTIONS as readonly string[]).includes(fn.kind));
   if (!open && expected) {
-    return { kind: "abrir", expected, date: latest([
-      ...movements.filter((m) => m.kind === "entrada").map((m) => m.movement_date), ...moves.map((m) => m.move_date),
-      ...counting.filter((fn) => counts(fn, today)).map((fn) => fn.started_on),
-    ]) };
+    return {
+      kind: "abrir",
+      expected,
+      date: latest([
+        ...movements.filter((m) => m.kind === "entrada").map((m) => m.movement_date),
+        ...moves.map((m) => m.move_date),
+        ...counting.filter((fn) => counts(fn, today)).map((fn) => fn.started_on),
+      ]),
+    };
   }
   if (open && !expected) {
-    return { kind: "encerrar", open, date: latest([
-      ...movements.filter((m) => m.kind === "saida").map((m) => m.movement_date), ...moves.map((m) => m.move_date),
-      ...counting.map((fn) => fn.ended_on),
-    ]) };
+    return {
+      kind: "encerrar",
+      open,
+      date: latest([
+        ...movements.filter((m) => m.kind === "saida").map((m) => m.movement_date),
+        ...moves.map((m) => m.move_date),
+        ...counting.map((fn) => fn.ended_on),
+      ]),
+    };
   }
-  return { kind: "trocar", open: open as LifePeriod, expected: expected as ScoutBranch, date: latest(moves.map((m) => m.move_date)) };
+  return {
+    kind: "trocar",
+    open: open as LifePeriod,
+    expected: expected as ScoutBranch,
+    date: latest(moves.map((m) => m.move_date)),
+  };
 }
 
 // Sugestão a partir do cadastro ------------------------------------------------------------------------------------
@@ -306,8 +407,18 @@ export type SuggestedPeriod = { branch: ScoutBranch; started_on: string; ended_o
  * Períodos que o cadastro sugere: cada entrada até a saída seguinte, dividida pelas passagens (ramo de cada trecho =
  * o de origem da passagem seguinte, ou o atual); no Adulto, só enquanto houver função de escotista ou dirigente.
  */
-export function suggestPeriods({ branch, movements, moves, functions, today }: {
-  branch: ScoutBranch; movements: AssociateMovement[]; moves: Pick<AssociateMove, "move_date" | "from_branch">[]; functions: FunctionLike[]; today: string;
+export function suggestPeriods({
+  branch,
+  movements,
+  moves,
+  functions,
+  today,
+}: {
+  branch: ScoutBranch;
+  movements: AssociateMovement[];
+  moves: Pick<AssociateMove, "move_date" | "from_branch">[];
+  functions: FunctionLike[];
+  today: string;
 }): SuggestedPeriod[] {
   const sortedMoves = [...moves].sort((a, b) => a.move_date.localeCompare(b.move_date));
   const branchAt = (day: string) => sortedMoves.find((m) => m.move_date > day)?.from_branch ?? branch;
@@ -327,11 +438,18 @@ export function suggestPeriods({ branch, movements, moves, functions, today }: {
     const start = presence.start.movement_date;
     const end = presence.end?.movement_date ?? null;
     if (start > today) continue;
-    const cuts = [start, ...sortedMoves.map((m) => m.move_date).filter((d) => d > start && (end === null || d < end)), end];
+    const cuts = [
+      start,
+      ...sortedMoves.map((m) => m.move_date).filter((d) => d > start && (end === null || d < end)),
+      end,
+    ];
     for (let i = 0; i < cuts.length - 1; i += 1) {
       const [from, to] = [cuts[i] as string, cuts[i + 1]];
       const b = branchAt(from);
-      if (b !== "adulto") { push(b, from, to); continue; }
+      if (b !== "adulto") {
+        push(b, from, to);
+        continue;
+      }
       for (const range of adultRanges) {
         const s = maxDate(range.start, from);
         const e = range.end === null ? to : to === null ? range.end : minDate(range.end, to);
@@ -346,7 +464,10 @@ export function suggestPeriods({ branch, movements, moves, functions, today }: {
  * O que a sugestão acrescenta ao que já está registrado: sem períodos, tudo; com períodos, só o que vem antes do
  * primeiro (cortado no início dele). Sobreposições nunca entram.
  */
-export function missingSuggestions(suggested: SuggestedPeriod[], existing: Pick<LifePeriod, "started_on">[]): SuggestedPeriod[] {
+export function missingSuggestions(
+  suggested: SuggestedPeriod[],
+  existing: Pick<LifePeriod, "started_on">[],
+): SuggestedPeriod[] {
   if (existing.length === 0) return suggested;
   const first = existing.map((p) => p.started_on).sort()[0];
   return suggested
@@ -356,9 +477,14 @@ export function missingSuggestions(suggested: SuggestedPeriod[], existing: Pick<
 
 // Linha do tempo ------------------------------------------------------------------------------------------------------
 
-export type TimelineKind = "promessa" | "entrada" | "saida" | "passagem" | "inicio" | "fim" | "estrela" | "evento" | "excluido";
+export type TimelineKind =
+  "promessa" | "entrada" | "saida" | "passagem" | "inicio" | "fim" | "estrela" | "evento" | "excluido";
 export type TimelineItem = {
-  key: string; date: string; kind: TimelineKind; title: string; detail?: string;
+  key: string;
+  date: string;
+  kind: TimelineKind;
+  title: string;
+  detail?: string;
   /** Cor do marcador (ramo); nulo = neutro. */
   branch: ScoutBranch | null;
   /** Evento lançado à mão (editável). */
@@ -368,52 +494,139 @@ export type TimelineItem = {
 };
 export type TimelineYear = { year: number; branch: ScoutBranch | null; items: TimelineItem[] };
 
-const KIND_ORDER: TimelineKind[] = ["saida", "fim", "passagem", "entrada", "inicio", "promessa", "excluido", "estrela", "evento"];
+const KIND_ORDER: TimelineKind[] = [
+  "saida",
+  "fim",
+  "passagem",
+  "entrada",
+  "inicio",
+  "promessa",
+  "excluido",
+  "estrela",
+  "evento",
+];
 
 /**
  * Linha do tempo vertical, um bloco por ano (do mais antigo ao mais recente): promessa, entradas e saídas, passagens,
  * início e fim de períodos (quando não coincidem com entrada, saída ou passagem), estrelas vencidas e os eventos
  * lançados à mão. A cor do ano é o ramo com mais dias nele.
  */
-export function timeline({ periods, promiseDate, moves, movements, stars, events, exclusions = [], today }: {
-  periods: LifePeriod[]; promiseDate: string | null; moves: AssociateMove[]; movements: AssociateMovement[];
-  stars: Star[]; events: LifeEvent[]; exclusions?: LifeExclusion[]; today: string;
+export function timeline({
+  periods,
+  promiseDate,
+  moves,
+  movements,
+  stars,
+  events,
+  exclusions = [],
+  today,
+}: {
+  periods: LifePeriod[];
+  promiseDate: string | null;
+  moves: AssociateMove[];
+  movements: AssociateMovement[];
+  stars: Star[];
+  events: LifeEvent[];
+  exclusions?: LifeExclusion[];
+  today: string;
 }): TimelineYear[] {
   const items: TimelineItem[] = [];
-  const sameDay = (date: string, kinds: ("entrada" | "saida")[]) => movements.some((m) => m.movement_date === date && kinds.includes(m.kind));
-  const branchOn = (date: string) => periods.find((p) => p.started_on <= date && (p.ended_on === null || p.ended_on > date))?.branch ?? null;
-  if (promiseDate) items.push({ key: "promessa", date: promiseDate, kind: "promessa", title: "Promessa", branch: branchOn(promiseDate), detail: "Início da contagem do tempo de atividade." });
+  const sameDay = (date: string, kinds: ("entrada" | "saida")[]) =>
+    movements.some((m) => m.movement_date === date && kinds.includes(m.kind));
+  const branchOn = (date: string) =>
+    periods.find((p) => p.started_on <= date && (p.ended_on === null || p.ended_on > date))?.branch ?? null;
+  if (promiseDate)
+    items.push({
+      key: "promessa",
+      date: promiseDate,
+      kind: "promessa",
+      title: "Promessa",
+      branch: branchOn(promiseDate),
+      detail: "Início da contagem do tempo de atividade.",
+    });
   for (const m of movements) {
-    items.push({ key: `mov-${m.id}`, date: m.movement_date, kind: m.kind, title: m.kind === "entrada" ? "Entrada no grupo" : "Desligamento",
-      detail: m.reason ?? undefined, branch: m.kind === "entrada" ? branchOn(m.movement_date) : null });
+    items.push({
+      key: `mov-${m.id}`,
+      date: m.movement_date,
+      kind: m.kind,
+      title: m.kind === "entrada" ? "Entrada no grupo" : "Desligamento",
+      detail: m.reason ?? undefined,
+      branch: m.kind === "entrada" ? branchOn(m.movement_date) : null,
+    });
   }
   for (const move of moves) {
-    items.push({ key: `move-${move.id}`, date: move.move_date, kind: "passagem", title: `Passagem para ${lifeBranchShort(move.to_branch)}`,
-      detail: `${branchLabels[move.from_branch]} → ${branchLabels[move.to_branch]}`, branch: move.to_branch });
+    items.push({
+      key: `move-${move.id}`,
+      date: move.move_date,
+      kind: "passagem",
+      title: `Passagem para ${lifeBranchShort(move.to_branch)}`,
+      detail: `${branchLabels[move.from_branch]} → ${branchLabels[move.to_branch]}`,
+      branch: move.to_branch,
+    });
   }
   for (const p of periods) {
     const where = p.place ? ` (${p.place})` : "";
     if (!moves.some((m) => m.move_date === p.started_on) && !sameDay(p.started_on, ["entrada"])) {
-      items.push({ key: `ini-${p.id}`, date: p.started_on, kind: "inicio", title: `Início: ${lifeBranchLabel(p.branch)}${where}`, branch: p.branch });
+      items.push({
+        key: `ini-${p.id}`,
+        date: p.started_on,
+        kind: "inicio",
+        title: `Início: ${lifeBranchLabel(p.branch)}${where}`,
+        branch: p.branch,
+      });
     }
-    if (p.ended_on && !moves.some((m) => m.move_date === p.ended_on) && !sameDay(p.ended_on, ["saida"])
-      && !periods.some((q) => q.started_on === p.ended_on)) {
-      items.push({ key: `fim-${p.id}`, date: p.ended_on, kind: "fim", title: `Fim: ${lifeBranchLabel(p.branch)}${where}`, branch: null });
+    if (
+      p.ended_on &&
+      !moves.some((m) => m.move_date === p.ended_on) &&
+      !sameDay(p.ended_on, ["saida"]) &&
+      !periods.some((q) => q.started_on === p.ended_on)
+    ) {
+      items.push({
+        key: `fim-${p.id}`,
+        date: p.ended_on,
+        kind: "fim",
+        title: `Fim: ${lifeBranchLabel(p.branch)}${where}`,
+        branch: null,
+      });
     }
   }
   for (const star of stars.filter((s) => s.dueOn <= today)) {
-    items.push({ key: `estrela-${star.n}`, date: star.dueOn, kind: "estrela", title: `${star.n}ª estrela de atividade`,
-      detail: star.status === "entregue" ? (star.deliveredOn ? `Certificado entregue em ${star.deliveredOn.split("-").reverse().join("/")}` : "Entregue") : "A entregar",
-      branch: star.branch });
+    items.push({
+      key: `estrela-${star.n}`,
+      date: star.dueOn,
+      kind: "estrela",
+      title: `${star.n}ª estrela de atividade`,
+      detail:
+        star.status === "entregue"
+          ? star.deliveredOn
+            ? `Certificado entregue em ${star.deliveredOn.split("-").reverse().join("/")}`
+            : "Entregue"
+          : "A entregar",
+      branch: star.branch,
+    });
   }
   for (const x of exclusions) {
     const range = `${x.started_on.split("-").reverse().join("/")} a ${x.ended_on.split("-").reverse().join("/")}`;
-    items.push({ key: `exc-${x.id}`, date: x.started_on, kind: "excluido", title: `Não contabilizado: ${exclusionReasonLabels[x.reason].toLowerCase()}`,
-      detail: [range, x.note].filter(Boolean).join(" · "), branch: branchOn(x.started_on), exclusion: x });
+    items.push({
+      key: `exc-${x.id}`,
+      date: x.started_on,
+      kind: "excluido",
+      title: `Não contabilizado: ${exclusionReasonLabels[x.reason].toLowerCase()}`,
+      detail: [range, x.note].filter(Boolean).join(" · "),
+      branch: branchOn(x.started_on),
+      exclusion: x,
+    });
   }
   for (const event of events) {
-    items.push({ key: `ev-${event.id}`, date: event.event_date, kind: "evento", title: event.title, detail: event.description ?? undefined,
-      branch: branchOn(event.event_date), event });
+    items.push({
+      key: `ev-${event.id}`,
+      date: event.event_date,
+      kind: "evento",
+      title: event.title,
+      detail: event.description ?? undefined,
+      branch: branchOn(event.event_date),
+      event,
+    });
   }
   items.sort((a, b) => a.date.localeCompare(b.date) || KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind));
   const years = new Map<number, TimelineItem[]>();
@@ -431,7 +644,12 @@ export function timeline({ periods, promiseDate, moves, movements, stars, events
 // Barra (perfil e visão do grupo) ------------------------------------------------------------------------------------
 
 export type BarSegment = {
-  branch: ScoutBranch; from: number; to: number; beforePromise: boolean; future: boolean; place: string | null;
+  branch: ScoutBranch;
+  from: number;
+  to: number;
+  beforePromise: boolean;
+  future: boolean;
+  place: string | null;
   /** Dentro de um período não contabilizado (listrado). */
   excluded: ExclusionReason | null;
 };
@@ -441,8 +659,14 @@ export type BarSegment = {
  * virada: a promessa (antes dela não conta, mostrado mais claro), os períodos não contabilizados (listrados) e hoje
  * (`today`; depois dele é só projeção do vigente).
  */
-export function barSegments(periods: LifePeriod[], promiseDate: string | null, from: string, to: string, today?: string,
-  exclusions: LifeExclusion[] = []): BarSegment[] {
+export function barSegments(
+  periods: LifePeriod[],
+  promiseDate: string | null,
+  from: string,
+  to: string,
+  today?: string,
+  exclusions: LifeExclusion[] = [],
+): BarSegment[] {
   const points = [promiseDate, today, ...exclusions.flatMap((x) => [x.started_on, x.ended_on])];
   const excludedAt = (day: string) => exclusions.find((x) => x.started_on <= day && x.ended_on > day)?.reason ?? null;
   const total = Math.max(1, daysBetween(from, to));
@@ -452,12 +676,25 @@ export function barSegments(periods: LifePeriod[], promiseDate: string | null, f
     const start = maxDate(p.started_on, from);
     const end = minDate(p.ended_on ?? to, to);
     if (end <= start) continue;
-    const cuts = [start, ...[...new Set(points)].filter((d): d is string => Boolean(d) && (d as string) > start && (d as string) < end).sort(), end];
+    const cuts = [
+      start,
+      ...[...new Set(points)]
+        .filter((d): d is string => Boolean(d) && (d as string) > start && (d as string) < end)
+        .sort(),
+      end,
+    ];
     for (let i = 0; i < cuts.length - 1; i += 1) {
       const [a, b] = [cuts[i], cuts[i + 1]];
       if (b <= a) continue;
-      result.push({ branch: p.branch, from: frac(a), to: frac(b), beforePromise: !promiseDate || b <= promiseDate,
-        future: Boolean(today) && a >= (today as string), place: p.place, excluded: excludedAt(a) });
+      result.push({
+        branch: p.branch,
+        from: frac(a),
+        to: frac(b),
+        beforePromise: !promiseDate || b <= promiseDate,
+        future: Boolean(today) && a >= (today as string),
+        place: p.place,
+        excluded: excludedAt(a),
+      });
     }
   }
   return result;

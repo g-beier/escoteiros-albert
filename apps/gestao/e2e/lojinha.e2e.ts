@@ -65,9 +65,14 @@ test("venda com itens dá baixa no inventário e a exclusão devolve", async ({ 
     const escaped = category.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     await page.getByRole("button", { name: new RegExp(`^Ações de [\\d.]+ ${escaped}$`) }).click();
     await page.getByRole("menuitem", { name: "Marcar venda de itens (Lojinha)" }).click();
-    await page.getByRole("region", { name: "Alterações não salvas" }).getByRole("button", { name: "Salvar alterações" }).click();
+    await page
+      .getByRole("region", { name: "Alterações não salvas" })
+      .getByRole("button", { name: "Salvar alterações" })
+      .click();
     await expect(page.getByText("Rubricas salvas.")).toBeVisible();
-    expect(psql(`select sells_items from public.categories where group_id = ${group} and name = ${literal(category)};`)).toBe("t");
+    expect(
+      psql(`select sells_items from public.categories where group_id = ${group} and name = ${literal(category)};`),
+    ).toBe("t");
   });
 
   await test.step("lança a venda com o item; o valor da rubrica vem dos itens", async () => {
@@ -96,7 +101,11 @@ test("venda com itens dá baixa no inventário e a exclusão devolve", async ({ 
 
   await test.step("o estoque baixou, com o motivo venda", async () => {
     expect(stock()).toBe(3);
-    expect(psql(`select count(*) from public.inventory_movements where material_id = ${material} and kind = 'baixa' and write_off_reason = 'venda' and channel = 'financeiro';`)).toBe("1");
+    expect(
+      psql(
+        `select count(*) from public.inventory_movements where material_id = ${material} and kind = 'baixa' and write_off_reason = 'venda' and channel = 'financeiro';`,
+      ),
+    ).toBe("1");
   });
 
   await test.step("detalhe do material: Lojinha e link para o lançamento no histórico", async () => {
@@ -112,7 +121,9 @@ test("venda com itens dá baixa no inventário e a exclusão devolve", async ({ 
     await page.goto("/financeiro/lancamentos/movimentacoes");
     await search(page, entry);
     await entryRow(page, entry).getByRole("link", { name: entry, exact: true }).click();
-    await expect(page.getByRole("group", { name: "Itens vendidos da rubrica 1" }).getByRole("combobox", { name: "Item" })).toHaveValue(new RegExp(scarf));
+    await expect(
+      page.getByRole("group", { name: "Itens vendidos da rubrica 1" }).getByRole("combobox", { name: "Item" }),
+    ).toHaveValue(new RegExp(scarf));
     await page.getByRole("button", { name: "Excluir lançamento" }).click();
     await page.getByRole("dialog").getByRole("button", { name: "Excluir" }).click();
     await expect(page.getByText("Lançamento excluído.")).toBeVisible();
@@ -145,30 +156,38 @@ test("venda paga em parte e venda toda fiada viram dívida da conta; Receber qui
     await page.getByLabel(/^Valor total/).fill("10,00");
     await chooseOption(page, "Forma de pagamento", "PIX");
     await chooseOption(page, "Conta", E2E_ACCOUNTS[0]);
-    await page.getByRole("button", { name: new RegExp(`^Criar dívida com a diferença \\(R\\$\\s40,00\\) de ${buyer}`) }).click();
+    await page
+      .getByRole("button", { name: new RegExp(`^Criar dívida com a diferença \\(R\\$\\s40,00\\) de ${buyer}`) })
+      .click();
     await expect(page.getByRole("group", { name: "Dívida 1" }).getByLabel("Valor (R$)")).toHaveValue("40,00");
     await expect(split.getByLabel(/^Valor \(R\$\)/)).toHaveValue("10,00");
     await expect(page.getByText("✓ Valores conferem")).toBeVisible();
     await page.getByRole("button", { name: "Salvar lançamento" }).click();
     await expect(page.getByText("Lançamento salvo; as linhas de dívida foram para Devedores.")).toBeVisible();
     expect(stock()).toBe(3);
-    expect(psql(`select (amount_cents, origin)::text from public.debts where description = ${literal(creditSale)};`)).toBe("(4000,venda)");
+    expect(
+      psql(`select (amount_cents, origin)::text from public.debts where description = ${literal(creditSale)};`),
+    ).toBe("(4000,venda)");
   });
 
   await test.step("1 lenço todo fiado: nada no caixa, só a dívida", async () => {
     await saleSplit(fiado, "1");
-    await page.getByRole("button", { name: new RegExp(`^Criar dívida com a diferença \\(R\\$\\s25,00\\) de ${buyer}`) }).click();
+    await page
+      .getByRole("button", { name: new RegExp(`^Criar dívida com a diferença \\(R\\$\\s25,00\\) de ${buyer}`) })
+      .click();
     await expect(page.getByLabel("Histórico")).toHaveCount(0);
     await page.getByRole("button", { name: "Lançar dívida" }).click();
     await expect(page.getByText("Dívida lançada em Devedores (nada entrou no caixa).")).toBeVisible();
     expect(stock()).toBe(2);
-    expect(psql(`select (amount_cents, origin)::text from public.debts where description = ${literal(fiado)};`)).toBe("(2500,venda)");
+    expect(psql(`select (amount_cents, origin)::text from public.debts where description = ${literal(fiado)};`)).toBe(
+      "(2500,venda)",
+    );
   });
 
   await test.step("em Devedores, a conta tem as duas linhas; Receber quita tudo", async () => {
     await page.goto("/financeiro/mensalidades/devedores");
     const account = page.getByRole("button", { name: new RegExp(`^${buyer}`) });
-    await expect(page.getByRole("row").filter({ has: account })).toContainText("falta R$ 65,00");
+    await expect(page.getByRole("row").filter({ has: account })).toContainText("faltam R$ 65,00");
     await account.click();
     await expect(page.getByText(new RegExp(`Venda: 1× ${scarf}`))).toBeVisible();
     await page.getByRole("button", { name: `Ações de ${buyer}` }).click();
@@ -180,7 +199,11 @@ test("venda paga em parte e venda toda fiada viram dívida da conta; Receber qui
     await chooseOption(page, "Conta", E2E_ACCOUNTS[0]);
     await page.getByRole("button", { name: "Receber", exact: true }).click();
     await expect(page.getByText("Recebimento lançado na conta (Devedores).")).toBeVisible();
-    expect(psql(`select sum(s.amount_cents) from public.entry_splits s join public.debts d on d.id = s.debt_id where d.description like ${literal(`${creditSale}%`)};`)).toBe("6500");
+    expect(
+      psql(
+        `select sum(s.amount_cents) from public.entry_splits s join public.debts d on d.id = s.debt_id where d.description like ${literal(`${creditSale}%`)};`,
+      ),
+    ).toBe("6500");
     expect(stock()).toBe(2);
   });
 });
@@ -213,8 +236,10 @@ test("venda com rateio sem associado: itens = recebido + dívida adicionada à m
   await expect(page.getByText("✓ Valores conferem")).toBeVisible();
   await page.getByRole("button", { name: "Salvar lançamento" }).click();
   await expect(page.getByText("Lançamento salvo; as linhas de dívida foram para Devedores.")).toBeVisible();
-  expect(psql(`select (d.amount_cents, d.origin)::text from public.debts d join public.ledger_entries e on e.id = d.origin_entry_id
-    where d.description = ${literal(`${creditSale} balcão`)} and d.associate_id = (select id from public.associates where name = ${literal(buyer)});`)).toBe("(2000,venda)");
+  expect(
+    psql(`select (d.amount_cents, d.origin)::text from public.debts d join public.ledger_entries e on e.id = d.origin_entry_id
+    where d.description = ${literal(`${creditSale} balcão`)} and d.associate_id = (select id from public.associates where name = ${literal(buyer)});`),
+  ).toBe("(2000,venda)");
 });
 
 test("lotes à venda em lote, ícone na linha e filtro Só à venda", async ({ page }) => {
@@ -230,7 +255,9 @@ test("lotes à venda em lote, ícone na linha e filtro Só à venda", async ({ p
     await page.getByRole("dialog").getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByText("Lojinha atualizada: 1 lote.")).toBeVisible();
     await expect(page.getByTitle(/^À venda na Lojinha/)).toHaveCount(2);
-    expect(psql(`select (for_sale, sale_price_cents)::text from public.inventory_lots where material_id = ${badgeId};`)).toBe("(t,)");
+    expect(
+      psql(`select (for_sale, sale_price_cents)::text from public.inventory_lots where material_id = ${badgeId};`),
+    ).toBe("(t,)");
   });
 
   await test.step("Só à venda e tirar da venda em lote", async () => {
@@ -257,7 +284,10 @@ test("separa parte de um lote para a Lojinha, com preço", async ({ page }) => {
   await dialog.getByLabel("Quantidade").fill("1");
   await dialog.getByRole("button", { name: "Salvar" }).click();
   await expect(page.getByText("Lote à venda na Lojinha.")).toBeVisible();
-  expect(psql(`select string_agg((quantity, for_sale, sale_price_cents)::text, ' ' order by quantity) from public.inventory_lots where material_id = ${badgeId} and quantity > 0;`))
-    .toBe("(1,t,1000) (2,f,)");
+  expect(
+    psql(
+      `select string_agg((quantity, for_sale, sale_price_cents)::text, ' ' order by quantity) from public.inventory_lots where material_id = ${badgeId} and quantity > 0;`,
+    ),
+  ).toBe("(1,t,1000) (2,f,)");
   await expect(page.getByText("À venda · R$ 10,00")).toBeVisible();
 });

@@ -16,7 +16,8 @@ let category = "";
 test.beforeAll(() => {
   psql(`insert into public.associates(group_id, name, branch) select ${group}, ${literal(associate)}, 'escoteiro';`);
   // uma rubrica de receita que não é de mensalidade
-  category = psql(`select name from public.categories where group_id = ${group} and kind = 'receita' and parent_id is not null and active
+  category =
+    psql(`select name from public.categories where group_id = ${group} and kind = 'receita' and parent_id is not null and active
     and not (id = any(public.fee_category_ids(${group}))) order by code limit 1;`);
 });
 test.afterAll(() => {
@@ -37,11 +38,17 @@ test("devedores: nova dívida com duas linhas, acordo da conta, receber uma e ex
     await dialog.getByRole("combobox", { name: "Associado" }).fill(associate);
     await page.getByRole("option", { name: new RegExp(associate) }).click();
     await dialog.getByLabel("Data").fill("2026-03-01");
-    for (const [index, [text, value]] of [[description, "150,00"], [other, "10,00"]].entries()) {
+    for (const [index, [text, value]] of [
+      [description, "150,00"],
+      [other, "10,00"],
+    ].entries()) {
       if (index > 0) await dialog.getByRole("button", { name: "Adicionar linha" }).click();
       const line = dialog.getByRole("group", { name: `Linha ${index + 1}` });
       await line.getByRole("combobox", { name: "Rubrica" }).fill(category);
-      await page.getByRole("option", { name: new RegExp(category) }).first().click();
+      await page
+        .getByRole("option", { name: new RegExp(category) })
+        .first()
+        .click();
       await line.getByLabel("Descrição").fill(text);
       await line.getByLabel("Valor (R$)").fill(value);
     }
@@ -52,7 +59,7 @@ test("devedores: nova dívida com duas linhas, acordo da conta, receber uma e ex
 
   const account = page.getByRole("button", { name: new RegExp(`^${associate}`) });
   const accountRow = page.getByRole("row").filter({ has: account });
-  await expect(accountRow).toContainText("falta R$ 160,00");
+  await expect(accountRow).toContainText("faltam R$ 160,00");
 
   await test.step("acordo na conta", async () => {
     await page.getByRole("button", { name: `Ações de ${associate}` }).click();
@@ -71,18 +78,20 @@ test("devedores: nova dívida com duas linhas, acordo da conta, receber uma e ex
     await page.getByRole("menuitem", { name: "Receber só esta…" }).click();
     await expect(page.getByRole("heading", { name: "Receber dívida" })).toBeVisible();
     await expect(page.getByLabel("Histórico")).toHaveValue(associate);
-    await expect(page.getByRole("group", { name: "Rubrica 1" }).getByLabel("Paga a dívida (opcional)")).toContainText(description);
+    await expect(page.getByRole("group", { name: "Rubrica 1" }).getByLabel("Paga a dívida (opcional)")).toContainText(
+      description,
+    );
     await page.getByLabel("Histórico").fill(uniqueName("Recebimento"));
     await chooseOption(page, "Forma de pagamento", "PIX");
     await chooseOption(page, "Conta", E2E_ACCOUNTS[0]);
     await page.getByRole("button", { name: "Receber", exact: true }).click();
     await expect(page.getByText("Recebimento lançado na conta (Devedores).")).toBeVisible();
     await expect(page).toHaveURL(/\/financeiro\/mensalidades\/devedores$/);
-    await expect(accountRow).toContainText("falta R$ 10,00");
+    await expect(accountRow).toContainText("faltam R$ 10,00");
   });
 
   await test.step("excluir a outra (sem pagamento); a conta fica quitada", async () => {
-    if (await account.getAttribute("aria-expanded") === "false") await account.click();
+    if ((await account.getAttribute("aria-expanded")) === "false") await account.click();
     const otherRow = page.getByRole("row").filter({ hasText: other });
     await otherRow.getByRole("button", { name: /^Ações da dívida/ }).click();
     await page.getByRole("menuitem", { name: "Excluir" }).click();
@@ -90,7 +99,7 @@ test("devedores: nova dívida com duas linhas, acordo da conta, receber uma e ex
     await expect(page.getByText("Dívida excluída.")).toBeVisible();
     await expect(accountRow).toHaveCount(0);
     await page.getByRole("checkbox", { name: /^Mostrar quitadas/ }).click();
-    if (await account.getAttribute("aria-expanded") === "false") await account.click();
+    if ((await account.getAttribute("aria-expanded")) === "false") await account.click();
     await expect(page.getByRole("row").filter({ hasText: description })).toContainText("Pago em");
   });
 });
@@ -106,19 +115,26 @@ test("lançamento: a diferença vira linha de dívida; depois, Receber da conta 
     await chooseOption(page, "Conta", E2E_ACCOUNTS[0]);
     const split = page.getByRole("group", { name: "Rubrica 1" });
     await split.getByRole("combobox", { name: "Rubrica" }).fill(category);
-    await page.getByRole("option", { name: new RegExp(category) }).first().click();
+    await page
+      .getByRole("option", { name: new RegExp(category) })
+      .first()
+      .click();
     await split.getByLabel("Descrição").fill(name);
     await split.getByRole("combobox", { name: "Associado (opcional)" }).fill(associate);
     await page.getByRole("option", { name: associate }).click();
     await split.getByLabel(/^Valor \(R\$\)/).fill("100,00");
-    await page.getByRole("button", { name: new RegExp(`^Criar dívida com a diferença \\(R\\$\\s40,00\\) de ${associate}`) }).click();
+    await page
+      .getByRole("button", { name: new RegExp(`^Criar dívida com a diferença \\(R\\$\\s40,00\\) de ${associate}`) })
+      .click();
     await expect(page.getByRole("group", { name: "Dívida 1" }).getByLabel("Valor (R$)")).toHaveValue("40,00");
     await expect(split.getByLabel(/^Valor \(R\$\)/)).toHaveValue("60,00");
     await expect(page.getByText("✓ Valores conferem")).toBeVisible();
     await page.getByRole("button", { name: "Salvar lançamento" }).click();
     await expect(page.getByText("Lançamento salvo; as linhas de dívida foram para Devedores.")).toBeVisible();
-    expect(psql(`select (d.amount_cents, d.origin, e.total_cents)::text from public.debts d join public.ledger_entries e on e.id = d.origin_entry_id
-      where e.name = ${literal(name)};`)).toBe("(4000,lancamento,6000)");
+    expect(
+      psql(`select (d.amount_cents, d.origin, e.total_cents)::text from public.debts d join public.ledger_entries e on e.id = d.origin_entry_id
+      where e.name = ${literal(name)};`),
+    ).toBe("(4000,lancamento,6000)");
   });
 
   await test.step("Receber da conta: R$ 30 abatem a linha", async () => {
@@ -142,7 +158,9 @@ test("lançamento: a diferença vira linha de dívida; depois, Receber da conta 
     await expect(page.getByText("✓ Valores conferem")).toBeVisible();
     await page.getByRole("button", { name: "Salvar lançamento" }).click();
     await expect(page.getByText("Lançamento salvo.")).toBeVisible();
-    expect(psql(`select sum(s.amount_cents) from public.entry_splits s join public.ledger_entries e on e.id = s.entry_id
-      where e.name = ${literal(receipt)} and s.debt_id is not null;`)).toBe("3000");
+    expect(
+      psql(`select sum(s.amount_cents) from public.entry_splits s join public.ledger_entries e on e.id = s.entry_id
+      where e.name = ${literal(receipt)} and s.debt_id is not null;`),
+    ).toBe("3000");
   });
 });
