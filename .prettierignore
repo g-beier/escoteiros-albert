@@ -13,3 +13,4 @@ playwright-report
 *.md
 *.mdx
 apps/gestao/lib/server/pg/schema.ts
+apps/gestao/e2e/.auth
