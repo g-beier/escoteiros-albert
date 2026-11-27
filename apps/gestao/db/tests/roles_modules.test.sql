@@ -4,7 +4,7 @@
 -- escotista, pelo associado ligado ao acesso, com as estrelas de atividade deles (026).
 -- Rode com `npm run test:db`.
 begin;
-select plan(62);
+select plan(63);
 \ir _fixture.psql
 
 -- Chefe: sem Financeiro, sem Associados, Colaborador no Inventário.
@@ -106,7 +106,8 @@ select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
 select public.admin_set_module_role(:'gid_a', '00000000-0000-0000-0000-00000000f0a3', 'associates', 'none');
 select tests.login('00000000-0000-0000-0000-00000000f0a3') \gset
 select ok(exists(select 1 from public.ledger_entries where id = :'entry_a'), 'consulta sem Associados continua lendo o Financeiro');
-select is((select count(*)::int from public.associates), 0, 'consulta sem Associados não lê associates');
+select ok(exists(select 1 from public.associates where id = :'chefe'), 'consulta sem Associados lê associates pelo Financeiro (027)');
+select is((select count(*)::int from public.associate_functions), 0, 'mas não lê as tabelas do Associados');
 
 select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset
 select ok(exists(select 1 from public.ledger_entries where id = :'entry_a')
