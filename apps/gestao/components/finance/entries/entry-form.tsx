@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@geas/ui/components/dialog";
 import { Input } from "@geas/ui/components/input";
+import { MoneyInput } from "@geas/ui/components/money-input";
 import { Textarea } from "@geas/ui/components/textarea";
 import { NOTES_MAX } from "@/lib/finance/entry-schema";
 import { Label } from "@geas/ui/components/label";
@@ -625,22 +626,19 @@ export function EntryForm({
           )}
           <div className="grid gap-1.5">
             <Label htmlFor="entry-total">
-              Valor total (R$)
+              Valor total
               {draft.direction && (
                 <span className={cn("ml-1", draft.direction === "saida" ? "text-destructive" : "text-success")}>
                   · {draft.direction === "saida" ? "saída" : "entrada"}
                 </span>
               )}
             </Label>
-            <Input
+            <MoneyInput
               id="entry-total"
-              inputMode="decimal"
-              placeholder="0,00"
               value={draft.total}
-              onChange={(e) => update({ total: e.target.value })}
+              onValueChange={(total) => update({ total })}
               readOnly={locked}
               title={locked ? "Valor da linha do extrato" : undefined}
-              className="text-right num"
               required={!onlyDebt && draft.debtLines.length === 0}
             />
           </div>
@@ -772,25 +770,22 @@ export function EntryForm({
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor={`split-amount-${index}`}>
-                Valor (R$)
+                Valor
                 {split.categoryId && (
                   <span className={cn("ml-1", splitSign(split) < 0 ? "text-destructive" : "text-success")}>
                     {splitSign(split) < 0 ? "−" : "+"}
                   </span>
                 )}
               </Label>
-              <Input
+              <MoneyInput
                 id={`split-amount-${index}`}
-                inputMode="decimal"
-                placeholder="0,00"
                 value={split.amount}
-                onChange={(e) => updateSplit(split.key, { amount: e.target.value, auto: false })}
+                onValueChange={(amount) => updateSplit(split.key, { amount, auto: false })}
                 title={
                   itemsOf(split).length
                     ? "Sugerido: itens vendidos − linhas de dívida − outros rateios da rubrica"
                     : undefined
                 }
-                className="text-right num"
                 required={!onlyDebt}
               />
             </div>
@@ -924,14 +919,11 @@ export function EntryForm({
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor={`debt-amount-${index}`}>Valor (R$)</Label>
-              <Input
+              <Label htmlFor={`debt-amount-${index}`}>Valor</Label>
+              <MoneyInput
                 id={`debt-amount-${index}`}
-                inputMode="decimal"
-                placeholder="0,00"
                 value={line.amount}
-                onChange={(e) => updateLine(line.key, { amount: e.target.value })}
-                className="text-right num"
+                onValueChange={(amount) => updateLine(line.key, { amount })}
                 required
               />
             </div>
@@ -1168,16 +1160,14 @@ function ReceiveDialog({
             />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="receive-amount">Valor recebido (R$)</Label>
-            <Input
+            <Label htmlFor="receive-amount">Valor recebido</Label>
+            <MoneyInput
               id="receive-amount"
-              inputMode="decimal"
               value={received}
               disabled={!associateId}
-              className="text-right num"
-              onChange={(e) => {
-                setReceived(e.target.value);
-                distribute(Math.abs(parseMoneyToCents(e.target.value) ?? 0));
+              onValueChange={(text, cents) => {
+                setReceived(text);
+                distribute(Math.abs(cents ?? 0));
               }}
             />
           </div>
@@ -1194,7 +1184,7 @@ function ReceiveDialog({
                     Falta
                   </th>
                   <th scope="col" className="w-32 px-2 py-1 text-right font-medium">
-                    Recebe (R$)
+                    Recebe
                   </th>
                 </tr>
               </thead>
@@ -1209,13 +1199,10 @@ function ReceiveDialog({
                       <Label htmlFor={`receive-${debt.id}`} className="sr-only">
                         Quanto vai para {debt.description}
                       </Label>
-                      <Input
+                      <MoneyInput
                         id={`receive-${debt.id}`}
-                        inputMode="decimal"
-                        placeholder="0,00"
                         value={amounts[debt.id] ?? ""}
-                        className="h-7 text-right num"
-                        onChange={(e) => setAmounts((current) => ({ ...current, [debt.id]: e.target.value }))}
+                        onValueChange={(text) => setAmounts((current) => ({ ...current, [debt.id]: text }))}
                       />
                     </td>
                   </tr>

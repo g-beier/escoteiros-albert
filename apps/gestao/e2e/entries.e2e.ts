@@ -119,12 +119,12 @@ test("o formulário não salva enquanto o rateio não confere", async ({ page })
   await chooseOption(page, "Conta", E2E_ACCOUNTS[0]);
   await page
     .getByRole("group", { name: "Rubrica 1" })
-    .getByLabel(/^Valor \(R\$\)/)
+    .getByLabel(/^Valor/)
     .fill("4,00");
   await expect(page.getByRole("status").filter({ hasText: "Diferença" })).toContainText("6,00");
   await expect(page.getByRole("button", { name: "Salvar lançamento" })).toBeDisabled();
   await page.getByRole("button", { name: "Lançar diferença na última rubrica" }).click();
-  await expect(page.getByRole("group", { name: "Rubrica 1" }).getByLabel(/^Valor \(R\$\)/)).toHaveValue("10,00");
+  await expect(page.getByRole("group", { name: "Rubrica 1" }).getByLabel(/^Valor/)).toHaveValue("10,00");
 });
 
 test("mostrar e ocultar colunas: por visão, guardado entre visitas", async ({ page }) => {

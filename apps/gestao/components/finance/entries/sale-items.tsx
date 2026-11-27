@@ -3,6 +3,7 @@
 import { IconPackage, IconPlus, IconTrash } from "@tabler/icons-react";
 import { Button } from "@geas/ui/components/button";
 import { Input } from "@geas/ui/components/input";
+import { MoneyInput } from "@geas/ui/components/money-input";
 import { Label } from "@geas/ui/components/label";
 import { OptionCombobox, type Option } from "@geas/ui/components/option-controls";
 import { cn } from "@geas/ui/lib/utils";
@@ -140,14 +141,11 @@ export function SaleItemsEditor({
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor={`${id}-price`}>Preço unitário (R$)</Label>
-              <Input
+              <Label htmlFor={`${id}-price`}>Preço unitário</Label>
+              <MoneyInput
                 id={`${id}-price`}
-                inputMode="decimal"
-                placeholder="0,00"
                 value={item.price}
-                onChange={(e) => set(item.key, { price: e.target.value })}
-                className="text-right num"
+                onValueChange={(price) => set(item.key, { price })}
                 readOnly={readOnly}
                 required
               />

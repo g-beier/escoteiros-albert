@@ -33,7 +33,7 @@ test("lançamento rápido: entra para revisar e sai da lista ao revisar", async 
   await page.getByRole("radio", { name: /Despesa/ }).click();
   // sem rubrica: entra em "2 Despesas" e quem revisa classifica
   await expect(page.getByRole("combobox", { name: "Rubrica" })).toHaveCount(0);
-  await page.getByLabel("Valor (R$)").fill("12,34");
+  await page.getByLabel("Valor", { exact: true }).fill("12,34");
   await page.getByLabel("Histórico").fill(name);
   await chooseOption(page, "Forma de pagamento", "PIX");
   // comprovantes desligados por padrão (lib/features.ts): sem o campo de arquivo

@@ -43,7 +43,7 @@ export async function createEntry(page: Page, entry: NewEntry) {
   await split.getByRole("combobox", { name: "Rubrica" }).fill(entry.category);
   await page.getByRole("option", { name: entry.category }).first().click();
   await split.getByLabel("Descrição").fill(entry.description);
-  await split.getByLabel(/^Valor \(R\$\)/).fill(entry.total);
+  await split.getByLabel(/^Valor/).fill(entry.total);
   await expect(page.getByText("✓ Valores conferem")).toBeVisible();
   await page.getByRole("button", { name: "Salvar lançamento" }).click();
   await expect(page.getByText("Lançamento salvo.")).toBeVisible();

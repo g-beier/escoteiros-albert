@@ -10,6 +10,7 @@ import {
   FieldTitle,
 } from "@geas/ui/components/field";
 import { Input } from "@geas/ui/components/input";
+import { MoneyInput } from "@geas/ui/components/money-input";
 import type { Option } from "@geas/ui/components/option-controls";
 import { RadioGroup, RadioGroupItem } from "@geas/ui/components/radio-group";
 import { cn } from "@geas/ui/lib/utils";
@@ -291,7 +292,7 @@ export function RowStockDialog({
             <Input id="stock-in-expires" name="expiresOn" type="date" className="num" />
           </Field>
           <Field id="stock-in-value" label="Valor estimado (unidade)">
-            <Input id="stock-in-value" name="value" inputMode="decimal" placeholder="Ex.: 35,00" className="num" />
+            <MoneyInput id="stock-in-value" name="value" />
           </Field>
           <NotesField id="stock-in-notes" />
         </>

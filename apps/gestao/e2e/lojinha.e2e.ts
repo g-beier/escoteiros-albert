@@ -91,9 +91,9 @@ test("venda com itens dá baixa no inventário e a exclusão devolve", async ({ 
     await items.getByRole("button", { name: "Adicionar item" }).click();
     await items.getByRole("combobox", { name: "Item" }).fill(scarf);
     await page.getByRole("option", { name: new RegExp(`^${scarf} — ${place} · .* · 5 em estoque$`) }).click();
-    await expect(items.getByLabel("Preço unitário (R$)")).toHaveValue("25,00");
+    await expect(items.getByLabel("Preço unitário", { exact: true })).toHaveValue("25,00");
     await items.getByLabel("Quantidade").fill("2");
-    await expect(split.getByLabel(/^Valor \(R\$\)/)).toHaveValue("50,00");
+    await expect(split.getByLabel(/^Valor/)).toHaveValue("50,00");
     await expect(page.getByText("✓ Valores conferem")).toBeVisible();
     await page.getByRole("button", { name: "Salvar lançamento" }).click();
     await expect(page.getByText("Lançamento salvo.")).toBeVisible();
@@ -159,8 +159,10 @@ test("venda paga em parte e venda toda fiada viram dívida da conta; Receber qui
     await page
       .getByRole("button", { name: new RegExp(`^Criar dívida com a diferença \\(R\\$\\s40,00\\) de ${buyer}`) })
       .click();
-    await expect(page.getByRole("group", { name: "Dívida 1" }).getByLabel("Valor (R$)")).toHaveValue("40,00");
-    await expect(split.getByLabel(/^Valor \(R\$\)/)).toHaveValue("10,00");
+    await expect(page.getByRole("group", { name: "Dívida 1" }).getByLabel("Valor", { exact: true })).toHaveValue(
+      "40,00",
+    );
+    await expect(split.getByLabel(/^Valor/)).toHaveValue("10,00");
     await expect(page.getByText("✓ Valores conferem")).toBeVisible();
     await page.getByRole("button", { name: "Salvar lançamento" }).click();
     await expect(page.getByText("Lançamento salvo; as linhas de dívida foram para Devedores.")).toBeVisible();
@@ -223,15 +225,15 @@ test("venda com rateio sem associado: itens = recebido + dívida adicionada à m
   await items.getByRole("button", { name: "Adicionar item" }).click();
   await items.getByRole("combobox", { name: "Item" }).fill(scarf);
   await page.getByRole("option", { name: new RegExp(`^${scarf} — `) }).click();
-  await expect(split.getByLabel(/^Valor \(R\$\)/)).toHaveValue("25,00");
+  await expect(split.getByLabel(/^Valor/)).toHaveValue("25,00");
 
   await page.getByRole("button", { name: "Adicionar dívida" }).click();
   const line = page.getByRole("group", { name: "Dívida 1" });
   await line.getByRole("combobox", { name: "Associado" }).fill(buyer);
   await page.getByRole("option", { name: buyer }).click();
-  await line.getByLabel("Valor (R$)").fill("20,00");
+  await line.getByLabel("Valor", { exact: true }).fill("20,00");
   // o rateio da Lojinha acompanha: itens R$ 25 − dívida R$ 20 = R$ 5 recebidos
-  await expect(split.getByLabel(/^Valor \(R\$\)/)).toHaveValue("5,00");
+  await expect(split.getByLabel(/^Valor/)).toHaveValue("5,00");
   await expect(split).toContainText("Itens da rubrica R$ 25,00 = recebido R$ 5,00 + a pagar R$ 20,00");
   await expect(page.getByText("✓ Valores conferem")).toBeVisible();
   await page.getByRole("button", { name: "Salvar lançamento" }).click();

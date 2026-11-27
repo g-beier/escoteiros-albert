@@ -6,6 +6,7 @@ import { IconArrowDown, IconArrowUp, IconCheck } from "@tabler/icons-react";
 import { Button } from "@geas/ui/components/button";
 import { Checkbox } from "@geas/ui/components/checkbox";
 import { Input } from "@geas/ui/components/input";
+import { MoneyInput } from "@geas/ui/components/money-input";
 import { Label } from "@geas/ui/components/label";
 import { ToggleGroup, ToggleGroupItem } from "@geas/ui/components/toggle-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@geas/ui/components/popover";
@@ -181,26 +182,34 @@ export function ColumnMenu({
             <span className="font-semibold text-foreground">Filtrar por faixa</span>
             <div className="flex items-end gap-2">
               <div className="grid gap-1.5">
-                <Label htmlFor={`${sortKey}-from`}>De{range.money && " (R$)"}</Label>
-                <Input
-                  id={`${sortKey}-from`}
-                  value={from}
-                  onChange={(event) => setFrom(event.target.value)}
-                  inputMode={range.money ? "decimal" : "numeric"}
-                  className="num"
-                  onKeyDown={onEnter}
-                />
+                <Label htmlFor={`${sortKey}-from`}>De</Label>
+                {range.money ? (
+                  <MoneyInput id={`${sortKey}-from`} value={from} onValueChange={setFrom} onKeyDown={onEnter} />
+                ) : (
+                  <Input
+                    id={`${sortKey}-from`}
+                    value={from}
+                    onChange={(event) => setFrom(event.target.value)}
+                    inputMode="numeric"
+                    className="num"
+                    onKeyDown={onEnter}
+                  />
+                )}
               </div>
               <div className="grid gap-1.5">
-                <Label htmlFor={`${sortKey}-to`}>Até{range.money && " (R$)"}</Label>
-                <Input
-                  id={`${sortKey}-to`}
-                  value={to}
-                  onChange={(event) => setTo(event.target.value)}
-                  inputMode={range.money ? "decimal" : "numeric"}
-                  className="num"
-                  onKeyDown={onEnter}
-                />
+                <Label htmlFor={`${sortKey}-to`}>Até</Label>
+                {range.money ? (
+                  <MoneyInput id={`${sortKey}-to`} value={to} onValueChange={setTo} onKeyDown={onEnter} />
+                ) : (
+                  <Input
+                    id={`${sortKey}-to`}
+                    value={to}
+                    onChange={(event) => setTo(event.target.value)}
+                    inputMode="numeric"
+                    className="num"
+                    onKeyDown={onEnter}
+                  />
+                )}
               </div>
             </div>
           </div>

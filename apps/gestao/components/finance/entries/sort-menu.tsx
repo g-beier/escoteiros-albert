@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { IconArrowDown, IconArrowUp, IconCheck } from "@tabler/icons-react";
 import { Button } from "@geas/ui/components/button";
-import { Input } from "@geas/ui/components/input";
+import { MoneyInput } from "@geas/ui/components/money-input";
 import { Label } from "@geas/ui/components/label";
 import { ToggleGroup, ToggleGroupItem } from "@geas/ui/components/toggle-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@geas/ui/components/popover";
@@ -113,13 +113,12 @@ function useRangeFilter(range: ColumnRange | undefined, id: string): DraftFilter
   if (!range) return null;
   const field = (key: string, text: string, value: string, set: (value: string) => void, onEnter: Draft["onEnter"]) => (
     <div className="grid gap-1.5">
-      <Label htmlFor={key}>{text} (R$)</Label>
-      <Input
+      <Label htmlFor={key}>{text}</Label>
+      <MoneyInput
         id={key}
         value={value}
-        onChange={(event) => set(event.target.value)}
-        inputMode="decimal"
-        className="num"
+        onValueChange={set}
+        allowNegative
         onKeyDown={onEnter}
         aria-invalid={!validMoney(value) || undefined}
       />

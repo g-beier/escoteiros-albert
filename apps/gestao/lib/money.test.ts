@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseMoneyToCents } from "./money";
 import { centsToInput, formatCents } from "./format";
+import { MAX_MONEY_DIGITS, formatInputCents, popDigit, pushDigits } from "@geas/ui/lib/money";
 
 describe("parseMoneyToCents", () => {
   it.each([
@@ -42,6 +43,8 @@ describe("centsToInput", () => {
     [2050, "20,50"],
     [-1005, "-10,05"],
     [1, "0,01"],
+    [123456, "1.234,56"],
+    [-123456789, "-1.234.567,89"],
   ])("formata %d", (cents, expected) => {
     expect(centsToInput(cents)).toBe(expected);
     expect(parseMoneyToCents(expected)).toBe(cents);
@@ -59,5 +62,37 @@ describe("formatCents", () => {
     const plain = (text: string) => text.replace(/\s/g, " ");
     expect(plain(formatCents(123456))).toBe("R$ 1.234,56");
     expect(plain(formatCents(null))).toBe("R$ 0,00");
+  });
+});
+
+describe("caixa registradora (MoneyInput)", () => {
+  it("dígitos entram pela direita", () => {
+    let cents: number | null = null;
+    const shown: string[] = [];
+    for (const digit of "3500") {
+      cents = pushDigits(cents, digit);
+      shown.push(formatInputCents(cents));
+    }
+    expect(shown).toEqual(["0,03", "0,35", "3,50", "35,00"]);
+    expect(formatInputCents(pushDigits(null, "123456"))).toBe("1.234,56");
+  });
+
+  it("backspace tira o último dígito e esvazia no fim", () => {
+    expect(popDigit(3500)).toBe(350);
+    expect(popDigit(-350)).toBe(-35);
+    expect(popDigit(3)).toBeNull();
+    expect(popDigit(null)).toBeNull();
+  });
+
+  it("mantém o sinal e para no limite de dígitos", () => {
+    expect(pushDigits(-35, "0")).toBe(-350);
+    const max = pushDigits(null, "9".repeat(MAX_MONEY_DIGITS + 3));
+    expect(String(max)).toHaveLength(MAX_MONEY_DIGITS);
+    expect(Number.isSafeInteger(max)).toBe(true);
+  });
+
+  it("vazio e zero", () => {
+    expect(formatInputCents(null)).toBe("");
+    expect(formatInputCents(0)).toBe("0,00");
   });
 });

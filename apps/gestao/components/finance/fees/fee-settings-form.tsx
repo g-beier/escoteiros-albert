@@ -11,6 +11,7 @@ import { OptionSelect } from "@geas/ui/components/option-controls";
 import { SectionBody, SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { Button } from "@geas/ui/components/button";
 import { Input } from "@geas/ui/components/input";
+import { MoneyInput } from "@geas/ui/components/money-input";
 import { Label } from "@geas/ui/components/label";
 import type { CategoryItem } from "@/lib/finance/categories";
 import { centsToInput, dateBR, money } from "@/lib/format";
@@ -182,15 +183,13 @@ function FeeYearFields({ year, price }: { year: number; price?: FeePrice }) {
       <input type="hidden" name="year" value={year} />
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1.5">
-          <Label htmlFor="fee-monthly">Mensalidade (R$)</Label>
-          <Input
+          <Label htmlFor="fee-monthly">Mensalidade</Label>
+          <MoneyInput
             id="fee-monthly"
             name="monthly"
-            inputMode="decimal"
-            placeholder="Ex.: 60,00"
             value={monthly}
-            onChange={(e) => setMonthly(e.target.value)}
-            className="w-32 text-right num"
+            onValueChange={setMonthly}
+            groupClassName="w-32"
             required
           />
         </div>
