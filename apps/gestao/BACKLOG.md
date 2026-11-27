@@ -132,6 +132,18 @@
 - Escolha de colunas na Movimentações e no Detalhamento (cookie por visão), com larguras que se ajustam ao que fica.
 - Registro rápido de lançamento sem rubrica: o servidor usa a raiz Receitas/Despesas e quem revisa classifica.
 
+## Concluído (2026-11-27, Lojinha e Devedores)
+
+- **Lojinha** (019–021): rubrica de receita marcada "venda de itens" (no rascunho das Rubricas, herdada pelas filhas)
+  dá a cada rateio a seção "Itens vendidos". O item é um lote à venda do Inventário, com quantidade e preço; o valor do
+  rateio é sugerido pelos itens. O lançamento dá baixa no lote (motivo `venda`) e devolve ao estoque ao editar ou
+  excluir. Corrigido: a marca "venda de itens" se perdia ao salvar as rubricas.
+- **Devedores como conta a receber por associado** (022–025): cada dívida é uma linha da conta do associado numa
+  rubrica de receita, paga só pelos rateios ligados a ela (pagamento parcial livre); o acordo de pagamento fica na
+  conta. Linhas nascem em "Nova dívida", dentro do lançamento ("Adicionar dívida", "Criar dívida com a diferença"),
+  na venda fiada (com os itens, baixa na hora) e na mensalidade "Não pago". Receber pela conta (mais antiga primeiro)
+  ou só uma linha. Os itens vendidos fecham por rubrica: itens = recebido + a pagar.
+
 ## A verificar
 
 Com o contador:

@@ -1,10 +1,10 @@
 -- pgTAP: acesso por módulo (002, 003). Os mesmos cinco níveis nos três módulos: "Sem acesso" tira a leitura do
 -- módulo; o Colaborador faz o dia a dia e o que grava fica para revisar; o Editor revisa e configura; o Administrador
 -- gerencia os usuários só do seu módulo. O chefe (só Inventário) vê no Início só os jovens das seções em que é
--- escotista, pelo associado ligado ao acesso.
+-- escotista, pelo associado ligado ao acesso, com as estrelas de atividade deles (026).
 -- Rode com `npm run test:db`.
 begin;
-select plan(55);
+select plan(62);
 \ir _fixture.psql
 
 -- Chefe: sem Financeiro, sem Associados, Colaborador no Inventário.
@@ -62,20 +62,44 @@ select ok(exists(select 1 from public.audit_events where action = 'user.associat
   'ligação auditada');
 
 -- ================================================================ avisos da seção
+-- Vida escoteira dos dois jovens (026: estrelas para o chefe) e um jovem da tropa em quarentena de exclusão.
+select public.life_period_save(:'jovem_tropa', null, 'lobinho', '2020-01-01', '2021-01-01', 'Outro Grupo') \gset
+select public.life_exclusion_save(:'jovem_tropa', null, '2020-03-01', '2020-06-01', 'licenca', 'Viagem') \gset
+select public.life_star_set_branch(:'jovem_tropa', 1, 'lobinho') \gset
+select public.life_period_save(:'jovem_alcateia', null, 'lobinho', '2022-01-01', '2023-01-01', null) \gset
+select public.associates_create(:'gid_a', 'Jovem Excluído', 'escoteiro', :'tropa', null, '2014-06-10', null, null, null) as excluido \gset
+select public.associates_request_deletion(:'excluido', 'Cadastro em duplicidade') \gset
+
 select tests.login('00000000-0000-0000-0000-00000000f0a4') \gset
 select results_eq(format($$select name from public.associates_section_alert_rows(%L)$$, :'gid_a'), array['Jovem da Tropa'],
-  'chefe vê só os jovens da seção em que é escotista');
+  'chefe vê só os jovens da seção em que é escotista (sem quem está em quarentena)');
+select results_eq(format($$select associate_id from public.associates_section_star_rows(%L)$$, :'gid_a'), array[:'jovem_tropa'::uuid],
+  'estrelas: chefe recebe a vida escoteira só dos jovens da sua seção');
+select ok((select periods @> '[{"branch": "lobinho", "started_on": "2020-01-01", "ended_on": "2021-01-01"}]'
+    and stars @> '[{"star": 1, "branch": "lobinho", "delivered_on": null}]'
+    and exclusions = '[{"started_on": "2020-03-01", "ended_on": "2020-06-01"}]'
+  from public.associates_section_star_rows(:'gid_a')), 'estrelas: períodos, estrelas registradas e períodos não contabilizados');
+select is((select array_agg(distinct k order by k) from public.associates_section_star_rows(:'gid_a'),
+    jsonb_array_elements(periods || stars || exclusions) e, jsonb_object_keys(e) k),
+  array['branch', 'delivered_on', 'ended_on', 'star', 'started_on'], 'estrelas: só o que a conta usa (sem lugar, motivo, observação)');
+
+select tests.login('00000000-0000-0000-0000-00000000f0a3') \gset
+select is((select count(*)::int from public.associates_section_star_rows(:'gid_a')), 0, 'estrelas: sem associado ligado, nada');
+select tests.login('00000000-0000-0000-0000-00000000f0b1') \gset
+select is((select count(*)::int from public.associates_section_star_rows(:'gid_a')), 0, 'estrelas: outro grupo, nada');
 
 select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
 select public.associates_update_function(:'funcao', 'escotista', :'tropa', null, current_date - 30, current_date - 1);
 select tests.login('00000000-0000-0000-0000-00000000f0a4') \gset
 select is((select count(*)::int from public.associates_section_alert_rows(:'gid_a')), 0, 'função encerrada: sem avisos');
+select is((select count(*)::int from public.associates_section_star_rows(:'gid_a')), 0, 'função encerrada: sem estrelas');
 
 select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset
 select public.associates_add_function(:'chefe', 'escotista', null, current_date, :'alcateia') \gset
 select public.admin_link_member_associate(:'gid_a', '00000000-0000-0000-0000-00000000f0a4', null);
 select tests.login('00000000-0000-0000-0000-00000000f0a4') \gset
 select is((select count(*)::int from public.associates_section_alert_rows(:'gid_a')), 0, 'desligado do associado: sem avisos');
+select is((select count(*)::int from public.associates_section_star_rows(:'gid_a')), 0, 'desligado do associado: sem estrelas');
 
 -- ================================================================ consulta sem Associados; administrador
 select tests.login('00000000-0000-0000-0000-00000000f0a1') \gset

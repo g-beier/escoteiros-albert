@@ -57,15 +57,26 @@ Modelo e vocabulário em `docs/modelo.md`.
 - Folha de conferência em PDF ("Imprimir" em Materiais): por divisão, com colunas em branco para contar e anotar.
 - Papéis: os cinco níveis comuns aos módulos (Colaborador = antigo chefe, Editor = antigo gestor), em `/usuarios`.
 
+## Concluído (2026-11-27, passo 2 — Lojinha)
+
+- O que se vende é o **lote** (019–021): "Pôr à venda na Lojinha…" no menu do lote (com preço de venda; parte da
+  quantidade vira um lote à parte), ao incluir um lote ou em lote na lista de Materiais (ação "à venda"). Tamanho, tipo
+  de lenço e afins são a **variação** do lote (046), que aparece no item à venda.
+- Lista de Materiais: ícone de sacola nas linhas com lote à venda (quantidade e preço no título) e filtro "Só à venda";
+  no registro rápido, a marca "à venda".
+- A venda é lançada no Financeiro (rubrica de receita marcada "venda de itens", com os itens vendidos) e dá **baixa**
+  no lote (motivo `venda`, canal `financeiro`); editar ou excluir o lançamento devolve ao estoque. Venda fiada vira
+  linha de dívida em Devedores, com a baixa na hora. O histórico do material liga ao lançamento.
+
 ## A verificar
 
 - Barracas B1–B11: conciliar com as linhas de barraca das seções e mover cada peça para a sua divisão (hoje em "Almoxarifado › Barracas (a conferir)").
 
 ## Próximos
 
-### Passo 2 — Lojinha (fora do go-live)
+### Lojinha: entrega gratuita (fora do go-live)
 
-- Produtos com variações (tamanho, tipo de lenço) e preço de venda; venda lançada no Financeiro (rubrica Lojinha, com os itens) gerando a saída; entrega gratuita (Acolhida, distintivos) registrada no Inventário, com o associado opcional.
+- Entrega gratuita (Acolhida, distintivos) registrada no Inventário, com o associado opcional.
 
 ### Empréstimo e devolução (fora do go-live)
 

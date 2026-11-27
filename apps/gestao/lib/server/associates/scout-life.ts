@@ -49,6 +49,15 @@ export type GroupLife = {
   exclusions: Map<string, LifeExclusion[]>;
 };
 
+type StarLifePeriod = Pick<LifePeriod, "branch" | "started_on" | "ended_on">;
+type StarLifeExclusion = Pick<LifeExclusion, "started_on" | "ended_on">;
+/** Só o que a conta das estrelas de atividade usa (`lifeSummary`), por associado. */
+export type StarLife = {
+  periods: Map<string, StarLifePeriod[]>;
+  stars: Map<string, StarRecord[]>;
+  exclusions: Map<string, StarLifeExclusion[]>;
+};
+
 /** Períodos e estrelas de todos os associados do grupo, por associado. */
 export async function ofGroup(db: Db, groupId: string): Promise<GroupLife> {
   return run(db, async (sql) => {
@@ -69,6 +78,21 @@ export async function ofGroup(db: Db, groupId: string): Promise<GroupLife> {
       exclusions: byAssociate<LifeExclusion>(exclusions),
     };
   });
+}
+
+/**
+ * Períodos, estrelas e períodos não contabilizados só dos jovens das seções em que quem está logado é escotista
+ * (chefe sem acesso ao Associados: `associates_section_star_rows`, só o que a conta das estrelas usa).
+ */
+export async function ofMySections(db: Db, groupId: string): Promise<StarLife> {
+  const list = await rpc(db, "associates_section_star_rows", { p_group_id: groupId });
+  const life: StarLife = { periods: new Map(), stars: new Map(), exclusions: new Map() };
+  for (const row of list) {
+    life.periods.set(row.associate_id, row.periods as unknown as StarLifePeriod[]);
+    life.stars.set(row.associate_id, row.stars as unknown as StarRecord[]);
+    life.exclusions.set(row.associate_id, row.exclusions as unknown as StarLifeExclusion[]);
+  }
+  return life;
 }
 
 /** Ids dos associados com eventos lançados (para o relatório). */

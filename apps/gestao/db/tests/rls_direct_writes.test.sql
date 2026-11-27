@@ -1,10 +1,10 @@
 -- pgTAP: tabelas que só aceitam as funções auditadas (security definer) não têm política de escrita.
 -- Nem a administração nem a tesouraria do próprio grupo conseguem INSERT/UPDATE/DELETE direto:
 -- o INSERT falha com 42501 (RLS) e UPDATE/DELETE não alcançam nenhuma linha (RLS filtra em silêncio).
--- A exceção proposital é `associates` (política "editors manage associates"), coberta em rls_roles.
+-- Vale também para `associates` (026: a política "editors manage associates" virou só leitura).
 -- Rode com `npm run test:db` (pg_prove no container, `scripts/db.mjs test`).
 begin;
-select plan(149);
+select plan(156);
 \ir _fixture.psql
 
 -- Uma linha por tabela: INSERT plausível (todas as colunas obrigatórias), filtro que alcança linhas do grupo A
@@ -57,7 +57,9 @@ insert into tests.targets values
   ('fee_associate_prices', format($$insert into public.fee_associate_prices(group_id, associate_id, year, monthly_cents, reason) values (%L, %L, 2030, 1, 'direto')$$, :'gid_a', :'assoc_a'),
     format('group_id = %L', :'gid_a'), 'reason'),
   ('associate_movements', format($$insert into public.associate_movements(group_id, associate_id, movement_date, kind) values (%L, %L, '2026-04-01', 'saida')$$, :'gid_a', :'assoc_a'),
-    format('group_id = %L', :'gid_a'), 'reason');
+    format('group_id = %L', :'gid_a'), 'reason'),
+  ('associates', format($$insert into public.associates(group_id, name, branch) values (%L, 'Associado direto', 'adulto')$$, :'gid_a'),
+    format('group_id = %L', :'gid_a'), 'name');
 
 -- reconciliation_rejections precisa de uma linha no grupo A para o UPDATE/DELETE terem alvo.
 select tests.login('00000000-0000-0000-0000-00000000f0a2') \gset

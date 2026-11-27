@@ -24,7 +24,7 @@ import { list as listAssociates } from "./associates";
 import { items as listItems, statuses as listStatuses } from "./controls";
 import { listOf as functionsOf } from "./functions";
 import { links as listLinks } from "./relatives";
-import { ofGroup as lifeOfGroup } from "./scout-life";
+import { ofGroup as lifeOfGroup, ofMySections as sectionLife, type StarLife } from "./scout-life";
 
 /** Estrela de atividade a entregar (aviso 15 dias antes, até a entrega). */
 export type StarDue = { associateId: string; name: string; star: Star };
@@ -104,35 +104,47 @@ export async function overview(
       allItems.filter((item) => item.active),
       today,
     ),
-    stars: people
-      .flatMap((a) => {
-        const pending = lifeSummary({
-          periods: life.periods.get(a.id) ?? [],
-          promiseDate: a.promise_date,
-          records: life.stars.get(a.id) ?? [],
-          exclusions: life.exclusions.get(a.id) ?? [],
-          today,
-        }).pending;
-        return pending ? [{ associateId: a.id, name: a.name, star: pending }] : [];
-      })
-      .sort((x, y) => x.star.dueOn.localeCompare(y.star.dueOn) || x.name.localeCompare(y.name, "pt-BR")),
+    stars: starsDue(people, life, today),
     sections,
     sectionOnly,
   };
 }
 
+/** Estrelas a entregar (aviso `STAR_NOTICE_DAYS` antes, até a entrega), das mais antigas para as mais novas. */
+function starsDue(
+  people: { id: string; name: string; promise_date: string | null }[],
+  life: StarLife,
+  today: string,
+): StarDue[] {
+  return people
+    .flatMap((a) => {
+      const pending = lifeSummary({
+        periods: life.periods.get(a.id) ?? [],
+        promiseDate: a.promise_date,
+        records: life.stars.get(a.id) ?? [],
+        exclusions: life.exclusions.get(a.id) ?? [],
+        today,
+      }).pending;
+      return pending ? [{ associateId: a.id, name: a.name, star: pending }] : [];
+    })
+    .sort((x, y) => x.star.dueOn.localeCompare(y.star.dueOn) || x.name.localeCompare(y.name, "pt-BR"));
+}
+
 /**
- * Para quem não vê o Associados (chefes): só aniversários, promessas e transições dos jovens das seções em que a
- * pessoa é escotista (associado ligado ao acesso em /usuarios). Sem controle nem vencimentos de registro.
+ * Para quem não vê o Associados (chefes): só aniversários, promessas, transições e estrelas de atividade dos jovens das
+ * seções em que a pessoa é escotista (associado ligado ao acesso em /usuarios). Sem controle nem vencimentos de registro.
  */
 export async function sectionOverview(db: Db, groupId: string, today: string): Promise<AssociatesOverview> {
-  const people = await rpc(db, "associates_section_alert_rows", { p_group_id: groupId });
+  const [people, life] = await Promise.all([
+    rpc(db, "associates_section_alert_rows", { p_group_id: groupId }),
+    sectionLife(db, groupId),
+  ]);
   return {
     dates: upcomingDates(people, today),
     transitions: transitions(people, today),
     pending: { jovem: 0, adulto: 0 },
     expiries: [],
-    stars: [],
+    stars: starsDue(people, life, today),
     sections: [],
     sectionOnly: true,
   };
