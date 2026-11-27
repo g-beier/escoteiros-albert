@@ -24,7 +24,7 @@ import { dateBR, formatCents } from "@/lib/format";
 import { EXPIRY_WARNING_DAYS } from "@/lib/inventory/vocabulary";
 import { relativeDay, VALIDITY_WARNING_DAYS } from "@/lib/associates/alerts";
 import { ageYearsMonthsLabel } from "@/lib/associates/model";
-import { lifeBranchShort, STAR_NOTICE_DAYS } from "@/lib/associates/scout-life";
+import { lifeBranchShort } from "@/lib/associates/scout-life";
 import { overview as associatesOverview, sectionOverview } from "@/lib/server/associates/home";
 import { REVIEW_HREF } from "@/lib/quick";
 import { USEFUL_LINKS } from "@/lib/useful-links";
