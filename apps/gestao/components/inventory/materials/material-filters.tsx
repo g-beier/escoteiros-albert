@@ -14,10 +14,10 @@ import { OptionSelect, type Option } from "@geas/ui/components/option-controls";
 import { cn } from "@geas/ui/lib/utils";
 import { COLUMNS_COOKIE, type ColumnId } from "@/lib/inventory/material-list";
 
-const FILTER_KEYS = ["q", "familia", "alerta", "inativos", "estado", "unitario_de", "unitario_ate", "qtd_de", "qtd_ate"];
+const FILTER_KEYS = ["q", "familia", "alerta", "venda", "inativos", "estado", "unitario_de", "unitario_ate", "qtd_de", "qtd_ate"];
 
 /**
- * Filtros gerais da lista de materiais, na query string: q, familia, alerta (mínimo/validade), inativos. Estado, valor
+ * Filtros gerais da lista de materiais, na query string: q, familia, alerta (mínimo/validade), venda (Lojinha), inativos. Estado, valor
  * unitário e quantidade se filtram no menu da própria coluna (ColumnMenu); o local (divisao) vem das abas. "Limpar
  * filtros" limpa todos. As colunas visíveis ficam num cookie.
  */
@@ -73,6 +73,10 @@ export function MaterialFilters({ families, columns, hidden }: {
       <div className="flex items-center gap-2 pb-1.5">
         <Checkbox id="filter-alert" checked={params.get("alerta") === "1"} onCheckedChange={(checked) => apply({ alerta: checked === true ? "1" : null })} />
         <Label htmlFor="filter-alert">Só com alerta</Label>
+      </div>
+      <div className="flex items-center gap-2 pb-1.5">
+        <Checkbox id="filter-sale" checked={params.get("venda") === "1"} onCheckedChange={(checked) => apply({ venda: checked === true ? "1" : null })} />
+        <Label htmlFor="filter-sale">Só à venda</Label>
       </div>
       <div className="flex items-center gap-2 pb-1.5">
         <Checkbox id="filter-inactive" checked={params.get("inativos") === "1"} onCheckedChange={(checked) => apply({ inativos: checked === true ? "1" : null })} />

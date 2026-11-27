@@ -9,6 +9,8 @@ import { compareCodes, type CategoryKind } from "@/lib/finance/categories";
 export type SavedCategory = {
   id: string; parent_id: string | null; code: string | null; name: string; kind: CategoryKind | null;
   ledger_code: string | null; active: boolean; usage: number;
+  /** Marcada "venda de itens" (019). */
+  sells_items?: boolean;
 };
 
 export type DraftNode = {
@@ -19,6 +21,8 @@ export type DraftNode = {
   name: string;
   ledgerCode: string | null;
   active: boolean;
+  /** Marcada "venda de itens" (Lojinha, 019): só receitas; vale também para as de baixo. */
+  sellsItems: boolean;
   /** Rateios gravados nela. */
   usage: number;
   /** 1 Receitas e 2 Despesas: fixas. */
@@ -52,7 +56,7 @@ export function createDraft(items: SavedCategory[]): Draft {
   for (const item of sorted) {
     const parentKey = item.parent_id && ids.has(item.parent_id) ? item.parent_id : null;
     nodes[item.id] = {
-      key: item.id, id: item.id, parentKey, name: item.name, ledgerCode: item.ledger_code, active: item.active, usage: item.usage,
+      key: item.id, id: item.id, parentKey, name: item.name, ledgerCode: item.ledger_code, active: item.active, sellsItems: item.sells_items ?? false, usage: item.usage,
       isRoot: !parentKey && item.code !== null, savedKind: item.kind, savedCode: item.code,
     };
     (children[parentKey ?? TOP] ??= []).push(item.id);
@@ -70,18 +74,21 @@ export type DraftRow = {
   subtreeUsage: number;
   /** Código mudou em relação ao gravado. */
   moved: boolean;
+  /** Vende itens: marcada ou dentro de uma marcada (só receitas). */
+  sells: boolean;
 };
 
 /** Linhas na ordem da árvore, com códigos recalculados. */
 export function draftRows(draft: Draft): DraftRow[] {
   const rows: DraftRow[] = [];
-  const visit = (key: string, depth: number, code: string | null, kind: CategoryKind | null): DraftRow => {
+  const visit = (key: string, depth: number, code: string | null, kind: CategoryKind | null, inherited = false): DraftRow => {
     const node = draft.nodes[key];
-    const row: DraftRow = { node, depth, code, kind, height: 0, subtree: [key], subtreeUsage: node.usage, moved: node.id !== null && code !== node.savedCode };
+    const sells = kind === "receita" && (inherited || node.sellsItems);
+    const row: DraftRow = { node, depth, code, kind, height: 0, subtree: [key], subtreeUsage: node.usage, moved: node.id !== null && code !== node.savedCode, sells };
     rows.push(row);
     const kids = draft.children[key] ?? [];
     kids.forEach((kid, index) => {
-      const child = visit(kid, depth + 1, code ? `${code}.${index + 1}` : null, kind);
+      const child = visit(kid, depth + 1, code ? `${code}.${index + 1}` : null, kind, sells);
       row.height = Math.max(row.height, child.height + 1);
       row.subtree.push(...child.subtree);
       row.subtreeUsage += child.subtreeUsage;
@@ -134,14 +141,14 @@ export function moveNode(draft: Draft, key: string, target: string, place: DropP
   return { ...draft, children: { ...children, [parentKey]: list }, nodes: { ...draft.nodes, [key]: { ...draft.nodes[key], parentKey } } };
 }
 
-export function updateNode(draft: Draft, key: string, patch: Partial<Pick<DraftNode, "name" | "ledgerCode" | "active">>): Draft {
+export function updateNode(draft: Draft, key: string, patch: Partial<Pick<DraftNode, "name" | "ledgerCode" | "active" | "sellsItems">>): Draft {
   return { ...draft, nodes: { ...draft.nodes, [key]: { ...draft.nodes[key], ...patch } } };
 }
 
 /** Nova rubrica no fim de `parentKey`; devolve o rascunho e a chave dela. */
 export function addNode(draft: Draft, parentKey: string, name = "Nova rubrica"): [Draft, string] {
   const key = `new:${draft.nextNew}`;
-  const node: DraftNode = { key, id: null, parentKey, name, ledgerCode: null, active: true, usage: 0, isRoot: false, savedKind: null, savedCode: null };
+  const node: DraftNode = { key, id: null, parentKey, name, ledgerCode: null, active: true, sellsItems: false, usage: 0, isRoot: false, savedKind: null, savedCode: null };
   return [{
     ...draft, nextNew: draft.nextNew + 1, nodes: { ...draft.nodes, [key]: node },
     children: { ...draft.children, [parentKey]: [...(draft.children[parentKey] ?? []), key] },
@@ -182,7 +189,7 @@ export function draftChanges(draft: Draft, saved: Draft): DraftChanges {
     const before = row.node.id ? saved.nodes[row.node.key] : null;
     if (!before) { created++; continue; }
     if (before.name !== row.node.name || (before.ledgerCode ?? "") !== (row.node.ledgerCode ?? "")) renamed++;
-    if (before.active !== row.node.active) toggled++;
+    if (before.active !== row.node.active || before.sellsItems !== row.node.sellsItems) toggled++;
     if (row.moved) moved++;
   }
   const deleted = draft.deleted.length;
@@ -197,6 +204,8 @@ export function draftPayload(draft: Draft) {
     .map((row) => ({
       key: row.node.key, id: row.node.id, parent: row.node.parentKey, name: row.node.name.trim(),
       ledgerCode: row.node.ledgerCode || null, active: row.node.active,
+      // só receitas vendem: ao mudar de ramo para Despesas, a marca cai
+      sellsItems: row.kind === "receita" && row.node.sellsItems,
       position: (draft.children[row.node.parentKey!] ?? []).indexOf(row.node.key),
     }));
   const deleted = draft.deleted.map((item) => ({ id: item.id, target: deletedTarget(draft, item)?.key ?? null }));

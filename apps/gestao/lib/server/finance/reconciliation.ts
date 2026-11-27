@@ -99,7 +99,7 @@ export async function createEntryFromLine(db: Db, lineId: string, input: EntryIn
   return await rpc(db, "create_entry_from_statement_line", {
     p_statement_line_id: lineId, p_entry_date: input.date, p_name: input.name, p_payment_method_id: input.paymentMethodId,
     p_document: input.document || null, p_document_filed: input.documentFiled, p_total_cents: input.totalCents,
-    p_splits: toRpcSplits(input.splits), p_notes: input.notes?.trim() || null,
+    p_splits: toRpcSplits(input.splits, input.debtLines), p_notes: input.notes?.trim() || null,
   }) as string;
 }
 

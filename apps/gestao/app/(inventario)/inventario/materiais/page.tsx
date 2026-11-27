@@ -1,7 +1,16 @@
 import { Link } from "@geas/ui/components/link";
 import { cookies } from "next/headers";
 import { Fragment } from "react";
-import { IconAlertTriangle, IconArrowsSort, IconBolt, IconClipboardCheck, IconPlus, IconPlusMinus, IconPrinter } from "@tabler/icons-react";
+import {
+  IconAlertTriangle,
+  IconArrowsSort,
+  IconBolt,
+  IconClipboardCheck,
+  IconPlus,
+  IconPlusMinus,
+  IconPrinter,
+  IconShoppingBag,
+} from "@tabler/icons-react";
 import { PageBody, PageHeader, SectionTabs } from "@geas/ui";
 import { buttonVariants } from "@geas/ui/components/button";
 import { SectionCard, SectionCount, SectionHeader } from "@geas/ui/components/section-card";
@@ -13,8 +22,22 @@ import { ColumnMenu, type ColumnFilter } from "@/components/inventory/materials/
 import { HEAD_TRIGGER, HeadIcons } from "@/components/shell/column-head";
 import { rootOf, subtree, type LocationPath } from "@/lib/inventory/locations";
 import {
-  COLUMNS_COOKIE, COLUMN_LABELS, CONDITION_RANK, EXPIRY_LABELS, MINIMUM_LABELS, compareLines, conditionBreakdown, hiddenColumns, matchesFilters, materialsHref, parseListState, withBack,
-  type ColumnId, type ListLine, type SortDir, type SortKey,
+  COLUMNS_COOKIE,
+  COLUMN_LABELS,
+  CONDITION_RANK,
+  EXPIRY_LABELS,
+  MINIMUM_LABELS,
+  compareLines,
+  conditionBreakdown,
+  hiddenColumns,
+  matchesFilters,
+  materialsHref,
+  parseListState,
+  withBack,
+  type ColumnId,
+  type ListLine,
+  type SortDir,
+  type SortKey,
 } from "@/lib/inventory/material-list";
 import type { MaterialRow, StockRow } from "@/lib/inventory/model";
 import * as families from "@/lib/server/inventory/families";
@@ -35,7 +58,15 @@ import { pageSession } from "@/lib/server/session";
 
 type Line = ListLine & StockRow & { material: MaterialRow };
 type Row =
-  | { kind: "group"; key: string; level: "root" | "sub"; depth?: number; href?: string; label: string; orderHref?: string }
+  | {
+      kind: "group";
+      key: string;
+      level: "root" | "sub";
+      depth?: number;
+      href?: string;
+      label: string;
+      orderHref?: string;
+    }
   | { kind: "line"; key: string; line: Line; depth: number };
 
 type Search = Record<string, string | undefined>;
@@ -52,7 +83,11 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   const years = [currentYear - 1, currentYear - 2] as const;
 
   const [materialData, stock, paths, familyOptions, counts, cookieStore, toReview, positions] = await Promise.all([
-    materialsData.list(db, groupId, { includeInactive: params.inativos === "1", familyId: params.familia, search: params.q }),
+    materialsData.list(db, groupId, {
+      includeInactive: params.inativos === "1",
+      familyId: params.familia,
+      search: params.q,
+    }),
     materialsData.stockByLocation(db, groupId),
     locations.listPaths(db, groupId),
     families.listOptions(db, groupId),
@@ -63,11 +98,16 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   ]);
 
   // Colunas: as que existem (anos com contagem) menos as que o usuário ocultou.
-  const yearColumns: [ColumnId, number][] = [["anterior1", years[0]], ["anterior2", years[1]]];
+  const yearColumns: [ColumnId, number][] = [
+    ["anterior1", years[0]],
+    ["anterior2", years[1]],
+  ];
   const available: { id: ColumnId; label: string }[] = [
     { id: "estado", label: COLUMN_LABELS.estado },
     { id: "quantidade", label: COLUMN_LABELS.quantidade },
-    ...yearColumns.filter(([, year]) => (counts.get(year)?.size ?? 0) > 0).map(([id, year]) => ({ id, label: `Contagem ${year}` })),
+    ...yearColumns
+      .filter(([, year]) => (counts.get(year)?.size ?? 0) > 0)
+      .map(([id, year]) => ({ id, label: `Contagem ${year}` })),
     { id: "validade", label: COLUMN_LABELS.validade },
     { id: "unitario", label: COLUMN_LABELS.unitario },
     { id: "total", label: COLUMN_LABELS.total },
@@ -85,15 +125,25 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   const scope: LocationPath[] = selected ? subtree(paths, selected.id) : root ? subtree(paths, root.id) : paths;
 
   // Alerta conta pelo total do material (mínimo e validade de todas as divisões), como no alerta do Início.
-  const alerting = (m: MaterialRow) => m.below_minimum || (m.next_expiry !== null && daysUntil(m.next_expiry) <= EXPIRY_WARNING_DAYS);
+  const alerting = (m: MaterialRow) =>
+    m.below_minimum || (m.next_expiry !== null && daysUntil(m.next_expiry) <= EXPIRY_WARNING_DAYS);
   const materials = new Map(materialData.filter((m) => params.alerta !== "1" || alerting(m)).map((m) => [m.id, m]));
-  const previousOf = (materialId: string, locationId: string): [number | null, number | null] =>
-    [counts.get(years[0])?.get(`${materialId}|${locationId}`) ?? null, counts.get(years[1])?.get(`${materialId}|${locationId}`) ?? null];
+  // "Só à venda" (Lojinha, 021): linhas (material × divisão) com algum lote à venda.
+  const onlySale = params.venda === "1";
+  const previousOf = (materialId: string, locationId: string): [number | null, number | null] => [
+    counts.get(years[0])?.get(`${materialId}|${locationId}`) ?? null,
+    counts.get(years[1])?.get(`${materialId}|${locationId}`) ?? null,
+  ];
   const byLocation = new Map<string, Line[]>();
   for (const row of stock) {
     const material = materials.get(row.material_id);
-    if (!material) continue;
-    const line: Line = { ...row, material, previous: previousOf(row.material_id, row.location_id), position: positions.get(`${row.location_id}|${row.material_id}`) ?? null };
+    if (!material || (onlySale && !row.sale_quantity)) continue;
+    const line: Line = {
+      ...row,
+      material,
+      previous: previousOf(row.material_id, row.location_id),
+      position: positions.get(`${row.location_id}|${row.material_id}`) ?? null,
+    };
     if (!matchesFilters(line, state)) continue;
     byLocation.set(row.location_id, [...(byLocation.get(row.location_id) ?? []), line]);
   }
@@ -102,16 +152,30 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   // Divisões com material, mais as superiores delas (subtítulo de cada nível, mesmo sem material próprio).
   const filled = scope.filter((location) => byLocation.has(location.id));
   const visible = new Set(filled.flatMap((location) => location.ancestors));
-  const groups = scope.filter((location) => visible.has(location.id)).map((location) => ({ location, lines: (byLocation.get(location.id) ?? []).sort(order) }));
+  const groups = scope
+    .filter((location) => visible.has(location.id))
+    .map((location) => ({ location, lines: (byLocation.get(location.id) ?? []).sort(order) }));
   const withStock = new Set(stock.map((row) => row.material_id));
-  const noStock: Line[] = showAll
-    ? [...materials.values()].filter((m) => !withStock.has(m.id))
-      .map((material): Line => ({
-        material_id: material.id, location_id: "", quantity: 0, value_cents: 0, next_expiry: null, worst_condition: null, conditions: {},
-        min_unit_cents: null, max_unit_cents: null, material, previous: [null, null],
-      }))
-      .filter((line) => matchesFilters(line, state)).sort(order)
-    : [];
+  const noStock: Line[] =
+    showAll && !onlySale
+      ? [...materials.values()]
+          .filter((m) => !withStock.has(m.id))
+          .map((material): Line => ({
+            material_id: material.id,
+            location_id: "",
+            quantity: 0,
+            value_cents: 0,
+            next_expiry: null,
+            worst_condition: null,
+            conditions: {},
+            min_unit_cents: null,
+            max_unit_cents: null,
+            material,
+            previous: [null, null],
+          }))
+          .filter((line) => matchesFilters(line, state))
+          .sort(order)
+      : [];
 
   const lines = groups.flatMap((group) => group.lines);
   const distinct = new Set([...lines.map((line) => line.material_id), ...noStock.map((line) => line.material_id)]).size;
@@ -123,7 +187,8 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   const hrefFor = (divisao?: string) => materialsHref({ ...params, divisao });
   // Padrão: a ordem escolhida em cada divisão. Material: ordem do local → A→Z → Z→A → ordem do local.
   const sortHref = (key: SortKey) => {
-    if (key === "material" && state.sort === "material" && state.dir === "desc") return materialsHref({ ...params, ordem: undefined, dir: undefined });
+    if (key === "material" && state.sort === "material" && state.dir === "desc")
+      return materialsHref({ ...params, ordem: undefined, dir: undefined });
     const dir: SortDir = state.sort === key && state.dir === "asc" ? "desc" : "asc";
     return materialsHref({ ...params, ordem: key, dir: dir === "asc" ? undefined : dir });
   };
@@ -132,11 +197,17 @@ export default async function Materials({ searchParams }: { searchParams: Promis
     { href: hrefFor(), label: "Todos", active: showAll },
     ...roots.map((row) => ({ href: hrefFor(row.id), label: row.name, active: root?.id === row.id })),
   ];
-  const heading = showAll ? "Todos os locais" : selected && selected.depth > 0 ? selected.path : root?.name ?? "Materiais";
+  const heading = showAll
+    ? "Todos os locais"
+    : selected && selected.depth > 0
+      ? selected.path
+      : (root?.name ?? "Materiais");
   const canEdit = member.inventory.canWrite;
   // Ordenar os materiais de uma divisão (Editor), só na ordem do local: a tela de ordem volta para esta lista.
   const orderHref = (locationId: string) =>
-    member.inventory.canReview && state.sort === "posicao" && byLocation.has(locationId) ? withBack(`/inventario/materiais/ordenar?divisao=${locationId}`, here) : undefined;
+    member.inventory.canReview && state.sort === "posicao" && byLocation.has(locationId)
+      ? withBack(`/inventario/materiais/ordenar?divisao=${locationId}`, here)
+      : undefined;
   const span = columns.length + 1 + (canEdit ? 2 : 0);
   // Edição em massa: divisões ativas (na ordem da árvore) e famílias para os diálogos da barra de ações.
   const locationOptions = paths.filter((row) => row.active).map((row) => ({ value: row.id, label: row.path }));
@@ -147,69 +218,221 @@ export default async function Materials({ searchParams }: { searchParams: Promis
   const rows: Row[] = [
     ...groups.flatMap(({ location, lines: groupLines }): Row[] => [
       ...(location.depth === 0
-        ? showAll ? [{ kind: "group", key: location.id, level: "root", label: location.name, orderHref: orderHref(location.id) } as const] : []
-        : [{ kind: "group", key: location.id, level: "sub", depth: location.depth, href: hrefFor(location.id), label: location.name, orderHref: orderHref(location.id) } as const]),
-      ...groupLines.map((line): Row => ({ kind: "line", key: `${line.location_id}-${line.material_id}`, line, depth: location.depth })),
+        ? showAll
+          ? [
+              {
+                kind: "group",
+                key: location.id,
+                level: "root",
+                label: location.name,
+                orderHref: orderHref(location.id),
+              } as const,
+            ]
+          : []
+        : [
+            {
+              kind: "group",
+              key: location.id,
+              level: "sub",
+              depth: location.depth,
+              href: hrefFor(location.id),
+              label: location.name,
+              orderHref: orderHref(location.id),
+            } as const,
+          ]),
+      ...groupLines.map((line): Row => ({
+        kind: "line",
+        key: `${line.location_id}-${line.material_id}`,
+        line,
+        depth: location.depth,
+      })),
     ]),
-    ...(noStock.length > 0 ? [{ kind: "group", key: "sem-estoque", level: "root", label: "Sem estoque" } as const] : []),
+    ...(noStock.length > 0
+      ? [{ kind: "group", key: "sem-estoque", level: "root", label: "Sem estoque" } as const]
+      : []),
     ...noStock.map((line): Row => ({ kind: "line", key: line.material_id, line, depth: 0 })),
   ];
 
-  return <div className="shell">
-    <AppHeader current="/inventario/materiais" member={member} />
-    <PageBody width="narrow">
-      <PageHeader title="Materiais" crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais" }]}
-        description="Tudo o que o grupo tem, por local: um material em várias divisões aparece em cada uma, com a quantidade de lá."
-        actions={<>
-          {toReview > 0 && <Link href="/inventario/movimentacoes?revisao=para_revisar" className="inline-flex items-center gap-1.5 rounded-full bg-caution-soft px-3 py-1 text-xs font-semibold text-caution hover:ring-1 hover:ring-current">
-            <IconClipboardCheck className="size-4" aria-hidden /> {toReview} para revisar</Link>}
-          {/* PDF de conferência da aba atual (Todos ou a divisão), com a ordem escolhida e colunas para contar à mão. */}
-          <a href={`/inventario/relatorios/conferencia${selected ? `?divisao=${selected.id}` : ""}`} target="_blank" rel="noopener"
-            className={buttonVariants({ variant: "outline", size: "lg" })} title="Folha de conferência em PDF, na ordem de cada divisão">
-            <IconPrinter data-icon="inline-start" /> Imprimir</a>
-          {member.inventory.canWrite && <Link href="/rapido" className={buttonVariants({ variant: "outline", size: "lg" })}><IconBolt data-icon="inline-start" /> Registro rápido</Link>}
-          {member.inventory.canWrite && <Link href={withBack("/inventario/materiais/novo", here)} className={buttonVariants({ size: "lg" })}><IconPlus data-icon="inline-start" /> Novo material</Link>}
-        </>}>
-        <SectionTabs label="Locais" tabs={tabs} />
-        <MaterialFilters families={familyOptions} columns={available} hidden={[...hidden]} />
-      </PageHeader>
-      <SectionCard>
-        <SectionHeader title={heading}
-          description={selected && selected.depth > 0 && root ? <>Só esta divisão e o que está dentro dela. <Link href={hrefFor(root.id)} className="font-semibold text-primary hover:underline">Ver {root.name} inteiro</Link></> : undefined}>
-          <SectionCount>{distinct} {distinct === 1 ? "material" : "materiais"} · valor total <span className="num">{formatCents(total)}</span></SectionCount>
-          {root && selected?.depth === 0 && orderHref(root.id) && <Link href={orderHref(root.id)!} className={buttonVariants({ variant: "outline", size: "sm" })}>
-            <IconArrowsSort data-icon="inline-start" /> Ordenar {root.name}</Link>}
-        </SectionHeader>
-        {/* A tabela fica mesmo vazia: o cabeçalho tem os menus das colunas, para desfazer o filtro. Corpo em blocos
+  return (
+    <div className="shell">
+      <AppHeader current="/inventario/materiais" member={member} />
+      <PageBody width="narrow">
+        <PageHeader
+          title="Materiais"
+          crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais" }]}
+          description="Tudo o que o grupo tem, por local: um material em várias divisões aparece em cada uma, com a quantidade de lá."
+          actions={
+            <>
+              {toReview > 0 && (
+                <Link
+                  href="/inventario/movimentacoes?revisao=para_revisar"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-caution-soft px-3 py-1 text-xs font-semibold text-caution hover:ring-1 hover:ring-current"
+                >
+                  <IconClipboardCheck className="size-4" aria-hidden /> {toReview} para revisar
+                </Link>
+              )}
+              {/* PDF de conferência da aba atual (Todos ou a divisão), com a ordem escolhida e colunas para contar à mão. */}
+              <a
+                href={`/inventario/relatorios/conferencia${selected ? `?divisao=${selected.id}` : ""}`}
+                target="_blank"
+                rel="noopener"
+                className={buttonVariants({ variant: "outline", size: "lg" })}
+                title="Folha de conferência em PDF, na ordem de cada divisão"
+              >
+                <IconPrinter data-icon="inline-start" /> Imprimir
+              </a>
+              {member.inventory.canWrite && (
+                <Link href="/rapido" className={buttonVariants({ variant: "outline", size: "lg" })}>
+                  <IconBolt data-icon="inline-start" /> Registro rápido
+                </Link>
+              )}
+              {member.inventory.canWrite && (
+                <Link href={withBack("/inventario/materiais/novo", here)} className={buttonVariants({ size: "lg" })}>
+                  <IconPlus data-icon="inline-start" /> Novo material
+                </Link>
+              )}
+            </>
+          }
+        >
+          <SectionTabs label="Locais" tabs={tabs} />
+          <MaterialFilters families={familyOptions} columns={available} hidden={[...hidden]} />
+        </PageHeader>
+        <SectionCard>
+          <SectionHeader
+            title={heading}
+            description={
+              selected && selected.depth > 0 && root ? (
+                <>
+                  Só esta divisão e o que está dentro dela.{" "}
+                  <Link href={hrefFor(root.id)} className="font-semibold text-primary hover:underline">
+                    Ver {root.name} inteiro
+                  </Link>
+                </>
+              ) : undefined
+            }
+          >
+            <SectionCount>
+              {distinct} {distinct === 1 ? "material" : "materiais"} · valor total{" "}
+              <span className="num">{formatCents(total)}</span>
+            </SectionCount>
+            {root && selected?.depth === 0 && orderHref(root.id) && (
+              <Link href={orderHref(root.id)!} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                <IconArrowsSort data-icon="inline-start" /> Ordenar {root.name}
+              </Link>
+            )}
+          </SectionHeader>
+          {/* A tabela fica mesmo vazia: o cabeçalho tem os menus das colunas, para desfazer o filtro. Corpo em blocos
             (`cv-table`/`cv-rows` do tema): o navegador pula os que estão fora da tela. */}
-        <IconSprite icons={SPRITE} />
-        <EditorFrame canEdit={canEdit} listKey={here} locations={locationOptions} families={familyOptions}><div className="overflow-x-auto"><Table className={cn("cv-table min-w-[760px]", MAT_BODY)} style={cvCols([...(canEdit ? ["2.25rem"] : []), "minmax(12rem, 1fr)", ...columns.map((id) => HEADS[id].track), ...(canEdit ? ["2.5rem"] : [])])}>
-            <TableCaption className="sr-only">Materiais por divisão; a ordem escolhida vale dentro de cada divisão</TableCaption>
-            <TableHeader className="bg-muted"><TableRow className="hover:bg-transparent">
-              {canEdit && <TableHead className={cn(HEAD_CLASS, "w-9 px-1! text-center")}>
-                <input type="checkbox" data-sel-all="" aria-label="Selecionar todas as linhas da lista" title="Selecionar todas (Shift + clique numa linha marca o intervalo)" className="size-4 cursor-pointer accent-primary align-middle" />
-              </TableHead>}
-              <SortHead label="Material" {...sortProps("material")} />
-              {columns.map((id) => COLUMN_FILTERS[id]
-                ? <TableHead key={id} className={cn(HEAD_CLASS, HEADS[id].className)} aria-sort={state.sort === id ? (state.dir === "asc" ? "ascending" : "descending") : undefined}>
-                  <ColumnMenu label={HEADS[id].label} sortKey={id} filter={COLUMN_FILTERS[id]} sortLabels={SORT_LABELS[id] ?? ["Crescente", "Decrescente"]} align={HEADS[id].className.includes("text-right") ? "end" : "start"} />
-                </TableHead>
-                : <SortHead key={id} {...sortProps(id)} className={HEADS[id].className}
-                  label={yearOf[id] ? String(yearOf[id]) : HEADS[id].label} title={yearOf[id] ? `Contagem de ${yearOf[id]}` : undefined} />)}
-              {canEdit && <TableHead className={cn(HEAD_CLASS, "w-10")}><span className="sr-only">Incluir ou remover</span></TableHead>}
-            </TableRow></TableHeader>
-            {chunk(rows).map((block, index) => <TableBody key={index} className="cv-rows" style={cvRows(block.length, "2.5rem")}>
-              {block.map((row) => row.kind === "group"
-                ? <GroupRow key={row.key} level={row.level} depth={row.depth} columns={span} href={row.href} orderHref={row.orderHref}>{row.label}</GroupRow>
-                : <MaterialLine key={row.key} line={row.line} depth={row.depth} columns={columns} back={here} actions={stockActions} />)}
-            </TableBody>)}
-            {rows.length === 0 && <TableBody><TableRow className="hover:bg-transparent">
-              <TableCell colSpan={span} className="px-4 py-8 text-center text-xs text-muted-foreground">Nenhum material encontrado.</TableCell>
-            </TableRow></TableBody>}
-          </Table></div></EditorFrame>
-      </SectionCard>
-    </PageBody>
-  </div>;
+          <IconSprite icons={SPRITE} />
+          <EditorFrame
+            canEdit={canEdit}
+            canSell={member.inventory.canReview}
+            listKey={here}
+            locations={locationOptions}
+            families={familyOptions}
+          >
+            <div className="overflow-x-auto">
+              <Table
+                className={cn("cv-table min-w-190", MAT_BODY)}
+                style={cvCols([
+                  ...(canEdit ? ["2.25rem"] : []),
+                  "minmax(12rem, 1fr)",
+                  ...columns.map((id) => HEADS[id].track),
+                  ...(canEdit ? ["2.5rem"] : []),
+                ])}
+              >
+                <TableCaption className="sr-only">
+                  Materiais por divisão; a ordem escolhida vale dentro de cada divisão
+                </TableCaption>
+                <TableHeader className="bg-muted">
+                  <TableRow className="hover:bg-transparent">
+                    {canEdit && (
+                      <TableHead className={cn(HEAD_CLASS, "w-9 px-1! text-center")}>
+                        <input
+                          type="checkbox"
+                          data-sel-all=""
+                          aria-label="Selecionar todas as linhas da lista"
+                          title="Selecionar todas (Shift + clique numa linha marca o intervalo)"
+                          className="size-4 cursor-pointer align-middle accent-primary"
+                        />
+                      </TableHead>
+                    )}
+                    <SortHead label="Material" {...sortProps("material")} />
+                    {columns.map((id) =>
+                      COLUMN_FILTERS[id] ? (
+                        <TableHead
+                          key={id}
+                          className={cn(HEAD_CLASS, HEADS[id].className)}
+                          aria-sort={state.sort === id ? (state.dir === "asc" ? "ascending" : "descending") : undefined}
+                        >
+                          <ColumnMenu
+                            label={HEADS[id].label}
+                            sortKey={id}
+                            filter={COLUMN_FILTERS[id]}
+                            sortLabels={SORT_LABELS[id] ?? ["Crescente", "Decrescente"]}
+                            align={HEADS[id].className.includes("text-right") ? "end" : "start"}
+                          />
+                        </TableHead>
+                      ) : (
+                        <SortHead
+                          key={id}
+                          {...sortProps(id)}
+                          className={HEADS[id].className}
+                          label={yearOf[id] ? String(yearOf[id]) : HEADS[id].label}
+                          title={yearOf[id] ? `Contagem de ${yearOf[id]}` : undefined}
+                        />
+                      ),
+                    )}
+                    {canEdit && (
+                      <TableHead className={cn(HEAD_CLASS, "w-10")}>
+                        <span className="sr-only">Incluir ou remover</span>
+                      </TableHead>
+                    )}
+                  </TableRow>
+                </TableHeader>
+                {chunk(rows).map((block, index) => (
+                  <TableBody key={index} className="cv-rows" style={cvRows(block.length, "2.5rem")}>
+                    {block.map((row) =>
+                      row.kind === "group" ? (
+                        <GroupRow
+                          key={row.key}
+                          level={row.level}
+                          depth={row.depth}
+                          columns={span}
+                          href={row.href}
+                          orderHref={row.orderHref}
+                        >
+                          {row.label}
+                        </GroupRow>
+                      ) : (
+                        <MaterialLine
+                          key={row.key}
+                          line={row.line}
+                          depth={row.depth}
+                          columns={columns}
+                          back={here}
+                          actions={stockActions}
+                        />
+                      ),
+                    )}
+                  </TableBody>
+                ))}
+                {rows.length === 0 && (
+                  <TableBody>
+                    <TableRow className="hover:bg-transparent">
+                      <TableCell colSpan={span} className="px-4 py-8 text-center text-xs text-muted-foreground">
+                        Nenhum material encontrado.
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                )}
+              </Table>
+            </div>
+          </EditorFrame>
+        </SectionCard>
+      </PageBody>
+    </div>
+  );
 }
 
 /** Cabeçalho de cada coluna: rótulo, largura e alinhamento. */
@@ -224,9 +447,19 @@ const HEADS: Record<ColumnId, { label: string; className: string; track: string 
 };
 
 /** Colunas com menu (ordem + filtro), como na planilha; as outras ordenam com um clique no cabeçalho. */
-const optionsOf = <T extends string>(labels: Record<T, string>, order = Object.keys(labels) as T[]) => order.map((value) => ({ value, label: labels[value] }));
+const optionsOf = <T extends string>(labels: Record<T, string>, order = Object.keys(labels) as T[]) =>
+  order.map((value) => ({ value, label: labels[value] }));
 const COLUMN_FILTERS: Partial<Record<ColumnId, ColumnFilter>> = {
-  estado: { values: { param: "estado", title: "Filtrar por valores", options: optionsOf(CONDITION_LABELS, (Object.keys(CONDITION_RANK) as Condition[]).sort((a, b) => CONDITION_RANK[a] - CONDITION_RANK[b])) } },
+  estado: {
+    values: {
+      param: "estado",
+      title: "Filtrar por valores",
+      options: optionsOf(
+        CONDITION_LABELS,
+        (Object.keys(CONDITION_RANK) as Condition[]).sort((a, b) => CONDITION_RANK[a] - CONDITION_RANK[b]),
+      ),
+    },
+  },
   quantidade: {
     values: { param: "minimo", title: "Estoque mínimo", options: optionsOf(MINIMUM_LABELS) },
     range: { from: "qtd_de", to: "qtd_ate", money: false },
@@ -244,39 +477,126 @@ const SORT_LABELS: Partial<Record<ColumnId, [string, string]>> = {
 };
 
 /** Cabeçalho que ordena: clicar ordena por ele (crescente), clicar de novo inverte. */
-function SortHead({ label, title, className, active, dir, href }: { label: string; title?: string; className?: string; active: boolean; dir: SortDir; href: string }) {
-  return <TableHead className={cn(HEAD_CLASS, className)} aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : undefined}>
-    <Link href={href} scroll={false} title={title} className={cn(HEAD_TRIGGER, active && "text-foreground")}>
-      {label}
-      {active ? <HeadIcons sorted dir={dir} /> : <IconArrowsSort className="size-3.5 shrink-0 opacity-40" aria-hidden />}
-      <span className="sr-only">{active ? (dir === "asc" ? ", em ordem crescente. Inverter ordem" : ", em ordem decrescente. Inverter ordem") : ". Ordenar por esta coluna"}</span>
-    </Link>
-  </TableHead>;
+function SortHead({
+  label,
+  title,
+  className,
+  active,
+  dir,
+  href,
+}: {
+  label: string;
+  title?: string;
+  className?: string;
+  active: boolean;
+  dir: SortDir;
+  href: string;
+}) {
+  return (
+    <TableHead
+      className={cn(HEAD_CLASS, className)}
+      aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : undefined}
+    >
+      <Link href={href} scroll={false} title={title} className={cn(HEAD_TRIGGER, active && "text-foreground")}>
+        {label}
+        {active ? (
+          <HeadIcons sorted dir={dir} />
+        ) : (
+          <IconArrowsSort className="size-3.5 shrink-0 opacity-40" aria-hidden />
+        )}
+        <span className="sr-only">
+          {active
+            ? dir === "asc"
+              ? ", em ordem crescente. Inverter ordem"
+              : ", em ordem decrescente. Inverter ordem"
+            : ". Ordenar por esta coluna"}
+        </span>
+      </Link>
+    </TableHead>
+  );
 }
 
 /** Recuo por nível da divisão (o local macro não recua). */
 const indent = (level: number) => ({ paddingLeft: `${0.75 + Math.max(level, 0) * 1.25}rem` });
 
 /** Linha de subtítulo: local macro (na aba Todos) ou subdivisão, recuada pelo nível. */
-function GroupRow({ level, depth = 0, columns, href, orderHref, children }: { level: "root" | "sub"; depth?: number; columns: number; href?: string; orderHref?: string; children: React.ReactNode }) {
-  return <TableRow className="hover:bg-transparent">
-    <TableCell colSpan={columns} style={level === "sub" ? indent(depth - 1) : undefined}
-      className={cn(CELL_CLASS, level === "root" ? "bg-secondary pt-3 text-sm font-bold" : "bg-muted/60 text-xs font-semibold text-muted-foreground")}>
-      <span className="flex items-center justify-between gap-3">
-        {href ? <Link href={href} className="hover:text-foreground hover:underline">{children}</Link> : <span>{children}</span>}
-        {orderHref && <Link href={orderHref} className="text-xs font-medium text-primary hover:underline" aria-label={`Ordenar os materiais de ${children}`}>Ordenar</Link>}
-      </span>
-    </TableCell>
-  </TableRow>;
+function GroupRow({
+  level,
+  depth = 0,
+  columns,
+  href,
+  orderHref,
+  children,
+}: {
+  level: "root" | "sub";
+  depth?: number;
+  columns: number;
+  href?: string;
+  orderHref?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <TableRow className="hover:bg-transparent">
+      <TableCell
+        colSpan={columns}
+        style={level === "sub" ? indent(depth - 1) : undefined}
+        className={cn(
+          CELL_CLASS,
+          level === "root"
+            ? "bg-secondary pt-3 text-sm font-bold"
+            : "bg-muted/60 text-xs font-semibold text-muted-foreground",
+        )}
+      >
+        <span className="flex items-center justify-between gap-3">
+          {href ? (
+            <Link href={href} className="hover:text-foreground hover:underline">
+              {children}
+            </Link>
+          ) : (
+            <span>{children}</span>
+          )}
+          {orderHref && (
+            <Link
+              href={orderHref}
+              className="text-xs font-medium text-primary hover:underline"
+              aria-label={`Ordenar os materiais de ${children}`}
+            >
+              Ordenar
+            </Link>
+          )}
+        </span>
+      </TableCell>
+    </TableRow>
+  );
 }
 
 const empty = <span className="text-muted-foreground">—</span>;
 
 /** Quem edita ganha o ouvinte único dos botões ± (StockEditor); quem só lê, a tabela pura. */
-const EditorFrame = ({ canEdit, listKey, locations, families, children }: { canEdit: boolean; listKey: string; locations: Option[]; families: Option[]; children: React.ReactNode }) =>
-  canEdit ? <BulkSelection key={listKey} locations={locations} families={families}><StockEditor>{children}</StockEditor></BulkSelection> : <>{children}</>;
+const EditorFrame = ({
+  canEdit,
+  canSell,
+  listKey,
+  locations,
+  families,
+  children,
+}: {
+  canEdit: boolean;
+  canSell: boolean;
+  listKey: string;
+  locations: Option[];
+  families: Option[];
+  children: React.ReactNode;
+}) =>
+  canEdit ? (
+    <BulkSelection key={listKey} locations={locations} families={families} canSell={canSell}>
+      <StockEditor>{children}</StockEditor>
+    </BulkSelection>
+  ) : (
+    <>{children}</>
+  );
 
-const SPRITE = { "plus-minus": IconPlusMinus, alert: IconAlertTriangle };
+const SPRITE = { "plus-minus": IconPlusMinus, alert: IconAlertTriangle, sale: IconShoppingBag };
 
 /**
  * Estilo das linhas de material, uma vez só no `<table>` (variantes do Tailwind), e não repetido em cada linha: no App
@@ -304,61 +624,186 @@ function unitValue(line: Line) {
   if (line.min_unit_cents == null) return empty;
   const min = Number(line.min_unit_cents);
   const max = Number(line.max_unit_cents ?? min);
-  return min === max ? formatCents(min) : <span title="Lotes ou peças com valores diferentes">{formatCents(min)} – {formatCents(max)}</span>;
+  return min === max ? (
+    formatCents(min)
+  ) : (
+    <span title="Lotes ou peças com valores diferentes">
+      {formatCents(min)} – {formatCents(max)}
+    </span>
+  );
 }
 
 /** Validade com o tom de vencido / vencendo (como `Expiry` de lots-table, mas sem componente de cliente por linha). */
 function expiry(date: string) {
   const days = daysUntil(date);
-  const tone = days < 0 ? "text-destructive font-semibold" : days <= EXPIRY_WARNING_DAYS ? "text-caution font-semibold" : undefined;
-  return <span className={cn("num", tone)} title={days < 0 ? "Vencido" : `Vence em ${days} dias`}>{dateBR(date)}{days < 0 && " (vencido)"}</span>;
+  const tone =
+    days < 0
+      ? "text-destructive font-semibold"
+      : days <= EXPIRY_WARNING_DAYS
+        ? "text-caution font-semibold"
+        : undefined;
+  return (
+    <span className={cn("num", tone)} title={days < 0 ? "Vencido" : `Vence em ${days} dias`}>
+      {dateBR(date)}
+      {days < 0 && " (vencido)"}
+    </span>
+  );
 }
 
 /** Estado (pior condição), como ConditionPill, estilizado pela tabela (`data-cond`). */
 function condition(value: Condition | null, detail?: string) {
   if (!value) return empty;
-  return <span data-cond={value} title={detail}>{CONDITION_LABELS[value]}{detail && <><span aria-hidden className="opacity-70">+</span><span className="sr-only"> (pior estado; {detail})</span></>}</span>;
+  return (
+    <span data-cond={value} title={detail}>
+      {CONDITION_LABELS[value]}
+      {detail && (
+        <>
+          <span aria-hidden className="opacity-70">
+            +
+          </span>
+          <span className="sr-only"> (pior estado; {detail})</span>
+        </>
+      )}
+    </span>
+  );
 }
 
 type StockActions = { pathOf: Map<string, string> };
+
+/** "À venda na Lojinha: 5 un. · R$ 25,00" (ou a faixa de preço dos lotes à venda da divisão). */
+function saleLabel(line: Line) {
+  const min = line.min_sale_cents ?? null;
+  const max = line.max_sale_cents ?? min;
+  const price =
+    min == null ? "sem preço" : min === max ? formatCents(min) : `${formatCents(min)} – ${formatCents(max!)}`;
+  return `À venda na Lojinha: ${line.sale_quantity} un. · ${price}`;
+}
 
 /**
  * Material numa divisão: as colunas visíveis, com os valores daquela divisão; para quem edita, o botão ± no fim.
  * `<tr>`/`<td>` simples (sem as classes de TableRow/TableCell em cada célula); o material e a divisão vão no `<tr>`
  * para o StockEditor.
  */
-function MaterialLine({ line, depth, columns, back, actions }: { line: Line; depth: number; columns: ColumnId[]; back: string; actions: StockActions | null }) {
+function MaterialLine({
+  line,
+  depth,
+  columns,
+  back,
+  actions,
+}: {
+  line: Line;
+  depth: number;
+  columns: ColumnId[];
+  back: string;
+  actions: StockActions | null;
+}) {
   const { material } = line;
   const kinds = Object.values(line.conditions).filter((quantity) => (quantity ?? 0) > 0).length;
   const stock = actions && material.tracking === "lot" && material.active && line.location_id;
   const cells: Record<ColumnId, () => React.ReactNode> = {
-    estado: () => <td>{condition(line.worst_condition, kinds > 1 ? conditionBreakdown(line.conditions) : undefined)}</td>,
-    quantidade: () => <td data-a="q" className="num">
-      <span className={cn("inline-flex items-center gap-1", material.below_minimum && "text-destructive")}
-        title={material.below_minimum ? `Abaixo do mínimo: ${material.quantity} de ${material.minimum_quantity} no total` : undefined}>
-        {material.below_minimum && <><SpriteIcon id="alert" className="size-3.5" /><span className="sr-only">Abaixo do mínimo</span></>}{line.quantity}
-      </span>
-      {material.minimum_quantity != null && <span className="block text-[11px] font-normal text-muted-foreground">total {material.quantity} · mín. {material.minimum_quantity}</span>}
-    </td>,
-    anterior1: () => <td data-a="m" className="num">{line.previous[0] ?? "—"}</td>,
-    anterior2: () => <td data-a="m" className="num">{line.previous[1] ?? "—"}</td>,
+    estado: () => (
+      <td>{condition(line.worst_condition, kinds > 1 ? conditionBreakdown(line.conditions) : undefined)}</td>
+    ),
+    quantidade: () => (
+      <td data-a="q" className="num">
+        <span
+          className={cn("inline-flex items-center gap-1", material.below_minimum && "text-destructive")}
+          title={
+            material.below_minimum
+              ? `Abaixo do mínimo: ${material.quantity} de ${material.minimum_quantity} no total`
+              : undefined
+          }
+        >
+          {material.below_minimum && (
+            <>
+              <SpriteIcon id="alert" className="size-3.5" />
+              <span className="sr-only">Abaixo do mínimo</span>
+            </>
+          )}
+          {line.quantity}
+        </span>
+        {material.minimum_quantity != null && (
+          <span className="block text-[11px] font-normal text-muted-foreground">
+            total {material.quantity} · mín. {material.minimum_quantity}
+          </span>
+        )}
+      </td>
+    ),
+    anterior1: () => (
+      <td data-a="m" className="num">
+        {line.previous[0] ?? "—"}
+      </td>
+    ),
+    anterior2: () => (
+      <td data-a="m" className="num">
+        {line.previous[1] ?? "—"}
+      </td>
+    ),
     validade: () => <td>{line.next_expiry ? expiry(line.next_expiry) : empty}</td>,
-    unitario: () => <td data-a="r" className="num">{unitValue(line)}</td>,
-    total: () => <td data-a="r" className="num">{Number(line.value_cents) > 0 ? formatCents(Number(line.value_cents)) : empty}</td>,
+    unitario: () => (
+      <td data-a="r" className="num">
+        {unitValue(line)}
+      </td>
+    ),
+    total: () => (
+      <td data-a="r" className="num">
+        {Number(line.value_cents) > 0 ? formatCents(Number(line.value_cents)) : empty}
+      </td>
+    ),
   };
-  return <tr data-m={material.id} data-l={stock ? line.location_id : undefined} data-name={stock ? material.name : undefined}
-    data-path={stock ? actions.pathOf.get(line.location_id) ?? "" : undefined} data-cons={stock && material.consumable ? "" : undefined} data-off={material.active ? undefined : ""}>
-    {actions && <td data-a="b"><input type="checkbox" data-sel="" value={`${material.id}|${line.location_id}`} aria-label={`Selecionar ${material.name}${line.location_id ? ` em ${actions.pathOf.get(line.location_id) ?? ""}` : " (sem estoque)"}`} /></td>}
-    <td data-n="" style={indent(depth)}>
-      <Link href={withBack(`/inventario/materiais/${material.id}`, back)} className="hover:underline">{material.name}</Link>
-      {(material.consumable || !material.active) && <span className="ml-2 inline-flex flex-wrap gap-1 align-middle">
-        {material.consumable && <span data-tag="">Consumível</span>}
-        {!material.active && <span data-tag="">Inativo</span>}
-      </span>}
-    </td>
-    {columns.map((id) => <Fragment key={id}>{cells[id]()}</Fragment>)}
-    {actions && <td data-a="b">
-      {stock && <button type="button" data-stock="" aria-label={`Incluir ou remover: ${material.name}`} title={`Incluir ou remover: ${material.name}`}><SpriteIcon id="plus-minus" className="size-3" /></button>}
-    </td>}
-  </tr>;
+  return (
+    <tr
+      data-m={material.id}
+      data-l={stock ? line.location_id : undefined}
+      data-name={stock ? material.name : undefined}
+      data-path={stock ? (actions.pathOf.get(line.location_id) ?? "") : undefined}
+      data-cons={stock && material.consumable ? "" : undefined}
+      data-off={material.active ? undefined : ""}
+    >
+      {actions && (
+        <td data-a="b">
+          <input
+            type="checkbox"
+            data-sel=""
+            value={`${material.id}|${line.location_id}`}
+            aria-label={`Selecionar ${material.name}${line.location_id ? ` em ${actions.pathOf.get(line.location_id) ?? ""}` : " (sem estoque)"}`}
+          />
+        </td>
+      )}
+      <td data-n="" style={indent(depth)}>
+        <Link href={withBack(`/inventario/materiais/${material.id}`, back)} className="hover:underline">
+          {material.name}
+        </Link>
+        {line.sale_quantity ? (
+          <span className="ml-1.5 inline-flex align-middle text-primary" title={saleLabel(line)}>
+            <SpriteIcon id="sale" className="size-3.5" />
+            <span className="sr-only">{saleLabel(line)}</span>
+          </span>
+        ) : null}
+        {(material.consumable || !material.active) && (
+          <span className="ml-2 inline-flex flex-wrap gap-1 align-middle">
+            {material.consumable && <span data-tag="">Consumível</span>}
+            {!material.active && <span data-tag="">Inativo</span>}
+          </span>
+        )}
+      </td>
+      {columns.map((id) => (
+        <Fragment key={id}>{cells[id]()}</Fragment>
+      ))}
+      {actions && (
+        <td data-a="b">
+          {stock && (
+            <button
+              type="button"
+              data-stock=""
+              aria-label={`Incluir ou remover: ${material.name}`}
+              title={`Incluir ou remover: ${material.name}`}
+            >
+              <SpriteIcon id="plus-minus" className="size-3" />
+            </button>
+          )}
+        </td>
+      )}
+    </tr>
+  );
 }

@@ -58,7 +58,10 @@ export function cleanupE2eGroup() {
     set local role authenticated;
     select public.delete_statement_import(i.id) from public.statement_imports i;
     select public.delete_import_profile(p.id) from public.import_profiles p;
-    select public.delete_debt(d.id) from public.debts d where d.description like ${literal(`${E2E_PREFIX} %`)};
+    -- primeiro os lançamentos que pagam dívidas (023), depois as dívidas sem pagamento, depois o resto
+    select public.delete_ledger_entry(e.id) from public.ledger_entries e where e.name like ${literal(`${E2E_PREFIX} %`)}
+      and exists (select 1 from public.entry_splits s where s.entry_id = e.id and s.debt_id is not null);
+    select public.delete_debt(d.id) from public.debts d where d.description like ${literal(`${E2E_PREFIX} %`)} and d.fee_record_id is null and d.origin_entry_id is null;
     select public.delete_ledger_entry(e.id) from public.ledger_entries e where e.name like ${literal(`${E2E_PREFIX} %`)};
     commit;
     -- associados das medições (e2e/perf/mensalidades.perf.ts); não há função de exclusão de associado

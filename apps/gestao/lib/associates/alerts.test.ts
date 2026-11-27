@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ScoutBranch } from "./model";
-import { addMonths, registrationExpiries, relativeDay, transitionOf, transitionRules, transitions, transitionWindow, upcomingDates } from "./alerts";
+import { addMonths, registrationExpiries, relativeDay, scouterSections, transitionOf, transitionRules, transitions, transitionWindow, upcomingDates } from "./alerts";
 
 const person = (over: Partial<{ id: string; name: string; active: boolean; branch: ScoutBranch; birth_date: string | null; promise_date: string | null }>) =>
   ({ id: "a", name: "Ana", active: true, branch: "lobinho" as const, birth_date: null, promise_date: null, ...over });
@@ -119,5 +119,18 @@ describe("registrationExpiries e relativeDay", () => {
 
   it("texto relativo", () => {
     expect([0, 1, -1, 3, -2].map(relativeDay)).toEqual(["hoje", "amanhã", "ontem", "em 3 dias", "há 2 dias"]);
+  });
+});
+
+describe("scouterSections", () => {
+  const fn = (kind: string, section_id: string | null, started_on: string | null, ended_on: string | null, section = section_id && `S${section_id}`) =>
+    ({ kind, section_id, section, started_on, ended_on });
+  it("só funções de escotista em curso e com seção, sem repetir, por nome", () => {
+    const sections = scouterSections([
+      fn("escotista", "b", "2025-01-01", null), fn("escotista", "a", null, "2026-11-19"), fn("escotista", "c", "2026-11-20", null),
+      fn("escotista", "d", "2020-01-01", "2026-11-18"), fn("dirigente", "e", null, null), fn("escotista", null, null, null),
+      fn("escotista", "b", "2024-01-01", null),
+    ], "2026-11-19");
+    expect(sections).toEqual([{ id: "a", name: "Sa" }, { id: "b", name: "Sb" }]);
   });
 });

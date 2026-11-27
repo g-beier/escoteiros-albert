@@ -1,6 +1,7 @@
 import { Link } from "@geas/ui/components/link";
 import { redirect } from "next/navigation";
 import { IconChevronRight, IconCircleCheck, IconSearch } from "@tabler/icons-react";
+import { SaleMark } from "@/components/inventory/sale-mark";
 import { PageBody, PageHeader } from "@geas/ui";
 import { buttonVariants } from "@geas/ui/components/button";
 import { Input } from "@geas/ui/components/input";
@@ -82,7 +83,7 @@ export default async function QuickHome({ searchParams }: { searchParams: Promis
                 {rows.slice(0, SHOWN).map((row) => <li key={row.id} className="border-t first:border-t-0">
                   <Link href={`/rapido/inventario/${row.id}`} className={BIG_LINK}>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm">{row.name}</span>
+                      <span className="flex items-center gap-1.5 text-sm"><span className="truncate">{row.name}</span>{row.for_sale && <SaleMark priceCents={row.sale_price_cents} />}</span>
                       <span className={cn("num block text-xs text-muted-foreground", row.below_minimum && "text-destructive")}>{row.quantity} em estoque{row.below_minimum && " · abaixo do mínimo"}</span>
                     </span>
                     <IconChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />

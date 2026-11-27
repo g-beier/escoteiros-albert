@@ -17,7 +17,7 @@ import { addLot, writeOffLot } from '@/app/(inventario)/inventario/materiais/act
 import { ConditionPill } from '@/components/inventory/condition-pill';
 import { dateBR, writeOffOptions, type Condition } from '@/lib/inventory/vocabulary';
 import { ActionDialog, type FormAction } from '@/components/shell/action-dialog';
-import { ConditionField, EntryFields, Field, LocationField, NotesField, QuantityField, SelectField, VariantField } from './fields';
+import { ConditionField, EntryFields, Field, LocationField, NotesField, QuantityField, SaleFields, SelectField, VariantField } from './fields';
 
 // Saída do estoque como baixa (consumo, perda, descarte…), o caminho normal quando unidades saem. "Corrigir
 // contagem" fica para quando o registro estava errado. Usado no detalhe do material e na lista de Materiais.
@@ -160,10 +160,13 @@ export function WithdrawDialog({
 export function AddLotDialog({
   materialId,
   locations,
+  canSell = false,
   onOpenChange,
 }: {
   materialId: string;
   locations: Option[];
+  /** Editor do Inventário: o lote pode entrar já à venda na Lojinha. */
+  canSell?: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
   return (
@@ -184,6 +187,7 @@ export function AddLotDialog({
         <Input id="lot-new-expires" name="expiresOn" type="date" className="num" />
       </Field>
       <EntryFields prefix="lot-new" />
+      {canSell && <SaleFields prefix="lot-new" />}
     </ActionDialog>
   );
 }

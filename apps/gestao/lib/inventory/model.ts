@@ -6,6 +6,8 @@ import type { Condition, MovementChannel, MovementKind, Origin, ReviewStatus, Tr
 export type MaterialRow = {
   id: string; name: string; tracking: Tracking; consumable: boolean; minimum_quantity: number | null; active: boolean;
   quantity: number; next_expiry: string | null; below_minimum: boolean;
+  /** Lojinha (021): tem lote à venda com saldo; menor preço entre eles. */
+  for_sale: boolean; sale_price_cents: number | null;
 };
 
 /** Quantidade e valor de um material numa divisão (inventory_stock_by_location). */
@@ -17,11 +19,14 @@ export type StockRow = {
   conditions: Partial<Record<Condition, number>>;
   /** Faixa do valor unitário (lotes e peças sem valor ficam de fora). */
   min_unit_cents: number | null; max_unit_cents: number | null;
+  /** Lojinha (021): quantidade à venda na divisão (null = nada) e faixa de preço dos lotes à venda. */
+  sale_quantity?: number | null; min_sale_cents?: number | null; max_sale_cents?: number | null;
 };
 
 /** Material no detalhe, com família e totais. */
 export type Material = {
   id: string; name: string; tracking: Tracking; consumable: boolean; minimum_quantity: number | null; description: string | null; active: boolean;
+  for_sale: boolean; sale_price_cents: number | null;
   family_id: string | null; family_name: string | null; family_code: string | null;
   quantity: number; estimated_value_cents: number; next_expiry: string | null; below_minimum: boolean;
 };
@@ -39,6 +44,8 @@ export type Lot = {
   supplier: string | null; invoice: string | null; notes: string | null;
   /** Variação do item ("modelo antigo"): lotes com variação diferente não se juntam. */
   variant: string | null;
+  /** Lojinha (021): lote à venda no Financeiro, com preço próprio; lote à venda só junta com lote à venda do mesmo preço. */
+  for_sale: boolean; sale_price_cents: number | null;
 };
 export type LotRow = Lot & { path: string };
 
@@ -109,7 +116,7 @@ export type MaterialInput = {
 };
 
 /** Ações da edição em massa na lista de Materiais (`inventory_bulk`, 011). */
-export const BULK_ACTIONS = ["transferir", "condicao", "baixa", "familia", "consumivel"] as const;
+export const BULK_ACTIONS = ["transferir", "condicao", "baixa", "familia", "consumivel", "venda"] as const;
 export type BulkAction = (typeof BULK_ACTIONS)[number];
 /** Linha selecionada: o material numa divisão (`locationId` nulo = material sem estoque). */
 export type BulkTarget = { materialId: string; locationId: string | null };

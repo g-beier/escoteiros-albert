@@ -8,6 +8,7 @@ import type { EntryPage } from "@/lib/finance/entry-rows";
 import { parseEntrySort, parseFilters } from "@/lib/finance/filters";
 import { DataError } from "@/lib/server/db";
 import * as entries from "@/lib/server/finance/entries";
+import * as debts from "@/lib/server/finance/debts";
 import { financeAdminOrError, financeEditorOrError, memberOrError, type Member } from "@/lib/server/session";
 
 // Lançamentos (formulário, lista e ações em lote). As regras de quem pode o quê ficam nas funções SQL:
@@ -44,6 +45,31 @@ export async function createEntry(payload: unknown): Promise<Result> {
     const id = await entries.create(db, groupId, readEntry(payload));
     revalidatePath("/", "layout");
     return { success: true, id };
+  });
+}
+
+const debtLinesSchema = z.object({
+  date: z.iso.date({ message: "Informe a data." }),
+  lines: z.array(z.object({
+    associateId: z.uuid({ message: "Escolha o associado de cada linha de dívida." }),
+    categoryId: z.uuid({ message: "Escolha a rubrica de cada linha de dívida." }),
+    description: z.string().trim().min(2, "Descreva cada linha de dívida.").max(200),
+    amountCents: z.number().int().positive().nullable(),
+    items: z.array(z.object({ lotId: z.uuid(), quantity: z.number().int().positive(), unitPriceCents: z.number().int().nonnegative() })).default([]),
+  })).min(1, "Informe ao menos uma linha de dívida."),
+});
+
+/**
+ * Dívidas sem lançamento no caixa (024): "Nova dívida" em Devedores e lançamento sem valor recebido. Cada linha vai para
+ * a conta do seu associado; itens vendidos baixam o estoque na hora.
+ */
+export async function createDebtLines(payload: unknown): Promise<Result> {
+  return withMember(memberOrError, async ({ db, groupId }) => {
+    const parsed = debtLinesSchema.safeParse(payload);
+    if (!parsed.success) throw new InputError(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+    await debts.createLines(db, groupId, parsed.data);
+    revalidatePath("/", "layout");
+    return { success: true };
   });
 }
 

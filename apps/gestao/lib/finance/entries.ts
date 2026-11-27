@@ -1,3 +1,4 @@
+import type { SaleItem } from "./sales";
 import type { EntryView } from "@/lib/finance/entry-rows";
 
 export type EditableEntry = {
@@ -14,7 +15,13 @@ export type EditableEntry = {
   updatedAt: string;
   /** Veio do registro rápido e ainda não foi revisado (049). */
   toReview?: boolean;
-  splits: { categoryId: string; amountCents: number; description: string; associateId: string | null }[];
+  splits: {
+    categoryId: string; amountCents: number; description: string; associateId: string | null; items: SaleItem[];
+    /** Dívida que o rateio paga (023). */
+    debtId: string | null;
+  }[];
+  /** Linhas de dívida que este lançamento gerou (024): editáveis no formulário. */
+  debtLines?: { debtId: string; categoryId: string; description: string; associateId: string; amountCents: number; paidCents: number }[];
 };
 
 

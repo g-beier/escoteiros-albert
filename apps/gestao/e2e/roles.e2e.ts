@@ -11,7 +11,9 @@ const stamp = Date.now().toString(36);
 const chief = `e2e.chefe.${stamp}@example.org`;
 const contributor = `e2e.colaborador.${stamp}@example.org`;
 const financeEditor = `e2e.editor.fin.${stamp}@example.org`;
+const reader = `e2e.escotista.${stamp}@example.org`;
 const scouter = `${E2E_PREFIX} Chefe ${stamp}`;
+const scouterReader = `${E2E_PREFIX} Escotista ${stamp}`;
 const youth = `${E2E_PREFIX} Jovem ${stamp}`;
 const other = `${E2E_PREFIX} Outro ${stamp}`;
 
@@ -40,7 +42,12 @@ test.beforeAll(() => {
   psql(`insert into public.memberships(group_id, user_id, finance_role, inventory_role, associates_role)
     select ${literal(gid)}, id, 'editor', 'viewer', 'viewer' from auth.users where email = ${literal(financeEditor)}
     on conflict (group_id, user_id) do update set finance_role = 'editor', inventory_role = 'viewer', associates_role = 'viewer';`);
+  ensureUser(reader);
+  psql(`insert into public.memberships(group_id, user_id, finance_role, inventory_role, associates_role)
+    select ${literal(gid)}, id, 'none', 'none', 'viewer' from auth.users where email = ${literal(reader)}
+    on conflict (group_id, user_id) do update set finance_role = 'none', inventory_role = 'none', associates_role = 'viewer';`);
   const chiefId = psql(`select id from auth.users where email = ${literal(chief)};`);
+  const readerId = psql(`select id from auth.users where email = ${literal(reader)};`);
   // aniversário hoje: aparece em "Aniversários e promessas"
   asAdmin(`
     select public.create_section(${literal(gid)}, 'escoteiro', ${literal(`${E2E_PREFIX} Tropa ${stamp}`)}) as tropa \\gset
@@ -49,14 +56,17 @@ test.beforeAll(() => {
     select public.associates_create(${literal(gid)}, ${literal(youth)}, 'escoteiro', :'tropa', null, (current_date - interval '12 years')::date, null, null, null);
     select public.associates_create(${literal(gid)}, ${literal(other)}, 'lobinho', :'alcateia', null, (current_date - interval '8 years')::date, null, null, null);
     select public.associates_add_function(:'chefe', 'escotista', null, current_date, :'tropa');
-    select public.admin_link_member_associate(${literal(gid)}, ${literal(chiefId)}, :'chefe');`);
+    select public.admin_link_member_associate(${literal(gid)}, ${literal(chiefId)}, :'chefe');
+    select public.associates_create(${literal(gid)}, ${literal(scouterReader)}, 'adulto', null, null, null, null, null, null) as escotista \\gset
+    select public.associates_add_function(:'escotista', 'escotista', null, current_date, :'tropa');
+    select public.admin_link_member_associate(${literal(gid)}, ${literal(readerId)}, :'escotista');`);
 });
 
 test.afterAll(async () => {
   psql(`delete from public.ledger_entries where created_by = (select id from auth.users where email = ${literal(contributor)});`);
-  await deleteUsers([chief, contributor, financeEditor]);
+  await deleteUsers([chief, contributor, financeEditor, reader]);
   psql(`
-    delete from public.associates where name in (${[scouter, youth, other].map(literal).join(", ")});
+    delete from public.associates where name in (${[scouter, scouterReader, youth, other].map(literal).join(", ")});
     delete from public.sections where name like ${literal(`${E2E_PREFIX} % ${stamp}`)};`);
 });
 
@@ -91,6 +101,27 @@ test("chefe vê só o Inventário e os avisos da própria seção", async ({ bro
   await test.step("Inventário continua aberto", async () => {
     await page.goto("/inventario/materiais");
     await expect(page).toHaveURL(/\/inventario\/materiais/);
+  });
+  await page.context().close();
+});
+
+test("escotista com acesso ao Associados vê primeiro os avisos da própria seção", async ({ browser }) => {
+  const page = await pageAs(browser, reader);
+  const tabs = page.getByRole("navigation", { name: "Avisos de associados" });
+  const dates = page.getByRole("region", { name: "Aniversários e promessas" });
+
+  await test.step("padrão: só a seção, com link para o cadastro", async () => {
+    await expect(tabs.getByRole("link", { name: `${E2E_PREFIX} Tropa ${stamp}` })).toHaveAttribute("aria-current", "page");
+    await expect(dates).toContainText(youth);
+    await expect(dates).not.toContainText(other);
+    await expect(dates.getByRole("link", { name: new RegExp(youth) })).toBeVisible();
+  });
+
+  await test.step("Grupo todo mostra as outras seções", async () => {
+    await tabs.getByRole("link", { name: "Grupo todo" }).click();
+    await expect(page).toHaveURL(/avisos=grupo/);
+    await expect(dates).toContainText(youth);
+    await expect(dates).toContainText(other);
   });
   await page.context().close();
 });

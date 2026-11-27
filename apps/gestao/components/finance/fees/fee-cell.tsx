@@ -156,6 +156,9 @@ function FeeCellEditor({ name, month, state, record, suggestion, splits, onChang
         <p className="m-0 text-xs text-muted-foreground">{chosen
           ? "Observação e vínculos são gravados automaticamente."
           : "Escolha Pago, Atenção, Não pago ou Isento para gravar; depois disso, observação e vínculos são gravados automaticamente."}</p>
+        {chosen === "nao_pago" && <p className="m-0 text-xs text-muted-foreground">
+          “Não pago” vira dívida do mês em <Link href="/financeiro/mensalidades/devedores" className="text-primary hover:underline">Devedores</Link>, na rubrica de
+          mensalidade, quando a rubrica e o valor do ano estão configurados; quando ela for recebida (“Receber…”), o mês passa a Pago.</p>}
       </fieldset>
     </PopoverContent>
   </Popover>;

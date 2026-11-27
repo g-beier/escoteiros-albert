@@ -111,7 +111,11 @@ async function withAttachmentCounts<T extends { entry_id: string }>(db: Db, list
   return list.map((row) => ({ ...row, attachment_count: counts.get(row.entry_id) ?? 0 }));
 }
 
-type EntrySplitRow = { category_id: string; amount_cents: number; description: string; associate_id: string | null; created_at: string; id: string };
+type EntrySplitRow = {
+  category_id: string; amount_cents: number; description: string; associate_id: string | null; created_at: string; id: string;
+  items: { lot_id: string; quantity: number; unit_price_cents: number }[];
+  debt_id: string | null;
+};
 
 /** Carrega um lançamento com seus rateios na ordem em que foram gravados (RLS restringe ao grupo). */
 export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | null> {
@@ -122,11 +126,16 @@ export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | nu
     select e.id, e.entry_date, e.name, e.payment_method_id, e.account_id, e.document, e.document_filed, e.notes, e.total_cents, e.created_at,
       e.updated_at, e.review_status,
       coalesce((select json_agg(json_build_object('id', s.id, 'category_id', s.category_id, 'amount_cents', s.amount_cents,
-        'description', s.description, 'associate_id', s.associate_id, 'created_at', s.created_at))
+        'description', s.description, 'associate_id', s.associate_id, 'created_at', s.created_at, 'debt_id', s.debt_id,
+        'items', coalesce((select json_agg(json_build_object('lot_id', i.lot_id, 'quantity', i.quantity, 'unit_price_cents', i.unit_price_cents)
+          order by i.position) from public.entry_sale_items i where i.split_id = s.id), '[]')))
         from public.entry_splits s where s.entry_id = e.id), '[]') as entry_splits
     from public.ledger_entries e where e.id = ${id}`);
   if (!data) return null;
   const splits = [...data.entry_splits].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+  // Linhas de dívida que este lançamento gerou (024; função própria: o Colaborador não lê `debts`).
+  const lines = await rows<{ id: string; category_id: string; description: string; associate_id: string; amount_cents: number; paid_cents: number }>(db, (sql) => sql`
+    select id, category_id, description, associate_id, amount_cents::int as amount_cents, paid_cents::int as paid_cents from public.entry_debt_lines(${id})`);
   return {
     id: data.id,
     date: data.entry_date,
@@ -140,7 +149,13 @@ export async function fetchEntry(db: Db, id: string): Promise<EditableEntry | nu
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     toReview: data.review_status === "para_revisar",
-    splits: splits.map((s) => ({ categoryId: s.category_id, amountCents: s.amount_cents, description: s.description, associateId: s.associate_id })),
+    splits: splits.map((s) => ({
+      categoryId: s.category_id, amountCents: s.amount_cents, description: s.description, associateId: s.associate_id,
+      items: s.items.map((item) => ({ lotId: item.lot_id, quantity: item.quantity, unitPriceCents: Number(item.unit_price_cents) })),
+      debtId: s.debt_id,
+    })),
+    debtLines: lines.map((line) => ({ debtId: line.id, categoryId: line.category_id, description: line.description, associateId: line.associate_id,
+      amountCents: Number(line.amount_cents), paidCents: Number(line.paid_cents) })),
   };
 }
 
@@ -188,7 +203,7 @@ export async function countInAccount(db: Db, groupId: string, accountId: string)
 const entryArgs = (input: EntryInput) => ({
   p_entry_date: input.date, p_name: input.name, p_payment_method_id: input.paymentMethodId, p_account_id: input.accountId,
   p_document: input.document || null, p_document_filed: input.documentFiled, p_total_cents: input.totalCents,
-  p_splits: toRpcSplits(input.splits), p_notes: input.notes?.trim() || null,
+  p_splits: toRpcSplits(input.splits, input.debtLines), p_notes: input.notes?.trim() || null,
 });
 
 /** Cria o lançamento com os rateios numa transação; devolve o id. */

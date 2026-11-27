@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { Link } from "@geas/ui/components/link";
-import { IconAlertTriangle, IconArrowsMove, IconDeviceFloppy, IconDots, IconExternalLink, IconEye, IconEyeOff, IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconAlertTriangle, IconArrowsMove, IconDeviceFloppy, IconDots, IconPackage, IconExternalLink, IconEye, IconEyeOff, IconPlus, IconTrash } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { saveCategoryTree } from "@/app/(financeiro)/financeiro/configuracoes/actions";
 import { LedgerCodeInput } from "@/components/finance/ledger-code-input";
@@ -176,7 +176,7 @@ function needsLedgerCode(row: DraftRow) {
 type RowProps = {
   row: DraftRow; saved: Draft; canEdit: boolean; draggable: boolean; dragging: boolean; drop: DropPlace | null; autoFocus: boolean;
   rowProps: ReturnType<ReturnType<typeof useTreeDrag>["rowProps"]>; handleProps: { onDragStart: () => void; onDragEnd: () => void };
-  onChange: (patch: { name?: string; ledgerCode?: string | null; active?: boolean }) => void;
+  onChange: (patch: { name?: string; ledgerCode?: string | null; active?: boolean; sellsItems?: boolean }) => void;
   onAdd: () => void; onMove: () => void; onRemove: () => void;
 };
 
@@ -221,6 +221,9 @@ function CategoryTableRow({ row, saved, canEdit, draggable, dragging, drop, auto
     </TableCell>
     <TableCell className="px-3 py-1">
       <div className="flex items-center justify-end gap-1">
+        {row.sells && <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold", node.sellsItems ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}
+          title={node.sellsItems ? "Os lançamentos desta rubrica e das de baixo podem listar itens vendidos, que dão baixa no Inventário" : "Vende itens: herdado da rubrica de cima"}>
+          {node.sellsItems ? "Venda de itens" : "Venda (herdada)"}</span>}
         {!node.active && <span className="inline-flex rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">Inativa</span>}
         {canEdit && <DropdownMenu>
           <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={`Ações de ${title}`} />}><IconDots /></DropdownMenuTrigger>
@@ -232,6 +235,8 @@ function CategoryTableRow({ row, saved, canEdit, draggable, dragging, drop, auto
             {!node.isRoot && <>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
+                {row.kind === "receita" && <DropdownMenuItem onClick={() => onChange({ sellsItems: !node.sellsItems })}>
+                  <IconPackage /> {node.sellsItems ? "Desmarcar venda de itens" : "Marcar venda de itens (Lojinha)"}</DropdownMenuItem>}
                 <DropdownMenuItem onClick={() => onChange({ active: !node.active })}>{node.active ? <IconEyeOff /> : <IconEye />} {node.active ? "Inativar" : "Reativar"}</DropdownMenuItem>
                 <DropdownMenuItem variant="destructive" onClick={onRemove}><IconTrash /> Excluir{row.subtree.length > 1 ? " (com as de baixo)" : ""}</DropdownMenuItem>
               </DropdownMenuGroup>

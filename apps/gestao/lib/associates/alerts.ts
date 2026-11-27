@@ -179,3 +179,22 @@ export function relativeDay(days: number): string {
   if (days === -1) return "ontem";
   return days > 0 ? `em ${days} dias` : `há ${-days} dias`;
 }
+
+export type ScouterSection = { id: string; name: string };
+
+/**
+ * Seções em que a pessoa é escotista hoje (funções `escotista` em curso, com seção), na ordem do nome. Mesma regra de
+ * `associates_section_alert_rows` (002), usada no Início para mostrar primeiro os avisos da própria seção.
+ */
+export function scouterSections(
+  functions: { kind: string; section_id: string | null; section: string | null; started_on: string | null; ended_on: string | null }[],
+  today: string,
+): ScouterSection[] {
+  const sections = new Map<string, string>();
+  for (const f of functions) {
+    if (f.kind !== "escotista" || !f.section_id) continue;
+    if ((f.started_on && f.started_on > today) || (f.ended_on && f.ended_on < today)) continue;
+    sections.set(f.section_id, f.section ?? "Seção");
+  }
+  return [...sections].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+}

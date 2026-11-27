@@ -14,14 +14,15 @@
     "lint": "npm run lint --workspaces --if-present && npm run lint:eslint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "format": "npm run format --workspaces --if-present",
+    "format": "prettier --write .",
     "infra:start": "npm run infra:start --workspace=@geas/gestao",
     "infra:stop": "npm run infra:stop --workspace=@geas/gestao",
     "infra:status": "npm run infra:status --workspace=@geas/gestao",
     "infra:reset": "npm run infra:reset --workspace=@geas/gestao",
     "test:db": "npm run test:db --workspace=@geas/gestao",
     "test:e2e": "npm run test:e2e --workspace=@geas/gestao",
-    "prepare": "husky"
+    "prepare": "husky",
+    "format:check": "prettier --check ."
   },
   "engines": {
     "node": ">=22"
@@ -30,6 +31,12 @@
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
     "concurrently": "^9.2.5",
-    "husky": "^9.1.7"
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.2",
+    "prettier": "^3.10.1",
+    "prettier-plugin-tailwindcss": "^0.6.14"
+  },
+  "lint-staged": {
+    "*": "prettier --write --ignore-unknown"
   }
 }

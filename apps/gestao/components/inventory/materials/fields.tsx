@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { Checkbox } from "@geas/ui/components/checkbox";
 import { Input } from "@geas/ui/components/input";
 import { Label } from "@geas/ui/components/label";
 import { OptionSelect, type Option } from "@geas/ui/components/option-controls";
@@ -77,4 +78,24 @@ export function QuantityField({ id, label = "Quantidade", max, defaultValue, min
   return <Field id={id} label={label}>
     <Input id={id} name="quantity" type="number" inputMode="numeric" min={min} max={max} defaultValue={defaultValue} required className="num" />
   </Field>;
+}
+
+/**
+ * Lojinha (021): "À venda na Lojinha" e o preço de venda do lote (só para o Editor). O preço aparece com a marca e é
+ * sugerido no lançamento; lote à venda só junta com lote à venda do mesmo preço.
+ */
+export function SaleFields({ prefix, forSale = false, priceCents = null }: { prefix: string; forSale?: boolean; priceCents?: number | null }) {
+  const [checked, setChecked] = useState(forSale);
+  return <div className="grid gap-2 rounded-lg bg-muted/50 p-3 sm:col-span-2">
+    <div className="flex items-center gap-2">
+      <Checkbox id={`${prefix}-for-sale`} checked={checked} onCheckedChange={(value) => setChecked(value === true)} />
+      <Label htmlFor={`${prefix}-for-sale`}>À venda na Lojinha</Label>
+      <input type="hidden" name="forSale" value={checked ? "on" : "off"} />
+    </div>
+    {checked && <Field id={`${prefix}-sale-price`} label="Preço de venda (unidade)">
+      <Input id={`${prefix}-sale-price`} name="salePrice" inputMode="decimal" placeholder="Ex.: 25,00" className="num sm:max-w-40"
+        defaultValue={priceCents != null ? centsToInput(priceCents) : ""} />
+    </Field>}
+    <span className="text-[11px] text-muted-foreground">Aparece nos itens vendidos do Financeiro; a venda dá baixa neste lote.</span>
+  </div>;
 }

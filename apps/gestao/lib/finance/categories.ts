@@ -1,5 +1,9 @@
 export type CategoryKind = "receita" | "despesa";
-export type CategoryItem = { id: string; name: string; active: boolean; code: string | null; kind: CategoryKind | null; parent_id: string | null };
+export type CategoryItem = {
+  id: string; name: string; active: boolean; code: string | null; kind: CategoryKind | null; parent_id: string | null;
+  /** Rubrica marcada "venda de itens" (019; vale também para as filhas: `categorySellsItems`). */
+  sells_items?: boolean;
+};
 
 /** Ordem natural de códigos: 2.2.9 antes de 2.2.10; rubricas sem código por último. */
 export function compareCodes(a: string | null, b: string | null) {

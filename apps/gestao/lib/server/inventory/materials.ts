@@ -18,7 +18,8 @@ export async function list(db: Db, groupId: string, filters: MaterialFilters): P
   // Busca ampliada (043): cada palavra precisa aparecer em algum campo (nome, descrição, família, lotes, peças).
   const patterns = searchTerms(filters.search).map((term) => `%${term.replace(/[%_\\]/g, (c) => `\\${c}`)}%`);
   return rows<MaterialRow>(db, (sql) => sql`
-    select id, name, tracking, consumable, minimum_quantity, active, quantity, next_expiry, below_minimum
+    select id, name, tracking, consumable, minimum_quantity, active, quantity, next_expiry, below_minimum,
+      for_sale, sale_price_cents::int as sale_price_cents
     from public.inventory_material_rows where group_id = ${groupId}
       ${filters.includeInactive ? sql`` : sql`and active`}
       ${filters.familyId ? sql`and family_id = ${filters.familyId}` : sql``}
@@ -28,7 +29,8 @@ export async function list(db: Db, groupId: string, filters: MaterialFilters): P
 /** Quantidade, valor e validade de cada material em cada divisão. */
 export async function stockByLocation(db: Db, groupId: string): Promise<StockRow[]> {
   return rows<StockRow>(db, (sql) => sql`
-    select material_id, location_id, quantity, value_cents, next_expiry, worst_condition, conditions, min_unit_cents, max_unit_cents
+    select material_id, location_id, quantity, value_cents, next_expiry, worst_condition, conditions, min_unit_cents, max_unit_cents,
+      sale_quantity, min_sale_cents::int as min_sale_cents, max_sale_cents::int as max_sale_cents
     from public.inventory_stock_by_location where group_id = ${groupId}`);
 }
 
@@ -51,7 +53,7 @@ export async function countsOfYears(db: Db, groupId: string, years: number[]): P
 export async function get(db: Db, groupId: string, id: string): Promise<Material | null> {
   return one<Material>(db, (sql) => sql`
     select id, name, tracking, consumable, minimum_quantity, description, active, family_id, family_name, family_code, quantity,
-      estimated_value_cents, next_expiry, below_minimum
+      estimated_value_cents, next_expiry, below_minimum, for_sale, sale_price_cents::int as sale_price_cents
     from public.inventory_material_rows where id = ${id} and group_id = ${groupId}`);
 }
 
@@ -70,7 +72,8 @@ export async function getForEdit(db: Db, groupId: string, id: string): Promise<{
 /** Lotes com saldo, na ordem de entrada. */
 export async function lots(db: Db, materialId: string): Promise<Lot[]> {
   return rows<Lot>(db, (sql) => sql`
-    select id, location_id, quantity, condition, unit_value_cents, expires_on, acquired_on, origin, supplier, invoice, notes, variant
+    select id, location_id, quantity, condition, unit_value_cents, expires_on, acquired_on, origin, supplier, invoice, notes, variant,
+      for_sale, sale_price_cents::int as sale_price_cents
     from public.inventory_lots where material_id = ${materialId} and quantity > 0 order by created_at`);
 }
 
@@ -130,16 +133,23 @@ export async function save(db: Db, groupId: string, input: MaterialInput): Promi
   });
 }
 
+/** Lojinha (021, Editor): põe à venda (com preço) ou tira da venda o lote inteiro ou só parte dele (lote separado). */
+export async function setLotSale(db: Db, lotId: string, forSale: boolean, salePriceCents: number | null, quantity: number | null): Promise<void> {
+  await rpc(db, "inventory_set_lot_sale", { p_lot_id: lotId, p_for_sale: forSale, p_sale_price_cents: salePriceCents, p_quantity: quantity });
+}
+
 /**
  * Entrada por quantidade: soma num lote igual (mesma divisão, condição, validade e variação) ou cria um (046).
  * Devolve se somou num lote que já tinha saldo.
  */
 export async function addLot(db: Db, input: EntryInput & {
   materialId: string; locationId: string | null; quantity: number; condition: Condition | null; expiresOn: string | null; variant?: string | null;
+  /** Lojinha (021, Editor): entra já à venda, com preço. */
+  forSale?: boolean; salePriceCents?: number | null;
 }): Promise<{ merged: boolean }> {
   const lotId = await rpc(db, "inventory_add_lot", {
     p_material_id: input.materialId, p_location_id: input.locationId, p_quantity: input.quantity, p_condition: input.condition, p_expires_on: input.expiresOn,
-    p_variant: input.variant ?? null, ...entry(input),
+    p_variant: input.variant ?? null, ...entry(input), p_for_sale: input.forSale ?? false, p_sale_price_cents: input.forSale ? input.salePriceCents ?? null : null,
   });
   const quantity = await value<number>(db, (sql) => sql`select quantity from public.inventory_lots where id = ${lotId}`);
   return { merged: (quantity ?? 0) > input.quantity };
