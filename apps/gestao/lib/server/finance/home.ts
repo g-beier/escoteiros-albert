@@ -27,6 +27,17 @@ export async function pendingDocuments(db: Db, groupId: string): Promise<number>
   );
 }
 
+/** Valores em aberto (Devedores): quanto falta receber das dívidas e de quantos associados. */
+export async function openDebtTotals(db: Db, groupId: string): Promise<{ openCents: number; debtors: number }> {
+  const row = await one<{ open_cents: string | null; debtors: string }>(
+    db,
+    (sql) => sql`
+    select sum(amount_cents - paid_cents) as open_cents, count(distinct debtor_number) as debtors
+    from public.debt_rows(${groupId}) where amount_cents > paid_cents`,
+  );
+  return { openCents: Number(row?.open_cents ?? 0), debtors: Number(row?.debtors ?? 0) };
+}
+
 /** Linhas de extrato importadas e ainda não conciliadas nem ignoradas. */
 export async function openStatementLines(db: Db, groupId: string): Promise<number> {
   return count(

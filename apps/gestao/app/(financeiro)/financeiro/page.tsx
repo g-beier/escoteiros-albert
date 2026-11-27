@@ -16,7 +16,7 @@ import { pageSession } from "@/lib/server/session";
 
 const OVERDUE_SHOWN = 12;
 
-/** Resumo do Financeiro: o ano em números, saldo das contas, mês a mês, últimos lançamentos e mensalidades atrasadas. */
+/** Resumo do Financeiro: o ano em números, saldo das contas, valores em aberto (Devedores), mês a mês, últimos lançamentos e mensalidades atrasadas. */
 export default async function FinanceSummary() {
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
@@ -25,12 +25,13 @@ export default async function FinanceSummary() {
   const year = currentYear();
   const today = todayInSaoPaulo();
 
-  const [months, pendingDocs, accounts, recentRows, overdue] = await Promise.all([
+  const [months, pendingDocs, accounts, recentRows, overdue, openDebts] = await Promise.all([
     home.yearMonths(db, groupId, year),
     home.pendingDocuments(db, groupId),
     home.accountBalances(db, groupId, today),
     home.recentEntries(db, groupId, today),
     home.overdueFees(db, groupId, year),
+    home.openDebtTotals(db, groupId),
   ]);
   const income = months.reduce((sum, m) => sum + m.income, 0);
   const expense = months.reduce((sum, m) => sum + m.expense, 0);
@@ -66,7 +67,7 @@ export default async function FinanceSummary() {
           }
         />
 
-        <section aria-label="Totais" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <section aria-label="Totais" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <Stat
             label="Saldo nas contas hoje"
             value={formatCents(inAccounts)}
@@ -88,6 +89,16 @@ export default async function FinanceSummary() {
             label={`Saldo de ${year}`}
             value={formatCents(income - expense)}
             tone={income - expense < 0 ? "destructive" : "neutral"}
+          />
+          <Stat
+            label={
+              openDebts.debtors > 0
+                ? `Valores em aberto (${openDebts.debtors} ${openDebts.debtors === 1 ? "devedor" : "devedores"})`
+                : "Valores em aberto"
+            }
+            value={formatCents(openDebts.openCents)}
+            tone={openDebts.openCents > 0 ? "warning" : "neutral"}
+            href="/financeiro/mensalidades/devedores"
           />
           <Stat
             label="Documentos pendentes"
