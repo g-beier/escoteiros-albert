@@ -2,3 +2,14 @@ dist
 node_modules
 .github
 .changeset
+package-lock.json
+.next
+out
+build
+coverage
+test-results
+playwright-report
+.astro
+*.md
+*.mdx
+apps/gestao/lib/server/pg/schema.ts
