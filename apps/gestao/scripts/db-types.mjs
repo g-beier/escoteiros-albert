@@ -15,8 +15,15 @@ const target = resolve(root, "lib/server/pg/schema.ts");
 
 const SCALARS = {
   bool: "boolean",
-  int2: "number", int4: "number", int8: "number", float4: "number", float8: "number", numeric: "number", oid: "number",
-  json: "Json", jsonb: "Json",
+  int2: "number",
+  int4: "number",
+  int8: "number",
+  float4: "number",
+  float8: "number",
+  numeric: "number",
+  oid: "number",
+  json: "Json",
+  jsonb: "Json",
   void: "undefined",
 };
 
@@ -27,9 +34,13 @@ try {
     from pg_type t join pg_enum e on e.enumtypid = t.oid join pg_namespace n on n.oid = t.typnamespace
     where n.nspname = 'public' group by t.typname order by t.typname`;
 
-  const types = new Map((await sql`
+  const types = new Map(
+    (
+      await sql`
     select t.oid, t.typname, t.typtype, t.typelem, t.typrelid, n.nspname
-    from pg_type t join pg_namespace n on n.oid = t.typnamespace`).map((t) => [Number(t.oid), t]));
+    from pg_type t join pg_namespace n on n.oid = t.typnamespace`
+    ).map((t) => [Number(t.oid), t]),
+  );
 
   const tsType = (oid) => {
     const t = types.get(Number(oid));
@@ -83,7 +94,9 @@ try {
   }
   out.push("};");
   out.push("");
-  out.push("/** Funções SQL chamáveis por `rpc()`: argumentos (os com padrão são opcionais) e retorno como o `rpc` entrega. */");
+  out.push(
+    "/** Funções SQL chamáveis por `rpc()`: argumentos (os com padrão são opcionais) e retorno como o `rpc` entrega. */",
+  );
   out.push("export type Functions = {");
   const byName = new Map();
   for (const f of functions) byName.set(f.name, [...(byName.get(f.name) ?? []), f]);

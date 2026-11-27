@@ -6,12 +6,23 @@ export function money(value: number | string) {
 }
 
 export function dateBR(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
-    new Date(`${value}T12:00:00Z`),
-  );
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(new Date(`${value}T12:00:00Z`));
 }
 
-export const MONTHS_SHORT = ["jan.", "fev.", "mar.", "abr.", "maio", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."];
+export const MONTHS_SHORT = [
+  "jan.",
+  "fev.",
+  "mar.",
+  "abr.",
+  "maio",
+  "jun.",
+  "jul.",
+  "ago.",
+  "set.",
+  "out.",
+  "nov.",
+  "dez.",
+];
 
 /** Mês e ano de `AAAA-MM-DD`: "jan. 2026", "maio 2027". */
 export function monthYearBR(value: string) {

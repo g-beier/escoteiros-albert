@@ -39,7 +39,11 @@ test("secretaria: cadastrar, passagem, desligar e reingressar", async ({ page })
   await addSection(page, "Escoteiro", troop);
   await addSection(page, "Sênior", senior);
   await page.getByLabel(`Nova equipe em ${troop}`).fill(patrol);
-  await page.getByRole("row").filter({ has: page.getByLabel(`Nova equipe em ${troop}`) }).getByRole("button", { name: "Equipe" }).click();
+  await page
+    .getByRole("row")
+    .filter({ has: page.getByLabel(`Nova equipe em ${troop}`) })
+    .getByRole("button", { name: "Equipe" })
+    .click();
   await expect(page.getByText(`Equipe “${patrol}” cadastrada.`)).toBeVisible();
 
   // cadastro só com o ramo (seção e equipe vêm depois, pela edição), com nascimento e entrada
@@ -68,14 +72,20 @@ test("secretaria: cadastrar, passagem, desligar e reingressar", async ({ page })
   await page.getByRole("button", { name: "Salvar" }).click();
   await expect(page).toHaveURL(detail);
   await expect(registro).toHaveText("Definitivo");
-  await expect(page.locator("dt", { hasText: "Apelido" }).locator("xpath=following-sibling::dd[1]")).toHaveText("Teste");
+  await expect(page.locator("dt", { hasText: "Apelido" }).locator("xpath=following-sibling::dd[1]")).toHaveText(
+    "Teste",
+  );
   await expect(page.getByText(troop)).toBeVisible();
   await expect(page.getByText("Nenhuma passagem registrada.")).toBeVisible();
 
   // na lista: aba do ramo, só por ramo (seção e equipe como texto pequeno na linha)
   await page.goto("/associados?ramo=escoteiro");
-  await expect(page.getByRole("navigation", { name: "Ramos" }).getByRole("link", { name: "Escoteiro" })).toHaveAttribute("aria-current", "page");
-  await expect(page.getByRole("row").filter({ has: page.getByRole("link", { name: person }) })).toContainText(`${troop} › ${patrol}`);
+  await expect(
+    page.getByRole("navigation", { name: "Ramos" }).getByRole("link", { name: "Escoteiro" }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("row").filter({ has: page.getByRole("link", { name: person }) })).toContainText(
+    `${troop} › ${patrol}`,
+  );
   await expect(page.getByRole("cell", { name: new RegExp(`^${troop}`) })).toHaveCount(0);
   await page.getByRole("link", { name: person }).click();
 

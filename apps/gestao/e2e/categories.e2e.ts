@@ -9,7 +9,8 @@ test.afterAll(() => cleanupE2eGroup());
 
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /** Campo de nome da rubrica (rótulo "Nome de <código> <nome>"). */
-const nameField = (page: Page, name: string, code = "[\\d.]+") => page.getByLabel(new RegExp(`^Nome de ${code} ${escape(name)}$`));
+const nameField = (page: Page, name: string, code = "[\\d.]+") =>
+  page.getByLabel(new RegExp(`^Nome de ${code} ${escape(name)}$`));
 const row = (page: Page, name: string) => page.getByRole("row").filter({ has: nameField(page, name) });
 async function pick(page: Page, name: string, item: string | RegExp) {
   await page.getByRole("button", { name: new RegExp(`^Ações de [\\d.]+ ${escape(name)}$`) }).click();
@@ -52,7 +53,9 @@ test("rubricas: rascunho com arrastar, salvar e excluir levando os rateios para 
   await expect(nameField(page, second, escape(`${parentCode}.2`))).toBeVisible();
 
   // arrastar a segunda para o alto da primeira troca os códigos (só no rascunho até salvar)
-  await row(page, second).getByTitle("Arraste para mover").dragTo(row(page, first), { targetPosition: { x: 40, y: 3 } });
+  await row(page, second)
+    .getByTitle("Arraste para mover")
+    .dragTo(row(page, first), { targetPosition: { x: 40, y: 3 } });
   await expect(nameField(page, second, escape(`${parentCode}.1`))).toBeVisible();
   await expect(nameField(page, first, escape(`${parentCode}.2`))).toBeVisible();
   await expect(bar(page)).toContainText("2 códigos mudam");
@@ -60,7 +63,14 @@ test("rubricas: rascunho com arrastar, salvar e excluir levando os rateios para 
   await expect(page.getByText("Rubricas salvas.")).toBeVisible();
 
   // um rateio na filha; excluir a pai (com as de baixo) leva o rateio para 2 Despesas
-  await createEntry(page, { name: entry, direction: "saida", total: "12,00", account: E2E_ACCOUNTS[0], category: second, description: "e2e rubrica" });
+  await createEntry(page, {
+    name: entry,
+    direction: "saida",
+    total: "12,00",
+    account: E2E_ACCOUNTS[0],
+    category: second,
+    description: "e2e rubrica",
+  });
   await page.goto("/financeiro/configuracoes/rubricas");
   await pick(page, parent, /^Excluir/);
   await expect(nameField(page, second)).toHaveCount(0);

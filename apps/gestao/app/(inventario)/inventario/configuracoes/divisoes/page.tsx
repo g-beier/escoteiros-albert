@@ -11,14 +11,22 @@ export default async function LocationsPage() {
   if (!member) return <SetupNeeded email={user.email} />;
   const items = await locations.listForSettings(member.db, member.groupId);
 
-  return <div className="shell">
-    <AppHeader current="/inventario/configuracoes/divisoes" member={member} />
-    <PageBody width="narrow">
-      <PageHeader title="Configurações" tabs={<SettingsTabs current="divisoes" />} crumbs={settingsCrumbs("divisoes")}
-        description={member.inventory.canReview
-          ? "Onde os materiais do grupo ficam guardados. Arraste pela alça para reordenar ou pôr dentro de outra; clique numa divisão para ver o que há nela."
-          : "Onde os materiais do grupo ficam guardados. Só o gestor do inventário altera as divisões."} />
-      <LocationsManager locations={items} canManage={member.inventory.canReview} />
-    </PageBody>
-  </div>;
+  return (
+    <div className="shell">
+      <AppHeader current="/inventario/configuracoes/divisoes" member={member} />
+      <PageBody width="narrow">
+        <PageHeader
+          title="Configurações"
+          tabs={<SettingsTabs current="divisoes" />}
+          crumbs={settingsCrumbs("divisoes")}
+          description={
+            member.inventory.canReview
+              ? "Onde os materiais do grupo ficam guardados. Arraste pela alça para reordenar ou pôr dentro de outra; clique numa divisão para ver o que há nela."
+              : "Onde os materiais do grupo ficam guardados. Só o gestor do inventário altera as divisões."
+          }
+        />
+        <LocationsManager locations={items} canManage={member.inventory.canReview} />
+      </PageBody>
+    </div>
+  );
 }

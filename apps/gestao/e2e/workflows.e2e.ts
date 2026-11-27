@@ -24,7 +24,14 @@ test("mover lançamentos selecionados para outra conta", async ({ page }) => {
   const tag = uniqueName("Lote");
   const names = [`${tag} um`, `${tag} dois`];
   for (const name of names) {
-    await createEntry(page, { name, direction: "saida", total: "12,00", account: E2E_ACCOUNTS[0], category: "Telefone", description: "recarga" });
+    await createEntry(page, {
+      name,
+      direction: "saida",
+      total: "12,00",
+      account: E2E_ACCOUNTS[0],
+      category: "Telefone",
+      description: "recarga",
+    });
   }
   await page.goto("/financeiro/lancamentos/movimentacoes");
   await search(page, tag);
@@ -42,11 +49,20 @@ test("mover lançamentos selecionados para outra conta", async ({ page }) => {
   for (const name of names) await deleteFromDetail(page, name);
 });
 
-test("em lote: forma de pagamento e documentos (Movimentações); rubrica dos rateios (Detalhamento) e histórico", async ({ page }) => {
+test("em lote: forma de pagamento e documentos (Movimentações); rubrica dos rateios (Detalhamento) e histórico", async ({
+  page,
+}) => {
   const tag = uniqueName("Lote2");
   const names = [`${tag} um`, `${tag} dois`];
   for (const name of names) {
-    await createEntry(page, { name, direction: "saida", total: "8,00", account: E2E_ACCOUNTS[0], category: "Telefone", description: "recarga" });
+    await createEntry(page, {
+      name,
+      direction: "saida",
+      total: "8,00",
+      account: E2E_ACCOUNTS[0],
+      category: "Telefone",
+      description: "recarga",
+    });
   }
   await page.goto("/financeiro/lancamentos/movimentacoes");
   await search(page, tag);
@@ -72,9 +88,11 @@ test("em lote: forma de pagamento e documentos (Movimentações); rubrica dos ra
   await page.getByRole("dialog").getByRole("button", { name: "Trocar rubrica" }).click();
   await expect(page.getByText("Rubrica trocada em 2 lançamentos.")).toBeVisible();
   const splits = page.getByRole("region", { name: "Detalhamento" }).getByRole("table");
-  for (const name of names) await expect(splits.getByRole("row").filter({ hasText: name })).toContainText("Redes sociais");
+  for (const name of names)
+    await expect(splits.getByRole("row").filter({ hasText: name })).toContainText("Redes sociais");
   await page.reload();
-  for (const name of names) await expect(splits.getByRole("row").filter({ hasText: name })).toContainText("Redes sociais");
+  for (const name of names)
+    await expect(splits.getByRole("row").filter({ hasText: name })).toContainText("Redes sociais");
 
   // o histórico do lançamento registra a mudança em lote
   await splits.getByRole("link", { name: names[0], exact: true }).first().click();
@@ -85,10 +103,15 @@ test("em lote: forma de pagamento e documentos (Movimentações); rubrica dos ra
 test("importar lancamentos.csv, agrupar no Detalhamento e desagrupar", async ({ page }) => {
   const tag = uniqueName("Planilha");
   const [one, two] = [`${tag} um`, `${tag} dois`];
-  const csv = ["histórico;data;conta;forma de pagamento;valor;rubrica;descrição", `${one};15/03/2026;${E2E_ACCOUNTS[0]};PIX;12,00;2.1.2. Telefone;recarga um`,
-    `${two};15/03/2026;${E2E_ACCOUNTS[0]};PIX;8,00;2.1.2;recarga dois`].join("\n");
+  const csv = [
+    "histórico;data;conta;forma de pagamento;valor;rubrica;descrição",
+    `${one};15/03/2026;${E2E_ACCOUNTS[0]};PIX;12,00;2.1.2. Telefone;recarga um`,
+    `${two};15/03/2026;${E2E_ACCOUNTS[0]};PIX;8,00;2.1.2;recarga dois`,
+  ].join("\n");
   await page.goto("/importar");
-  await page.getByLabel("Arquivos CSV").setInputFiles({ name: "lancamentos.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") });
+  await page
+    .getByLabel("Arquivos CSV")
+    .setInputFiles({ name: "lancamentos.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") });
   await page.getByRole("button", { name: "Importar 2 linhas" }).click();
   await expect(page.getByText(/lancamentos\.csv: 2 novas/)).toBeVisible();
 
@@ -117,27 +140,42 @@ test("importar lancamentos.csv, agrupar no Detalhamento e desagrupar", async ({ 
   await expect(page.getByText("1 lançamento novo, um por rateio.")).toBeVisible();
   await page.goto("/financeiro/lancamentos/movimentacoes");
   await search(page, tag);
-  await expect(entriesTable(page).getByRole("row").filter({ has: page.getByRole("link", { name: merged, exact: true }) })).toHaveCount(2);
+  await expect(
+    entriesTable(page)
+      .getByRole("row")
+      .filter({ has: page.getByRole("link", { name: merged, exact: true }) }),
+  ).toHaveCount(2);
 });
 
 test("anexar, abrir e excluir um comprovante", async ({ page }) => {
   // comprovantes desligados por padrão (lib/features.ts); para testar: NEXT_PUBLIC_FEATURE_ATTACHMENTS=on npm run test:e2e
   test.skip(!ATTACHMENTS_ENABLED, "comprovantes desligados");
   const name = uniqueName("Comprovante");
-  await createEntry(page, { name, direction: "saida", total: "33,00", account: E2E_ACCOUNTS[0], category: "Telefone", description: "papelaria" });
+  await createEntry(page, {
+    name,
+    direction: "saida",
+    total: "33,00",
+    account: E2E_ACCOUNTS[0],
+    category: "Telefone",
+    description: "papelaria",
+  });
   await page.goto("/financeiro/lancamentos/movimentacoes");
   await search(page, name);
   await entryRow(page, name).getByRole("link", { name, exact: true }).click();
   const section = page.getByRole("region", { name: "Comprovantes" });
   await expect(section).toContainText("Nenhum comprovante anexado.");
   await section.getByLabel("Anexar comprovante").setInputFiles({
-    name: "nota-e2e.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"),
+    name: "nota-e2e.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"),
   });
   await expect(page.getByText("Comprovante anexado.")).toBeVisible();
   const link = section.getByRole("link", { name: "nota-e2e.pdf", exact: true });
   await expect(link).toBeVisible();
   // o download passa pela rota autenticada do app
-  const response = await page.request.get(await section.getByRole("link", { name: "Baixar nota-e2e.pdf" }).getAttribute("href") ?? "");
+  const response = await page.request.get(
+    (await section.getByRole("link", { name: "Baixar nota-e2e.pdf" }).getAttribute("href")) ?? "",
+  );
   expect(response.ok()).toBe(true);
   expect((await response.body()).subarray(0, 4).toString()).toBe("%PDF");
   // a lista mostra o clipe do comprovante
@@ -173,10 +211,14 @@ test("importar OFX, criar lançamento pela conciliação, filtrar Conciliado e d
     await expect(page).toHaveURL(/\/financeiro\/lancamentos\/novo\?linha=/);
     await expect(page.getByLabel(/^Valor total/)).toHaveValue("1500,00");
     await page.getByLabel("Histórico").fill(name);
-    if (!(await page.getByLabel("Forma de pagamento", { exact: true }).textContent())?.includes("PIX")) await chooseOption(page, "Forma de pagamento", "PIX");
+    if (!(await page.getByLabel("Forma de pagamento", { exact: true }).textContent())?.includes("PIX"))
+      await chooseOption(page, "Forma de pagamento", "PIX");
     const split = page.getByRole("group", { name: "Rubrica 1" });
     await split.getByRole("combobox", { name: "Rubrica" }).fill("Mensalidades");
-    await page.getByRole("option", { name: /Mensalidades/ }).first().click();
+    await page
+      .getByRole("option", { name: /Mensalidades/ })
+      .first()
+      .click();
     await split.getByLabel("Descrição").fill("mensalidades de outubro");
     await split.getByLabel(/^Valor \(R\$\)/).fill("1500,00");
     await page.getByRole("button", { name: "Salvar lançamento" }).click();
@@ -202,7 +244,10 @@ test("importar OFX, criar lançamento pela conciliação, filtrar Conciliado e d
     await chooseOption(page, "Conta", account);
     const recent = page.getByRole("region", { name: "Importações recentes" });
     await recent.getByRole("row").filter({ hasText: "nubank.ofx" }).getByRole("button", { name: "Desfazer" }).click();
-    await page.getByRole("dialog", { name: "Desfazer esta importação?" }).getByRole("button", { name: "Desfazer importação" }).click();
+    await page
+      .getByRole("dialog", { name: "Desfazer esta importação?" })
+      .getByRole("button", { name: "Desfazer importação" })
+      .click();
     await expect(recent).toContainText("Nenhum extrato importado nesta conta.");
     // o lançamento continua, agora sem conciliação
     await page.goto(`/financeiro/lancamentos/movimentacoes?de=tudo&conciliado=nao`);

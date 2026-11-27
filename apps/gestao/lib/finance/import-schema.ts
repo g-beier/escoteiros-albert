@@ -32,21 +32,26 @@ export type StatementLineInput = z.infer<typeof statementLineSchema>;
 const optionalDate = z.iso.date({ message: "Data inválida." }).optional().nullable();
 const settingsSchema = z.record(z.string(), z.unknown());
 
-export const importLinesSchema = z.object({
-  accountId: z.uuid({ message: "Escolha a conta." }),
-  profileId: z.uuid().optional().nullable(),
-  profileSettings: settingsSchema.optional().nullable(),
-  fileName: z.string().trim().min(1, "Arquivo sem nome.").max(255),
-  periodFrom: optionalDate,
-  periodTo: optionalDate,
-  openingBalanceCents: cents.optional().nullable(),
-  closingBalanceCents: cents.optional().nullable(),
-  lines: z.array(z.unknown()).min(1, "Nenhuma linha para importar.").max(MAX_IMPORT_LINES, `Importe no máximo ${MAX_IMPORT_LINES.toLocaleString("pt-BR")} linhas por vez.`),
-}).superRefine((value, ctx) => {
-  if (value.periodFrom && value.periodTo && value.periodFrom > value.periodTo) {
-    ctx.addIssue({ code: "custom", path: ["periodTo"], message: "O período termina antes de começar." });
-  }
-});
+export const importLinesSchema = z
+  .object({
+    accountId: z.uuid({ message: "Escolha a conta." }),
+    profileId: z.uuid().optional().nullable(),
+    profileSettings: settingsSchema.optional().nullable(),
+    fileName: z.string().trim().min(1, "Arquivo sem nome.").max(255),
+    periodFrom: optionalDate,
+    periodTo: optionalDate,
+    openingBalanceCents: cents.optional().nullable(),
+    closingBalanceCents: cents.optional().nullable(),
+    lines: z
+      .array(z.unknown())
+      .min(1, "Nenhuma linha para importar.")
+      .max(MAX_IMPORT_LINES, `Importe no máximo ${MAX_IMPORT_LINES.toLocaleString("pt-BR")} linhas por vez.`),
+  })
+  .superRefine((value, ctx) => {
+    if (value.periodFrom && value.periodTo && value.periodFrom > value.periodTo) {
+      ctx.addIssue({ code: "custom", path: ["periodTo"], message: "O período termina antes de começar." });
+    }
+  });
 
 export type ImportLinesInput = z.infer<typeof importLinesSchema>;
 
@@ -55,7 +60,8 @@ export function parseStatementLines(lines: unknown[]): { lines: StatementLineInp
   const parsed: StatementLineInput[] = [];
   for (const [index, line] of lines.entries()) {
     const result = statementLineSchema.safeParse(line);
-    if (!result.success) return { error: `Linha ${index + 1}: ${result.error.issues[0]?.message ?? "dados inválidos."}` };
+    if (!result.success)
+      return { error: `Linha ${index + 1}: ${result.error.issues[0]?.message ?? "dados inválidos."}` };
     parsed.push(result.data);
   }
   return { lines: parsed };
@@ -93,21 +99,38 @@ export type ImportResult = { importId: string; inserted: number; skippedDuplicat
 
 /** Converte o jsonb devolvido por `import_statement_lines`. */
 export function fromRpcImportResult(data: unknown): ImportResult | null {
-  const parsed = z.object({
-    import_id: z.uuid(), inserted: z.number().int(), skipped_duplicates: z.number().int(), skipped_by_user: z.number().int().catch(0),
-  }).safeParse(data);
-  return parsed.success ? {
-    importId: parsed.data.import_id, inserted: parsed.data.inserted, skippedDuplicates: parsed.data.skipped_duplicates, skippedByUser: parsed.data.skipped_by_user,
-  } : null;
+  const parsed = z
+    .object({
+      import_id: z.uuid(),
+      inserted: z.number().int(),
+      skipped_duplicates: z.number().int(),
+      skipped_by_user: z.number().int().catch(0),
+    })
+    .safeParse(data);
+  return parsed.success
+    ? {
+        importId: parsed.data.import_id,
+        inserted: parsed.data.inserted,
+        skippedDuplicates: parsed.data.skipped_duplicates,
+        skippedByUser: parsed.data.skipped_by_user,
+      }
+    : null;
 }
 
 /** Resumo para o toast: "12 linhas importadas, 3 já existiam." */
-export function importSummary({ inserted, skippedDuplicates, skippedByUser = 0 }: Pick<ImportResult, "inserted" | "skippedDuplicates"> & { skippedByUser?: number }) {
+export function importSummary({
+  inserted,
+  skippedDuplicates,
+  skippedByUser = 0,
+}: Pick<ImportResult, "inserted" | "skippedDuplicates"> & { skippedByUser?: number }) {
   const lines = (n: number) => `${n} ${n === 1 ? "linha" : "linhas"}`;
-  const head = inserted === 0 ? "Nenhuma linha nova" : `${lines(inserted)} ${inserted === 1 ? "importada" : "importadas"}`;
+  const head =
+    inserted === 0 ? "Nenhuma linha nova" : `${lines(inserted)} ${inserted === 1 ? "importada" : "importadas"}`;
   const parts = [
     skippedDuplicates ? `${skippedDuplicates} ${skippedDuplicates === 1 ? "já existia" : "já existiam"}` : "",
-    skippedByUser ? `${lines(skippedByUser)} ${skippedByUser === 1 ? "suspeita deixada" : "suspeitas deixadas"} de fora` : "",
+    skippedByUser
+      ? `${lines(skippedByUser)} ${skippedByUser === 1 ? "suspeita deixada" : "suspeitas deixadas"} de fora`
+      : "",
   ].filter(Boolean);
   return parts.length ? `${head}, ${parts.join(", ")}.` : `${head}.`;
 }
@@ -115,18 +138,39 @@ export function importSummary({ inserted, skippedDuplicates, skippedByUser = 0 }
 // Pré-conferência -------------------------------------------------------------------
 
 export type PreviewStatus = "nova" | "importada" | "suspeita";
-export type PreviewLine = { index: number; status: PreviewStatus; matchDescription: string | null; matchStatus: string | null };
-export type Orphan = { id: string; date: string; description: string; amountCents: number; status: "aberta" | "conciliada" | "ignorada" };
+export type PreviewLine = {
+  index: number;
+  status: PreviewStatus;
+  matchDescription: string | null;
+  matchStatus: string | null;
+};
+export type Orphan = {
+  id: string;
+  date: string;
+  description: string;
+  amountCents: number;
+  status: "aberta" | "conciliada" | "ignorada";
+};
 export type ImportPreview = { lines: PreviewLine[]; orphans: Orphan[] };
 
 const previewSchema = z.object({
-  lines: z.array(z.object({
-    index: z.number().int(), status: z.enum(["nova", "importada", "suspeita"]),
-    matchDescription: z.string().nullable().catch(null), matchStatus: z.string().nullable().catch(null),
-  })),
-  orphans: z.array(z.object({
-    id: z.uuid(), date: z.string(), description: z.string(), amountCents: z.number().int(), status: z.enum(["aberta", "conciliada", "ignorada"]),
-  })),
+  lines: z.array(
+    z.object({
+      index: z.number().int(),
+      status: z.enum(["nova", "importada", "suspeita"]),
+      matchDescription: z.string().nullable().catch(null),
+      matchStatus: z.string().nullable().catch(null),
+    }),
+  ),
+  orphans: z.array(
+    z.object({
+      id: z.uuid(),
+      date: z.string(),
+      description: z.string(),
+      amountCents: z.number().int(),
+      status: z.enum(["aberta", "conciliada", "ignorada"]),
+    }),
+  ),
 });
 
 /** Converte o jsonb de `preview_statement_lines`. */
@@ -153,14 +197,26 @@ const centsOrNull = z.coerce.number().int().nullable();
 
 /** Converte o jsonb de `account_balance_before`. */
 export function fromRpcAccountBalance(data: unknown): AccountBalance | null {
-  const parsed = z.object({
-    date: z.string(), opening_balance_cents: z.coerce.number().int(), opening_date: z.string().nullable(),
-    before_opening: z.boolean(), movements_cents: centsOrNull, entry_count: centsOrNull, balance_cents: centsOrNull,
-  }).safeParse(data);
+  const parsed = z
+    .object({
+      date: z.string(),
+      opening_balance_cents: z.coerce.number().int(),
+      opening_date: z.string().nullable(),
+      before_opening: z.boolean(),
+      movements_cents: centsOrNull,
+      entry_count: centsOrNull,
+      balance_cents: centsOrNull,
+    })
+    .safeParse(data);
   if (!parsed.success) return null;
   const d = parsed.data;
   return {
-    date: d.date, openingBalanceCents: d.opening_balance_cents, openingDate: d.opening_date, beforeOpening: d.before_opening,
-    movementsCents: d.movements_cents, entryCount: d.entry_count, balanceCents: d.balance_cents,
+    date: d.date,
+    openingBalanceCents: d.opening_balance_cents,
+    openingDate: d.opening_date,
+    beforeOpening: d.before_opening,
+    movementsCents: d.movements_cents,
+    entryCount: d.entry_count,
+    balanceCents: d.balance_cents,
   };
 }

@@ -1,15 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { addNode, createDraft, deletedTarget, draftChanges, draftPayload, draftRows, dropError, moveNode, removeNode, updateNode, type SavedCategory } from "./category-draft";
+import {
+  addNode,
+  createDraft,
+  deletedTarget,
+  draftChanges,
+  draftPayload,
+  draftRows,
+  dropError,
+  moveNode,
+  removeNode,
+  updateNode,
+  type SavedCategory,
+} from "./category-draft";
 
-const cat = (id: string, code: string | null, name: string, parent_id: string | null, usage = 0): SavedCategory =>
-  ({ id, code, name, parent_id, usage, active: true, ledger_code: null, kind: code?.startsWith("1") ? "receita" : code ? "despesa" : null });
+const cat = (id: string, code: string | null, name: string, parent_id: string | null, usage = 0): SavedCategory => ({
+  id,
+  code,
+  name,
+  parent_id,
+  usage,
+  active: true,
+  ledger_code: null,
+  kind: code?.startsWith("1") ? "receita" : code ? "despesa" : null,
+});
 const saved = [
-  cat("r", "1", "Receitas", null), cat("r1", "1.1", "Mensalidades", "r", 3),
-  cat("d", "2", "Despesas", null), cat("p", "2.1", "Programa", "d"), cat("a", "2.1.1", "Acampamento", "p", 2), cat("b", "2.1.2", "Acantonamento", "p"),
+  cat("r", "1", "Receitas", null),
+  cat("r1", "1.1", "Mensalidades", "r", 3),
+  cat("d", "2", "Despesas", null),
+  cat("p", "2.1", "Programa", "d"),
+  cat("a", "2.1.1", "Acampamento", "p", 2),
+  cat("b", "2.1.2", "Acantonamento", "p"),
   cat("x", "2.2", "Administrativas", "d"),
   cat("old", null, "Alimentação", null, 1),
 ];
-const codes = (draft: ReturnType<typeof createDraft>) => Object.fromEntries(draftRows(draft).map((row) => [row.node.name, row.code]));
+const codes = (draft: ReturnType<typeof createDraft>) =>
+  Object.fromEntries(draftRows(draft).map((row) => [row.node.name, row.code]));
 
 describe("category draft", () => {
   it("rebuilds the tree in code order, legacy without code at the end", () => {
@@ -39,7 +64,11 @@ describe("category draft", () => {
     expect(dropError(draft, "x", "d", "after")).toMatch(/Solte dentro/);
     let deep = draft;
     let parent = "x";
-    for (let i = 0; i < 3; i++) { const [next, key] = addNode(deep, parent); deep = next; parent = key; }
+    for (let i = 0; i < 3; i++) {
+      const [next, key] = addNode(deep, parent);
+      deep = next;
+      parent = key;
+    }
     expect(dropError(deep, "p", parent, "inside")).toMatch(/5 níveis/);
     // antiga sem código entra na árvore
     expect(dropError(draft, "old", "x", "inside")).toBeNull();
@@ -50,7 +79,11 @@ describe("category draft", () => {
     draft = removeNode(draft, "a");
     expect(deletedTarget(draft, draft.deleted[0])?.name).toBe("Programa");
     draft = removeNode(draft, "p");
-    expect(draft.deleted.map((item) => [item.name, deletedTarget(draft, item)?.name])).toEqual([["Acampamento", "Despesas"], ["Programa", "Despesas"], ["Acantonamento", "Despesas"]]);
+    expect(draft.deleted.map((item) => [item.name, deletedTarget(draft, item)?.name])).toEqual([
+      ["Acampamento", "Despesas"],
+      ["Programa", "Despesas"],
+      ["Acantonamento", "Despesas"],
+    ]);
     expect(codes(draft)).toMatchObject({ Administrativas: "2.1" });
     expect(removeNode(draft, "d")).toBe(draft);
   });
@@ -63,7 +96,12 @@ describe("category draft", () => {
     expect(draftChanges(draft, initial)).toMatchObject({ created: 1, renamed: 1, deleted: 1, movedSplits: 2 });
     const payload = draftPayload(draft);
     expect(payload.deleted).toEqual([{ id: "a", target: "p" }]);
-    expect(payload.nodes.find((node) => node.key === key)).toMatchObject({ id: null, parent: "x", position: 0, name: "Telefone" });
+    expect(payload.nodes.find((node) => node.key === key)).toMatchObject({
+      id: null,
+      parent: "x",
+      position: 0,
+      name: "Telefone",
+    });
     expect(payload.nodes.find((node) => node.key === "x")).toMatchObject({ parent: "d", position: 0 });
     expect(payload.nodes.some((node) => node.key === "d" || node.key === "old")).toBe(false);
   });

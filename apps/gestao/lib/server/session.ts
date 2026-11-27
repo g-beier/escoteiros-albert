@@ -21,8 +21,11 @@ export type ModulePermissions = {
 
 export function permissionsOf(role: ModuleRole): ModulePermissions {
   return {
-    role, canRead: roleAtLeast(role, "viewer"), canWrite: roleAtLeast(role, "contributor"),
-    canReview: roleAtLeast(role, "editor"), canAdmin: role === "admin",
+    role,
+    canRead: roleAtLeast(role, "viewer"),
+    canWrite: roleAtLeast(role, "contributor"),
+    canReview: roleAtLeast(role, "editor"),
+    canAdmin: role === "admin",
   };
 }
 
@@ -46,9 +49,7 @@ export type Member = {
 
 export const moduleOf = (member: Member, module: RoleModule): ModulePermissions => member[module];
 
-type Session =
-  | { user: null; member: null }
-  | { user: SessionUser; member: Member | null };
+type Session = { user: null; member: null } | { user: SessionUser; member: Member | null };
 
 const toRole = (value: string | null): ModuleRole => (isModuleRole(value) ? value : "none");
 
@@ -57,9 +58,18 @@ export const getSession = cache(async (): Promise<Session> => {
   const user = await currentUser();
   if (!user) return { user: null, member: null };
   const db = userDb(user.id);
-  const data = await one<{ group_id: string; finance_role: string; inventory_role: string; associates_role: string; associate_id: string | null }>(db, (sql) => sql`
+  const data = await one<{
+    group_id: string;
+    finance_role: string;
+    inventory_role: string;
+    associates_role: string;
+    associate_id: string | null;
+  }>(
+    db,
+    (sql) => sql`
     select group_id, finance_role, inventory_role, associates_role, associate_id
-    from public.memberships where user_id = ${user.id} order by created_at limit 1`);
+    from public.memberships where user_id = ${user.id} order by created_at limit 1`,
+  );
   if (!data) return { user, member: null };
   const finance = permissionsOf(toRole(data.finance_role));
   const inventory = permissionsOf(toRole(data.inventory_role));
@@ -67,7 +77,13 @@ export const getSession = cache(async (): Promise<Session> => {
   return {
     user,
     member: {
-      db, user, groupId: data.group_id, associateId: data.associate_id, finance, inventory, associates,
+      db,
+      user,
+      groupId: data.group_id,
+      associateId: data.associate_id,
+      finance,
+      inventory,
+      associates,
       managesUsers: finance.canAdmin || inventory.canAdmin || associates.canAdmin,
     },
   };
@@ -90,7 +106,9 @@ export async function pageMember(): Promise<Member> {
 /** Módulos que o membro vê (menu, seletor de módulo, layouts). */
 export type ModuleAccess = { financeiro: boolean; inventario: boolean; associados: boolean };
 export const moduleAccess = (member: Member | null): ModuleAccess => ({
-  financeiro: member?.finance.canRead ?? false, inventario: member?.inventory.canRead ?? false, associados: member?.associates.canRead ?? false,
+  financeiro: member?.finance.canRead ?? false,
+  inventario: member?.inventory.canRead ?? false,
+  associados: member?.associates.canRead ?? false,
 });
 
 /** Layout de um módulo: quem não tem acesso a ele volta para o Início (o banco já não deixaria ler os dados). */
@@ -118,25 +136,35 @@ async function allowed(test: (member: Member) => boolean, denied: string): Promi
 /** Financeiro: quem vê o módulo (rotas de leitura: exportações, anexos). */
 export const financeReaderOrError = (denied = "Sem acesso ao Financeiro.") => allowed((m) => m.finance.canRead, denied);
 /** Associados: quem vê o módulo (relatórios). */
-export const associatesReaderOrError = (denied = "Sem acesso ao Associados.") => allowed((m) => m.associates.canRead, denied);
+export const associatesReaderOrError = (denied = "Sem acesso ao Associados.") =>
+  allowed((m) => m.associates.canRead, denied);
 /** Financeiro, Colaborador ou mais: lançamentos e comprovantes. */
-export const financeWriterOrError = (denied = "Sem permissão para esta alteração.") => allowed((m) => m.finance.canWrite, denied);
+export const financeWriterOrError = (denied = "Sem permissão para esta alteração.") =>
+  allowed((m) => m.finance.canWrite, denied);
 /** Financeiro, Editor ou mais: revisão, cadastros, extrato, conciliação e mensalidades. */
-export const financeEditorOrError = (denied = "Apenas editores do Financeiro podem fazer esta alteração.") => allowed((m) => m.finance.canReview, denied);
+export const financeEditorOrError = (denied = "Apenas editores do Financeiro podem fazer esta alteração.") =>
+  allowed((m) => m.finance.canReview, denied);
 /** Ações em lote e importação de lançamentos (015): só o Administrador do Financeiro. */
-export const financeAdminOrError = (denied = "Ações em lote são do administrador do Financeiro.") => allowed((m) => m.finance.canAdmin, denied);
+export const financeAdminOrError = (denied = "Ações em lote são do administrador do Financeiro.") =>
+  allowed((m) => m.finance.canAdmin, denied);
 /** Inventário: quem vê o módulo (PDF de conferência). */
-export const inventoryReaderOrError = (denied = "Sem acesso ao Inventário.") => allowed((m) => m.inventory.canRead, denied);
+export const inventoryReaderOrError = (denied = "Sem acesso ao Inventário.") =>
+  allowed((m) => m.inventory.canRead, denied);
 /** Inventário, Colaborador ou mais: cadastra e movimenta material (o do Colaborador fica para revisar). */
-export const inventoryWriterOrError = (denied = "Sem permissão para esta alteração.") => allowed((m) => m.inventory.canWrite, denied);
+export const inventoryWriterOrError = (denied = "Sem permissão para esta alteração.") =>
+  allowed((m) => m.inventory.canWrite, denied);
 /** Inventário, Editor ou mais: revisão, divisões, famílias e contagens. */
-export const inventoryEditorOrError = (denied = "Apenas editores do Inventário podem fazer esta alteração.") => allowed((m) => m.inventory.canReview, denied);
+export const inventoryEditorOrError = (denied = "Apenas editores do Inventário podem fazer esta alteração.") =>
+  allowed((m) => m.inventory.canReview, denied);
 /** Associados, Colaborador ou mais: cadastro, funções, passagens, controle e responsáveis. */
-export const associatesWriterOrError = (denied = "Sem permissão para esta alteração.") => allowed((m) => m.associates.canWrite, denied);
+export const associatesWriterOrError = (denied = "Sem permissão para esta alteração.") =>
+  allowed((m) => m.associates.canWrite, denied);
 /** Associados, Editor ou mais: revisão, seções, itens de controle e importação. */
-export const associatesEditorOrError = (denied = "Apenas editores do Associados podem fazer esta alteração.") => allowed((m) => m.associates.canReview, denied);
+export const associatesEditorOrError = (denied = "Apenas editores do Associados podem fazer esta alteração.") =>
+  allowed((m) => m.associates.canReview, denied);
 /** Administrador de algum módulo (tela de Usuários; o banco confere módulo a módulo). */
-export const usersAdminOrError = (denied = "Apenas administradores gerenciam usuários.") => allowed((m) => m.managesUsers, denied);
+export const usersAdminOrError = (denied = "Apenas administradores gerenciam usuários.") =>
+  allowed((m) => m.managesUsers, denied);
 
 /** Variantes que lançam `Error` com a mensagem, para actions que já tratam exceções. */
 async function required(guard: Promise<Guard>): Promise<Member> {

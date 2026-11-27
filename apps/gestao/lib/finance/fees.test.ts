@@ -1,11 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { brazilHolidays, buildFeeRows, cellState, feeAmounts, feeBalance, monthsInGroup, priceForAssociate, dueDate, easter, monthSummary, overdueRanking, suggestFeeMonths, todayInSaoPaulo, type FeeSplit } from "./fees";
+import {
+  brazilHolidays,
+  buildFeeRows,
+  cellState,
+  feeAmounts,
+  feeBalance,
+  monthsInGroup,
+  priceForAssociate,
+  dueDate,
+  easter,
+  monthSummary,
+  overdueRanking,
+  suggestFeeMonths,
+  todayInSaoPaulo,
+  type FeeSplit,
+} from "./fees";
 
 describe("feriados", () => {
   it("calcula a Páscoa e os feriados móveis", () => {
     expect(easter(2026).toISOString().slice(0, 10)).toBe("2026-04-05");
     const holidays = brazilHolidays(2026);
-    for (const day of ["2026-02-16", "2026-02-17", "2026-04-03", "2026-06-04", "2026-04-21", "2026-11-20"]) expect(holidays.has(day)).toBe(true);
+    for (const day of ["2026-02-16", "2026-02-17", "2026-04-03", "2026-06-04", "2026-04-21", "2026-11-20"])
+      expect(holidays.has(day)).toBe(true);
   });
 });
 
@@ -43,13 +59,27 @@ describe("cellState", () => {
 });
 
 describe("suggestFeeMonths", () => {
-  const split = (splitId: string, associateId: string, entryDate: string, linkedPeriods: number[] = []): FeeSplit =>
-    ({ splitId, associateId, entryId: "e", entryDate, amountCents: 3000, description: "", linkedPeriods });
+  const split = (splitId: string, associateId: string, entryDate: string, linkedPeriods: number[] = []): FeeSplit => ({
+    splitId,
+    associateId,
+    entryId: "e",
+    entryDate,
+    amountCents: 3000,
+    description: "",
+    linkedPeriods,
+  });
   it("usa o mês do lançamento; se ocupado ou fora de março–dezembro, o primeiro livre", () => {
-    const result = suggestFeeMonths(2026, [
-      split("s1", "a", "2026-04-08"), split("s2", "a", "2026-04-20"), split("s3", "b", "2026-01-15"),
-      split("s4", "b", "2026-05-02", [202605]), split("s5", "c", "2025-12-01"),
-    ], [{ associateId: "a", month: 3, status: "pago", note: null, splitIds: [] }]);
+    const result = suggestFeeMonths(
+      2026,
+      [
+        split("s1", "a", "2026-04-08"),
+        split("s2", "a", "2026-04-20"),
+        split("s3", "b", "2026-01-15"),
+        split("s4", "b", "2026-05-02", [202605]),
+        split("s5", "c", "2025-12-01"),
+      ],
+      [{ associateId: "a", month: 3, status: "pago", note: null, splitIds: [] }],
+    );
     expect(result).toEqual([
       { associateId: "b", month: 3, splitId: "s3", status: "pago" },
       { associateId: "a", month: 4, splitId: "s1", status: "pago" },
@@ -61,8 +91,17 @@ describe("suggestFeeMonths", () => {
 describe("monthSummary", () => {
   it("conta cada estado por mês e soma atrasados com não pagos", () => {
     const row = (first: string) => [first, ...Array(9).fill("vazio")] as never;
-    expect(monthSummary([row("pago"), row("atrasado"), row("nao_pago"), row("sugestao")])[0])
-      .toEqual({ pago: 1, atencao: 0, nao_pago: 1, isento: 0, atrasado: 1, sugestao: 1, vazio: 0, fora: 0, late: 2 });
+    expect(monthSummary([row("pago"), row("atrasado"), row("nao_pago"), row("sugestao")])[0]).toEqual({
+      pago: 1,
+      atencao: 0,
+      nao_pago: 1,
+      isento: 0,
+      atrasado: 1,
+      sugestao: 1,
+      vazio: 0,
+      fora: 0,
+      late: 2,
+    });
     expect(monthSummary([row("pago")])[1].vazio).toBe(1);
   });
 });
@@ -75,8 +114,14 @@ describe("buildFeeRows e overdueRanking", () => {
     { id: "d", name: "Davi", branch: "senior", section: null, active: true },
   ];
   const rows = buildFeeRows({
-    year: 2026, today: "2026-05-20", settings: { dueRule: "dia_fixo", dueDay: 10, categoryId: null }, associates,
-    records: [{ associateId: "a", month: 3, status: "pago", note: null, splitIds: [] }, { associateId: "b", month: 3, status: "pago", note: null, splitIds: [] }],
+    year: 2026,
+    today: "2026-05-20",
+    settings: { dueRule: "dia_fixo", dueDay: 10, categoryId: null },
+    associates,
+    records: [
+      { associateId: "a", month: 3, status: "pago", note: null, splitIds: [] },
+      { associateId: "b", month: 3, status: "pago", note: null, splitIds: [] },
+    ],
     exemptions: [{ associateId: "d", reason: "Voluntário" }],
     suggestions: [{ associateId: "c", month: 4, splitId: "s", status: "pago" }],
   });
@@ -87,14 +132,25 @@ describe("buildFeeRows e overdueRanking", () => {
     expect(rows[3].overdue).toBe(0);
   });
   it("ranking de atrasos em ordem decrescente, sem isentos", () => {
-    expect(overdueRanking(rows).map((r) => [r.associate.name, r.overdue])).toEqual([["ana", 2], ["Bruno", 2], ["Carla", 2]]);
+    expect(overdueRanking(rows).map((r) => [r.associate.name, r.overdue])).toEqual([
+      ["ana", 2],
+      ["Bruno", 2],
+      ["Carla", 2],
+    ]);
   });
 });
 
 describe("feeAmounts", () => {
   it("soma por associado e por mês do lançamento; jan/fev fora da grade; outro ano não conta", () => {
-    const split = (associateId: string, entryDate: string, amountCents: number): FeeSplit =>
-      ({ splitId: `${associateId}${entryDate}`, associateId, entryId: "e", entryDate, amountCents, description: "", linkedPeriods: [] });
+    const split = (associateId: string, entryDate: string, amountCents: number): FeeSplit => ({
+      splitId: `${associateId}${entryDate}`,
+      associateId,
+      entryId: "e",
+      entryDate,
+      amountCents,
+      description: "",
+      linkedPeriods: [],
+    });
     const result = feeAmounts(2026, {
       a: [split("a", "2026-03-08", 9000), split("a", "2026-04-02", 3000)],
       b: [split("b", "2026-02-10", 3000), split("b", "2025-12-20", 3000)],
@@ -108,8 +164,15 @@ describe("feeAmounts", () => {
 
 describe("valor do ano", () => {
   const price = { monthlyCents: 6000, discountPct: 10, deadline: "2026-03-31" };
-  const split = (splitId: string, entryDate: string, amountCents: number): FeeSplit =>
-    ({ splitId, associateId: "a", entryId: "e", entryDate, amountCents, description: "", linkedPeriods: [] });
+  const split = (splitId: string, entryDate: string, amountCents: number): FeeSplit => ({
+    splitId,
+    associateId: "a",
+    entryId: "e",
+    entryDate,
+    amountCents,
+    description: "",
+    linkedPeriods: [],
+  });
   it("integral com desconto até a data-limite cobre os 10 meses", () => {
     const result = suggestFeeMonths(2026, [split("s1", "2026-03-20", 54000)], [], price);
     expect(result).toHaveLength(10);
@@ -121,29 +184,69 @@ describe("valor do ano", () => {
     expect(result.some((r) => r.integral || r.status !== "pago")).toBe(false);
   });
   it("mês do lançamento ocupado: começa no primeiro livre; sobra vira atenção com nota", () => {
-    const result = suggestFeeMonths(2026, [split("s1", "2026-05-05", 15000)], [{ associateId: "a", month: 5, status: "pago", note: null, splitIds: [] }], price);
-    expect(result.map((r) => [r.month, r.status, r.note])).toEqual([[3, "pago", undefined], [4, "pago", undefined], [6, "atencao", "pagou R$\u00a030,00 de R$\u00a060,00"]]);
+    const result = suggestFeeMonths(
+      2026,
+      [split("s1", "2026-05-05", 15000)],
+      [{ associateId: "a", month: 5, status: "pago", note: null, splitIds: [] }],
+      price,
+    );
+    expect(result.map((r) => [r.month, r.status, r.note])).toEqual([
+      [3, "pago", undefined],
+      [4, "pago", undefined],
+      [6, "atencao", "pagou R$\u00a030,00 de R$\u00a060,00"],
+    ]);
   });
   it("previsto, recebido e em aberto", () => {
-    expect(feeBalance({ exemption: null }, [split("s1", "2026-03-20", 54000)], 2026, price)).toEqual({ expected: 54000, received: 54000, open: 0, integral: true });
-    expect(feeBalance({ exemption: null }, [split("s1", "2026-04-20", 12000)], 2026, price)).toEqual({ expected: 60000, received: 12000, open: 48000, integral: false });
+    expect(feeBalance({ exemption: null }, [split("s1", "2026-03-20", 54000)], 2026, price)).toEqual({
+      expected: 54000,
+      received: 54000,
+      open: 0,
+      integral: true,
+    });
+    expect(feeBalance({ exemption: null }, [split("s1", "2026-04-20", 12000)], 2026, price)).toEqual({
+      expected: 60000,
+      received: 12000,
+      open: 48000,
+      integral: false,
+    });
     expect(feeBalance({ exemption: { associateId: "a", reason: "x" } }, [], 2026, price).expected).toBe(0);
   });
 });
 
 describe("valor individual e não pago", () => {
   it("valor individual substitui o do ano e mantém o desconto", () => {
-    expect(priceForAssociate({ monthlyCents: 6000, discountPct: 10, deadline: "2026-03-31" }, 4000)).toEqual({ monthlyCents: 4000, discountPct: 10, deadline: "2026-03-31" });
+    expect(priceForAssociate({ monthlyCents: 6000, discountPct: 10, deadline: "2026-03-31" }, 4000)).toEqual({
+      monthlyCents: 4000,
+      discountPct: 10,
+      deadline: "2026-03-31",
+    });
     expect(priceForAssociate(null, 0)).toEqual({ monthlyCents: 0, discountPct: 0, deadline: null });
-    const split = { splitId: "s", associateId: "irmao", entryId: "e", entryDate: "2026-04-05", amountCents: 8000, description: "", linkedPeriods: [] };
-    const result = suggestFeeMonths(2026, [split], [], (id) => priceForAssociate({ monthlyCents: 6000, discountPct: 0, deadline: null }, id === "irmao" ? 4000 : undefined));
-    expect(result.map((r) => [r.month, r.status])).toEqual([[4, "pago"], [5, "pago"]]);
+    const split = {
+      splitId: "s",
+      associateId: "irmao",
+      entryId: "e",
+      entryDate: "2026-04-05",
+      amountCents: 8000,
+      description: "",
+      linkedPeriods: [],
+    };
+    const result = suggestFeeMonths(2026, [split], [], (id) =>
+      priceForAssociate({ monthlyCents: 6000, discountPct: 0, deadline: null }, id === "irmao" ? 4000 : undefined),
+    );
+    expect(result.map((r) => [r.month, r.status])).toEqual([
+      [4, "pago"],
+      [5, "pago"],
+    ]);
   });
   it("não pago registrado conta como dívida", () => {
     const rows = buildFeeRows({
-      year: 2026, today: "2026-03-01", settings: { dueRule: "dia_fixo", dueDay: 10, categoryId: null },
+      year: 2026,
+      today: "2026-03-01",
+      settings: { dueRule: "dia_fixo", dueDay: 10, categoryId: null },
       associates: [{ id: "a", name: "Ana", branch: "lobinho", section: null, active: true }],
-      records: [{ associateId: "a", month: 3, status: "nao_pago", note: "viagem", splitIds: [] }], exemptions: [], suggestions: [],
+      records: [{ associateId: "a", month: 3, status: "nao_pago", note: "viagem", splitIds: [] }],
+      exemptions: [],
+      suggestions: [],
     });
     expect(rows[0].cells[0].state).toBe("nao_pago");
     expect(rows[0].overdue).toBe(1);
@@ -154,9 +257,19 @@ describe("valor individual e não pago", () => {
 describe("mês isento", () => {
   it("não conta como pago, dívida nem alerta e sai do previsto", () => {
     const rows = buildFeeRows({
-      year: 2026, today: "2026-12-31", settings: { dueRule: "dia_fixo", dueDay: 10, categoryId: null },
+      year: 2026,
+      today: "2026-12-31",
+      settings: { dueRule: "dia_fixo", dueDay: 10, categoryId: null },
       associates: [{ id: "a", name: "Ana", branch: "lobinho", section: null, active: true }],
-      records: [3, 4].map((month) => ({ associateId: "a", month, status: "isento" as const, note: "bolsa", splitIds: [] })), exemptions: [], suggestions: [],
+      records: [3, 4].map((month) => ({
+        associateId: "a",
+        month,
+        status: "isento" as const,
+        note: "bolsa",
+        splitIds: [],
+      })),
+      exemptions: [],
+      suggestions: [],
     });
     expect(rows[0].cells[0].state).toBe("isento");
     expect(rows[0]).toMatchObject({ paid: 0, overdue: 8, exemptMonths: 2, hidden: null });
@@ -171,19 +284,48 @@ describe("entradas e saídas", () => {
   it("sem movimentação, todos os meses; saída e retorno recortam o ano", () => {
     expect([...monthsInGroup(2026, [])]).toHaveLength(10);
     expect([...monthsInGroup(2026, [mv("2026-06-15", "saida")])]).toEqual([3, 4, 5, 6]);
-    expect([...monthsInGroup(2026, [mv("2026-06-15", "saida"), mv("2026-09-10", "entrada")])]).toEqual([3, 4, 5, 6, 9, 10, 11, 12]);
+    expect([...monthsInGroup(2026, [mv("2026-06-15", "saida"), mv("2026-09-10", "entrada")])]).toEqual([
+      3, 4, 5, 6, 9, 10, 11, 12,
+    ]);
     expect([...monthsInGroup(2026, [mv("2026-08-01", "entrada")])]).toEqual([8, 9, 10, 11, 12]);
     expect([...monthsInGroup(2026, [mv("2025-11-30", "saida")])]).toEqual([]);
   });
   it("fora do grupo: sem atraso, previsto proporcional e linha oculta se o ano todo", () => {
-    const base = { year: 2026, today: "2026-12-20", settings: { dueRule: "dia_fixo" as const, dueDay: 10, categoryId: null }, records: [], exemptions: [], suggestions: [] };
-    const rows = buildFeeRows({ ...base,
-      associates: [{ id: "a", name: "Ana", branch: "lobinho", section: null, active: true }, { id: "b", name: "Bia", branch: "lobinho", section: null, active: false }],
-      movements: [{ id: "m1", associateId: "a", date: "2026-06-15", kind: "saida", reason: "Evasão" }, { id: "m2", associateId: "b", date: "2025-12-01", kind: "saida", reason: null }],
+    const base = {
+      year: 2026,
+      today: "2026-12-20",
+      settings: { dueRule: "dia_fixo" as const, dueDay: 10, categoryId: null },
+      records: [],
+      exemptions: [],
+      suggestions: [],
+    };
+    const rows = buildFeeRows({
+      ...base,
+      associates: [
+        { id: "a", name: "Ana", branch: "lobinho", section: null, active: true },
+        { id: "b", name: "Bia", branch: "lobinho", section: null, active: false },
+      ],
+      movements: [
+        { id: "m1", associateId: "a", date: "2026-06-15", kind: "saida", reason: "Evasão" },
+        { id: "m2", associateId: "b", date: "2025-12-01", kind: "saida", reason: null },
+      ],
     });
-    expect(rows[0].cells.map((c) => c.state)).toEqual(["atrasado", "atrasado", "atrasado", "atrasado", "fora", "fora", "fora", "fora", "fora", "fora"]);
+    expect(rows[0].cells.map((c) => c.state)).toEqual([
+      "atrasado",
+      "atrasado",
+      "atrasado",
+      "atrasado",
+      "fora",
+      "fora",
+      "fora",
+      "fora",
+      "fora",
+      "fora",
+    ]);
     expect([rows[0].overdue, rows[0].monthsInGroup, rows[0].hidden]).toEqual([4, 4, null]);
     expect([rows[1].hidden, rows[1].overdue]).toEqual(["fora", 0]);
-    expect(feeBalance(rows[0], [], 2026, { monthlyCents: 6000, discountPct: 10, deadline: "2026-03-31" }).expected).toBe(24000);
+    expect(
+      feeBalance(rows[0], [], 2026, { monthlyCents: 6000, discountPct: 10, deadline: "2026-03-31" }).expected,
+    ).toBe(24000);
   });
 });

@@ -12,13 +12,34 @@ const TONES: Record<Condition, string> = {
 };
 
 /** Estado (condição) de um lote, peça ou linha da lista. `detail`: quebra quando a linha mistura condições. */
-export function ConditionPill({ condition, detail, className }: { condition: Condition | null; detail?: string; className?: string }) {
+export function ConditionPill({
+  condition,
+  detail,
+  className,
+}: {
+  condition: Condition | null;
+  detail?: string;
+  className?: string;
+}) {
   if (!condition) return <span className="text-muted-foreground">—</span>;
   const mixed = Boolean(detail);
-  return <span title={detail} className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap", TONES[condition], className)}>
-    <span className="size-1.5 shrink-0 rounded-full bg-current opacity-80" aria-hidden />
-    {CONDITION_LABELS[condition]}
-    {mixed && <span aria-hidden className="opacity-70">+</span>}
-    {mixed && <span className="sr-only"> (pior estado; {detail})</span>}
-  </span>;
+  return (
+    <span
+      title={detail}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap",
+        TONES[condition],
+        className,
+      )}
+    >
+      <span className="size-1.5 shrink-0 rounded-full bg-current opacity-80" aria-hidden />
+      {CONDITION_LABELS[condition]}
+      {mixed && (
+        <span aria-hidden className="opacity-70">
+          +
+        </span>
+      )}
+      {mixed && <span className="sr-only"> (pior estado; {detail})</span>}
+    </span>
+  );
 }

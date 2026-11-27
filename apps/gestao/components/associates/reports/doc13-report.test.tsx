@@ -10,11 +10,24 @@ import { Doc13Report } from "./doc13-report";
 
 const withBirths = <T extends { associates: { id: string; branch: string }[] }>(input: T): T => {
   const base: Record<string, number> = { filhote: 2021, lobinho: 2017, escoteiro: 2013, senior: 2010, pioneiro: 2006 };
-  return { ...input, associates: input.associates.map((a, i) => ({ ...a, birth_date: base[a.branch] ? `${base[a.branch] - (i % 4)}-${String((i % 12) + 1).padStart(2, "0")}-10` : null })) };
+  return {
+    ...input,
+    associates: input.associates.map((a, i) => ({
+      ...a,
+      birth_date: base[a.branch] ? `${base[a.branch] - (i % 4)}-${String((i % 12) + 1).padStart(2, "0")}-10` : null,
+    })),
+  };
 };
 const render = async (input: Parameters<typeof buildDoc13>[0], name: string) => {
   const report = reportBySlug("doc-13")!;
-  const pdf = await renderReport(<Doc13Report doc={buildDoc13(input)} title={report.title} footerName={reportFooterName(report)} issuedOn="2026-11-20" />);
+  const pdf = await renderReport(
+    <Doc13Report
+      doc={buildDoc13(input)}
+      title={report.title}
+      footerName={reportFooterName(report)}
+      issuedOn="2026-11-20"
+    />,
+  );
   if (process.env.REPORT_OUT) writeFileSync(`${process.env.REPORT_OUT}-${name}.pdf`, pdf);
   return pdf.toString("latin1");
 };

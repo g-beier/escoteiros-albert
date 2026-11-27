@@ -4,7 +4,12 @@ import { useEffect, useMemo, useState, useTransition, type ChangeEvent } from "r
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { IconFileUpload } from "@tabler/icons-react";
-import { importStatementLines, previewStatementImport, saveImportProfile, type ImportProfile } from "@/app/(financeiro)/financeiro/extrato/importar/actions";
+import {
+  importStatementLines,
+  previewStatementImport,
+  saveImportProfile,
+  type ImportProfile,
+} from "@/app/(financeiro)/financeiro/extrato/importar/actions";
 import { ignoreStatementLines } from "@/app/(financeiro)/financeiro/extrato/conciliar/actions";
 import type { ImportPreview } from "@/lib/finance/import-schema";
 import { dateBR, money } from "@/lib/format";
@@ -17,10 +22,24 @@ import { Button } from "@geas/ui/components/button";
 import { Checkbox } from "@geas/ui/components/checkbox";
 import { Label } from "@geas/ui/components/label";
 import {
-  dropZeroLines, isOfx, newOfxSettings, ofxSettingsFromProfile, parseTextList, profileForAccount, reconciliationHref,
-  sameSettings, toImportLines,
+  dropZeroLines,
+  isOfx,
+  newOfxSettings,
+  ofxSettingsFromProfile,
+  parseTextList,
+  profileForAccount,
+  reconciliationHref,
+  sameSettings,
+  toImportLines,
 } from "@/lib/finance/import-flow";
-import { applyOfxProfile, decodeBytes, readOfx, suggestKindPrefixes, type OfxProfileSettings, type OfxStatement } from "@/lib/finance/statement-import";
+import {
+  applyOfxProfile,
+  decodeBytes,
+  readOfx,
+  suggestKindPrefixes,
+  type OfxProfileSettings,
+  type OfxStatement,
+} from "@/lib/finance/statement-import";
 
 export type ImportAccount = { id: string; name: string; bank: string | null };
 
@@ -48,7 +67,12 @@ function importPeriod(statement: OfxStatement) {
  * são convertidos de outros formatos e não trazem banco/conta confiáveis. O perfil de leitura (separar MEMO,
  * prefixos de tipo, linhas a ignorar) é o da última importação da conta, aplicado sozinho e salvo ao importar.
  */
-export function StatementImporter({ accounts, profiles, lastProfiles, accountId: initialAccountId }: {
+export function StatementImporter({
+  accounts,
+  profiles,
+  lastProfiles,
+  accountId: initialAccountId,
+}: {
   accounts: ImportAccount[];
   profiles: ImportProfile[];
   /** Perfil da última importação de cada conta. */
@@ -69,7 +93,9 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
   /** Perfil e ajustes de leitura para a conta e o arquivo. */
   function loadReading(forAccount: string, statement: OfxStatement) {
     const match = profileForAccount(profiles, lastProfiles[forAccount], statement.signature) ?? null;
-    const next = match ? ofxSettingsFromProfile(match.settings) : newOfxSettings(statement.lines.map((line) => line.description));
+    const next = match
+      ? ofxSettingsFromProfile(match.settings)
+      : newOfxSettings(statement.lines.map((line) => line.description));
     setProfile(match);
     setSettings(next);
     setIgnoreText((next.ignoreIf ?? []).join("\n"));
@@ -79,15 +105,23 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
     setAccountId(id);
     if (file) loadReading(id, file.statement);
     // recarrega a lista de importações recentes da conta, sem perder o arquivo carregado
-    startNavigation(() => router.replace(`/financeiro/extrato/importar?conta=${encodeURIComponent(id)}`, { scroll: false }));
+    startNavigation(() =>
+      router.replace(`/financeiro/extrato/importar?conta=${encodeURIComponent(id)}`, { scroll: false }),
+    );
   }
 
   async function onFile(event: ChangeEvent<HTMLInputElement>) {
     const chosen = event.target.files?.[0];
     if (!chosen) return;
-    if (chosen.size > MAX_FILE_BYTES) { toast.error("Arquivo grande demais (máximo 10 MB)."); return; }
+    if (chosen.size > MAX_FILE_BYTES) {
+      toast.error("Arquivo grande demais (máximo 10 MB).");
+      return;
+    }
     const { text } = decodeBytes(new Uint8Array(await chosen.arrayBuffer()));
-    if (!isOfx(text)) { toast.error("Envie o extrato em OFX. Nos bancos, procure por “Exportar extrato” → OFX (Money/Quicken)."); return; }
+    if (!isOfx(text)) {
+      toast.error("Envie o extrato em OFX. Nos bancos, procure por “Exportar extrato” → OFX (Money/Quicken).");
+      return;
+    }
     const statement = readOfx(text);
     setFile({ name: chosen.name, statement });
     loadReading(accountId, statement);
@@ -111,19 +145,33 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
   const [includedSuspects, setIncludedSuspects] = useState<Set<number>>(new Set());
   const [ignoreOrphans, setIgnoreOrphans] = useState(true);
   // muda quando a conta ou o que define a impressão digital muda (não ao separar tipo/contraparte)
-  const linesHash = useMemo(() => statement ? hashText(statement.lines.map((l) => `${l.date};${l.amountCents};${l.description};${l.externalId ?? ""}`).join("\n")) : "", [statement]);
+  const linesHash = useMemo(
+    () =>
+      statement
+        ? hashText(
+            statement.lines.map((l) => `${l.date};${l.amountCents};${l.description};${l.externalId ?? ""}`).join("\n"),
+          )
+        : "",
+    [statement],
+  );
   const previewKey = account && statement ? `${account.id}|${statement.lines.length}|${linesHash}` : "";
   useEffect(() => {
     if (!previewKey || !account || !statement) return;
     let current = true;
     const period = importPeriod(statement);
-    previewStatementImport({ accountId: account.id, periodFrom: period.from ?? null, periodTo: period.to ?? null, lines: toImportLines(statement.lines) })
-      .then((result) => {
-        if (!current) return;
-        setPreview({ key: previewKey, data: result.data ?? null, error: result.error });
-        setIncludedSuspects(new Set());
-      });
-    return () => { current = false; };
+    previewStatementImport({
+      accountId: account.id,
+      periodFrom: period.from ?? null,
+      periodTo: period.to ?? null,
+      lines: toImportLines(statement.lines),
+    }).then((result) => {
+      if (!current) return;
+      setPreview({ key: previewKey, data: result.data ?? null, error: result.error });
+      setIncludedSuspects(new Set());
+    });
+    return () => {
+      current = false;
+    };
     // previewKey resume conta + linhas; statement/account vêm junto
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewKey]);
@@ -131,11 +179,16 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
   const previewLoading = !!previewKey && preview?.key !== previewKey;
   const statusOf = (index: number) => checked?.lines[index]?.status;
   const counts = { nova: 0, importada: 0, suspeita: 0 };
-  checked?.lines.forEach((line) => { counts[line.status] += 1; });
+  checked?.lines.forEach((line) => {
+    counts[line.status] += 1;
+  });
   const openOrphans = checked?.orphans.filter((orphan) => orphan.status === "aberta") ?? [];
   const willInsert = counts.nova + includedSuspects.size;
 
-  const changed = profile === null || (view !== null && (!sameSettings(profile.settings, view.settings) || profile.header_signature !== file?.statement.signature));
+  const changed =
+    profile === null ||
+    (view !== null &&
+      (!sameSettings(profile.settings, view.settings) || profile.header_signature !== file?.statement.signature));
   const canImport = !!account && !!statement && statement.lines.length > 0 && !!checked && willInsert > 0 && !pending;
 
   function profileName() {
@@ -158,7 +211,10 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
           headerSignature: file.statement.signature,
           settings: view.settings,
         });
-        if (saved.error || !saved.data) { toast.error(saved.error ?? "Não foi possível salvar o perfil de leitura."); return; }
+        if (saved.error || !saved.data) {
+          toast.error(saved.error ?? "Não foi possível salvar o perfil de leitura.");
+          return;
+        }
         usedProfileId = saved.data.id;
       }
       const period = importPeriod(statement);
@@ -173,85 +229,200 @@ export function StatementImporter({ accounts, profiles, lastProfiles, accountId:
         closingBalanceCents: statement.closingBalanceCents ?? null,
         // suspeitas desmarcadas vão com skip: o banco numera as ocorrências pelo arquivo inteiro
         lines: toImportLines(statement.lines).map((line, index) =>
-          statusOf(index) === "suspeita" && !includedSuspects.has(index) ? { ...line, skip: true } : line),
+          statusOf(index) === "suspeita" && !includedSuspects.has(index) ? { ...line, skip: true } : line,
+        ),
       });
-      if (result.error || !result.data) { toast.error(result.error ?? "Não foi possível importar o extrato."); return; }
+      if (result.error || !result.data) {
+        toast.error(result.error ?? "Não foi possível importar o extrato.");
+        return;
+      }
       toast.success(result.success);
       if (ignoreOrphans && openOrphans.length) {
-        const ignored = await ignoreStatementLines(openOrphans.map((orphan) => orphan.id), "Não consta no extrato importado depois");
+        const ignored = await ignoreStatementLines(
+          openOrphans.map((orphan) => orphan.id),
+          "Não consta no extrato importado depois",
+        );
         if (ignored.error) toast.error(`Órfãs não ignoradas: ${ignored.error}`);
       }
       router.push(reconciliationHref(account.id, period.from, period.to));
     });
   }
 
-  return <>
-    <SectionCard aria-labelledby="import-file-title">
-      <SectionHeader title="1. Banco e arquivo OFX" titleId="import-file-title" description="Escolha a conta do banco deste extrato. Nada é gravado até você confirmar." />
-      <div className="grid items-start gap-3 p-5 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
-        <div className="grid gap-1.5"><Label htmlFor="import-account">Conta</Label>
-          <OptionSelect id="import-account" value={accountId} onValueChange={chooseAccount} placeholder="Escolha o banco…" invalid={!!file && !account}
-            options={accounts.map((item) => ({ value: item.id, label: item.bank && item.bank !== item.name ? `${item.name} (${item.bank})` : item.name }))} /></div>
-        <div className="grid gap-1.5"><Label htmlFor="import-file">Arquivo do extrato</Label>
-          <label className="flex h-7 cursor-pointer items-center gap-2 rounded-md border border-dashed border-input bg-card px-2 text-xs hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring/30">
-            <IconFileUpload className="size-4 shrink-0 text-muted-foreground" />
-            <span className="truncate">{file ? file.name : "Escolher arquivo OFX…"}</span>
-            <input id="import-file" type="file" accept=".ofx,application/x-ofx" className="sr-only" onChange={onFile} />
-          </label>
-        </div>
-        {file && !account && <p role="alert" className="m-0 text-xs text-destructive sm:col-span-2">Escolha a conta do banco deste extrato para importar.</p>}
-      </div>
-    </SectionCard>
-
-    {file && view && statement && <SectionCard aria-labelledby="import-review-title">
-      <SectionHeader title="2. Conferência" titleId="import-review-title"
-        description={`As linhas entram abertas, para conciliar. Duplicatas de importações anteriores são puladas.${profile ? ` Leitura pelo perfil “${profile.name}”.` : ""}`}>
-        <Button onClick={runImport} disabled={!canImport}>{pending ? "Importando…" : previewLoading ? "Conferindo…" : `Importar ${willInsert} ${willInsert === 1 ? "linha" : "linhas"}`}</Button>
-      </SectionHeader>
-      <div className="grid gap-4 p-5">
-        <details className="rounded-md border bg-muted/30 px-3 py-2 text-xs">
-          <summary className="cursor-pointer font-semibold">Ajustes de leitura{profile && changed ? " (alterados: o perfil será atualizado ao importar)" : ""}</summary>
-          <div className="mt-3 grid gap-5">
-            <Label className="font-normal">
-              <Checkbox checked={!!view.settings.memoSplit} onCheckedChange={(checked) => setSettings({ ...view.settings, memoSplit: checked === true })} />
-              Separar o MEMO em “Tipo - Contraparte - …” (Nubank)
-            </Label>
-            <KindPrefixes selected={view.settings.kindPrefixes ?? []} suggestions={view.suggestions} onChange={(kindPrefixes) => setSettings({ ...view.settings, kindPrefixes })} />
-            <IgnoreList id="import-ignore" value={ignoreText} onChange={setIgnoreText} />
+  return (
+    <>
+      <SectionCard aria-labelledby="import-file-title">
+        <SectionHeader
+          title="1. Banco e arquivo OFX"
+          titleId="import-file-title"
+          description="Escolha a conta do banco deste extrato. Nada é gravado até você confirmar."
+        />
+        <div className="grid items-start gap-3 p-5 sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
+          <div className="grid gap-1.5">
+            <Label htmlFor="import-account">Conta</Label>
+            <OptionSelect
+              id="import-account"
+              value={accountId}
+              onValueChange={chooseAccount}
+              placeholder="Escolha o banco…"
+              invalid={!!file && !account}
+              options={accounts.map((item) => ({
+                value: item.id,
+                label: item.bank && item.bank !== item.name ? `${item.name} (${item.bank})` : item.name,
+              }))}
+            />
           </div>
-        </details>
-        {statement.lines.length === 0 && <p role="alert" className="m-0 text-xs text-destructive">Nenhuma linha para importar.</p>}
-        {!account && <p className="m-0 text-xs text-muted-foreground">Escolha a conta para conferir o que já foi importado nela.</p>}
-        {account && periodFrom && <OpeningBalanceCheck accountId={account.id} date={periodFrom} statement={statement} />}
-        {preview?.key === previewKey && preview.error && <p role="alert" className="m-0 text-xs text-destructive">Não foi possível conferir com o que já existe: {preview.error}</p>}
-        {checked && <div className="grid gap-2 rounded-md border px-3 py-2 text-xs">
-          <p className="m-0">
-            <strong className="num">{counts.nova}</strong> {counts.nova === 1 ? "nova" : "novas"}
-            {" · "}<strong className="num">{counts.importada}</strong> já {counts.importada === 1 ? "importada (será pulada)" : "importadas (serão puladas)"}
-            {counts.suspeita > 0 && <>{" · "}<strong className="num text-destructive">{counts.suspeita}</strong> {counts.suspeita === 1 ? "suspeita" : "suspeitas"}</>}
-            {checked.orphans.length > 0 && <>{" · "}<strong className="num text-destructive">{checked.orphans.length}</strong> {checked.orphans.length === 1 ? "órfã" : "órfãs"}</>}
-          </p>
-          {counts.suspeita > 0 && <p className="m-0 text-muted-foreground">
-            <strong className="text-foreground">Suspeitas</strong> têm a mesma data e valor de uma linha já importada, mas ID ou histórico diferentes — comum em OFX convertido de novo.
-            Ficam de fora; marque na tabela as que são movimentos diferentes de verdade.
-          </p>}
-          {checked.orphans.length > 0 && <details>
-            <summary className="cursor-pointer"><strong>Órfãs:</strong> linhas já importadas neste período que não aparecem no arquivo (ex.: lançamento pendente de um extrato parcial).</summary>
-            <ul className="m-0 mt-2 grid gap-1 pl-4">{checked.orphans.map((orphan) => <li key={orphan.id}>
-              <span className="num">{dateBR(orphan.date)}</span> {orphan.description} <span className="num">{money(orphan.amountCents / 100)}</span>
-              {orphan.status === "conciliada" && <strong className="text-destructive"> — conciliada com um lançamento: confira</strong>}
-            </li>)}</ul>
-            {openOrphans.length > 0 && <Label className="mt-2 font-normal">
-              <Checkbox checked={ignoreOrphans} onCheckedChange={(value) => setIgnoreOrphans(value === true)} />
-              Ignorar as {openOrphans.length} órfãs abertas ao importar (motivo “Não consta no extrato importado depois”; dá para reabrir na conciliação)
-            </Label>}
-          </details>}
-        </div>}
-        <ImportReview statement={statement} statuses={checked?.lines}
-          includedSuspects={includedSuspects}
-          onToggleSuspect={(index) => setIncludedSuspects((set) => { const next = new Set(set); if (next.has(index)) next.delete(index); else next.add(index); return next; })} />
-      </div>
-    </SectionCard>}
-  </>;
-}
+          <div className="grid gap-1.5">
+            <Label htmlFor="import-file">Arquivo do extrato</Label>
+            <label className="flex h-7 cursor-pointer items-center gap-2 rounded-md border border-dashed border-input bg-card px-2 text-xs focus-within:ring-2 focus-within:ring-ring/30 hover:bg-muted/50">
+              <IconFileUpload className="size-4 shrink-0 text-muted-foreground" />
+              <span className="truncate">{file ? file.name : "Escolher arquivo OFX…"}</span>
+              <input
+                id="import-file"
+                type="file"
+                accept=".ofx,application/x-ofx"
+                className="sr-only"
+                onChange={onFile}
+              />
+            </label>
+          </div>
+          {file && !account && (
+            <p role="alert" className="m-0 text-xs text-destructive sm:col-span-2">
+              Escolha a conta do banco deste extrato para importar.
+            </p>
+          )}
+        </div>
+      </SectionCard>
 
+      {file && view && statement && (
+        <SectionCard aria-labelledby="import-review-title">
+          <SectionHeader
+            title="2. Conferência"
+            titleId="import-review-title"
+            description={`As linhas entram abertas, para conciliar. Duplicatas de importações anteriores são puladas.${profile ? ` Leitura pelo perfil “${profile.name}”.` : ""}`}
+          >
+            <Button onClick={runImport} disabled={!canImport}>
+              {pending
+                ? "Importando…"
+                : previewLoading
+                  ? "Conferindo…"
+                  : `Importar ${willInsert} ${willInsert === 1 ? "linha" : "linhas"}`}
+            </Button>
+          </SectionHeader>
+          <div className="grid gap-4 p-5">
+            <details className="rounded-md border bg-muted/30 px-3 py-2 text-xs">
+              <summary className="cursor-pointer font-semibold">
+                Ajustes de leitura{profile && changed ? " (alterados: o perfil será atualizado ao importar)" : ""}
+              </summary>
+              <div className="mt-3 grid gap-5">
+                <Label className="font-normal">
+                  <Checkbox
+                    checked={!!view.settings.memoSplit}
+                    onCheckedChange={(checked) => setSettings({ ...view.settings, memoSplit: checked === true })}
+                  />
+                  Separar o MEMO em “Tipo - Contraparte - …” (Nubank)
+                </Label>
+                <KindPrefixes
+                  selected={view.settings.kindPrefixes ?? []}
+                  suggestions={view.suggestions}
+                  onChange={(kindPrefixes) => setSettings({ ...view.settings, kindPrefixes })}
+                />
+                <IgnoreList id="import-ignore" value={ignoreText} onChange={setIgnoreText} />
+              </div>
+            </details>
+            {statement.lines.length === 0 && (
+              <p role="alert" className="m-0 text-xs text-destructive">
+                Nenhuma linha para importar.
+              </p>
+            )}
+            {!account && (
+              <p className="m-0 text-xs text-muted-foreground">
+                Escolha a conta para conferir o que já foi importado nela.
+              </p>
+            )}
+            {account && periodFrom && (
+              <OpeningBalanceCheck accountId={account.id} date={periodFrom} statement={statement} />
+            )}
+            {preview?.key === previewKey && preview.error && (
+              <p role="alert" className="m-0 text-xs text-destructive">
+                Não foi possível conferir com o que já existe: {preview.error}
+              </p>
+            )}
+            {checked && (
+              <div className="grid gap-2 rounded-md border px-3 py-2 text-xs">
+                <p className="m-0">
+                  <strong className="num">{counts.nova}</strong> {counts.nova === 1 ? "nova" : "novas"}
+                  {" · "}
+                  <strong className="num">{counts.importada}</strong> já{" "}
+                  {counts.importada === 1 ? "importada (será pulada)" : "importadas (serão puladas)"}
+                  {counts.suspeita > 0 && (
+                    <>
+                      {" · "}
+                      <strong className="num text-destructive">{counts.suspeita}</strong>{" "}
+                      {counts.suspeita === 1 ? "suspeita" : "suspeitas"}
+                    </>
+                  )}
+                  {checked.orphans.length > 0 && (
+                    <>
+                      {" · "}
+                      <strong className="num text-destructive">{checked.orphans.length}</strong>{" "}
+                      {checked.orphans.length === 1 ? "órfã" : "órfãs"}
+                    </>
+                  )}
+                </p>
+                {counts.suspeita > 0 && (
+                  <p className="m-0 text-muted-foreground">
+                    <strong className="text-foreground">Suspeitas</strong> têm a mesma data e valor de uma linha já
+                    importada, mas ID ou histórico diferentes — comum em OFX convertido de novo. Ficam de fora; marque
+                    na tabela as que são movimentos diferentes de verdade.
+                  </p>
+                )}
+                {checked.orphans.length > 0 && (
+                  <details>
+                    <summary className="cursor-pointer">
+                      <strong>Órfãs:</strong> linhas já importadas neste período que não aparecem no arquivo (ex.:
+                      lançamento pendente de um extrato parcial).
+                    </summary>
+                    <ul className="m-0 mt-2 grid gap-1 pl-4">
+                      {checked.orphans.map((orphan) => (
+                        <li key={orphan.id}>
+                          <span className="num">{dateBR(orphan.date)}</span> {orphan.description}{" "}
+                          <span className="num">{money(orphan.amountCents / 100)}</span>
+                          {orphan.status === "conciliada" && (
+                            <strong className="text-destructive"> — conciliada com um lançamento: confira</strong>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    {openOrphans.length > 0 && (
+                      <Label className="mt-2 font-normal">
+                        <Checkbox
+                          checked={ignoreOrphans}
+                          onCheckedChange={(value) => setIgnoreOrphans(value === true)}
+                        />
+                        Ignorar as {openOrphans.length} órfãs abertas ao importar (motivo “Não consta no extrato
+                        importado depois”; dá para reabrir na conciliação)
+                      </Label>
+                    )}
+                  </details>
+                )}
+              </div>
+            )}
+            <ImportReview
+              statement={statement}
+              statuses={checked?.lines}
+              includedSuspects={includedSuspects}
+              onToggleSuspect={(index) =>
+                setIncludedSuspects((set) => {
+                  const next = new Set(set);
+                  if (next.has(index)) next.delete(index);
+                  else next.add(index);
+                  return next;
+                })
+              }
+            />
+          </div>
+        </SectionCard>
+      )}
+    </>
+  );
+}

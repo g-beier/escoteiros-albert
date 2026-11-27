@@ -12,14 +12,22 @@ export default async function ControlItemsPage() {
   const items = await controls.items(member.db, member.groupId);
   const canEdit = member.associates.canReview;
 
-  return <div className="shell">
-    <AppHeader current="/associados/configuracoes/itens" member={member} />
-    <PageBody width="narrow">
-      <PageHeader title="Configurações" tabs={<SettingsTabs current="itens" canReview={member.associates.canReview} />} crumbs={settingsCrumbs("itens")}
-        description={canEdit
-          ? "Itens do controle de dados pessoais (Doc 22), por diretoria: a quem se aplicam, validade e se saem no desligamento. Arraste pela alça para mudar a ordem das colunas da matriz."
-          : "Itens do controle de dados pessoais, por diretoria. Só a secretaria altera."} />
-      <ControlItemsManager items={items} canEdit={canEdit} />
-    </PageBody>
-  </div>;
+  return (
+    <div className="shell">
+      <AppHeader current="/associados/configuracoes/itens" member={member} />
+      <PageBody width="narrow">
+        <PageHeader
+          title="Configurações"
+          tabs={<SettingsTabs current="itens" canReview={member.associates.canReview} />}
+          crumbs={settingsCrumbs("itens")}
+          description={
+            canEdit
+              ? "Itens do controle de dados pessoais (Doc 22), por diretoria: a quem se aplicam, validade e se saem no desligamento. Arraste pela alça para mudar a ordem das colunas da matriz."
+              : "Itens do controle de dados pessoais, por diretoria. Só a secretaria altera."
+          }
+        />
+        <ControlItemsManager items={items} canEdit={canEdit} />
+      </PageBody>
+    </div>
+  );
 }

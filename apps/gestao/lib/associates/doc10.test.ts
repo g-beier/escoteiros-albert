@@ -17,13 +17,19 @@ describe("Doc 10", () => {
 
   it("totais, diretoria com eleitos e outros com a comissão fiscal em negrito", () => {
     expect(doc.totalScouters).toBe(2);
-    expect(doc.board).toEqual([{ id: "ana", name: "Ana Chefe", bold: true }, { id: "eva", name: "Eva Diretora" }]);
+    expect(doc.board).toEqual([
+      { id: "ana", name: "Ana Chefe", bold: true },
+      { id: "eva", name: "Eva Diretora" },
+    ]);
     expect(doc.totalDirectors).toBe(2);
     expect(doc.totalAdults).toBe(3); // Ana é escotista e dirigente: conta uma vez
     expect(doc.youth).toEqual({ definitive: 5, provisional: 1, total: 6 });
     expect(doc.basic).toBe(9);
     expect(doc.others.map((o) => [o.name, !!o.bold])).toEqual([
-      ["Fausto Fiscal", true], ["Hugo Honorário", false], ["Mãe Associada", false], ["Sara Sem Função", false],
+      ["Fausto Fiscal", true],
+      ["Hugo Honorário", false],
+      ["Mãe Associada", false],
+      ["Sara Sem Função", false],
     ]);
     expect(doc.totalOthers).toBe(4);
     expect(doc.totalDefinitive).toBe(11); // 13 ativos menos Caio e Eva
@@ -32,22 +38,43 @@ describe("Doc 10", () => {
 
   it("responsáveis: casa pelo legal e mãe/pai; irmãos mesclados; família recomposta linha a linha", () => {
     const family = (id: string) => doc.families.flatMap((s) => s.families).find((f) => f.youth.id === id)!;
-    expect(family("bia").relatives.map((r) => [r.id, r.associate, r.see])).toEqual([["pai", false, null], ["mae", true, null]]);
+    expect(family("bia").relatives.map((r) => [r.id, r.associate, r.see])).toEqual([
+      ["pai", false, null],
+      ["mae", true, null],
+    ]);
     expect(family("davi").seeMerged).toBe("Bia");
     // legais primeiro (Roberto, Inês), depois a Luana ("outro", não legal), mesmo cadastrada antes da Inês
-    expect(family("isa").relatives.map((r) => [r.id, r.notLegal, r.see])).toEqual([["roberto", false, null], ["ines", false, null], ["luana", true, "Solzinha"]]);
+    expect(family("isa").relatives.map((r) => [r.id, r.notLegal, r.see])).toEqual([
+      ["roberto", false, null],
+      ["ines", false, null],
+      ["luana", true, "Solzinha"],
+    ]);
     expect(family("isa").seeMerged).toBeNull();
-    expect(family("sol").relatives.map((r) => [r.id, r.notLegal, r.see])).toEqual([["luana", false, null], ["roberto", true, "Isa"]]);
+    expect(family("sol").relatives.map((r) => [r.id, r.notLegal, r.see])).toEqual([
+      ["luana", false, null],
+      ["roberto", true, "Isa"],
+    ]);
     expect(family("caio").relatives).toEqual([]);
   });
 
   it("asterisco = não é responsável legal, qualquer que seja o parentesco", () => {
     // Inês (mãe da Isa) sem ser responsável legal; Luana ("outro") responsável legal da Isa
-    const doc2 = buildDoc10({ ...input, links: input.links.map((l) =>
-      l.associate_id === "isa" && l.relative_id === "ines" ? { ...l, legal: false }
-        : l.associate_id === "isa" && l.relative_id === "luana" ? { ...l, legal: true } : l) });
+    const doc2 = buildDoc10({
+      ...input,
+      links: input.links.map((l) =>
+        l.associate_id === "isa" && l.relative_id === "ines"
+          ? { ...l, legal: false }
+          : l.associate_id === "isa" && l.relative_id === "luana"
+            ? { ...l, legal: true }
+            : l,
+      ),
+    });
     const isa = doc2.families.flatMap((s) => s.families).find((f) => f.youth.id === "isa")!;
-    expect(isa.relatives.map((r) => [r.id, r.notLegal])).toEqual([["roberto", false], ["luana", false], ["ines", true]]);
+    expect(isa.relatives.map((r) => [r.id, r.notLegal])).toEqual([
+      ["roberto", false],
+      ["luana", false],
+      ["ines", true],
+    ]);
   });
 
   it("linhas vazias e colunas na mesma altura", () => {

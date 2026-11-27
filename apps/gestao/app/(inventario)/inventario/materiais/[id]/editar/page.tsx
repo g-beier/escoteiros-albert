@@ -10,7 +10,13 @@ import * as families from "@/lib/server/inventory/families";
 import * as materials from "@/lib/server/inventory/materials";
 import { pageSession } from "@/lib/server/session";
 
-export default async function EditMaterial({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ voltar?: string }> }) {
+export default async function EditMaterial({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ voltar?: string }>;
+}) {
   const [{ id }, { voltar }] = await Promise.all([params, searchParams]);
   const back = materialsBackHref(voltar);
   const detailHref = withBack(`/inventario/materiais/${id}`, back);
@@ -22,16 +28,27 @@ export default async function EditMaterial({ params, searchParams }: { params: P
   if (!found) notFound();
   const { material, hasStock } = found;
   const familyOptions = await families.listOptions(member.db, member.groupId, material.family_id);
-  return <div className="shell">
-    <AppHeader current={`/inventario/materiais/${id}`} member={member} />
-    <PageBody width="narrow">
-      <PageHeader title={`Editar ${material.name}`}
-        crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais", href: back }, { label: material.name, href: detailHref }, { label: "Editar" }]} />
-      {!member.inventory.canReview && <ReviewNotice />}
-      <SectionCard>
-        <SectionHeader title="Material" />
-        <div className="p-4"><MaterialForm families={familyOptions} material={material} hasStock={hasStock} back={back} /></div>
-      </SectionCard>
-    </PageBody>
-  </div>;
+  return (
+    <div className="shell">
+      <AppHeader current={`/inventario/materiais/${id}`} member={member} />
+      <PageBody width="narrow">
+        <PageHeader
+          title={`Editar ${material.name}`}
+          crumbs={[
+            { label: "Inventário", href: "/inventario" },
+            { label: "Materiais", href: back },
+            { label: material.name, href: detailHref },
+            { label: "Editar" },
+          ]}
+        />
+        {!member.inventory.canReview && <ReviewNotice />}
+        <SectionCard>
+          <SectionHeader title="Material" />
+          <div className="p-4">
+            <MaterialForm families={familyOptions} material={material} hasStock={hasStock} back={back} />
+          </div>
+        </SectionCard>
+      </PageBody>
+    </div>
+  );
 }

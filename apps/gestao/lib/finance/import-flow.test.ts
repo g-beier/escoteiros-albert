@@ -1,7 +1,18 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
-  dropZeroLines, fileOpeningBalance, isOfx, openingDifference, profileAccountUses, profileSettingsSummary, newOfxSettings, ofxSettingsFromProfile, parseTextList, profileForAccount, reconciliationHref, sameSettings,
+  dropZeroLines,
+  fileOpeningBalance,
+  isOfx,
+  openingDifference,
+  profileAccountUses,
+  profileSettingsSummary,
+  newOfxSettings,
+  ofxSettingsFromProfile,
+  parseTextList,
+  profileForAccount,
+  reconciliationHref,
+  sameSettings,
   toImportLines,
 } from "@/lib/finance/import-flow";
 import { importLinesSchema, parseStatementLines } from "@/lib/finance/import-schema";
@@ -28,7 +39,11 @@ describe("perfil novo", () => {
 
 describe("perfis salvos", () => {
   it("lê configurações salvas e completa as que faltam", () => {
-    expect(ofxSettingsFromProfile({ memoSplit: true, ignoreIf: ["X"] })).toEqual({ memoSplit: true, kindPrefixes: [], ignoreIf: ["X"] });
+    expect(ofxSettingsFromProfile({ memoSplit: true, ignoreIf: ["X"] })).toEqual({
+      memoSplit: true,
+      kindPrefixes: [],
+      ignoreIf: ["X"],
+    });
     expect(ofxSettingsFromProfile(null)).toEqual({ memoSplit: false, kindPrefixes: [], ignoreIf: [] });
   });
 
@@ -58,7 +73,10 @@ describe("envio", () => {
   it("tira linhas de valor zero e as mostra como ignoradas", () => {
     const result = dropZeroLines(statement);
     expect(result.lines.map((line) => line.sourceRow)).toEqual([3, 5]);
-    expect(result.ignored).toEqual([{ sourceRow: 2, reason: "Valor zero" }, { sourceRow: 4, reason: 'Contém "SALDO"' }]);
+    expect(result.ignored).toEqual([
+      { sourceRow: 2, reason: "Valor zero" },
+      { sourceRow: 4, reason: 'Contém "SALDO"' },
+    ]);
     expect(dropZeroLines(result)).toBe(result);
   });
 
@@ -67,11 +85,15 @@ describe("envio", () => {
     expect(first).toMatchObject({ description: "Fulano", counterparty: "Fulano", amountCents: -500 });
     expect(second.description).toHaveLength(500);
     expect(second.kind).toHaveLength(200);
-    expect(toImportLines([{ date: "2026-01-01", amountCents: 1, description: "", sourceRow: 1 }])[0].description).toBe("Sem histórico");
+    expect(toImportLines([{ date: "2026-01-01", amountCents: 1, description: "", sourceRow: 1 }])[0].description).toBe(
+      "Sem histórico",
+    );
   });
 
   it("monta o link da conciliação", () => {
-    expect(reconciliationHref("abc", "2026-10-01", "2026-10-31")).toBe("/financeiro/extrato/conciliar?conta=abc&de=2026-10-01&ate=2026-10-31");
+    expect(reconciliationHref("abc", "2026-10-01", "2026-10-31")).toBe(
+      "/financeiro/extrato/conciliar?conta=abc&de=2026-10-01&ate=2026-10-31",
+    );
     expect(reconciliationHref("abc")).toBe("/financeiro/extrato/conciliar?conta=abc");
   });
 });
@@ -79,11 +101,20 @@ describe("envio", () => {
 describe("arquivo sem perfil até o payload do servidor", () => {
   it.each(["nubank.ofx", "itau.ofx"])("%s gera linhas aceitas pela validação", (name) => {
     const { text } = fixture(name);
-    const statement = applyOfxProfile(readOfx(text), newOfxSettings(readOfx(text).lines.map((line) => line.description)));
+    const statement = applyOfxProfile(
+      readOfx(text),
+      newOfxSettings(readOfx(text).lines.map((line) => line.description)),
+    );
     const lines = toImportLines(dropZeroLines(statement).lines);
     expect(lines.length).toBeGreaterThan(0);
     expect(parseStatementLines(lines)).toEqual({ lines: expect.any(Array) });
-    const payload = { accountId: "00000000-0000-4000-8000-000000000001", fileName: name, periodFrom: statement.periodFrom, periodTo: statement.periodTo, lines };
+    const payload = {
+      accountId: "00000000-0000-4000-8000-000000000001",
+      fileName: name,
+      periodFrom: statement.periodFrom,
+      periodTo: statement.periodTo,
+      lines,
+    };
     expect(importLinesSchema.safeParse(payload).success).toBe(true);
   });
 
@@ -97,17 +128,28 @@ describe("arquivo sem perfil até o payload do servidor", () => {
 });
 
 describe("saldo inicial do arquivo", () => {
-  const base: ParsedStatement = { lines: [], errors: [], ignored: [], totals: { creditsCents: 500, debitsCents: -200, netCents: 300 } };
+  const base: ParsedStatement = {
+    lines: [],
+    errors: [],
+    ignored: [],
+    totals: { creditsCents: 500, debitsCents: -200, netCents: 300 },
+  };
 
   it("prefere o SALDO ANTERIOR; senão, saldo final menos os movimentos", () => {
-    expect(fileOpeningBalance({ ...base, openingBalanceCents: 1000, closingBalanceCents: 1300 })).toEqual({ cents: 1000, source: "saldo-anterior" });
+    expect(fileOpeningBalance({ ...base, openingBalanceCents: 1000, closingBalanceCents: 1300 })).toEqual({
+      cents: 1000,
+      source: "saldo-anterior",
+    });
     expect(fileOpeningBalance({ ...base, closingBalanceCents: 1300 })).toEqual({ cents: 1000, source: "saldo-final" });
     expect(fileOpeningBalance(base)).toBeNull();
   });
 
   it("Nubank: LEDGERBAL menos os movimentos", () => {
     const statement = readOfx(fixture("nubank.ofx").text);
-    expect(fileOpeningBalance(statement)).toEqual({ cents: statement.closingBalanceCents! - statement.totals.netCents, source: "saldo-final" });
+    expect(fileOpeningBalance(statement)).toEqual({
+      cents: statement.closingBalanceCents! - statement.totals.netCents,
+      source: "saldo-final",
+    });
   });
 
   it("calcula a diferença só com os dois saldos", () => {
@@ -120,13 +162,19 @@ describe("saldo inicial do arquivo", () => {
 
 describe("lista de perfis", () => {
   it("conta importações por conta e marca o perfil atual de cada conta", () => {
-    const uses = profileAccountUses([
-      { profile_id: "a", account_id: "nu", imported_at: "2026-10-01T10:00:00Z" },
-      { profile_id: "a", account_id: "nu", imported_at: "2026-10-05T10:00:00Z" },
-      { profile_id: "b", account_id: "nu", imported_at: "2026-11-01T10:00:00Z" },
-      { profile_id: "a", account_id: "cora", imported_at: "2026-11-02T10:00:00Z" },
-      { profile_id: null, account_id: "cora", imported_at: "2026-11-03T10:00:00Z" },
-    ], [{ id: "nu", name: "Nubank" }, { id: "cora", name: "Cora" }]);
+    const uses = profileAccountUses(
+      [
+        { profile_id: "a", account_id: "nu", imported_at: "2026-10-01T10:00:00Z" },
+        { profile_id: "a", account_id: "nu", imported_at: "2026-10-05T10:00:00Z" },
+        { profile_id: "b", account_id: "nu", imported_at: "2026-11-01T10:00:00Z" },
+        { profile_id: "a", account_id: "cora", imported_at: "2026-11-02T10:00:00Z" },
+        { profile_id: null, account_id: "cora", imported_at: "2026-11-03T10:00:00Z" },
+      ],
+      [
+        { id: "nu", name: "Nubank" },
+        { id: "cora", name: "Cora" },
+      ],
+    );
     expect(uses.a).toEqual([
       { accountId: "cora", accountName: "Cora", imports: 1, current: true },
       { accountId: "nu", accountName: "Nubank", imports: 2, current: false },
@@ -135,7 +183,9 @@ describe("lista de perfis", () => {
   });
 
   it("resume os ajustes de leitura", () => {
-    expect(profileSettingsSummary({ memoSplit: true, kindPrefixes: ["Pix"], ignoreIf: ["A", "B"] })).toBe("separa o MEMO · 1 prefixo de tipo · 2 textos a ignorar");
+    expect(profileSettingsSummary({ memoSplit: true, kindPrefixes: ["Pix"], ignoreIf: ["A", "B"] })).toBe(
+      "separa o MEMO · 1 prefixo de tipo · 2 textos a ignorar",
+    );
     expect(profileSettingsSummary({ delimiter: ";" })).toBe("Sem ajustes");
   });
 });

@@ -14,12 +14,21 @@ export default async function QuickAssociate() {
   if (!member) return <SetupNeeded email={user.email} />;
   if (!member.associates.canWrite) redirect("/rapido");
   const catalog = await sections.catalog(member.db, member.groupId);
-  return <div className="shell">
-    <GestaoHeader current="/rapido/associado" member={member} quick />
-    <PageBody width="narrow">
-      <PageHeader title="Associado novo" crumbs={[{ label: "Registro rápido", href: "/rapido" }, { label: "Associado novo" }]}
-        description="Nome, divisão e as datas que souber. Documentos e contatos ficam no Paxtu; a Diretoria revisa o cadastro." />
-      <SectionCard><div className="p-4"><AssociateForm catalog={catalog} today={todayISO()} quick /></div></SectionCard>
-    </PageBody>
-  </div>;
+  return (
+    <div className="shell">
+      <GestaoHeader current="/rapido/associado" member={member} quick />
+      <PageBody width="narrow">
+        <PageHeader
+          title="Associado novo"
+          crumbs={[{ label: "Registro rápido", href: "/rapido" }, { label: "Associado novo" }]}
+          description="Nome, divisão e as datas que souber. Documentos e contatos ficam no Paxtu; a Diretoria revisa o cadastro."
+        />
+        <SectionCard>
+          <div className="p-4">
+            <AssociateForm catalog={catalog} today={todayISO()} quick />
+          </div>
+        </SectionCard>
+      </PageBody>
+    </div>
+  );
 }

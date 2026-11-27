@@ -34,5 +34,11 @@ export function buildTransparencyReport(model: RealizedModel, now = new Date()):
     }
   };
   for (const kind of ["receita", "despesa"] as const) if (model.roots[kind] !== undefined) walk(model.roots[kind]!);
-  return { version: 1, year: model.year, generatedAt: now.toISOString(), periodEnd: today < yearEnd ? today : yearEnd, rows };
+  return {
+    version: 1,
+    year: model.year,
+    generatedAt: now.toISOString(),
+    periodEnd: today < yearEnd ? today : yearEnd,
+    rows,
+  };
 }

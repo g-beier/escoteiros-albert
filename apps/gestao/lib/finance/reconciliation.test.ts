@@ -1,32 +1,60 @@
 import { describe, expect, it } from "vitest";
 import {
-  closingCheck, guessPaymentMethod, ignoreReasonText, parsePeriod, safeReconciliationHref, selectionSummary, similarity,
-  suggestedEntryName, suggestMatches, type OpenEntry, type OpenLine,
+  closingCheck,
+  guessPaymentMethod,
+  ignoreReasonText,
+  parsePeriod,
+  safeReconciliationHref,
+  selectionSummary,
+  similarity,
+  suggestedEntryName,
+  suggestMatches,
+  type OpenEntry,
+  type OpenLine,
 } from "./reconciliation";
 
-const line = (id: string, date: string, amountCents: number, counterparty: string | null = null, description = counterparty ?? "linha"): OpenLine =>
-  ({ id, date, amountCents, counterparty, description, kind: null });
+const line = (
+  id: string,
+  date: string,
+  amountCents: number,
+  counterparty: string | null = null,
+  description = counterparty ?? "linha",
+): OpenLine => ({ id, date, amountCents, counterparty, description, kind: null });
 const entry = (id: string, date: string, totalCents: number, name = id): OpenEntry => ({ id, date, totalCents, name });
 
 describe("suggestMatches", () => {
   it("pairs a single candidate on each side with same date and signed amount", () => {
     const result = suggestMatches(
       [line("l1", "2026-05-18", -23990, "Lucas T F"), line("l2", "2026-05-18", -15000, "Comunidade")],
-      [entry("e1", "2026-05-18", -23990, "Lucas material"), entry("e2", "2026-05-18", -15000, "Aluguel salão"), entry("e3", "2026-05-19", -15000)],
+      [
+        entry("e1", "2026-05-18", -23990, "Lucas material"),
+        entry("e2", "2026-05-18", -15000, "Aluguel salão"),
+        entry("e3", "2026-05-19", -15000),
+      ],
     );
-    expect(result.exact).toEqual([{ lineId: "l2", entryId: "e2" }, { lineId: "l1", entryId: "e1" }]);
+    expect(result.exact).toEqual([
+      { lineId: "l2", entryId: "e2" },
+      { lineId: "l1", entryId: "e1" },
+    ]);
     expect(result.ambiguous).toEqual([]);
   });
 
   it("does not match opposite signs; a different date is only a near suggestion", () => {
-    const result = suggestMatches([line("l1", "2026-05-18", 5000)], [entry("e1", "2026-05-18", -5000), entry("e2", "2026-05-17", 5000), entry("e3", "2026-05-10", 5000)]);
+    const result = suggestMatches(
+      [line("l1", "2026-05-18", 5000)],
+      [entry("e1", "2026-05-18", -5000), entry("e2", "2026-05-17", 5000), entry("e3", "2026-05-10", 5000)],
+    );
     expect(result).toEqual({ exact: [], ambiguous: [], near: [{ lineId: "l1", entryId: "e2", days: -1 }] });
   });
 
   it("groups several candidates without auto pairing, ranked by name similarity", () => {
     const result = suggestMatches(
       [line("l-ana", "2026-05-20", 2000, "ANA SOUZA"), line("l-bia", "2026-05-20", 2000, "Beatriz Lima")],
-      [entry("e-bia", "2026-05-20", 2000, "Mensalidade Beatriz"), entry("e-ana", "2026-05-20", 2000, "Mensalidade Ana Souza"), entry("e-x", "2026-05-20", 2000, "Outro")],
+      [
+        entry("e-bia", "2026-05-20", 2000, "Mensalidade Beatriz"),
+        entry("e-ana", "2026-05-20", 2000, "Mensalidade Ana Souza"),
+        entry("e-x", "2026-05-20", 2000, "Outro"),
+      ],
     );
     expect(result.exact).toEqual([]);
     expect(result.ambiguous).toHaveLength(1);
@@ -40,18 +68,31 @@ describe("suggestMatches", () => {
   it("excludes rejected pairs, which can turn an ambiguous group into exact pairs", () => {
     const lines = [line("l1", "2026-05-20", 2000), line("l2", "2026-05-20", 2000)];
     const entries = [entry("e1", "2026-05-20", 2000), entry("e2", "2026-05-20", 2000)];
-    const result = suggestMatches(lines, entries, [{ lineId: "l1", entryId: "e2" }, { lineId: "l2", entryId: "e1" }]);
-    expect(result.exact).toEqual([{ lineId: "l1", entryId: "e1" }, { lineId: "l2", entryId: "e2" }]);
+    const result = suggestMatches(lines, entries, [
+      { lineId: "l1", entryId: "e2" },
+      { lineId: "l2", entryId: "e1" },
+    ]);
+    expect(result.exact).toEqual([
+      { lineId: "l1", entryId: "e1" },
+      { lineId: "l2", entryId: "e2" },
+    ]);
     expect(result.ambiguous).toEqual([]);
   });
 
   it("never suggests a rejected 1:1 pair again", () => {
-    const result = suggestMatches([line("l1", "2026-05-18", -100)], [entry("e1", "2026-05-18", -100)], [{ lineId: "l1", entryId: "e1" }]);
+    const result = suggestMatches(
+      [line("l1", "2026-05-18", -100)],
+      [entry("e1", "2026-05-18", -100)],
+      [{ lineId: "l1", entryId: "e1" }],
+    );
     expect(result).toEqual({ exact: [], ambiguous: [], near: [] });
   });
 
   it("keeps one line with two candidate entries ambiguous", () => {
-    const result = suggestMatches([line("l1", "2026-05-18", -100, "Papelaria")], [entry("e1", "2026-05-18", -100, "Mercado"), entry("e2", "2026-05-18", -100, "Papelaria Central")]);
+    const result = suggestMatches(
+      [line("l1", "2026-05-18", -100, "Papelaria")],
+      [entry("e1", "2026-05-18", -100, "Mercado"), entry("e2", "2026-05-18", -100, "Papelaria Central")],
+    );
     expect(result.exact).toEqual([]);
     expect(result.ambiguous[0].candidates.l1).toEqual(["e2", "e1"]);
   });
@@ -90,7 +131,9 @@ describe("parsePeriod", () => {
 describe("safeReconciliationHref", () => {
   it("keeps only known, valid params", () => {
     const id = "123e4567-e89b-12d3-a456-426614174000";
-    expect(safeReconciliationHref(`?conta=${id}&de=2026-05-01&ate=2026-05-31&x=1`)).toBe(`/financeiro/extrato/conciliar?conta=${id}&de=2026-05-01&ate=2026-05-31`);
+    expect(safeReconciliationHref(`?conta=${id}&de=2026-05-01&ate=2026-05-31&x=1`)).toBe(
+      `/financeiro/extrato/conciliar?conta=${id}&de=2026-05-01&ate=2026-05-31`,
+    );
     expect(safeReconciliationHref("conta=https://mal.com")).toBe("/financeiro/extrato/conciliar");
     expect(safeReconciliationHref(undefined)).toBe("/financeiro/extrato/conciliar");
   });
@@ -98,27 +141,45 @@ describe("safeReconciliationHref", () => {
 
 describe("suggestMatches — datas próximas", () => {
   it("sugere mesmo valor a até 3 dias, com a diferença em dias", () => {
-    const result = suggestMatches([line("l1", "2026-06-08", -9000, "Papelaria")], [entry("e1", "2026-06-05", -9000, "Papelaria Central"), entry("e2", "2026-06-01", -9000)]);
+    const result = suggestMatches(
+      [line("l1", "2026-06-08", -9000, "Papelaria")],
+      [entry("e1", "2026-06-05", -9000, "Papelaria Central"), entry("e2", "2026-06-01", -9000)],
+    );
     expect(result.exact).toEqual([]);
     expect(result.near).toEqual([{ lineId: "l1", entryId: "e1", days: -3 }]);
   });
   it("desempata pelo nome e não sugere quando duas linhas disputam o mesmo lançamento", () => {
-    const tie = suggestMatches([line("l1", "2026-06-08", 2000, "Ana"), line("l2", "2026-06-09", 2000, "Ana")], [entry("e1", "2026-06-07", 2000, "Ana")]);
+    const tie = suggestMatches(
+      [line("l1", "2026-06-08", 2000, "Ana"), line("l2", "2026-06-09", 2000, "Ana")],
+      [entry("e1", "2026-06-07", 2000, "Ana")],
+    );
     expect(tie.near).toEqual([]);
-    const named = suggestMatches([line("l1", "2026-06-08", 2000, "Ana Souza"), line("l2", "2026-06-09", 2000, "Bia Lima")],
-      [entry("e1", "2026-06-07", 2000, "Mensalidade Bia"), entry("e2", "2026-06-07", 2000, "Mensalidade Ana")]);
-    expect(named.near).toEqual([{ lineId: "l1", entryId: "e2", days: -1 }, { lineId: "l2", entryId: "e1", days: -2 }]);
+    const named = suggestMatches(
+      [line("l1", "2026-06-08", 2000, "Ana Souza"), line("l2", "2026-06-09", 2000, "Bia Lima")],
+      [entry("e1", "2026-06-07", 2000, "Mensalidade Bia"), entry("e2", "2026-06-07", 2000, "Mensalidade Ana")],
+    );
+    expect(named.near).toEqual([
+      { lineId: "l1", entryId: "e2", days: -1 },
+      { lineId: "l2", entryId: "e1", days: -2 },
+    ]);
   });
   it("não repete o que já é sugestão exata e respeita recusas", () => {
-    const result = suggestMatches([line("l1", "2026-06-08", 100), line("l2", "2026-06-08", 200)], [entry("e1", "2026-06-08", 100), entry("e2", "2026-06-06", 200)],
-      [{ lineId: "l2", entryId: "e2" }]);
+    const result = suggestMatches(
+      [line("l1", "2026-06-08", 100), line("l2", "2026-06-08", 200)],
+      [entry("e1", "2026-06-08", 100), entry("e2", "2026-06-06", 200)],
+      [{ lineId: "l2", entryId: "e2" }],
+    );
     expect(result.exact).toEqual([{ lineId: "l1", entryId: "e1" }]);
     expect(result.near).toEqual([]);
   });
 });
 
 describe("guessPaymentMethod by OFX TRNTYPE", () => {
-  const methods = [{ id: "pix", name: "PIX", active: true }, { id: "boleto", name: "Boleto", active: true }, { id: "tarifa", name: "Tarifa bancária", active: true }];
+  const methods = [
+    { id: "pix", name: "PIX", active: true },
+    { id: "boleto", name: "Boleto", active: true },
+    { id: "tarifa", name: "Tarifa bancária", active: true },
+  ];
   it("uses TRNTYPE when the description says nothing", () => {
     expect(guessPaymentMethod({ kind: null, description: "CONTA LUZ", trnType: "PAYMENT" }, methods)).toBe("boleto");
     expect(guessPaymentMethod({ kind: null, description: "MANUTENCAO", trnType: "srvchg" }, methods)).toBe("tarifa");
@@ -131,12 +192,16 @@ describe("guessPaymentMethod by OFX TRNTYPE", () => {
 
 describe("guessPaymentMethod", () => {
   const methods = [
-    { id: "pix", name: "PIX", active: true }, { id: "boleto", name: "Boleto", active: true },
-    { id: "tarifa", name: "Tarifa bancária", active: true }, { id: "transf", name: "Transferência", active: false },
+    { id: "pix", name: "PIX", active: true },
+    { id: "boleto", name: "Boleto", active: true },
+    { id: "tarifa", name: "Tarifa bancária", active: true },
+    { id: "transf", name: "Transferência", active: false },
   ];
   it("maps statement kinds to existing active methods", () => {
     expect(guessPaymentMethod({ kind: "Pix enviado", description: "Pix enviado Fulano" }, methods)).toBe("pix");
-    expect(guessPaymentMethod({ kind: "Pagamento de conta", description: "Pagamento de conta Enel" }, methods)).toBe("boleto");
+    expect(guessPaymentMethod({ kind: "Pagamento de conta", description: "Pagamento de conta Enel" }, methods)).toBe(
+      "boleto",
+    );
     expect(guessPaymentMethod({ kind: null, description: "TARIFA PACOTE" }, methods)).toBe("tarifa");
     expect(guessPaymentMethod({ kind: null, description: "TED recebida" }, methods)).toBeUndefined();
     expect(guessPaymentMethod({ kind: null, description: "Compra" }, methods)).toBeUndefined();
@@ -165,16 +230,38 @@ describe("closingCheck", () => {
     { date: "2026-05-05", amountCents: -300, status: "aberta" as const, ignoredReason: null },
   ];
   it("compares opening + resolved movements with the statement closing balance", () => {
-    const result = closingCheck(period, [{ periodFrom: "2026-05-01", periodTo: "2026-05-31", openingCents: 10000, closingCents: 8700 }], { openingBalanceCents: 0, openingDate: null }, lines);
-    expect(result).toMatchObject({ ok: true, openingCents: 10000, movementsCents: -1000, pendingCents: -300, closingCents: 8700, differenceCents: -300 });
+    const result = closingCheck(
+      period,
+      [{ periodFrom: "2026-05-01", periodTo: "2026-05-31", openingCents: 10000, closingCents: 8700 }],
+      { openingBalanceCents: 0, openingDate: null },
+      lines,
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      openingCents: 10000,
+      movementsCents: -1000,
+      pendingCents: -300,
+      closingCents: 8700,
+      differenceCents: -300,
+    });
   });
   it("falls back to the account opening balance when it starts in the period", () => {
-    const result = closingCheck(period, [{ periodFrom: "2026-05-01", periodTo: "2026-05-31", openingCents: null, closingCents: 9000 }], { openingBalanceCents: 10000, openingDate: "2026-05-01" }, lines);
+    const result = closingCheck(
+      period,
+      [{ periodFrom: "2026-05-01", periodTo: "2026-05-31", openingCents: null, closingCents: 9000 }],
+      { openingBalanceCents: 10000, openingDate: "2026-05-01" },
+      lines,
+    );
     expect(result).toMatchObject({ ok: true, differenceCents: 0 });
   });
   it("says why it cannot compute", () => {
     expect(closingCheck(period, [], { openingBalanceCents: 0, openingDate: null }, lines)).toMatchObject({ ok: false });
-    const noClosing = closingCheck(period, [{ periodFrom: "2026-05-01", periodTo: "2026-05-31", openingCents: 100, closingCents: null }], { openingBalanceCents: 0, openingDate: null }, lines);
+    const noClosing = closingCheck(
+      period,
+      [{ periodFrom: "2026-05-01", periodTo: "2026-05-31", openingCents: 100, closingCents: null }],
+      { openingBalanceCents: 0, openingDate: null },
+      lines,
+    );
     expect(noClosing.ok).toBe(false);
   });
 });

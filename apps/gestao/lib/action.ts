@@ -18,7 +18,7 @@ export async function runAction(
   if ("error" in member) return member;
   try {
     const result = await work(member);
-    return typeof result === "string" ? { success: result } : result ?? {};
+    return typeof result === "string" ? { success: result } : (result ?? {});
   } catch (error) {
     if (error instanceof InputError || error instanceof DataError) return { error: error.message };
     throw error;

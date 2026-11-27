@@ -41,7 +41,8 @@ export function buildRealizedModel(categories: CategoryItem[], sums: RealizedSum
     raw.set(s.category_id, values);
   }
   const moved = (id: string) => raw.get(id)?.some((v) => v !== 0) ?? false;
-  const kindOf = (c: CategoryItem): CategoryKind => c.kind ?? ((raw.get(c.id) ?? []).reduce((a, b) => a + b, 0) < 0 ? "despesa" : "receita");
+  const kindOf = (c: CategoryItem): CategoryKind =>
+    c.kind ?? ((raw.get(c.id) ?? []).reduce((a, b) => a + b, 0) < 0 ? "despesa" : "receita");
 
   // inclui ativas com código, as com movimento e os ancestrais de ambas
   const included = new Set<string>();
@@ -58,7 +59,10 @@ export function buildRealizedModel(categories: CategoryItem[], sums: RealizedSum
   const rootByKind = new Map<CategoryKind, CategoryItem>();
   const orphans: CategoryItem[] = [];
   for (const c of sortCategories(categories.filter((c) => included.has(c.id)))) {
-    if (c.code && !c.code.includes(".") && !c.parent_id) { rootByKind.set(kindOf(c), c); continue; }
+    if (c.code && !c.code.includes(".") && !c.parent_id) {
+      rootByKind.set(kindOf(c), c);
+      continue;
+    }
     if (c.parent_id && included.has(c.parent_id)) children.set(c.parent_id, [...(children.get(c.parent_id) ?? []), c]);
     else orphans.push(c);
   }
@@ -68,11 +72,29 @@ export function buildRealizedModel(categories: CategoryItem[], sums: RealizedSum
   const add = (c: CategoryItem | null, kind: CategoryKind, depth: number, extra: CategoryItem[] = []): number => {
     const index = rows.length;
     const sign = kind === "despesa" ? -1 : 1;
-    const label = c ? (c.code ? `${c.code}. ${c.name}` : `${c.name} (sem código)`) : `${kind === "receita" ? 1 : 2}. ${ROOT_NAMES[kind]}`;
-    const row: RealizedRow = { id: c?.id ?? `root-${kind}`, label, code: c ? c.code : kind === "receita" ? "1" : "2", name: c?.name ?? ROOT_NAMES[kind], depth, kind, own: (c ? raw.get(c.id) ?? zeros() : zeros()).map((v) => sign * v || 0), children: [], total: zeros() };
+    const label = c
+      ? c.code
+        ? `${c.code}. ${c.name}`
+        : `${c.name} (sem código)`
+      : `${kind === "receita" ? 1 : 2}. ${ROOT_NAMES[kind]}`;
+    const row: RealizedRow = {
+      id: c?.id ?? `root-${kind}`,
+      label,
+      code: c ? c.code : kind === "receita" ? "1" : "2",
+      name: c?.name ?? ROOT_NAMES[kind],
+      depth,
+      kind,
+      own: (c ? (raw.get(c.id) ?? zeros()) : zeros()).map((v) => sign * v || 0),
+      children: [],
+      total: zeros(),
+    };
     rows.push(row);
-    for (const child of c ? children.get(c.id) ?? [] : []) row.children.push(add(child, kind, depth + 1));
-    for (const child of extra) { const i = add(child, kind, depth + 1); rows[i].adopted = true; row.children.push(i); }
+    for (const child of c ? (children.get(c.id) ?? []) : []) row.children.push(add(child, kind, depth + 1));
+    for (const child of extra) {
+      const i = add(child, kind, depth + 1);
+      rows[i].adopted = true;
+      row.children.push(i);
+    }
     row.total = row.own.map((v, m) => v + row.children.reduce((sum, i) => sum + rows[i].total[m], 0));
     return index;
   };

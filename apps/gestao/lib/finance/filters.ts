@@ -1,7 +1,7 @@
 import { parseMoneyToCents } from "@/lib/money";
 import { isDivisionToken } from "./associate-filter";
 
-export type FolderStatus ="pendente" | "na-pasta";
+export type FolderStatus = "pendente" | "na-pasta";
 export type ReconciledStatus = "sim" | "nao";
 
 export type EntryFilters = {
@@ -90,7 +90,7 @@ export function parseFilters(params: RawSearchParams, now = new Date()): EntryFi
   const divisions = listValues(params[DIVISION_PARAM]).filter(isDivisionToken);
   const q = first(params.q)?.slice(0, 100);
   return {
-    from: first(params.de) === ALL_DATES ? undefined : date(params.de) ?? defaultFrom(now),
+    from: first(params.de) === ALL_DATES ? undefined : (date(params.de) ?? defaultFrom(now)),
     to: date(params.ate),
     accountIds: uuids(params.conta),
     paymentMethodIds: uuids(params.forma),
@@ -127,9 +127,23 @@ export function likePattern(q: string) {
 }
 
 export function hasAnyFilter(filters: EntryFilters) {
-  return Boolean(filters.toReview || filters.from || filters.to || filters.folder || filters.reconciled !== undefined || filters.q || filters.ofx || filters.withoutAssociate
-    || filters.minCents !== undefined || filters.maxCents !== undefined
-    || filters.accountIds.length || filters.paymentMethodIds.length || filters.associateIds.length || filters.divisionTokens?.length || filters.categoryTokens.length);
+  return Boolean(
+    filters.toReview ||
+    filters.from ||
+    filters.to ||
+    filters.folder ||
+    filters.reconciled !== undefined ||
+    filters.q ||
+    filters.ofx ||
+    filters.withoutAssociate ||
+    filters.minCents !== undefined ||
+    filters.maxCents !== undefined ||
+    filters.accountIds.length ||
+    filters.paymentMethodIds.length ||
+    filters.associateIds.length ||
+    filters.divisionTokens?.length ||
+    filters.categoryTokens.length,
+  );
 }
 
 export type SortOrder = "desc" | "asc";
@@ -148,7 +162,7 @@ export type EntrySort = { key: EntrySortKey; dir: SortOrder };
 export function parseEntrySort(params: RawSearchParams): EntrySort {
   const raw = first(params.ordem);
   if (raw === "antigos") return { key: "data", dir: "asc" };
-  const key = (ENTRY_SORT_KEYS as readonly string[]).includes(raw ?? "") ? raw as EntrySortKey : "data";
+  const key = (ENTRY_SORT_KEYS as readonly string[]).includes(raw ?? "") ? (raw as EntrySortKey) : "data";
   const dir = first(params.dir);
   return { key, dir: dir === "asc" || dir === "desc" ? dir : key === "data" || key === "valor" ? "desc" : "asc" };
 }

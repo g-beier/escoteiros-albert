@@ -39,7 +39,9 @@ test("lançamento rápido: entra para revisar e sai da lista ao revisar", async 
   // comprovantes desligados por padrão (lib/features.ts): sem o campo de arquivo
   if (ATTACHMENTS_ENABLED) {
     await page.getByLabel("Comprovante (opcional)").setInputFiles({
-      name: "recibo-rapido.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"),
+      name: "recibo-rapido.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n"),
     });
     await expect(page.getByText("recibo-rapido.pdf")).toBeVisible();
   } else {
@@ -57,7 +59,10 @@ test("lançamento rápido: entra para revisar e sai da lista ao revisar", async 
   await row.getByRole("link", { name, exact: true }).click();
   await expect(page.getByRole("combobox", { name: /Rubrica/ }).first()).toHaveValue(/Despesas/);
   // o comprovante enviado pelo celular já está no lançamento
-  if (ATTACHMENTS_ENABLED) await expect(page.getByRole("region", { name: "Comprovantes" }).getByRole("link", { name: "recibo-rapido.pdf", exact: true })).toBeVisible();
+  if (ATTACHMENTS_ENABLED)
+    await expect(
+      page.getByRole("region", { name: "Comprovantes" }).getByRole("link", { name: "recibo-rapido.pdf", exact: true }),
+    ).toBeVisible();
   else await expect(page.getByRole("region", { name: "Comprovantes" })).toHaveCount(0);
   await page.getByRole("button", { name: "Marcar como revisado" }).click();
   await expect(page.getByText("Lançamento marcado como revisado.")).toBeVisible();
@@ -85,9 +90,13 @@ test("associado rápido: cadastrado para um editor revisar", async ({ page }) =>
   await expect(page.getByRole("row").filter({ hasText: person })).toHaveCount(0);
 });
 
-test("busca única: acha o associado (sem acento nem maiúsculas) e o menu Registrar tem o material novo", async ({ page }) => {
+test("busca única: acha o associado (sem acento nem maiúsculas) e o menu Registrar tem o material novo", async ({
+  page,
+}) => {
   await page.goto("/rapido");
-  const register = page.getByRole("region", { name: "Registrar" }).or(page.locator("section").filter({ has: page.getByRole("heading", { name: "Registrar" }) }));
+  const register = page
+    .getByRole("region", { name: "Registrar" })
+    .or(page.locator("section").filter({ has: page.getByRole("heading", { name: "Registrar" }) }));
   await expect(register.getByRole("link", { name: /Material novo/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /Cadastrar material novo/ })).toHaveCount(0);
   // o associado do teste anterior, buscado pela parte final do nome, sem acento e em minúsculas

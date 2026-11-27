@@ -12,7 +12,15 @@ test.afterAll(() => cleanupE2eGroup());
 
 test.beforeAll(async ({ browser }) => {
   const page = await browser.newPage();
-  await createEntry(page, { name, direction: "saida", date: `${YEAR}-03-15`, total: "40,00", account: E2E_ACCOUNTS[0], category: "Telefone", description: "conta de março" });
+  await createEntry(page, {
+    name,
+    direction: "saida",
+    date: `${YEAR}-03-15`,
+    total: "40,00",
+    account: E2E_ACCOUNTS[0],
+    category: "Telefone",
+    description: "conta de março",
+  });
   await page.close();
 });
 
@@ -33,7 +41,9 @@ test("fluxo de caixa: XLSX e CSV com o lançamento do período", async ({ reques
   expect(xlsx.headers()["content-disposition"]).toMatch(/^attachment; filename=".+\.xlsx"$/);
   expect(await sheetText(await xlsx.body())).toContain(name);
 
-  const csv = await request.get(`/financeiro/exportar/fluxo?visao=detalhamento&${period}&formato=csv&codificacao=utf-8`);
+  const csv = await request.get(
+    `/financeiro/exportar/fluxo?visao=detalhamento&${period}&formato=csv&codificacao=utf-8`,
+  );
   expect(csv.status()).toBe(200);
   expect(csv.headers()["content-type"]).toBe("text/csv; charset=utf-8");
   const text = await csv.text();
@@ -61,7 +71,9 @@ test("contábil: recusa rubrica sem conta contábil e gera o CSV de um período 
   const empty = await request.get(`/financeiro/exportar/contabil?de=${YEAR - 1}-01-01&ate=${YEAR - 1}-01-31`);
   expect(empty.status()).toBe(200);
   expect(empty.headers()["content-type"]).toBe("text/csv; charset=windows-1252");
-  expect(empty.headers()["content-disposition"]).toBe(`attachment; filename="contabil_${YEAR - 1}-01-01_${YEAR - 1}-01-31.csv"`);
+  expect(empty.headers()["content-disposition"]).toBe(
+    `attachment; filename="contabil_${YEAR - 1}-01-01_${YEAR - 1}-01-31.csv"`,
+  );
   expect(new TextDecoder("windows-1252").decode(await empty.body())).toMatch(/^Data;Conta débito;Conta crédito;Valor/);
 });
 

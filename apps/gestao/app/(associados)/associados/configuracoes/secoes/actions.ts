@@ -10,12 +10,19 @@ import { associatesEditorOrError } from "@/lib/server/session";
 
 // Seções e equipes (028–030): as regras de ramo e de quem se divide em equipes ficam nas funções SQL.
 
-function valid<T>(result: { success: true; data: T } | { success: false; error: z.ZodError }, fallback = "Dados inválidos."): T {
+function valid<T>(
+  result: { success: true; data: T } | { success: false; error: z.ZodError },
+  fallback = "Dados inválidos.",
+): T {
   if (!result.success) throw new InputError(result.error.issues[0]?.message ?? fallback);
   return result.data;
 }
 
-const sectionName = z.string().trim().min(2, "Informe um nome com 2 a 60 caracteres.").max(60, "Informe um nome com 2 a 60 caracteres.");
+const sectionName = z
+  .string()
+  .trim()
+  .min(2, "Informe um nome com 2 a 60 caracteres.")
+  .max(60, "Informe um nome com 2 a 60 caracteres.");
 const editor = () => associatesEditorOrError("Sem permissão para gerir seções.");
 
 function revalidate() {
@@ -24,7 +31,9 @@ function revalidate() {
 
 export async function createSection(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   return runAction(editor, async ({ db, groupId }) => {
-    const branch = valid(z.enum(SCOUT_BRANCHES, { message: "Escolha o ramo da seção." }).safeParse(formData.get("branch")));
+    const branch = valid(
+      z.enum(SCOUT_BRANCHES, { message: "Escolha o ramo da seção." }).safeParse(formData.get("branch")),
+    );
     if (!hasSections(branch)) throw new InputError("Adultos não têm seção: são só o ramo.");
     const name = valid(sectionName.safeParse(formData.get("name") ?? ""));
     await sections.createSection(db, groupId, branch, name);
@@ -44,7 +53,10 @@ export async function updateSectionOrPatrol(_previous: ActionResult, formData: F
     revalidate();
     const label = kind === "patrol" ? "Equipe" : "Seção";
     if (active === null) return `${label} “${name}” salva.`;
-    return { success: `${label} “${name}” ${active ? "reativada" : "inativada"}.`, ...(active ? {} : { tone: "neutral" as const }) };
+    return {
+      success: `${label} “${name}” ${active ? "reativada" : "inativada"}.`,
+      ...(active ? {} : { tone: "neutral" as const }),
+    };
   });
 }
 

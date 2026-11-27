@@ -19,7 +19,14 @@ export function isDivisionToken(value: string) {
 }
 
 export type AssociateTreeInput = {
-  associates: { id: string; name: string; active: boolean; branch: string; section_id: string | null; patrol_id: string | null }[];
+  associates: {
+    id: string;
+    name: string;
+    active: boolean;
+    branch: string;
+    section_id: string | null;
+    patrol_id: string | null;
+  }[];
   sections: { id: string; branch: string; name: string }[];
   patrols: { id: string; section_id: string; name: string }[];
 };
@@ -35,7 +42,8 @@ export type AssociateFilterData = {
   members: Record<string, string[]>;
 };
 
-const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base", numeric: true });
+const byName = (a: { name: string }, b: { name: string }) =>
+  a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base", numeric: true });
 const isBranch = (value: string): value is ScoutBranch => (SCOUT_BRANCHES as readonly string[]).includes(value);
 
 /**
@@ -52,13 +60,22 @@ export function buildAssociateFilterData({ associates, sections, patrols }: Asso
   for (const associate of [...associates].sort(byName)) {
     if (!associate.active || !isBranch(associate.branch)) continue;
     const section = associate.section_id ? sectionById.get(associate.section_id) : undefined;
-    if (!section || section.branch !== associate.branch) { add(associate.branch === "adulto" ? "r:adulto" : `n:${associate.branch}`, associate.id); continue; }
+    if (!section || section.branch !== associate.branch) {
+      add(associate.branch === "adulto" ? "r:adulto" : `n:${associate.branch}`, associate.id);
+      continue;
+    }
     const patrol = associate.patrol_id ? patrolById.get(associate.patrol_id) : undefined;
     add(patrol && patrol.section_id === section.id ? `e:${patrol.id}` : `s:${section.id}`, associate.id);
   }
 
   /** O nó e seus filhos, se houver alguém dentro. */
-  const node = (id: string, parent: string | null, label: string, depth: number, children: (depth: number) => DivisionNode[]): DivisionNode[] => {
+  const node = (
+    id: string,
+    parent: string | null,
+    label: string,
+    depth: number,
+    children: (depth: number) => DivisionNode[],
+  ): DivisionNode[] => {
     const below = children(depth + 1);
     return below.length || members[id]?.length ? [{ id, parent_id: parent, label, depth }, ...below] : [];
   };
@@ -66,13 +83,22 @@ export function buildAssociateFilterData({ associates, sections, patrols }: Asso
   const divisions: DivisionNode[] = [{ id: NONE, parent_id: null, label: "(Sem associado)", depth: 0 }];
   for (const branch of SCOUT_BRANCHES) {
     const root = `r:${branch}`;
-    divisions.push(...node(root, null, branch === "adulto" ? "Adultos" : branchLabels[branch], 0, (depth) => [
-      ...sections.filter((s) => s.branch === branch).sort(byName).flatMap((section) =>
-        node(`s:${section.id}`, root, section.name, depth, (patrolDepth) =>
-          patrols.filter((p) => p.section_id === section.id).sort(byName).flatMap((patrol) =>
-            node(`e:${patrol.id}`, `s:${section.id}`, patrol.name, patrolDepth, () => [])))),
-      ...(branch === "adulto" ? [] : node(`n:${branch}`, root, "Sem seção", depth, () => [])),
-    ]));
+    divisions.push(
+      ...node(root, null, branch === "adulto" ? "Adultos" : branchLabels[branch], 0, (depth) => [
+        ...sections
+          .filter((s) => s.branch === branch)
+          .sort(byName)
+          .flatMap((section) =>
+            node(`s:${section.id}`, root, section.name, depth, (patrolDepth) =>
+              patrols
+                .filter((p) => p.section_id === section.id)
+                .sort(byName)
+                .flatMap((patrol) => node(`e:${patrol.id}`, `s:${section.id}`, patrol.name, patrolDepth, () => [])),
+            ),
+          ),
+        ...(branch === "adulto" ? [] : node(`n:${branch}`, root, "Sem seção", depth, () => [])),
+      ]),
+    );
   }
 
   const people = [...associates].sort(byName).map(({ id, name, active }) => ({ id, name, active }));

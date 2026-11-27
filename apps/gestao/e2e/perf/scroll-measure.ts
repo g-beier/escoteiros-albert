@@ -8,12 +8,20 @@ import type { Page } from "@playwright/test";
 const CPU_SLOWDOWN = Number(process.env.PERF_CPU ?? 4);
 const LABEL = process.env.PERF_LABEL ?? "atual";
 
-type Run = { totalMs: number; avgFrameMs: number; p95FrameMs: number; maxFrameMs: number; jankFrames: number; longTasks: number; longTaskMs: number };
+type Run = {
+  totalMs: number;
+  avgFrameMs: number;
+  p95FrameMs: number;
+  maxFrameMs: number;
+  jankFrames: number;
+  longTasks: number;
+  longTaskMs: number;
+};
 
 /** Uma passada de rolagem; `selector` nulo rola a janela (cartões do celular). */
 async function scrollOnce(page: Page, selector: string | null): Promise<Run> {
   return page.evaluate(async (selector) => {
-    const el = selector ? document.querySelector<HTMLElement>(selector)! : document.scrollingElement as HTMLElement;
+    const el = selector ? document.querySelector<HTMLElement>(selector)! : (document.scrollingElement as HTMLElement);
     const longTasks: number[] = [];
     const observer = new PerformanceObserver((list) => list.getEntries().forEach((e) => longTasks.push(e.duration)));
     observer.observe({ type: "longtask", buffered: false });
@@ -50,21 +58,41 @@ async function scrollOnce(page: Page, selector: string | null): Promise<Run> {
  * Três passadas com a CPU desacelerada (mediana de cada número) e a contagem de nós no DOM;
  * `items` conta os itens montados (linhas ou cartões). Grava o JSON e devolve o resumo.
  */
-export async function measureScrolling(page: Page, { name, selector, items, extra }: { name: string; selector: string | null; items: string; extra?: Record<string, unknown> }) {
+export async function measureScrolling(
+  page: Page,
+  {
+    name,
+    selector,
+    items,
+    extra,
+  }: { name: string; selector: string | null; items: string; extra?: Record<string, unknown> },
+) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: CPU_SLOWDOWN });
   const runs: Run[] = [];
   for (let i = 0; i < 3; i++) runs.push(await scrollOnce(page, selector));
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
-  const dom = await page.evaluate((items) => ({
-    nodes: document.getElementsByTagName("*").length,
-    renderedRows: document.querySelectorAll(items).length,
-  }), items);
+  const dom = await page.evaluate(
+    (items) => ({
+      nodes: document.getElementsByTagName("*").length,
+      renderedRows: document.querySelectorAll(items).length,
+    }),
+    items,
+  );
   const median = (key: keyof Run) => [...runs.map((r) => r[key])].sort((a, b) => a - b)[1];
   const result = {
-    label: LABEL, view: name, cpuSlowdown: CPU_SLOWDOWN, ...extra, ...dom,
-    avgFrameMs: median("avgFrameMs"), p95FrameMs: median("p95FrameMs"), maxFrameMs: median("maxFrameMs"),
-    jankFrames: median("jankFrames"), longTasks: median("longTasks"), longTaskMs: median("longTaskMs"), totalMs: median("totalMs"),
+    label: LABEL,
+    view: name,
+    cpuSlowdown: CPU_SLOWDOWN,
+    ...extra,
+    ...dom,
+    avgFrameMs: median("avgFrameMs"),
+    p95FrameMs: median("p95FrameMs"),
+    maxFrameMs: median("maxFrameMs"),
+    jankFrames: median("jankFrames"),
+    longTasks: median("longTasks"),
+    longTaskMs: median("longTaskMs"),
+    totalMs: median("totalMs"),
   };
   console.log(JSON.stringify(result));
   mkdirSync("test-results", { recursive: true });

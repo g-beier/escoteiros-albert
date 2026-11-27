@@ -8,30 +8,56 @@ const COLUMNS = "id, associate_id, kind, title, started_on, ended_on, section_id
 
 /** Funções do grupo (atuais e encerradas): base dos subgrupos Escotistas/Dirigentes e do público. */
 export async function list(db: Db, groupId: string): Promise<AssociateFunction[]> {
-  return rows<AssociateFunction>(db, (sql) => sql`select ${sql.unsafe(COLUMNS)} from public.associate_function_rows where group_id = ${groupId} limit 10000`);
+  return rows<AssociateFunction>(
+    db,
+    (sql) =>
+      sql`select ${sql.unsafe(COLUMNS)} from public.associate_function_rows where group_id = ${groupId} limit 10000`,
+  );
 }
 
 /** Funções de um associado, da mais recente para a mais antiga. */
 export async function listOf(db: Db, associateId: string): Promise<AssociateFunction[]> {
-  return rows<AssociateFunction>(db, (sql) => sql`
-    select ${sql.unsafe(COLUMNS)} from public.associate_function_rows where associate_id = ${associateId} order by started_on desc nulls first`);
+  return rows<AssociateFunction>(
+    db,
+    (sql) => sql`
+    select ${sql.unsafe(COLUMNS)} from public.associate_function_rows where associate_id = ${associateId} order by started_on desc nulls first`,
+  );
 }
 
 /** Tipo, seção (só escotista, obrigatória: 052), cargo e datas da função. */
-export type FunctionInput = { kind: FunctionKind; sectionId: string | null; title: string | null; startedOn: string; elected: boolean };
+export type FunctionInput = {
+  kind: FunctionKind;
+  sectionId: string | null;
+  title: string | null;
+  startedOn: string;
+  elected: boolean;
+};
 
 export async function add(db: Db, associateId: string, input: FunctionInput): Promise<string> {
   return rpc(db, "associates_add_function", {
-    p_associate_id: associateId, p_kind: input.kind, p_section_id: input.sectionId as string, p_title: input.title as string, p_started_on: input.startedOn,
+    p_associate_id: associateId,
+    p_kind: input.kind,
+    p_section_id: input.sectionId as string,
+    p_title: input.title as string,
+    p_started_on: input.startedOn,
     p_elected: input.elected,
   });
 }
 
 /** Corrige a função; `endedOn` nulo = em exercício. */
-export async function update(db: Db, functionId: string, input: FunctionInput & { endedOn: string | null }): Promise<void> {
+export async function update(
+  db: Db,
+  functionId: string,
+  input: FunctionInput & { endedOn: string | null },
+): Promise<void> {
   await rpc(db, "associates_update_function", {
-    p_function_id: functionId, p_kind: input.kind, p_section_id: input.sectionId as string, p_title: input.title as string,
-    p_started_on: input.startedOn, p_ended_on: input.endedOn as string, p_elected: input.elected,
+    p_function_id: functionId,
+    p_kind: input.kind,
+    p_section_id: input.sectionId as string,
+    p_title: input.title as string,
+    p_started_on: input.startedOn,
+    p_ended_on: input.endedOn as string,
+    p_elected: input.elected,
   });
 }
 

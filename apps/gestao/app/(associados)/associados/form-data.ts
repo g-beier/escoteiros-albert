@@ -20,7 +20,8 @@ export function date(data: FormData, key: string, label: string, required = fals
     if (required) throw new InputError(`Informe ${label}.`);
     return null;
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value))) throw new InputError(`Data inválida: ${label}.`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value)))
+    throw new InputError(`Data inválida: ${label}.`);
   return value;
 }
 export function notes(data: FormData, key = "notes", max = 500) {

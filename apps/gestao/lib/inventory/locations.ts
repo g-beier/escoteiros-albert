@@ -3,7 +3,13 @@ import type { Option } from "@geas/ui/components/option-controls";
 // Divisões em árvore (inventory_location_paths), na ordem escolhida pelo gestor (034).
 
 export type LocationPath = {
-  id: string; parent_id: string | null; name: string; path: string; depth: number; active: boolean; ancestors: string[];
+  id: string;
+  parent_id: string | null;
+  name: string;
+  path: string;
+  depth: number;
+  active: boolean;
+  ancestors: string[];
   /** Posições do caminho, da raiz até a divisão (ordem escolhida pelo gestor). */
   sort_key: number[];
 };
@@ -27,7 +33,6 @@ export function subtree(paths: LocationPath[], id: string): LocationPath[] {
   return paths.filter((row) => row.ancestors.includes(id));
 }
 
-
 /** Opções de divisão para formulários (só ativas; a inativa atual entra se `keep`). */
 export function locationOptions(paths: LocationPath[], keep?: string): Option[] {
   return paths.filter((row) => row.active || row.id === keep).map((row) => ({ value: row.id, label: row.path }));
@@ -36,7 +41,14 @@ export function locationOptions(paths: LocationPath[], keep?: string): Option[] 
 // Arrastar divisões (Configurações › Divisões): mesmas regras de inventory_place_location (037).
 
 export type DropPlace = "before" | "after" | "inside";
-type TreeItem = { id: string; parentId: string | null; name: string; active: boolean; ancestors: string[]; depth: number };
+type TreeItem = {
+  id: string;
+  parentId: string | null;
+  name: string;
+  active: boolean;
+  ancestors: string[];
+  depth: number;
+};
 
 /** Por que não dá para soltar `id` em `target` ("" = sem mensagem), ou null se dá. */
 export function placeError(items: TreeItem[], id: string, target: string, place: DropPlace): string | null {
@@ -49,7 +61,9 @@ export function placeError(items: TreeItem[], id: string, target: string, place:
   const parent = items.find((item) => item.id === parentId);
   if (parent && !parent.active) return "Reative a divisão de destino antes de pôr outra dentro dela.";
   const name = source.name.toLocaleLowerCase("pt-BR");
-  if (items.some((item) => item.parentId === parentId && item.id !== id && item.name.toLocaleLowerCase("pt-BR") === name)) {
+  if (
+    items.some((item) => item.parentId === parentId && item.id !== id && item.name.toLocaleLowerCase("pt-BR") === name)
+  ) {
     return `Já existe a divisão ${source.name} neste nível.`;
   }
   return null;
@@ -61,7 +75,8 @@ export function placeLocal<T extends TreeItem>(items: T[], id: string, target: s
   if (!goal) return items;
   const parentId = place === "inside" ? goal.id : goal.parentId;
   const children = new Map<string, string[]>();
-  for (const item of items) if (item.id !== id) children.set(item.parentId ?? "", [...(children.get(item.parentId ?? "") ?? []), item.id]);
+  for (const item of items)
+    if (item.id !== id) children.set(item.parentId ?? "", [...(children.get(item.parentId ?? "") ?? []), item.id]);
   const list = children.get(parentId ?? "") ?? [];
   list.splice(place === "inside" ? list.length : list.indexOf(target) + (place === "after" ? 1 : 0), 0, id);
   children.set(parentId ?? "", list);
@@ -69,7 +84,12 @@ export function placeLocal<T extends TreeItem>(items: T[], id: string, target: s
   const result: T[] = [];
   const visit = (key: string, parent: T | null) => {
     const item = byId.get(key)!;
-    const next = { ...item, parentId: parent?.id ?? null, depth: parent ? parent.depth + 1 : 0, ancestors: [...(parent?.ancestors ?? []), key] };
+    const next = {
+      ...item,
+      parentId: parent?.id ?? null,
+      depth: parent ? parent.depth + 1 : 0,
+      ancestors: [...(parent?.ancestors ?? []), key],
+    };
     result.push(next);
     for (const kid of children.get(key) ?? []) visit(kid, next);
   };

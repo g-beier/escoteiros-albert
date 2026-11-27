@@ -6,7 +6,10 @@ test.use({ storageState: { cookies: [], origins: [] } });
 test("sem sessão, as páginas levam ao login com o caminho de volta", async ({ page }) => {
   await page.goto("/financeiro/lancamentos");
   await expect(page).toHaveURL(/\/login\?next=%2Ffinanceiro%2Flancamentos/);
-  await expect(page.getByRole("link", { name: "Entrar com Google" })).toHaveAttribute("href", "/auth/google?next=%2Ffinanceiro%2Flancamentos");
+  await expect(page.getByRole("link", { name: "Entrar com Google" })).toHaveAttribute(
+    "href",
+    "/auth/google?next=%2Ffinanceiro%2Flancamentos",
+  );
 });
 
 test("e-mail sem cadastro é recusado; o cadastrado entra e volta para onde ia", async ({ page }) => {

@@ -28,7 +28,11 @@ export function useTreeDrag({ dropError, onDrop }: Options) {
   const [drop, setDrop] = useState<{ key: string; place: DropPlace } | null>(null);
   const [hint, setHint] = useState<string | null>(null);
 
-  const end = () => { setDragKey(null); setDrop(null); setHint(null); };
+  const end = () => {
+    setDragKey(null);
+    setDrop(null);
+    setHint(null);
+  };
   const placeFor = (event: DragEvent<HTMLElement>): DropPlace => {
     const rect = event.currentTarget.getBoundingClientRect();
     const y = (event.clientY - rect.top) / rect.height;
@@ -66,17 +70,38 @@ export function useTreeDrag({ dropError, onDrop }: Options) {
 }
 
 /** Alça de arrastar; a imagem do arrasto é a linha inteira. */
-export function DragHandle({ id, onDragStart, onDragEnd, className }: { id: string; onDragStart: () => void; onDragEnd: () => void; className?: string }) {
-  return <span draggable aria-hidden title="Arraste para mover"
-    className={cn("-ml-1 shrink-0 cursor-grab rounded p-0.5 text-muted-foreground hover:bg-muted active:cursor-grabbing", className)}
-    onDragStart={(event) => {
-      event.dataTransfer.effectAllowed = "move";
-      event.dataTransfer.setData("text/plain", id);
-      const tr = event.currentTarget.closest("tr");
-      if (tr) event.dataTransfer.setDragImage(tr, 16, tr.offsetHeight / 2);
-      onDragStart();
-    }}
-    onDragEnd={onDragEnd}><IconGripVertical className="size-4" /></span>;
+export function DragHandle({
+  id,
+  onDragStart,
+  onDragEnd,
+  className,
+}: {
+  id: string;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  className?: string;
+}) {
+  return (
+    <span
+      draggable
+      aria-hidden
+      title="Arraste para mover"
+      className={cn(
+        "-ml-1 shrink-0 cursor-grab rounded p-0.5 text-muted-foreground hover:bg-muted active:cursor-grabbing",
+        className,
+      )}
+      onDragStart={(event) => {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", id);
+        const tr = event.currentTarget.closest("tr");
+        if (tr) event.dataTransfer.setDragImage(tr, 16, tr.offsetHeight / 2);
+        onDragStart();
+      }}
+      onDragEnd={onDragEnd}
+    >
+      <IconGripVertical className="size-4" />
+    </span>
+  );
 }
 
 /** Espaço da alça, para alinhar as linhas que não se movem. */

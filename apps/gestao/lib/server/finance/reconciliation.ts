@@ -6,11 +6,56 @@ import { rows, rpc, run } from "@/lib/server/pg/db";
 // Extrato › Conciliar (013): linhas do extrato × lançamentos de uma conta e período, vínculos e recusas.
 // Escritas pelas funções auditadas de conciliação.
 
-export type ReconAccount = { id: string; name: string; active: boolean; kind: string; opening_balance_cents: number; opening_date: string | null };
-export type LineRow = { id: string; line_date: string; description: string; kind: string | null; counterparty: string | null; amount_cents: number; status: "aberta" | "conciliada" | "ignorada"; ignored_reason: string | null; external_id: string | null; trn_type: string | null };
-export type EntryRow = { entry_id: string; entry_date: string; name: string; payment_method_name: string; total_cents: number; reconciled: boolean; outside_statement: boolean; account_id: string };
-export type LinkRow = { link_set_id: string; statement_line_id: string; line_date: string; line_description: string; line_kind: string | null; line_counterparty: string | null; line_amount_cents: number; ledger_entry_id: string; entry_date: string; entry_name: string; entry_total_cents: number; created_at: string };
-export type ImportRow = { period_from: string; period_to: string; opening_balance_cents: number | null; closing_balance_cents: number | null };
+export type ReconAccount = {
+  id: string;
+  name: string;
+  active: boolean;
+  kind: string;
+  opening_balance_cents: number;
+  opening_date: string | null;
+};
+export type LineRow = {
+  id: string;
+  line_date: string;
+  description: string;
+  kind: string | null;
+  counterparty: string | null;
+  amount_cents: number;
+  status: "aberta" | "conciliada" | "ignorada";
+  ignored_reason: string | null;
+  external_id: string | null;
+  trn_type: string | null;
+};
+export type EntryRow = {
+  entry_id: string;
+  entry_date: string;
+  name: string;
+  payment_method_name: string;
+  total_cents: number;
+  reconciled: boolean;
+  outside_statement: boolean;
+  account_id: string;
+};
+export type LinkRow = {
+  link_set_id: string;
+  statement_line_id: string;
+  line_date: string;
+  line_description: string;
+  line_kind: string | null;
+  line_counterparty: string | null;
+  line_amount_cents: number;
+  ledger_entry_id: string;
+  entry_date: string;
+  entry_name: string;
+  entry_total_cents: number;
+  created_at: string;
+};
+export type ImportRow = {
+  period_from: string;
+  period_to: string;
+  opening_balance_cents: number | null;
+  closing_balance_cents: number | null;
+};
 
 /** Teto por lista da tela (linhas, lançamentos, vínculos); recusas até 5×. */
 export const LIMIT = 5000;
@@ -18,8 +63,13 @@ export const LIMIT = 5000;
 /** Contas do grupo para escolher a da conciliação. */
 export async function accounts(db: Db, groupId: string): Promise<{ accounts: ReconAccount[]; error?: string }> {
   try {
-    return { accounts: await rows<ReconAccount>(db, (sql) => sql`
-      select id, name, active, kind, opening_balance_cents, opening_date from public.accounts where group_id = ${groupId} order by name`) };
+    return {
+      accounts: await rows<ReconAccount>(
+        db,
+        (sql) => sql`
+      select id, name, active, kind, opening_balance_cents, opening_date from public.accounts where group_id = ${groupId} order by name`,
+      ),
+    };
   } catch (error) {
     return { accounts: [], error: (error as Error).message };
   }
@@ -29,8 +79,21 @@ export async function accounts(db: Db, groupId: string): Promise<{ accounts: Rec
  * Tudo o que a tela de conciliação mostra de uma conta no período: linhas do extrato, lançamentos não
  * conciliados (da conta e de `entryAccountIds`, como "A definir"), vínculos, recusas, importações e formas.
  */
-export async function board(db: Db, groupId: string, accountId: string, entryAccountIds: string[], period: { from: string; to: string }) {
-  const empty = { lines: [] as LineRow[], entries: [] as EntryRow[], links: [] as LinkRow[], rejections: [] as { statement_line_id: string; ledger_entry_id: string }[], imports: [] as ImportRow[], methods: [] as { id: string; name: string; active: boolean }[] };
+export async function board(
+  db: Db,
+  groupId: string,
+  accountId: string,
+  entryAccountIds: string[],
+  period: { from: string; to: string },
+) {
+  const empty = {
+    lines: [] as LineRow[],
+    entries: [] as EntryRow[],
+    links: [] as LinkRow[],
+    rejections: [] as { statement_line_id: string; ledger_entry_id: string }[],
+    imports: [] as ImportRow[],
+    methods: [] as { id: string; name: string; active: boolean }[],
+  };
   try {
     return await run(db, async (sql) => {
       const [lines, entries, links, rejections, imports, methods] = await Promise.all([
@@ -53,9 +116,12 @@ export async function board(db: Db, groupId: string, accountId: string, entryAcc
         sql`select id, name, active from public.payment_methods where group_id = ${groupId} order by name`,
       ]);
       return {
-        lines: [...lines] as unknown as LineRow[], entries: [...entries] as unknown as EntryRow[], links: [...links] as unknown as LinkRow[],
+        lines: [...lines] as unknown as LineRow[],
+        entries: [...entries] as unknown as EntryRow[],
+        links: [...links] as unknown as LinkRow[],
         rejections: [...rejections] as unknown as { statement_line_id: string; ledger_entry_id: string }[],
-        imports: [...imports] as unknown as ImportRow[], methods: [...methods] as unknown as { id: string; name: string; active: boolean }[],
+        imports: [...imports] as unknown as ImportRow[],
+        methods: [...methods] as unknown as { id: string; name: string; active: boolean }[],
         error: undefined as string | undefined,
       };
     });
@@ -96,14 +162,26 @@ export async function setEntryAccount(db: Db, entryId: string, accountId: string
 
 /** Cria o lançamento a partir da linha e já o vincula (uma transação); devolve o id. */
 export async function createEntryFromLine(db: Db, lineId: string, input: EntryInput): Promise<string> {
-  return await rpc(db, "create_entry_from_statement_line", {
-    p_statement_line_id: lineId, p_entry_date: input.date, p_name: input.name, p_payment_method_id: input.paymentMethodId,
-    p_document: input.document || null, p_document_filed: input.documentFiled, p_total_cents: input.totalCents,
-    p_splits: toRpcSplits(input.splits, input.debtLines), p_notes: input.notes?.trim() || null,
-  }) as string;
+  return (await rpc(db, "create_entry_from_statement_line", {
+    p_statement_line_id: lineId,
+    p_entry_date: input.date,
+    p_name: input.name,
+    p_payment_method_id: input.paymentMethodId,
+    p_document: input.document || null,
+    p_document_filed: input.documentFiled,
+    p_total_cents: input.totalCents,
+    p_splits: toRpcSplits(input.splits, input.debtLines),
+    p_notes: input.notes?.trim() || null,
+  })) as string;
 }
 
-export type BulkLineItem = { lineId: string; name?: string; paymentMethodId: string; categoryId?: string; description?: string };
+export type BulkLineItem = {
+  lineId: string;
+  name?: string;
+  paymentMethodId: string;
+  categoryId?: string;
+  description?: string;
+};
 
 /** Um lançamento por linha, já conciliado, numa transação; devolve quantos. */
 export async function createEntriesFromLines(db: Db, items: BulkLineItem[]): Promise<number> {

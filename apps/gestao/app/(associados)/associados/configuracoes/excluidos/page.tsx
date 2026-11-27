@@ -15,12 +15,18 @@ export default async function DeletedAssociatesPage() {
   if (!member.associates.canReview) redirect("/associados/configuracoes/secoes");
   const list = await associates.quarantine(member.db, member.groupId);
 
-  return <div className="shell">
-    <AppHeader current="/associados/configuracoes/excluidos" member={member} />
-    <PageBody width="narrow">
-      <PageHeader title="Configurações" tabs={<SettingsTabs current="excluidos" canReview />} crumbs={settingsCrumbs("excluidos")}
-        description={`Cadastros com exclusão pedida: não aparecem em nenhuma tela e são apagados de vez ${DELETION_DAYS} dias depois do pedido, com funções, controle e vida escoteira. Até lá, dá para restaurar.`} />
-      <QuarantineList items={list} today={todayISO()} />
-    </PageBody>
-  </div>;
+  return (
+    <div className="shell">
+      <AppHeader current="/associados/configuracoes/excluidos" member={member} />
+      <PageBody width="narrow">
+        <PageHeader
+          title="Configurações"
+          tabs={<SettingsTabs current="excluidos" canReview />}
+          crumbs={settingsCrumbs("excluidos")}
+          description={`Cadastros com exclusão pedida: não aparecem em nenhuma tela e são apagados de vez ${DELETION_DAYS} dias depois do pedido, com funções, controle e vida escoteira. Até lá, dá para restaurar.`}
+        />
+        <QuarantineList items={list} today={todayISO()} />
+      </PageBody>
+    </div>
+  );
 }

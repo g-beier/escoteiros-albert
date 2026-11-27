@@ -10,7 +10,10 @@ import { count, one, rows, rpc } from "@/lib/server/pg/db";
 /** Receitas e despesas de cada mês do ano (Realizado), em centavos. */
 export async function yearMonths(db: Db, groupId: string, year: number): Promise<MonthTotals[]> {
   const [categories, sums] = await Promise.all([
-    rows<{ id: string; kind: "receita" | "despesa" | null }>(db, (sql) => sql`select id, kind from public.categories where group_id = ${groupId}`),
+    rows<{ id: string; kind: "receita" | "despesa" | null }>(
+      db,
+      (sql) => sql`select id, kind from public.categories where group_id = ${groupId}`,
+    ),
     rpc(db, "realized_by_month", { p_group_id: groupId, p_year: year }),
   ]);
   return monthlyTotals(sums ?? [], new Map(categories.map((c) => [c.id, c.kind])));
@@ -18,27 +21,40 @@ export async function yearMonths(db: Db, groupId: string, year: number): Promise
 
 /** Lançamentos sem o documento arquivado na pasta. */
 export async function pendingDocuments(db: Db, groupId: string): Promise<number> {
-  return count(db, (sql) => sql`select count(*) from public.ledger_entries where group_id = ${groupId} and not document_filed`);
+  return count(
+    db,
+    (sql) => sql`select count(*) from public.ledger_entries where group_id = ${groupId} and not document_filed`,
+  );
 }
 
 /** Linhas de extrato importadas e ainda não conciliadas nem ignoradas. */
 export async function openStatementLines(db: Db, groupId: string): Promise<number> {
-  return count(db, (sql) => sql`select count(*) from public.statement_lines where group_id = ${groupId} and status = 'aberta'`);
+  return count(
+    db,
+    (sql) => sql`select count(*) from public.statement_lines where group_id = ${groupId} and status = 'aberta'`,
+  );
 }
 
 /** Últimos lançamentos: hoje e os 7 dias anteriores, mais o último dia com movimento antes disso. */
 export async function recentEntries(db: Db, groupId: string, today: string, limit = 300): Promise<LedgerRow[]> {
   const windowStart = recentWindowStart(today);
-  const previous = await one<{ entry_date: string }>(db, (sql) => sql`
-    select max(entry_date) as entry_date from public.ledger_entries where group_id = ${groupId} and entry_date < ${windowStart} having max(entry_date) is not null`);
-  return rows<LedgerRow>(db, (sql) => sql`
+  const previous = await one<{ entry_date: string }>(
+    db,
+    (sql) => sql`
+    select max(entry_date) as entry_date from public.ledger_entries where group_id = ${groupId} and entry_date < ${windowStart} having max(entry_date) is not null`,
+  );
+  return rows<LedgerRow>(
+    db,
+    (sql) => sql`
     select entry_id, entry_date, name, account_name, payment_method_name, document, document_filed, total_cents, external_ids
     from public.ledger_entry_rows where group_id = ${groupId} and entry_date >= ${recentListStart(windowStart, previous?.entry_date)}
-    order by entry_date desc, created_at desc limit ${limit}`);
+    order by entry_date desc, created_at desc limit ${limit}`,
+  );
 }
 
 export type AccountBalance = {
-  id: string; name: string;
+  id: string;
+  name: string;
   /** Saldo no fim de `today`; nulo quando a conta começa depois (sem saldo inicial conhecido). */
   balanceCents: number | null;
   /** Conta sem data de início: o saldo é só a soma dos lançamentos mais o saldo inicial. */
@@ -47,13 +63,26 @@ export type AccountBalance = {
 
 /** Saldo de cada conta ativa no fim de hoje (saldo inicial + lançamentos), como na importação do extrato. */
 export async function accountBalances(db: Db, groupId: string, today: string): Promise<AccountBalance[]> {
-  const accounts = await rows<{ id: string; name: string; opening_date: string | null }>(db, (sql) => sql`
-    select id, name, opening_date from public.accounts where group_id = ${groupId} and active order by name`);
+  const accounts = await rows<{ id: string; name: string; opening_date: string | null }>(
+    db,
+    (sql) => sql`
+    select id, name, opening_date from public.accounts where group_id = ${groupId} and active order by name`,
+  );
   const tomorrow = nextDay(today);
-  return Promise.all(accounts.map(async (account) => {
-    const result = await rpc(db, "account_balance_before", { p_account_id: account.id, p_date: tomorrow }) as unknown as { balance_cents: number | null } | null;
-    return { id: account.id, name: account.name, balanceCents: result?.balance_cents ?? null, openingDate: account.opening_date };
-  }));
+  return Promise.all(
+    accounts.map(async (account) => {
+      const result = (await rpc(db, "account_balance_before", {
+        p_account_id: account.id,
+        p_date: tomorrow,
+      })) as unknown as { balance_cents: number | null } | null;
+      return {
+        id: account.id,
+        name: account.name,
+        balanceCents: result?.balance_cents ?? null,
+        openingDate: account.opening_date,
+      };
+    }),
+  );
 }
 
 /** Associados com mensalidade atrasada no ano, do maior número de meses para o menor. */

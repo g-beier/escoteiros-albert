@@ -10,7 +10,17 @@ import { ControlStatusDialog, type StatusTarget } from "./control-status-dialog"
  * célula é o nome). Este componente abre o diálogo da situação. Com milhares de células,
  * hidratar um botão com handler por célula era o que sobrava de custo na carga e na rolagem da tela.
  */
-export function ControlMatrixEditor({ items, rows, today, children }: { items: ControlItem[]; rows: ControlStatusRow[]; today: string; children: ReactNode }) {
+export function ControlMatrixEditor({
+  items,
+  rows,
+  today,
+  children,
+}: {
+  items: ControlItem[];
+  rows: ControlStatusRow[];
+  today: string;
+  children: ReactNode;
+}) {
   const [target, setTarget] = useState<StatusTarget | null>(null);
   const map = useMemo(() => statusMap(rows), [rows]);
 
@@ -30,9 +40,13 @@ export function ControlMatrixEditor({ items, rows, today, children }: { items: C
     });
   }
 
-  return <>
-    {/* Delegação: o clique (ou Enter/Espaço, que o navegador converte em clique no botão) sobe até aqui. */}
-    <div onClick={onClick} className="contents">{children}</div>
-    <ControlStatusDialog target={target} today={today} onClose={() => setTarget(null)} />
-  </>;
+  return (
+    <>
+      {/* Delegação: o clique (ou Enter/Espaço, que o navegador converte em clique no botão) sobe até aqui. */}
+      <div onClick={onClick} className="contents">
+        {children}
+      </div>
+      <ControlStatusDialog target={target} today={today} onClose={() => setTarget(null)} />
+    </>
+  );
 }

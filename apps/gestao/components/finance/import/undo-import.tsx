@@ -5,34 +5,62 @@ import { toast } from "sonner";
 import { IconArrowBackUp } from "@tabler/icons-react";
 import { deleteStatementImport } from "@/app/(financeiro)/financeiro/extrato/importar/actions";
 import { Button } from "@geas/ui/components/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@geas/ui/components/dialog";
 
 /** Desfaz uma importação inteira (ex.: extrato importado na conta errada). */
-export function UndoImport({ importId, fileName, lineCount }: { importId: string; fileName: string; lineCount: number }) {
+export function UndoImport({
+  importId,
+  fileName,
+  lineCount,
+}: {
+  importId: string;
+  fileName: string;
+  lineCount: number;
+}) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const confirm = () => startTransition(async () => {
-    const result = await deleteStatementImport(importId);
-    if (result.error) { toast.error(result.error); return; }
-    toast.success(result.success);
-    setOpen(false);
-  });
-  return <>
-    <Button variant="ghost" size="sm" onClick={() => setOpen(true)}><IconArrowBackUp data-icon="inline-start" /> Desfazer</Button>
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Desfazer esta importação?</DialogTitle>
-          <DialogDescription>
-            As {lineCount} {lineCount === 1 ? "linha" : "linhas"} de “{fileName}” saem do extrato. Conciliações dessas linhas são desfeitas;
-            os lançamentos continuam, só voltam a ficar pendentes. Use quando o extrato foi importado na conta errada ou para reimportar.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button variant="destructive" disabled={pending} onClick={confirm}>{pending ? "Desfazendo…" : "Desfazer importação"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  </>;
+  const confirm = () =>
+    startTransition(async () => {
+      const result = await deleteStatementImport(importId);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(result.success);
+      setOpen(false);
+    });
+  return (
+    <>
+      <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
+        <IconArrowBackUp data-icon="inline-start" /> Desfazer
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Desfazer esta importação?</DialogTitle>
+            <DialogDescription>
+              As {lineCount} {lineCount === 1 ? "linha" : "linhas"} de “{fileName}” saem do extrato. Conciliações dessas
+              linhas são desfeitas; os lançamentos continuam, só voltam a ficar pendentes. Use quando o extrato foi
+              importado na conta errada ou para reimportar.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" disabled={pending} onClick={confirm}>
+              {pending ? "Desfazendo…" : "Desfazer importação"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }

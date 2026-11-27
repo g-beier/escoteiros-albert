@@ -12,7 +12,10 @@ import { date, id, notes, text } from "../form-data";
 // na função SQL.
 
 /** Pessoa da situação: `relativeId` (responsável) ou `associateId`. */
-const person = (data: FormData) => (text(data, "relativeId") ? { id: id(data, "relativeId"), relative: true } : { id: id(data, "associateId"), relative: false });
+const person = (data: FormData) =>
+  text(data, "relativeId")
+    ? { id: id(data, "relativeId"), relative: true }
+    : { id: id(data, "associateId"), relative: false };
 
 const editor = () => associatesWriterOrError("Sem permissão para alterar o controle de dados.");
 
@@ -23,11 +26,16 @@ export async function setControlStatus(_previous: ActionResult, formData: FormDa
     if (status !== null && !isControlStatus(status)) throw new InputError("Escolha a situação.");
     const year = text(formData, "valueYear");
     const valueYear = year ? Number(year) : null;
-    if (valueYear !== null && (!Number.isInteger(valueYear) || valueYear < 1900 || valueYear > 2100)) throw new InputError("Ano: de 1900 a 2100.");
+    if (valueYear !== null && (!Number.isInteger(valueYear) || valueYear < 1900 || valueYear > 2100))
+      throw new InputError("Ano: de 1900 a 2100.");
     await controls.setStatus(db, {
-      person: person(formData), itemId: id(formData, "itemId"), status,
-      statusDate: date(formData, "statusDate", "a data da situação"), validUntil: date(formData, "validUntil", "a validade"),
-      valueYear, note: notes(formData, "note", 200),
+      person: person(formData),
+      itemId: id(formData, "itemId"),
+      status,
+      statusDate: date(formData, "statusDate", "a data da situação"),
+      validUntil: date(formData, "validUntil", "a validade"),
+      valueYear,
+      note: notes(formData, "note", 200),
     });
     revalidatePath("/associados", "layout");
     return `Situação salva: ${statusLabels[status ?? "ok"]}.`;

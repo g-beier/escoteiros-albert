@@ -3,17 +3,38 @@ import { DB_COMPOSE, E2E_ACCOUNTS, E2E_ADMIN_EMAIL, E2E_GROUP_NAME, E2E_PREFIX }
 
 /** SQL como postgres no banco local (psql dentro do container `db`). Só para preparar e limpar o grupo E2E. */
 export function psql(sql: string): string {
-  return execFileSync("docker", ["compose", "-f", DB_COMPOSE, "exec", "-T", "db", "psql", "-U", "postgres", "-d", "geas", "-tAq", "-v", "ON_ERROR_STOP=1"], {
-    input: sql,
-    encoding: "utf8",
-  }).trim();
+  return execFileSync(
+    "docker",
+    [
+      "compose",
+      "-f",
+      DB_COMPOSE,
+      "exec",
+      "-T",
+      "db",
+      "psql",
+      "-U",
+      "postgres",
+      "-d",
+      "geas",
+      "-tAq",
+      "-v",
+      "ON_ERROR_STOP=1",
+    ],
+    {
+      input: sql,
+      encoding: "utf8",
+    },
+  ).trim();
 }
 
 export const literal = (value: string) => `'${value.replaceAll("'", "''")}'`;
 
 /** Cadastro em auth.users (id, bloqueio), ou nulo. */
 export function findUser(email: string): { id: string; banned: boolean } | null {
-  const row = psql(`select id || '|' || (coalesce(banned_until > now(), false))::text from auth.users where email = ${literal(email)};`);
+  const row = psql(
+    `select id || '|' || (coalesce(banned_until > now(), false))::text from auth.users where email = ${literal(email)};`,
+  );
   if (!row) return null;
   const [id, banned] = row.split("|");
   return { id, banned: banned === "true" };
@@ -21,7 +42,9 @@ export function findUser(email: string): { id: string; banned: boolean } | null 
 
 /** Cadastra (ou desbloqueia) o e-mail em auth.users, como o administrador faria em Usuários. */
 export function ensureUser(email: string) {
-  psql(`insert into auth.users(email) values (${literal(email)}) on conflict (email) do update set banned_until = null;`);
+  psql(
+    `insert into auth.users(email) values (${literal(email)}) on conflict (email) do update set banned_until = null;`,
+  );
 }
 
 /**

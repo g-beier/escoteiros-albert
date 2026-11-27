@@ -11,7 +11,9 @@ const byName = (a: string, b: string) => a.localeCompare(b, "pt-BR", { sensitivi
 
 /** Seções distintas, em ordem alfabética; quem não tem seção fica por último (null). */
 export function sectionsOf(associates: WithSection[]): (string | null)[] {
-  const named = [...new Set(associates.map((a) => a.section?.trim()).filter((s): s is string => Boolean(s)))].sort(byName);
+  const named = [...new Set(associates.map((a) => a.section?.trim()).filter((s): s is string => Boolean(s)))].sort(
+    byName,
+  );
   return associates.some((a) => !a.section?.trim()) ? [...named, null] : named;
 }
 
@@ -26,4 +28,3 @@ export function matchesSection(associate: WithSection, filter: string | undefine
   if (filter === NO_SECTION_PARAM) return !associate.section?.trim();
   return associate.section?.trim() === filter;
 }
-

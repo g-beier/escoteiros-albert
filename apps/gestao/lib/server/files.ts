@@ -1,5 +1,9 @@
 import {
-  BlobSASPermissions, BlobServiceClient, generateBlobSASQueryParameters, SASProtocol, StorageSharedKeyCredential,
+  BlobSASPermissions,
+  BlobServiceClient,
+  generateBlobSASQueryParameters,
+  SASProtocol,
+  StorageSharedKeyCredential,
   type UserDelegationKey,
 } from "@azure/storage-blob";
 import { DataError, type Db } from "@/lib/server/db";
@@ -15,7 +19,16 @@ import { rpc } from "@/lib/server/pg/db";
 
 const UPLOAD_SECONDS = 10 * 60;
 
-type Signer = { service: BlobServiceClient; sign: (container: string, path: string, permissions: string, seconds: number, disposition?: string) => Promise<string> };
+type Signer = {
+  service: BlobServiceClient;
+  sign: (
+    container: string,
+    path: string,
+    permissions: string,
+    seconds: number,
+    disposition?: string,
+  ) => Promise<string>;
+};
 
 let signer: Promise<Signer> | null = null;
 
@@ -24,14 +37,22 @@ async function createSigner(): Promise<Signer> {
   if (connection) {
     const service = BlobServiceClient.fromConnectionString(connection);
     const credential = service.credential;
-    if (!(credential instanceof StorageSharedKeyCredential)) throw new Error("AZURE_STORAGE_CONNECTION_STRING precisa da chave da conta.");
+    if (!(credential instanceof StorageSharedKeyCredential))
+      throw new Error("AZURE_STORAGE_CONNECTION_STRING precisa da chave da conta.");
     return {
       service,
       sign: async (container, path, permissions, seconds, disposition) => {
-        const query = generateBlobSASQueryParameters({
-          containerName: container, blobName: path, permissions: BlobSASPermissions.parse(permissions),
-          startsOn: new Date(Date.now() - 60_000), expiresOn: new Date(Date.now() + seconds * 1000), contentDisposition: disposition,
-        }, credential).toString();
+        const query = generateBlobSASQueryParameters(
+          {
+            containerName: container,
+            blobName: path,
+            permissions: BlobSASPermissions.parse(permissions),
+            startsOn: new Date(Date.now() - 60_000),
+            expiresOn: new Date(Date.now() + seconds * 1000),
+            contentDisposition: disposition,
+          },
+          credential,
+        ).toString();
         return `${service.getContainerClient(container).getBlobClient(path).url}?${query}`;
       },
     };
@@ -50,10 +71,19 @@ async function createSigner(): Promise<Signer> {
         const until = Date.now() + 60 * 60_000;
         key = { value: await service.getUserDelegationKey(new Date(Date.now() - 60_000), new Date(until)), until };
       }
-      const query = generateBlobSASQueryParameters({
-        containerName: container, blobName: path, permissions: BlobSASPermissions.parse(permissions), protocol: SASProtocol.Https,
-        startsOn: new Date(Date.now() - 60_000), expiresOn: new Date(Date.now() + seconds * 1000), contentDisposition: disposition,
-      }, key.value, accountName).toString();
+      const query = generateBlobSASQueryParameters(
+        {
+          containerName: container,
+          blobName: path,
+          permissions: BlobSASPermissions.parse(permissions),
+          protocol: SASProtocol.Https,
+          startsOn: new Date(Date.now() - 60_000),
+          expiresOn: new Date(Date.now() + seconds * 1000),
+          contentDisposition: disposition,
+        },
+        key.value,
+        accountName,
+      ).toString();
       return `${service.getContainerClient(container).getBlobClient(path).url}?${query}`;
     },
   };
@@ -67,7 +97,11 @@ function storage(): Promise<Signer> {
   return signer;
 }
 
-async function allowed(db: Db, check: "can_write_attachment_object" | "can_read_attachment_object" | "can_delete_attachment_object", path: string) {
+async function allowed(
+  db: Db,
+  check: "can_write_attachment_object" | "can_read_attachment_object" | "can_delete_attachment_object",
+  path: string,
+) {
   if (!(await rpc(db, check, { p_name: path }))) throw new DataError("Arquivo não encontrado ou sem permissão.");
 }
 
@@ -83,7 +117,13 @@ export async function signedUploadUrl(db: Db, container: string, path: string): 
 }
 
 /** URL de leitura válida por `seconds`; com `downloadName`, o navegador baixa com esse nome. */
-export async function signedDownloadUrl(db: Db, container: string, path: string, seconds: number, downloadName?: string): Promise<string> {
+export async function signedDownloadUrl(
+  db: Db,
+  container: string,
+  path: string,
+  seconds: number,
+  downloadName?: string,
+): Promise<string> {
   await allowed(db, "can_read_attachment_object", path);
   const disposition = downloadName ? `attachment; filename*=UTF-8''${encodeURIComponent(downloadName)}` : undefined;
   try {
@@ -97,7 +137,12 @@ export async function signedDownloadUrl(db: Db, container: string, path: string,
 /** Tipo e tamanho do arquivo enviado, lidos no próprio Blob (não no navegador). */
 export async function fileProperties(container: string, path: string): Promise<{ contentType: string; size: number }> {
   try {
-    const properties = await (await storage()).service.getContainerClient(container).getBlobClient(path).getProperties();
+    const properties = await (
+      await storage()
+    ).service
+      .getContainerClient(container)
+      .getBlobClient(path)
+      .getProperties();
     return { contentType: properties.contentType ?? "", size: properties.contentLength ?? 0 };
   } catch {
     throw new DataError("Arquivo não encontrado no armazenamento.");

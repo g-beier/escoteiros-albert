@@ -1,7 +1,13 @@
 import { dateBR, money } from "@/lib/format";
 
 /** Linha devolvida por `ledger_entry_history` (023). */
-export type AuditRow = { id: number; created_at: string; action: string; actor_email: string | null; details: Record<string, unknown> | null };
+export type AuditRow = {
+  id: number;
+  created_at: string;
+  action: string;
+  actor_email: string | null;
+  details: Record<string, unknown> | null;
+};
 
 export type HistoryChange = { label: string; before?: string; after?: string };
 export type HistoryItem = { id: number; at: string; actor: string; title: string; changes: HistoryChange[] };
@@ -16,8 +22,15 @@ export type HistoryNames = {
 
 type Split = { category_id?: string; amount_cents?: number; description?: string; associate_id?: string | null };
 type Snapshot = {
-  entry_date?: string; name?: string; account_id?: string; payment_method_id?: string; document?: string | null;
-  document_filed?: boolean; total_cents?: number; notes?: string | null; splits?: Split[];
+  entry_date?: string;
+  name?: string;
+  account_id?: string;
+  payment_method_id?: string;
+  document?: string | null;
+  document_filed?: boolean;
+  total_cents?: number;
+  notes?: string | null;
+  splits?: Split[];
 };
 
 const UNLINK_REASONS: Record<string, string> = {
@@ -27,11 +40,12 @@ const UNLINK_REASONS: Record<string, string> = {
   "importação desfeita": "importação do extrato desfeita",
 };
 
-const name = (map: Map<string, string>, id: unknown) => typeof id === "string" && id ? map.get(id) ?? "(removido)" : "—";
-const text = (value: unknown) => typeof value === "string" && value.trim() ? value.trim() : "—";
-const cents = (value: unknown) => typeof value === "number" ? money(value / 100) : "—";
-const date = (value: unknown) => typeof value === "string" && value ? dateBR(value) : "—";
-const filed = (value: unknown) => value ? "Arquivado" : "Pendente";
+const name = (map: Map<string, string>, id: unknown) =>
+  typeof id === "string" && id ? (map.get(id) ?? "(removido)") : "—";
+const text = (value: unknown) => (typeof value === "string" && value.trim() ? value.trim() : "—");
+const cents = (value: unknown) => (typeof value === "number" ? money(value / 100) : "—");
+const date = (value: unknown) => (typeof value === "string" && value ? dateBR(value) : "—");
+const filed = (value: unknown) => (value ? "Arquivado" : "Pendente");
 
 function splitText(split: Split, names: HistoryNames) {
   const parts = [name(names.categories, split.category_id), cents(split.amount_cents)];
@@ -42,7 +56,8 @@ function splitText(split: Split, names: HistoryNames) {
 
 /** Rateios incluídos e removidos (comparação por conteúdo; reordenar não conta como mudança). */
 function splitChanges(before: Split[], after: Split[], names: HistoryNames): HistoryChange[] {
-  const key = (split: Split) => JSON.stringify([split.category_id, split.amount_cents, split.description ?? "", split.associate_id ?? null]);
+  const key = (split: Split) =>
+    JSON.stringify([split.category_id, split.amount_cents, split.description ?? "", split.associate_id ?? null]);
   const remaining = new Map<string, number>();
   for (const split of after) remaining.set(key(split), (remaining.get(key(split)) ?? 0) + 1);
   const removed: Split[] = [];
@@ -54,7 +69,10 @@ function splitChanges(before: Split[], after: Split[], names: HistoryNames): His
   const added: Split[] = [];
   for (const split of after) {
     const count = remaining.get(key(split)) ?? 0;
-    if (count > 0) { added.push(split); remaining.set(key(split), count - 1); }
+    if (count > 0) {
+      added.push(split);
+      remaining.set(key(split), count - 1);
+    }
   }
   return [
     ...removed.map((split) => ({ label: "Rateio removido", before: splitText(split, names) })),
@@ -90,34 +108,54 @@ function describe(row: AuditRow, names: HistoryNames): { title: string; changes:
     case "ledger_entry.created": {
       const changes: HistoryChange[] = [];
       for (const field of FIELDS) {
-        if (field.key in details && field.key !== "splits") changes.push({ label: field.label, after: field.show(details[field.key], names) });
+        if (field.key in details && field.key !== "splits")
+          changes.push({ label: field.label, after: field.show(details[field.key], names) });
       }
       return { title: "Lançamento criado", changes };
     }
     case "ledger_entry.updated": {
       const changes = snapshotChanges((details.before ?? {}) as Snapshot, (details.after ?? {}) as Snapshot, names);
-      const title = details.reason === "agrupado" ? "Lançamentos agrupados neste" : details.reason === "desagrupado" ? "Rateios desagrupados em lançamentos próprios"
-        : details.reason === "em lote" ? "Lançamento alterado em lote" : "Lançamento alterado";
+      const title =
+        details.reason === "agrupado"
+          ? "Lançamentos agrupados neste"
+          : details.reason === "desagrupado"
+            ? "Rateios desagrupados em lançamentos próprios"
+            : details.reason === "em lote"
+              ? "Lançamento alterado em lote"
+              : "Lançamento alterado";
       return { title: changes.length ? title : "Lançamento salvo sem alterações", changes };
     }
     case "ledger_entry.document_filed":
-      return { title: `${details.filed ? "Documento arquivado" : "Documento marcado como pendente"}${details.reason === "em lote" ? " em lote" : ""}`, changes: [] };
+      return {
+        title: `${details.filed ? "Documento arquivado" : "Documento marcado como pendente"}${details.reason === "em lote" ? " em lote" : ""}`,
+        changes: [],
+      };
     case "ledger_entry.outside_statement":
-      return { title: details.outside_statement ? "Marcado como fora do extrato" : "Desmarcado como fora do extrato", changes: [] };
+      return {
+        title: details.outside_statement ? "Marcado como fora do extrato" : "Desmarcado como fora do extrato",
+        changes: [],
+      };
     case "ledger_entry.account_changed": {
-      const reason = details.reason === "conciliação" ? " na conciliação" : details.reason === "em lote" ? " em lote" : "";
-      return { title: `Conta alterada${reason}`, changes: [{ label: "Conta", before: name(names.accounts, details.from), after: name(names.accounts, details.to) }] };
+      const reason =
+        details.reason === "conciliação" ? " na conciliação" : details.reason === "em lote" ? " em lote" : "";
+      return {
+        title: `Conta alterada${reason}`,
+        changes: [
+          { label: "Conta", before: name(names.accounts, details.from), after: name(names.accounts, details.to) },
+        ],
+      };
     }
     case "reconciliation.linked": {
       const lines = Array.isArray(details.statement_line_ids) ? details.statement_line_ids.length : 0;
       const entries = Array.isArray(details.ledger_entry_ids) ? details.ledger_entry_ids.length : 0;
       const changes: HistoryChange[] = [{ label: "Linhas do extrato", after: String(lines) }];
       if (entries > 1) changes.push({ label: "Lançamentos no mesmo vínculo", after: String(entries) });
-      if (typeof details.amount_cents === "number") changes.push({ label: "Valor", after: cents(details.amount_cents) });
+      if (typeof details.amount_cents === "number")
+        changes.push({ label: "Valor", after: cents(details.amount_cents) });
       return { title: "Conciliado com o extrato", changes };
     }
     case "reconciliation.unlinked": {
-      const reason = typeof details.reason === "string" ? UNLINK_REASONS[details.reason] ?? details.reason : null;
+      const reason = typeof details.reason === "string" ? (UNLINK_REASONS[details.reason] ?? details.reason) : null;
       return { title: "Conciliação desfeita", changes: reason ? [{ label: "Motivo", after: reason }] : [] };
     }
     case "ledger_entry.attachment_added":
@@ -131,7 +169,10 @@ function describe(row: AuditRow, names: HistoryNames): { title: string; changes:
         return [item.code, item.name].filter(Boolean).join(" ") || "—";
       };
       const from = Array.isArray(details.from) ? details.from.map(label).join(", ") : "—";
-      return { title: "Rubrica excluída: rateios movidos", changes: [{ label: "Rubrica", before: from, after: label(details.to) }] };
+      return {
+        title: "Rubrica excluída: rateios movidos",
+        changes: [{ label: "Rubrica", before: from, after: label(details.to) }],
+      };
     }
     case "ledger_entry.quick":
       return { title: "Registrado pelo registro rápido (para revisar)", changes: [] };
@@ -146,5 +187,10 @@ function describe(row: AuditRow, names: HistoryNames): { title: string; changes:
 
 /** Eventos de auditoria do lançamento em texto para a página de detalhes (mais recentes primeiro). */
 export function describeHistory(rows: AuditRow[], names: HistoryNames): HistoryItem[] {
-  return rows.map((row) => ({ id: row.id, at: row.created_at, actor: row.actor_email ?? "Sistema", ...describe(row, names) }));
+  return rows.map((row) => ({
+    id: row.id,
+    at: row.created_at,
+    actor: row.actor_email ?? "Sistema",
+    ...describe(row, names),
+  }));
 }

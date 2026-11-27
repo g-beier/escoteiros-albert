@@ -20,7 +20,8 @@ function branch(data: FormData, key = "branch"): ScoutBranch {
 const optionalBranch = (data: FormData, key = "branch") => (text(data, key) ? branch(data, key) : null);
 function star(data: FormData) {
   const value = Number(text(data, "star"));
-  if (!Number.isInteger(value) || value < 1 || value > 99) throw new InputError("Estrela inválida. Recarregue a página.");
+  if (!Number.isInteger(value) || value < 1 || value > 99)
+    throw new InputError("Estrela inválida. Recarregue a página.");
   return value;
 }
 
@@ -36,8 +37,12 @@ export async function savePeriod(_previous: ActionResult, formData: FormData): P
     const place = optional(formData, "place");
     if (place && place.length > 80) throw new InputError("Outro grupo: no máximo 80 caracteres.");
     await life.savePeriod(db, {
-      associateId: id(formData, "associateId"), periodId, branch: branch(formData), place,
-      startedOn: date(formData, "startedOn", "o início", true), endedOn: date(formData, "endedOn", "o fim"),
+      associateId: id(formData, "associateId"),
+      periodId,
+      branch: branch(formData),
+      place,
+      startedOn: date(formData, "startedOn", "o início", true),
+      endedOn: date(formData, "endedOn", "o fim"),
     });
     revalidate();
     return periodId ? "Período corrigido." : "Período incluído.";
@@ -83,7 +88,12 @@ export async function deliverStar(_previous: ActionResult, formData: FormData): 
   return runAction(associatesEditorOrError, async ({ db }) => {
     const undo = text(formData, "undo") === "1";
     const n = star(formData);
-    await life.deliverStar(db, id(formData, "associateId"), n, undo ? null : date(formData, "date", "a data da entrega", true));
+    await life.deliverStar(
+      db,
+      id(formData, "associateId"),
+      n,
+      undo ? null : date(formData, "date", "a data da entrega", true),
+    );
     revalidate();
     return undo ? "Entrega desfeita." : `Certificado da ${n}ª estrela entregue.`;
   });
@@ -103,7 +113,10 @@ export async function saveEvent(_previous: ActionResult, formData: FormData): Pr
     const title = text(formData, "title");
     if (!title || title.length > 80) throw new InputError("Informe o título (até 80 caracteres).");
     await life.saveEvent(db, {
-      associateId: id(formData, "associateId"), eventId, date: date(formData, "date", "a data", true), title,
+      associateId: id(formData, "associateId"),
+      eventId,
+      date: date(formData, "date", "a data", true),
+      title,
       description: notes(formData, "description", 1000),
     });
     revalidate();
@@ -134,8 +147,12 @@ export async function saveExclusion(_previous: ActionResult, formData: FormData)
     const reason = text(formData, "reason");
     if (!(EXCLUSION_REASONS as readonly string[]).includes(reason)) throw new InputError("Escolha o motivo.");
     await life.saveExclusion(db, {
-      associateId: id(formData, "associateId"), exclusionId, reason: reason as ExclusionReason, note: notes(formData, "note", 500),
-      startedOn: date(formData, "startedOn", "o início", true), endedOn: date(formData, "endedOn", "o fim", true),
+      associateId: id(formData, "associateId"),
+      exclusionId,
+      reason: reason as ExclusionReason,
+      note: notes(formData, "note", 500),
+      startedOn: date(formData, "startedOn", "o início", true),
+      endedOn: date(formData, "endedOn", "o fim", true),
     });
     revalidate();
     return exclusionId ? "Período não contabilizado corrigido." : "Período não contabilizado incluído.";

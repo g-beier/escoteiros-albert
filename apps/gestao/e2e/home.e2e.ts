@@ -9,7 +9,14 @@ test.afterAll(() => cleanupE2eGroup());
 
 test("Início mostra o que precisa de atenção e um cartão por módulo", async ({ page }) => {
   const name = uniqueName("Início");
-  await createEntry(page, { name, direction: "saida", total: "15,00", account: E2E_ACCOUNTS[0], category: "Telefone", description: "alerta do início" });
+  await createEntry(page, {
+    name,
+    direction: "saida",
+    total: "15,00",
+    account: E2E_ACCOUNTS[0],
+    category: "Telefone",
+    description: "alerta do início",
+  });
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Início" })).toBeAttached();

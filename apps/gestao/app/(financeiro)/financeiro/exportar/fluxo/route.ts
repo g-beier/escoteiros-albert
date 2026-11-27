@@ -14,7 +14,9 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const byCategory = params.get("visao") === "detalhamento";
   const csv = params.get("formato") === "csv";
-  const encoding = isCsvEncoding(params.get("codificacao")) ? params.get("codificacao") as "utf-8" | "windows-1252" : "utf-8";
+  const encoding = isCsvEncoding(params.get("codificacao"))
+    ? (params.get("codificacao") as "utf-8" | "windows-1252")
+    : "utf-8";
   const period = periodBounds({ kind: "personalizado", from: params.get("de") ?? "", to: params.get("ate") ?? "" });
   if (!period) return errorResponse("Período inválido: informe datas válidas, com início antes do fim.");
 

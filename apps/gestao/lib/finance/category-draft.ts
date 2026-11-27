@@ -7,8 +7,14 @@ import { compareCodes, type CategoryKind } from "@/lib/finance/categories";
  */
 
 export type SavedCategory = {
-  id: string; parent_id: string | null; code: string | null; name: string; kind: CategoryKind | null;
-  ledger_code: string | null; active: boolean; usage: number;
+  id: string;
+  parent_id: string | null;
+  code: string | null;
+  name: string;
+  kind: CategoryKind | null;
+  ledger_code: string | null;
+  active: boolean;
+  usage: number;
   /** Marcada "venda de itens" (019). */
   sells_items?: boolean;
 };
@@ -32,9 +38,15 @@ export type DraftNode = {
   savedCode: string | null;
 };
 
-export type DeletedNode = { key: string; id: string; name: string; savedCode: string | null; usage: number;
+export type DeletedNode = {
+  key: string;
+  id: string;
+  name: string;
+  savedCode: string | null;
+  usage: number;
   /** Rubricas acima dela quando foi excluída, da mais próxima para a raiz: a primeira que continuar recebe os rateios. */
-  ancestors: string[] };
+  ancestors: string[];
+};
 
 export type Draft = {
   nodes: Record<string, DraftNode>;
@@ -56,8 +68,17 @@ export function createDraft(items: SavedCategory[]): Draft {
   for (const item of sorted) {
     const parentKey = item.parent_id && ids.has(item.parent_id) ? item.parent_id : null;
     nodes[item.id] = {
-      key: item.id, id: item.id, parentKey, name: item.name, ledgerCode: item.ledger_code, active: item.active, sellsItems: item.sells_items ?? false, usage: item.usage,
-      isRoot: !parentKey && item.code !== null, savedKind: item.kind, savedCode: item.code,
+      key: item.id,
+      id: item.id,
+      parentKey,
+      name: item.name,
+      ledgerCode: item.ledger_code,
+      active: item.active,
+      sellsItems: item.sells_items ?? false,
+      usage: item.usage,
+      isRoot: !parentKey && item.code !== null,
+      savedKind: item.kind,
+      savedCode: item.code,
     };
     (children[parentKey ?? TOP] ??= []).push(item.id);
   }
@@ -65,7 +86,10 @@ export function createDraft(items: SavedCategory[]): Draft {
 }
 
 export type DraftRow = {
-  node: DraftNode; depth: number; code: string | null; kind: CategoryKind | null;
+  node: DraftNode;
+  depth: number;
+  code: string | null;
+  kind: CategoryKind | null;
   /** Níveis abaixo dela (0 = folha). */
   height: number;
   /** Ela e as de baixo. */
@@ -81,10 +105,26 @@ export type DraftRow = {
 /** Linhas na ordem da árvore, com códigos recalculados. */
 export function draftRows(draft: Draft): DraftRow[] {
   const rows: DraftRow[] = [];
-  const visit = (key: string, depth: number, code: string | null, kind: CategoryKind | null, inherited = false): DraftRow => {
+  const visit = (
+    key: string,
+    depth: number,
+    code: string | null,
+    kind: CategoryKind | null,
+    inherited = false,
+  ): DraftRow => {
     const node = draft.nodes[key];
     const sells = kind === "receita" && (inherited || node.sellsItems);
-    const row: DraftRow = { node, depth, code, kind, height: 0, subtree: [key], subtreeUsage: node.usage, moved: node.id !== null && code !== node.savedCode, sells };
+    const row: DraftRow = {
+      node,
+      depth,
+      code,
+      kind,
+      height: 0,
+      subtree: [key],
+      subtreeUsage: node.usage,
+      moved: node.id !== null && code !== node.savedCode,
+      sells,
+    };
     rows.push(row);
     const kids = draft.children[key] ?? [];
     kids.forEach((kid, index) => {
@@ -118,7 +158,8 @@ export function dropError(draft: Draft, key: string, target: string, place: Drop
   if (source.subtree.includes(target)) return "Uma rubrica não pode ficar dentro dela mesma.";
   const parent = place === "inside" ? goal : rows.find((row) => row.node.key === goal.node.parentKey);
   if (!parent || !parent.code) return "Solte dentro de uma rubrica da árvore (abaixo de 1 Receitas ou 2 Despesas).";
-  if (parent.depth + 1 + source.height > MAX_DEPTH) return "A árvore de rubricas tem no máximo 5 níveis (ex.: 2.1.1.1.1).";
+  if (parent.depth + 1 + source.height > MAX_DEPTH)
+    return "A árvore de rubricas tem no máximo 5 níveis (ex.: 2.1.1.1.1).";
   if (source.subtreeUsage > 0 && source.kind && parent.kind !== source.kind) {
     return `Com rateios gravados, a rubrica não muda de ${source.kind === "receita" ? "Receitas para Despesas" : "Despesas para Receitas"}.`;
   }
@@ -138,21 +179,46 @@ export function moveNode(draft: Draft, key: string, target: string, place: DropP
   const list = [...(children[parentKey] ?? [])];
   const index = place === "inside" ? list.length : list.indexOf(target) + (place === "after" ? 1 : 0);
   list.splice(index, 0, key);
-  return { ...draft, children: { ...children, [parentKey]: list }, nodes: { ...draft.nodes, [key]: { ...draft.nodes[key], parentKey } } };
+  return {
+    ...draft,
+    children: { ...children, [parentKey]: list },
+    nodes: { ...draft.nodes, [key]: { ...draft.nodes[key], parentKey } },
+  };
 }
 
-export function updateNode(draft: Draft, key: string, patch: Partial<Pick<DraftNode, "name" | "ledgerCode" | "active" | "sellsItems">>): Draft {
+export function updateNode(
+  draft: Draft,
+  key: string,
+  patch: Partial<Pick<DraftNode, "name" | "ledgerCode" | "active" | "sellsItems">>,
+): Draft {
   return { ...draft, nodes: { ...draft.nodes, [key]: { ...draft.nodes[key], ...patch } } };
 }
 
 /** Nova rubrica no fim de `parentKey`; devolve o rascunho e a chave dela. */
 export function addNode(draft: Draft, parentKey: string, name = "Nova rubrica"): [Draft, string] {
   const key = `new:${draft.nextNew}`;
-  const node: DraftNode = { key, id: null, parentKey, name, ledgerCode: null, active: true, sellsItems: false, usage: 0, isRoot: false, savedKind: null, savedCode: null };
-  return [{
-    ...draft, nextNew: draft.nextNew + 1, nodes: { ...draft.nodes, [key]: node },
-    children: { ...draft.children, [parentKey]: [...(draft.children[parentKey] ?? []), key] },
-  }, key];
+  const node: DraftNode = {
+    key,
+    id: null,
+    parentKey,
+    name,
+    ledgerCode: null,
+    active: true,
+    sellsItems: false,
+    usage: 0,
+    isRoot: false,
+    savedKind: null,
+    savedCode: null,
+  };
+  return [
+    {
+      ...draft,
+      nextNew: draft.nextNew + 1,
+      nodes: { ...draft.nodes, [key]: node },
+      children: { ...draft.children, [parentKey]: [...(draft.children[parentKey] ?? []), key] },
+    },
+    key,
+  ];
 }
 
 /** Tira a rubrica e as de baixo da árvore; as gravadas entram na lista de exclusões. */
@@ -167,7 +233,8 @@ export function removeNode(draft: Draft, key: string): Draft {
   for (const sub of row.subtree) {
     const node = nodes[sub];
     // as de baixo também caem na rubrica acima da que foi excluída
-    if (node.id) deleted.push({ key: sub, id: node.id, name: node.name, savedCode: node.savedCode, usage: node.usage, ancestors });
+    if (node.id)
+      deleted.push({ key: sub, id: node.id, name: node.name, savedCode: node.savedCode, usage: node.usage, ancestors });
     delete nodes[sub];
     delete children[sub];
   }
@@ -180,21 +247,43 @@ export function deletedTarget(draft: Draft, item: DeletedNode): DraftNode | null
   return key ? draft.nodes[key] : null;
 }
 
-export type DraftChanges = { created: number; renamed: number; moved: number; toggled: number; deleted: number; movedSplits: number; total: number };
+export type DraftChanges = {
+  created: number;
+  renamed: number;
+  moved: number;
+  toggled: number;
+  deleted: number;
+  movedSplits: number;
+  total: number;
+};
 
 export function draftChanges(draft: Draft, saved: Draft): DraftChanges {
   const rows = draftRows(draft);
-  let created = 0, renamed = 0, moved = 0, toggled = 0;
+  let created = 0,
+    renamed = 0,
+    moved = 0,
+    toggled = 0;
   for (const row of rows) {
     const before = row.node.id ? saved.nodes[row.node.key] : null;
-    if (!before) { created++; continue; }
+    if (!before) {
+      created++;
+      continue;
+    }
     if (before.name !== row.node.name || (before.ledgerCode ?? "") !== (row.node.ledgerCode ?? "")) renamed++;
     if (before.active !== row.node.active || before.sellsItems !== row.node.sellsItems) toggled++;
     if (row.moved) moved++;
   }
   const deleted = draft.deleted.length;
   const movedSplits = draft.deleted.reduce((sum, item) => sum + item.usage, 0);
-  return { created, renamed, moved, toggled, deleted, movedSplits, total: created + renamed + moved + toggled + deleted };
+  return {
+    created,
+    renamed,
+    moved,
+    toggled,
+    deleted,
+    movedSplits,
+    total: created + renamed + moved + toggled + deleted,
+  };
 }
 
 /** Argumentos de `save_category_tree`: todas as rubricas fora das raízes, na ordem final, e as exclusões. */
@@ -202,8 +291,12 @@ export function draftPayload(draft: Draft) {
   const nodes = draftRows(draft)
     .filter((row) => !row.node.isRoot && row.node.parentKey)
     .map((row) => ({
-      key: row.node.key, id: row.node.id, parent: row.node.parentKey, name: row.node.name.trim(),
-      ledgerCode: row.node.ledgerCode || null, active: row.node.active,
+      key: row.node.key,
+      id: row.node.id,
+      parent: row.node.parentKey,
+      name: row.node.name.trim(),
+      ledgerCode: row.node.ledgerCode || null,
+      active: row.node.active,
       // só receitas vendem: ao mudar de ramo para Despesas, a marca cai
       sellsItems: row.kind === "receita" && row.node.sellsItems,
       position: (draft.children[row.node.parentKey!] ?? []).indexOf(row.node.key),

@@ -55,7 +55,9 @@ function seed() {
 
 test.beforeAll(() => seed());
 // PERF_KEEP=1 deixa os dados para medir de novo (o próximo seed apaga e recria).
-test.afterAll(() => { if (!process.env.PERF_KEEP) cleanup(); });
+test.afterAll(() => {
+  if (!process.env.PERF_KEEP) cleanup();
+});
 
 test("inventário: materiais", async ({ page }) => {
   test.setTimeout(240_000);

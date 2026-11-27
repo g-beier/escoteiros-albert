@@ -12,15 +12,24 @@ const cell = (value: string) => value.replace(/\|/g, "\\|").replace(/\n/g, " ");
 
 function typeLabel(type: ColumnType): string {
   switch (type.kind) {
-    case "texto": return type.min && type.min === type.max ? `texto (${type.max})` : `texto (até ${type.max})`;
-    case "id": return "id do app";
-    case "data": return "data dd/mm/aaaa";
-    case "mes_ou_data": return "mês mm/aaaa ou data";
-    case "sim_nao": return "sim/não";
-    case "inteiro": return `inteiro ${type.min}–${type.max}`;
-    case "dinheiro": return "valor 1.234,56";
-    case "lista": return type.choices.map((choice) => `\`${choice.label}\``).join(", ");
-    case "situacao_controle": return "situação, ano ou data";
+    case "texto":
+      return type.min && type.min === type.max ? `texto (${type.max})` : `texto (até ${type.max})`;
+    case "id":
+      return "id do app";
+    case "data":
+      return "data dd/mm/aaaa";
+    case "mes_ou_data":
+      return "mês mm/aaaa ou data";
+    case "sim_nao":
+      return "sim/não";
+    case "inteiro":
+      return `inteiro ${type.min}–${type.max}`;
+    case "dinheiro":
+      return "valor 1.234,56";
+    case "lista":
+      return type.choices.map((choice) => `\`${choice.label}\``).join(", ");
+    case "situacao_controle":
+      return "situação, ano ou data";
   }
 }
 
@@ -50,7 +59,9 @@ function fileMarkdown(spec: FileSpec): string {
       const names = [column.header, ...(column.aliases ?? [])].map((name) => `\`${name}\``);
       return `| ${names[0]}${names.length > 1 ? ` (ou ${names.slice(1).join(", ")})` : ""} | ${requiredLabel(column)} | ${cell(typeLabel(column.type))} | ${cell(column.help)} | ${cell(column.example)} |`;
     }),
-    ...(spec.dynamic ? [`| \`${spec.dynamic.pattern}\` |  |  | ${cell(spec.dynamic.help)} | ${cell(spec.dynamic.example)} |`] : []),
+    ...(spec.dynamic
+      ? [`| \`${spec.dynamic.pattern}\` |  |  | ${cell(spec.dynamic.help)} | ${cell(spec.dynamic.example)} |`]
+      : []),
     "",
     "Exemplo:",
     "",
@@ -68,7 +79,10 @@ export function contractMarkdown(): string {
     "",
     "| Na célula | Situação |",
     "|---|---|",
-    ...CONTROL_STATUS_CHOICES.map((choice) => `| ${[choice.label, ...(choice.aliases ?? [])].map((name) => `\`${name}\``).join(", ")} | ${choice.value.replace(/_/g, " ")} |`),
+    ...CONTROL_STATUS_CHOICES.map(
+      (choice) =>
+        `| ${[choice.label, ...(choice.aliases ?? [])].map((name) => `\`${name}\``).join(", ")} | ${choice.value.replace(/_/g, " ")} |`,
+    ),
   ].join("\n");
   return [DOC_START, "", ...FILES.flatMap((spec) => [fileMarkdown(spec), ""]), statuses, "", DOC_END].join("\n");
 }

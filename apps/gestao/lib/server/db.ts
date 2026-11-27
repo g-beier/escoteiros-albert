@@ -9,7 +9,10 @@ export type Db = { readonly [brand]: "Db" };
 
 /** Erro do banco ou da plataforma, com a mensagem para o usuário (as funções SQL já falam português). */
 export class DataError extends Error {
-  constructor(message: string, readonly code?: string) {
+  constructor(
+    message: string,
+    readonly code?: string,
+  ) {
     super(message);
     this.name = "DataError";
   }

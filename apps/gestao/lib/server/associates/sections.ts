@@ -46,8 +46,12 @@ export async function activeCounts(db: Db, groupId: string): Promise<SectionCoun
     };
   });
   const youth: Record<string, number> = {};
-  for (const row of rows) for (const key of [row.section_id, row.patrol_id]) if (key) youth[key] = (youth[key] ?? 0) + 1;
-  return { youth, scouters: scouterCounts(functions as AssociateFunction[], new Set(rows.map((row) => row.id)), todayISO()) };
+  for (const row of rows)
+    for (const key of [row.section_id, row.patrol_id]) if (key) youth[key] = (youth[key] ?? 0) + 1;
+  return {
+    youth,
+    scouters: scouterCounts(functions as AssociateFunction[], new Set(rows.map((row) => row.id)), todayISO()),
+  };
 }
 
 export async function createSection(db: Db, groupId: string, branch: ScoutBranch, name: string) {

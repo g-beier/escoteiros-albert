@@ -14,7 +14,12 @@ const managerOnly = () => inventoryEditorOrError("Apenas editores do Inventário
 export async function saveLocation(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   return runAction(managerOnly, async ({ db, groupId }) => {
     const id = text(formData, "id") || null;
-    await locations.save(db, groupId, { id, parentId: text(formData, "parentId") || null, name: text(formData, "name"), description: text(formData, "description") || null });
+    await locations.save(db, groupId, {
+      id,
+      parentId: text(formData, "parentId") || null,
+      name: text(formData, "name"),
+      description: text(formData, "description") || null,
+    });
     revalidatePath("/inventario/configuracoes/divisoes");
     return id ? "Divisão salva." : "Divisão cadastrada.";
   });

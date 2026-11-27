@@ -26,21 +26,27 @@ const nextConfig: NextConfig = {
       // o registro rápido do inventário passou a ser comum aos módulos (/rapido)
       { source: "/inventario/rapido", destination: "/rapido", permanent: true },
       { source: "/inventario/rapido/:path*", destination: "/rapido/inventario/:path*", permanent: true },
-      { source: "/:area(lancamentos|extrato|mensalidades|configuracoes|exportar)/:path*", destination: "/financeiro/:area/:path*", permanent: true },
+      {
+        source: "/:area(lancamentos|extrato|mensalidades|configuracoes|exportar)/:path*",
+        destination: "/financeiro/:area/:path*",
+        permanent: true,
+      },
     ];
   },
   async headers() {
-    return [{
-      source: "/(.*)",
-      headers: [
-        { key: "X-Content-Type-Options", value: "nosniff" },
-        { key: "X-Frame-Options", value: "DENY" },
-        { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-        { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-        { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-      ],
-    },
-    { source: "/favicon.ico", headers: FAVICON_CACHE }];
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+        ],
+      },
+      { source: "/favicon.ico", headers: FAVICON_CACHE },
+    ];
   },
 };
 

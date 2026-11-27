@@ -31,7 +31,9 @@ test.beforeAll(() => {
 });
 
 test.afterAll(() => {
-  psql(`delete from public.associate_movements where associate_id = ${literal(id)}; delete from public.associates where id = ${literal(id)};`);
+  psql(
+    `delete from public.associate_movements where associate_id = ${literal(id)}; delete from public.associates where id = ${literal(id)};`,
+  );
 });
 
 test("perfil: barra, anos e estrela a entregar", async ({ page }) => {
@@ -40,7 +42,9 @@ test("perfil: barra, anos e estrela a entregar", async ({ page }) => {
   const card = page.getByRole("region", { name: "Vida escoteira" });
   await expect(card.getByText(`${years} anos`).first()).toBeVisible();
   await expect(card.getByRole("img", { name: /Vida escoteira de 2022/ })).toBeVisible();
-  await expect(card.getByRole("note", { name: "Estrela de atividade a entregar" })).toContainText(`${years}ª estrela de atividade`);
+  await expect(card.getByRole("note", { name: "Estrela de atividade a entregar" })).toContainText(
+    `${years}ª estrela de atividade`,
+  );
   await card.getByRole("link", { name: "Linha do tempo" }).click();
   await expect(page).toHaveURL(new RegExp(`/associados/${id}/vida-escoteira$`));
 });

@@ -4,10 +4,16 @@ import { parseCents, parseChoice, parseDate, parseInteger, parseMonthOrDate, par
 
 describe("parseDate", () => {
   it.each([
-    ["14/05/2015", "2015-05-14"], ["4/5/2015", "2015-05-04"], ["2015-05-14", "2015-05-14"],
-    ["14.05.15", "2015-05-14"], ["01/01/85", "1985-01-01"], [" 29/02/2024 ", "2024-02-29"],
+    ["14/05/2015", "2015-05-14"],
+    ["4/5/2015", "2015-05-04"],
+    ["2015-05-14", "2015-05-14"],
+    ["14.05.15", "2015-05-14"],
+    ["01/01/85", "1985-01-01"],
+    [" 29/02/2024 ", "2024-02-29"],
   ])("%s → %s", (text, iso) => expect(parseDate(text)).toEqual({ value: iso }));
-  it.each(["31/02/2024", "2015/05/14", "maio 2015", "14/05"])("recusa %s", (text) => expect(parseDate(text).error).toBeTruthy());
+  it.each(["31/02/2024", "2015/05/14", "maio 2015", "14/05"])("recusa %s", (text) =>
+    expect(parseDate(text).error).toBeTruthy(),
+  );
 });
 
 describe("parseMonthOrDate", () => {

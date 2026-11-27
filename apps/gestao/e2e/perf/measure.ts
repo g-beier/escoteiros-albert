@@ -29,8 +29,13 @@ const UNDO_CV_CSS = `.cv-table{display:table!important}.cv-table>:is(thead,tbody
 export async function prepare(page: Page) {
   if (!UNDO_CV) return;
   await page.addInitScript((css) => {
-    const add = () => { const style = document.createElement("style"); style.textContent = css; document.head.appendChild(style); };
-    if (document.head) add(); else document.addEventListener("DOMContentLoaded", add);
+    const add = () => {
+      const style = document.createElement("style");
+      style.textContent = css;
+      document.head.appendChild(style);
+    };
+    if (document.head) add();
+    else document.addEventListener("DOMContentLoaded", add);
   }, UNDO_CV_CSS);
 }
 
@@ -45,8 +50,15 @@ export async function measureLoad(page: Page, url: string, ready: string) {
   await page.addInitScript(() => {
     const w = window as unknown as { __perf: { lcp: number; longTasks: number[] } };
     w.__perf = { lcp: 0, longTasks: [] };
-    new PerformanceObserver((list) => list.getEntries().forEach((e) => { w.__perf.lcp = e.startTime; })).observe({ type: "largest-contentful-paint", buffered: true });
-    new PerformanceObserver((list) => list.getEntries().forEach((e) => w.__perf.longTasks.push(e.duration))).observe({ type: "longtask", buffered: true });
+    new PerformanceObserver((list) =>
+      list.getEntries().forEach((e) => {
+        w.__perf.lcp = e.startTime;
+      }),
+    ).observe({ type: "largest-contentful-paint", buffered: true });
+    new PerformanceObserver((list) => list.getEntries().forEach((e) => w.__perf.longTasks.push(e.duration))).observe({
+      type: "longtask",
+      buffered: true,
+    });
   });
   await page.goto(url);
   await page.locator(ready).first().waitFor();
@@ -139,12 +151,20 @@ export async function measureScroll(page: Page, rowSelector: string) {
     return times.sort((a, b) => a - b)[3];
   });
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
-  const dom = await page.evaluate((selector) => ({
-    nodes: document.getElementsByTagName("*").length,
-    rows: document.querySelectorAll(selector).length,
-  }), rowSelector);
+  const dom = await page.evaluate(
+    (selector) => ({
+      nodes: document.getElementsByTagName("*").length,
+      rows: document.querySelectorAll(selector).length,
+    }),
+    rowSelector,
+  );
   const keys = Object.keys(runs[0]) as (keyof (typeof runs)[number])[];
-  return { ...dom, relayoutMs: Math.round(relayout), ...Object.fromEntries(keys.map((key) => [key, median(runs.map((r) => r[key]))])) as (typeof runs)[number], runs };
+  return {
+    ...dom,
+    relayoutMs: Math.round(relayout),
+    ...(Object.fromEntries(keys.map((key) => [key, median(runs.map((r) => r[key]))])) as (typeof runs)[number]),
+    runs,
+  };
 }
 
 /** Grava test-results/perf-<rótulo>-<tela>.json e mostra o resumo no console. */

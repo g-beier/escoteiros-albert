@@ -38,13 +38,19 @@ function seed() {
 async function loadAll(page: Page, window: boolean) {
   for (let i = 0; i < 20; i++) {
     if (await page.getByText("Fim da lista").isVisible()) break;
-    await page.evaluate(({ window, selector }) => {
-      const el = window ? document.scrollingElement! : document.querySelector(selector)!;
-      el.scrollTop = el.scrollHeight;
-    }, { window, selector: SCROLLER });
+    await page.evaluate(
+      ({ window, selector }) => {
+        const el = window ? document.scrollingElement! : document.querySelector(selector)!;
+        el.scrollTop = el.scrollHeight;
+      },
+      { window, selector: SCROLLER },
+    );
     await page.waitForTimeout(800);
   }
-  await page.evaluate((selector) => { document.scrollingElement!.scrollTop = 0; document.querySelector(selector)!.scrollTop = 0; }, SCROLLER);
+  await page.evaluate((selector) => {
+    document.scrollingElement!.scrollTop = 0;
+    document.querySelector(selector)!.scrollTop = 0;
+  }, SCROLLER);
   await page.waitForTimeout(300);
 }
 
@@ -55,7 +61,12 @@ for (const view of ["movimentacoes", "detalhamento"] as const) {
     await page.goto(`/financeiro/lancamentos/${view}?de=tudo&q=E2E%20Perf`);
     await expect(page.locator(`${SCROLLER} tbody tr`).first()).toBeVisible();
     await loadAll(page, false);
-    await measureScrolling(page, { name: view, selector: SCROLLER, items: `${SCROLLER} tbody tr`, extra: { rows: ROWS } });
+    await measureScrolling(page, {
+      name: view,
+      selector: SCROLLER,
+      items: `${SCROLLER} tbody tr`,
+      extra: { rows: ROWS },
+    });
   });
 }
 

@@ -3,11 +3,19 @@ import { ASSOCIATES_SETTINGS_HOME } from "@/components/associates/app-header";
 
 export type SettingsTab = "secoes" | "itens" | "excluidos";
 
-export const SETTINGS_LABELS: Record<SettingsTab, string> = { secoes: "Seções e equipes", itens: "Itens de controle", excluidos: "Excluídos" };
+export const SETTINGS_LABELS: Record<SettingsTab, string> = {
+  secoes: "Seções e equipes",
+  itens: "Itens de controle",
+  excluidos: "Excluídos",
+};
 
 /** Caminho das telas de Configurações: Início › Associados › Configurações › aba. */
 export function settingsCrumbs(current: SettingsTab): Crumb[] {
-  return [{ label: "Associados", href: "/associados" }, { label: "Configurações", href: ASSOCIATES_SETTINGS_HOME }, { label: SETTINGS_LABELS[current] }];
+  return [
+    { label: "Associados", href: "/associados" },
+    { label: "Configurações", href: ASSOCIATES_SETTINGS_HOME },
+    { label: SETTINGS_LABELS[current] },
+  ];
 }
 
 /**

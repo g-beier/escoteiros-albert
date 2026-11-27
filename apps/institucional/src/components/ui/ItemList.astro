@@ -18,7 +18,7 @@ const { items } = Astro.props;
   {
     items.map(({ title, description, icon = 'tabler:circle-dot' }) => (
       <li class="flex items-start gap-4 p-5">
-        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <span class="bg-primary/10 text-primary mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
           <Icon name={icon} class="h-5 w-5" />
         </span>
         <div>

@@ -3,7 +3,14 @@
 import { revalidatePath } from "next/cache";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { InputError, runAction } from "@/lib/action";
-import { CONTROL_AUDIENCES, isControlStatus, isDirectorate, isItemKind, isValueKind, type ItemAudience } from "@/lib/associates/controls";
+import {
+  CONTROL_AUDIENCES,
+  isControlStatus,
+  isDirectorate,
+  isItemKind,
+  isValueKind,
+  type ItemAudience,
+} from "@/lib/associates/controls";
 import * as controls from "@/lib/server/associates/controls";
 import { associatesEditorOrError } from "@/lib/server/session";
 import { id, text } from "../../form-data";
@@ -22,18 +29,28 @@ function itemInput(data: FormData): controls.ItemInput {
   const directorate = text(data, "directorate");
   if (!isDirectorate(directorate)) throw new InputError("Escolha a diretoria.");
   // por público: `applies-<público>` = on e `initial-<público>` = situação inicial (vazio = sem registro)
-  const audiences: ItemAudience[] = CONTROL_AUDIENCES.filter((a) => data.get(`applies-${a}`) === "on").map((audience) => {
-    const initial = text(data, `initial-${audience}`);
-    if (initial && !isControlStatus(initial)) throw new InputError("Valor inicial inválido.");
-    return { audience, initial_status: initial && isControlStatus(initial) ? initial : null };
-  });
+  const audiences: ItemAudience[] = CONTROL_AUDIENCES.filter((a) => data.get(`applies-${a}`) === "on").map(
+    (audience) => {
+      const initial = text(data, `initial-${audience}`);
+      if (initial && !isControlStatus(initial)) throw new InputError("Valor inicial inválido.");
+      return { audience, initial_status: initial && isControlStatus(initial) ? initial : null };
+    },
+  );
   if (!audiences.length) throw new InputError("Marque a quem o item se aplica.");
   const months = text(data, "validityMonths");
   const validityMonths = months ? Number(months) : null;
   if (validityMonths !== null && (!Number.isInteger(validityMonths) || validityMonths < 1 || validityMonths > 120)) {
     throw new InputError("Validade: de 1 a 120 meses, ou em branco se não vence.");
   }
-  return { name, kind, valueKind, directorate, audiences, validityMonths, removeOnLeave: data.get("removeOnLeave") === "on" };
+  return {
+    name,
+    kind,
+    valueKind,
+    directorate,
+    audiences,
+    validityMonths,
+    removeOnLeave: data.get("removeOnLeave") === "on",
+  };
 }
 
 const revalidate = () => revalidatePath("/associados", "layout");
@@ -59,8 +76,14 @@ export async function toggleControlItem(itemId: string, active: boolean): Promis
     const item = (await controls.items(db, groupId)).find((i) => i.id === itemId);
     if (!item) throw new InputError("Item não encontrado. Recarregue a página.");
     await controls.updateItem(db, item.id, {
-      name: item.name, kind: item.kind, valueKind: item.value_kind, directorate: item.directorate, audiences: item.audiences,
-      validityMonths: item.validity_months, removeOnLeave: item.remove_on_leave, active,
+      name: item.name,
+      kind: item.kind,
+      valueKind: item.value_kind,
+      directorate: item.directorate,
+      audiences: item.audiences,
+      validityMonths: item.validity_months,
+      removeOnLeave: item.remove_on_leave,
+      active,
     });
     revalidate();
     return active ? `Item “${item.name}” reativado.` : { success: `Item “${item.name}” desativado.`, tone: "neutral" };
@@ -70,7 +93,8 @@ export async function toggleControlItem(itemId: string, active: boolean): Promis
 /** Reordenar arrastando: grava a nova posição do item. */
 export async function placeControlItem(itemId: string, position: number): Promise<ActionResult> {
   return runAction(editor, async ({ db }) => {
-    if (!/^[0-9a-f-]{36}$/i.test(itemId) || !Number.isInteger(position) || position < 0) throw new InputError("Posição inválida. Recarregue a página.");
+    if (!/^[0-9a-f-]{36}$/i.test(itemId) || !Number.isInteger(position) || position < 0)
+      throw new InputError("Posição inválida. Recarregue a página.");
     await controls.placeItem(db, itemId, position);
     revalidate();
   });

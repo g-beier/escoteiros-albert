@@ -1,5 +1,21 @@
-import { registrationExpiries, scouterSections, transitions, upcomingDates, type Expiry, type ScouterSection, type Transition, type UpcomingDate } from "@/lib/associates/alerts";
-import { associateAudiences, matrixGroups, pendingCount, statusMap, type MatrixAudience, type MatrixPerson } from "@/lib/associates/controls";
+import {
+  registrationExpiries,
+  scouterSections,
+  transitions,
+  upcomingDates,
+  type Expiry,
+  type ScouterSection,
+  type Transition,
+  type UpcomingDate,
+} from "@/lib/associates/alerts";
+import {
+  associateAudiences,
+  matrixGroups,
+  pendingCount,
+  statusMap,
+  type MatrixAudience,
+  type MatrixPerson,
+} from "@/lib/associates/controls";
 import { activeRelativeIds, linksByAssociate, relativeRows } from "@/lib/associates/relatives";
 import { lifeSummary, type Star } from "@/lib/associates/scout-life";
 import type { Db } from "@/lib/server/db";
@@ -32,9 +48,18 @@ export type AssociatesOverview = {
 export type OverviewScope = { associateId: string | null; wholeGroup: boolean };
 
 /** O que o Associados mostra no Início geral. */
-export async function overview(db: Db, groupId: string, today: string, scope: OverviewScope): Promise<AssociatesOverview> {
+export async function overview(
+  db: Db,
+  groupId: string,
+  today: string,
+  scope: OverviewScope,
+): Promise<AssociatesOverview> {
   const [associates, allItems, statuses, links, life, functions] = await Promise.all([
-    listAssociates(db, groupId), listItems(db, groupId), listStatuses(db, groupId), listLinks(db, groupId), lifeOfGroup(db, groupId),
+    listAssociates(db, groupId),
+    listItems(db, groupId),
+    listStatuses(db, groupId),
+    listLinks(db, groupId),
+    lifeOfGroup(db, groupId),
     scope.associateId ? functionsOf(db, scope.associateId) : Promise.resolve([]),
   ]);
   // Escotista: datas, transições e estrelas só dos jovens das suas seções, como o chefe sem acesso (sectionOverview),
@@ -42,7 +67,9 @@ export async function overview(db: Db, groupId: string, today: string, scope: Ov
   const sections = scouterSections(functions, today);
   const sectionOnly = sections.length > 0 && !scope.wholeGroup;
   const sectionIds = new Set(sections.map((section) => section.id));
-  const people = sectionOnly ? associates.filter((a) => a.active && a.branch !== "adulto" && a.section_id && sectionIds.has(a.section_id)) : associates;
+  const people = sectionOnly
+    ? associates.filter((a) => a.active && a.branch !== "adulto" && a.section_id && sectionIds.has(a.section_id))
+    : associates;
   const map = statusMap(statuses);
   const activeAssociates = new Set(associates.filter((a) => a.active).map((a) => a.id));
   const activeRelatives = activeRelativeIds(links, activeAssociates);
@@ -52,9 +79,18 @@ export async function overview(db: Db, groupId: string, today: string, scope: Ov
     const items = matrixGroups(allItems, audience).flatMap((group) => group.items);
     const people = associates
       .filter((a) => a.active)
-      .map((a): MatrixPerson => ({ id: a.id, name: a.name, active: true, audiences: associateAudiences(a.branch), detail: "" }))
+      .map((a): MatrixPerson => ({
+        id: a.id,
+        name: a.name,
+        active: true,
+        audiences: associateAudiences(a.branch),
+        detail: "",
+      }))
       .filter((p) => p.audiences.includes(audience))
-      .flatMap((p) => [p, ...(audience === "jovem" ? relativeRows(linksOf.get(p.id) ?? [], activeRelatives, activeAssociates) : [])]);
+      .flatMap((p) => [
+        p,
+        ...(audience === "jovem" ? relativeRows(linksOf.get(p.id) ?? [], activeRelatives, activeAssociates) : []),
+      ]);
     return pendingCount(people, items, map);
   };
 
@@ -62,10 +98,21 @@ export async function overview(db: Db, groupId: string, today: string, scope: Ov
     dates: upcomingDates(people, today),
     transitions: transitions(people, today),
     pending: { jovem: pendingFor("jovem"), adulto: pendingFor("adulto") },
-    expiries: registrationExpiries(statuses, associates, allItems.filter((item) => item.active), today),
+    expiries: registrationExpiries(
+      statuses,
+      associates,
+      allItems.filter((item) => item.active),
+      today,
+    ),
     stars: people
       .flatMap((a) => {
-        const pending = lifeSummary({ periods: life.periods.get(a.id) ?? [], promiseDate: a.promise_date, records: life.stars.get(a.id) ?? [], exclusions: life.exclusions.get(a.id) ?? [], today }).pending;
+        const pending = lifeSummary({
+          periods: life.periods.get(a.id) ?? [],
+          promiseDate: a.promise_date,
+          records: life.stars.get(a.id) ?? [],
+          exclusions: life.exclusions.get(a.id) ?? [],
+          today,
+        }).pending;
         return pending ? [{ associateId: a.id, name: a.name, star: pending }] : [];
       })
       .sort((x, y) => x.star.dueOn.localeCompare(y.star.dueOn) || x.name.localeCompare(y.name, "pt-BR")),
@@ -80,5 +127,13 @@ export async function overview(db: Db, groupId: string, today: string, scope: Ov
  */
 export async function sectionOverview(db: Db, groupId: string, today: string): Promise<AssociatesOverview> {
   const people = await rpc(db, "associates_section_alert_rows", { p_group_id: groupId });
-  return { dates: upcomingDates(people, today), transitions: transitions(people, today), pending: { jovem: 0, adulto: 0 }, expiries: [], stars: [], sections: [], sectionOnly: true };
+  return {
+    dates: upcomingDates(people, today),
+    transitions: transitions(people, today),
+    pending: { jovem: 0, adulto: 0 },
+    expiries: [],
+    stars: [],
+    sections: [],
+    sectionOnly: true,
+  };
 }

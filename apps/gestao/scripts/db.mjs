@@ -44,7 +44,9 @@ function connect(url, options = {}) {
 }
 
 function files() {
-  return readdirSync(migrationsDir).filter((name) => /^\d{3}_.+\.sql$/.test(name)).sort();
+  return readdirSync(migrationsDir)
+    .filter((name) => /^\d{3}_.+\.sql$/.test(name))
+    .sort();
 }
 
 async function applied(sql) {
@@ -130,10 +132,15 @@ async function setupBlob() {
     try {
       await service.getContainerClient("comprovantes").createIfNotExists();
       await service.setProperties({
-        cors: [{
-          allowedOrigins: "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3210,http://127.0.0.1:3210",
-          allowedMethods: "GET,PUT,HEAD,OPTIONS", allowedHeaders: "*", exposedHeaders: "*", maxAgeInSeconds: 3600,
-        }],
+        cors: [
+          {
+            allowedOrigins: "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3210,http://127.0.0.1:3210",
+            allowedMethods: "GET,PUT,HEAD,OPTIONS",
+            allowedHeaders: "*",
+            exposedHeaders: "*",
+            maxAgeInSeconds: 3600,
+          },
+        ],
       });
       return;
     } catch (error) {
@@ -163,7 +170,10 @@ function userLines(text, managed) {
   const start = lines.indexOf(BLOCK_START);
   const end = lines.indexOf(BLOCK_END);
   // Arquivo de antes dos marcadores: tudo menos o cabeçalho antigo.
-  const rest = start >= 0 && end > start ? [...lines.slice(0, start), ...lines.slice(end + 1)] : lines.filter((line) => !line.startsWith("# Gerado por"));
+  const rest =
+    start >= 0 && end > start
+      ? [...lines.slice(0, start), ...lines.slice(end + 1)]
+      : lines.filter((line) => !line.startsWith("# Gerado por"));
   // Uma chave gerada repetida fora do bloco valeria por cima dele: sai.
   const kept = rest.filter((line) => !managed.has(line.split("=")[0].trim()));
   while (kept.length && !kept.at(-1).trim()) kept.pop();
@@ -177,8 +187,16 @@ function writeLocalEnv() {
     AZURE_STORAGE_CONNECTION_STRING: azuriteConnectionString(),
     NEXT_PUBLIC_SITE_URL: "http://localhost:4321",
   };
-  const user = existsSync(envFile) ? userLines(readFileSync(envFile, "utf8"), new Set(Object.keys(generated))) : USER_TEMPLATE;
-  const lines = [BLOCK_START, ...Object.entries(generated).map(([key, value]) => `${key}=${value}`), BLOCK_END, ...user, ""];
+  const user = existsSync(envFile)
+    ? userLines(readFileSync(envFile, "utf8"), new Set(Object.keys(generated)))
+    : USER_TEMPLATE;
+  const lines = [
+    BLOCK_START,
+    ...Object.entries(generated).map(([key, value]) => `${key}=${value}`),
+    BLOCK_END,
+    ...user,
+    "",
+  ];
   writeFileSync(envFile, lines.join("\n"), { mode: 0o600 });
   console.log(`Configuração local gravada em ${envFile}`);
   warnMissingLogin();
@@ -186,7 +204,10 @@ function writeLocalEnv() {
 
 function warnMissingLogin() {
   const values = Object.fromEntries(
-    readFileSync(envFile, "utf8").split("\n").filter((line) => /^[A-Z_0-9]+=/.test(line)).map((line) => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1).trim()]),
+    readFileSync(envFile, "utf8")
+      .split("\n")
+      .filter((line) => /^[A-Z_0-9]+=/.test(line))
+      .map((line) => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1).trim()]),
   );
   if (values.GOOGLE_CLIENT_ID && values.GOOGLE_CLIENT_SECRET) return;
   console.warn(
@@ -209,7 +230,8 @@ async function start() {
 async function reset() {
   loadEnv();
   const url = process.env.DATABASE_ADMIN_URL ?? localAdminUrl();
-  if (!isLocalUrl(url)) throw new Error(`reset só roda no banco local (DATABASE_ADMIN_URL aponta para ${new URL(url).hostname}).`);
+  if (!isLocalUrl(url))
+    throw new Error(`reset só roda no banco local (DATABASE_ADMIN_URL aponta para ${new URL(url).hostname}).`);
   const sql = connect(localAdminUrl("postgres"));
   try {
     await sql`drop database if exists ${sql(LOCAL.database)} with (force)`;
@@ -223,10 +245,38 @@ async function reset() {
 
 function test() {
   // pgTAP só no banco local/CI, fora do schema public (não entra nos tipos gerados nem vai para o Azure).
-  docker(["exec", "-T", "db", "psql", "-U", "postgres", "-d", LOCAL.database, "-qc",
-    "create schema if not exists extensions; create extension if not exists pgtap schema extensions; grant usage on schema extensions to authenticated; grant execute on all functions in schema extensions to authenticated;"]);
-  const tests = readdirSync(resolve(root, "db/tests")).filter((name) => name.endsWith(".sql")).sort().map((name) => `/tests/${name}`);
-  docker(["exec", "-T", "-w", "/tests", "-e", "PGOPTIONS=-c search_path=public,extensions", "db", "pg_prove", "-U", "postgres", "-d", LOCAL.database, "--failures", ...tests]);
+  docker([
+    "exec",
+    "-T",
+    "db",
+    "psql",
+    "-U",
+    "postgres",
+    "-d",
+    LOCAL.database,
+    "-qc",
+    "create schema if not exists extensions; create extension if not exists pgtap schema extensions; grant usage on schema extensions to authenticated; grant execute on all functions in schema extensions to authenticated;",
+  ]);
+  const tests = readdirSync(resolve(root, "db/tests"))
+    .filter((name) => name.endsWith(".sql"))
+    .sort()
+    .map((name) => `/tests/${name}`);
+  docker([
+    "exec",
+    "-T",
+    "-w",
+    "/tests",
+    "-e",
+    "PGOPTIONS=-c search_path=public,extensions",
+    "db",
+    "pg_prove",
+    "-U",
+    "postgres",
+    "-d",
+    LOCAL.database,
+    "--failures",
+    ...tests,
+  ]);
 }
 
 function adminUrl() {

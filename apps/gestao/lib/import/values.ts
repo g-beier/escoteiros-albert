@@ -51,7 +51,10 @@ export function parseMonthOrDate(text: string, end = false): Parsed<string> {
   if (month < 1 || month > 12) return fail(`mês "${text}" inválido`);
   if (end) {
     month += 1;
-    if (month === 13) { month = 1; year += 1; }
+    if (month === 13) {
+      month = 1;
+      year += 1;
+    }
   }
   return ok(isoDate(year, month, 1)!);
 }
@@ -81,10 +84,18 @@ export function parseCents(text: string): Parsed<number> {
 }
 
 /** Valor de lista: compara sem acento nem maiúsculas com o valor e os apelidos. */
-export function parseChoice<T extends string>(text: string, choices: readonly { value: T; label: string; aliases?: readonly string[] }[]): Parsed<T> {
+export function parseChoice<T extends string>(
+  text: string,
+  choices: readonly { value: T; label: string; aliases?: readonly string[] }[],
+): Parsed<T> {
   const key = normalizeText(text);
   for (const choice of choices) {
-    if (key === normalizeText(choice.value) || key === normalizeText(choice.label) || choice.aliases?.some((alias) => normalizeText(alias) === key)) return ok(choice.value);
+    if (
+      key === normalizeText(choice.value) ||
+      key === normalizeText(choice.label) ||
+      choice.aliases?.some((alias) => normalizeText(alias) === key)
+    )
+      return ok(choice.value);
   }
   return fail(`"${text}" não é um valor aceito (${choices.map((c) => c.label).join(", ")})`);
 }
@@ -102,11 +113,21 @@ export type ControlCell = { status?: string; year?: number; validUntil?: string;
  * Célula do controle: `<situação> [dd/mm/aaaa] [- observação]`; item de ano: `<ano>` ou `<situação> <ano>`;
  * item de data: `<data>` (validade, situação ok). Códigos do Doc 22 aceitos (`CONTROL_STATUS_CHOICES`).
  */
-export function parseControlCell(text: string, valueKind: string, choices: readonly { value: string; label: string; aliases?: readonly string[] }[]): Parsed<ControlCell> {
+export function parseControlCell(
+  text: string,
+  valueKind: string,
+  choices: readonly { value: string; label: string; aliases?: readonly string[] }[],
+): Parsed<ControlCell> {
   const clean = cleanText(text);
   const dash = clean.search(/\s[-–]\s/);
   const main = (dash >= 0 ? clean.slice(0, dash) : clean).trim();
-  const note = dash >= 0 ? clean.slice(dash).replace(/^\s[-–]\s/, "").trim() : "";
+  const note =
+    dash >= 0
+      ? clean
+          .slice(dash)
+          .replace(/^\s[-–]\s/, "")
+          .trim()
+      : "";
   if (note.length > 200) return { error: "observação com mais de 200 caracteres" };
   const withNote = (cell: ControlCell): Parsed<ControlCell> => ({ value: note ? { ...cell, note } : cell });
 
@@ -126,12 +147,16 @@ export function parseControlCell(text: string, valueKind: string, choices: reado
     const date = parseDate(trailingDate[2]!);
     if (date.error) return { error: date.error };
     statusText = trailingDate[1]!;
-    if (valueKind === "data") cell.validUntil = date.value; else cell.statusDate = date.value;
+    if (valueKind === "data") cell.validUntil = date.value;
+    else cell.statusDate = date.value;
   } else if (trailingYear) {
     statusText = trailingYear[1]!;
     cell.year = Number(trailingYear[2]);
   }
   const status = parseChoice(statusText, choices);
-  if (status.error) return { error: `"${main}" não é situação${valueKind === "ano" ? ", ano" : valueKind === "data" ? ", data" : ""} aceita` };
+  if (status.error)
+    return {
+      error: `"${main}" não é situação${valueKind === "ano" ? ", ano" : valueKind === "data" ? ", data" : ""} aceita`,
+    };
   return withNote({ ...cell, status: status.value });
 }

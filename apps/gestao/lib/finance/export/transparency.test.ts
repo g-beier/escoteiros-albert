@@ -36,8 +36,14 @@ describe("buildTransparencyReport", () => {
   });
 
   it("valor lançado direto num grupo vira a linha 'Sem rubrica detalhada', para o grupo fechar com as filhas", () => {
-    const report = buildTransparencyReport(buildRealizedModel(categories, [...sums, { category_id: "r", month: 5, amount_cents: 1000 }], 2026));
-    expect(report.rows.slice(0, 3).map((r) => [r.code, r.name, r.depth])).toEqual([["1", "Receitas", 0], ["1.1", "Mensalidades", 1], [null, UNDETAILED, 1]]);
+    const report = buildTransparencyReport(
+      buildRealizedModel(categories, [...sums, { category_id: "r", month: 5, amount_cents: 1000 }], 2026),
+    );
+    expect(report.rows.slice(0, 3).map((r) => [r.code, r.name, r.depth])).toEqual([
+      ["1", "Receitas", 0],
+      ["1.1", "Mensalidades", 1],
+      [null, UNDETAILED, 1],
+    ]);
     expect(report.rows[2].months[4]).toBe(1000);
     for (const parent of report.rows.filter((r) => r.depth === 0)) {
       const start = report.rows.indexOf(parent);

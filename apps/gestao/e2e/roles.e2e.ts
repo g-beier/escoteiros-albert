@@ -18,7 +18,8 @@ const youth = `${E2E_PREFIX} Jovem ${stamp}`;
 const other = `${E2E_PREFIX} Outro ${stamp}`;
 
 /** SQL como o administrador E2E (as funções auditadas exigem um usuário). */
-const asAdmin = (sql: string) => psql(`
+const asAdmin = (sql: string) =>
+  psql(`
   begin;
   select set_config('request.jwt.claims', json_build_object('sub', u.id, 'role', 'authenticated')::text, true)
     from auth.users u where u.email = ${literal(E2E_ADMIN_EMAIL)};
@@ -26,7 +27,10 @@ const asAdmin = (sql: string) => psql(`
   ${sql}
   commit;`);
 
-const groupId = () => psql(`select m.group_id from public.memberships m join auth.users u on u.id = m.user_id where u.email = ${literal(E2E_ADMIN_EMAIL)};`);
+const groupId = () =>
+  psql(
+    `select m.group_id from public.memberships m join auth.users u on u.id = m.user_id where u.email = ${literal(E2E_ADMIN_EMAIL)};`,
+  );
 
 test.beforeAll(() => {
   const gid = groupId();
@@ -63,7 +67,9 @@ test.beforeAll(() => {
 });
 
 test.afterAll(async () => {
-  psql(`delete from public.ledger_entries where created_by = (select id from auth.users where email = ${literal(contributor)});`);
+  psql(
+    `delete from public.ledger_entries where created_by = (select id from auth.users where email = ${literal(contributor)});`,
+  );
   await deleteUsers([chief, contributor, financeEditor, reader]);
   psql(`
     delete from public.associates where name in (${[scouter, scouterReader, youth, other].map(literal).join(", ")});
@@ -111,7 +117,10 @@ test("escotista com acesso ao Associados vê primeiro os avisos da própria seç
   const dates = page.getByRole("region", { name: "Aniversários e promessas" });
 
   await test.step("padrão: só a seção, com link para o cadastro", async () => {
-    await expect(tabs.getByRole("link", { name: `${E2E_PREFIX} Tropa ${stamp}` })).toHaveAttribute("aria-current", "page");
+    await expect(tabs.getByRole("link", { name: `${E2E_PREFIX} Tropa ${stamp}` })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     await expect(dates).toContainText(youth);
     await expect(dates).not.toContainText(other);
     await expect(dates.getByRole("link", { name: new RegExp(youth) })).toBeVisible();
@@ -139,7 +148,14 @@ test("colaborador do Financeiro lança, mas o lançamento fica para revisar", as
   });
 
   await test.step("lança e o lançamento entra para revisar", async () => {
-    await createEntry(page, { name, direction: "saida", total: "7,00", account: E2E_ACCOUNTS[0], category: "Telefone", description: "e2e colaborador" });
+    await createEntry(page, {
+      name,
+      direction: "saida",
+      total: "7,00",
+      account: E2E_ACCOUNTS[0],
+      category: "Telefone",
+      description: "e2e colaborador",
+    });
     await page.goto(`/financeiro/lancamentos/movimentacoes?revisao=para_revisar&de=tudo&q=${encodeURIComponent(name)}`);
     await expect(entryRow(page, name)).toHaveCount(1);
     await entryRow(page, name).getByRole("link", { name, exact: true }).click();

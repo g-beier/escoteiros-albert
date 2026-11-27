@@ -27,7 +27,8 @@ function toDataError(error: unknown): Error {
   if (error instanceof DataError) return error;
   const pg = error as { name?: string; message?: string; code?: string };
   if (pg?.name === "PostgresError") return new DataError(pg.message ?? "Erro no banco de dados.", pg.code);
-  if (pg?.code === "ECONNREFUSED" || pg?.code === "CONNECT_TIMEOUT") return new DataError("Banco de dados indisponível. Tente de novo em instantes.", pg.code);
+  if (pg?.code === "ECONNREFUSED" || pg?.code === "CONNECT_TIMEOUT")
+    return new DataError("Banco de dados indisponível. Tente de novo em instantes.", pg.code);
   return error instanceof Error ? error : new Error(String(error));
 }
 
@@ -35,14 +36,14 @@ function toDataError(error: unknown): Error {
 export async function run<T>(db: Db, work: (sql: Tx) => Promise<T> | T): Promise<T> {
   const who = access(db);
   try {
-    return await pool().begin(async (sql) => {
+    return (await pool().begin(async (sql) => {
       if (who.kind === "user") {
         await sql`select set_config('role', 'authenticated', true), set_config('request.jwt.claims', ${JSON.stringify({ sub: who.userId, role: "authenticated" })}, true)`;
       } else if (who.kind === "auth") {
         await sql`select set_config('role', 'geas_auth', true)`;
       }
       return await work(sql);
-    }) as T;
+    })) as T;
   } catch (error) {
     throw toDataError(error);
   }
@@ -80,7 +81,10 @@ export function where(sql: Tx, conditions: (Fragment | Query | false | null | un
 // Funções SQL ------------------------------------------------------------------------------------------
 
 type Overload = {
-  set: boolean; returnKind: "void" | "scalar" | "row"; nargs: number; ndefaults: number;
+  set: boolean;
+  returnKind: "void" | "scalar" | "row";
+  nargs: number;
+  ndefaults: number;
   inArgs: { name: string; type: string }[];
 };
 
@@ -96,15 +100,30 @@ function overloads(name: string): Promise<Overload[]> {
         array(select format_type(t, null) from unnest(coalesce(p.proallargtypes, p.proargtypes::oid[])) with ordinality u(t, i) order by i) as types,
         rt.typtype as ret_typtype, rt.typname as ret_name
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace join pg_type rt on rt.oid = p.prorettype
-      where n.nspname = 'public' and p.proname = ${name} and p.prokind = 'f'`.then((list) => list.map((row) => {
-      const modes = row.modes as string[];
-      const names = row.names as string[];
-      const types = row.types as string[];
-      const inArgs = types.flatMap((type, i) => (["i", "b", "v"].includes(modes[i]) ? [{ name: names[i], type }] : []));
-      const hasOut = modes.some((mode) => mode === "o" || mode === "b" || mode === "t");
-      const returnKind = row.ret_name === "void" ? "void" : hasOut || row.ret_typtype === "c" || row.ret_name === "record" ? "row" : "scalar";
-      return { set: row.set as boolean, returnKind, nargs: row.nargs as number, ndefaults: row.ndefaults as number, inArgs } satisfies Overload;
-    }));
+      where n.nspname = 'public' and p.proname = ${name} and p.prokind = 'f'`.then((list) =>
+      list.map((row) => {
+        const modes = row.modes as string[];
+        const names = row.names as string[];
+        const types = row.types as string[];
+        const inArgs = types.flatMap((type, i) =>
+          ["i", "b", "v"].includes(modes[i]) ? [{ name: names[i], type }] : [],
+        );
+        const hasOut = modes.some((mode) => mode === "o" || mode === "b" || mode === "t");
+        const returnKind =
+          row.ret_name === "void"
+            ? "void"
+            : hasOut || row.ret_typtype === "c" || row.ret_name === "record"
+              ? "row"
+              : "scalar";
+        return {
+          set: row.set as boolean,
+          returnKind,
+          nargs: row.nargs as number,
+          ndefaults: row.ndefaults as number,
+          inArgs,
+        } satisfies Overload;
+      }),
+    );
     found.catch(() => catalog.delete(name));
     catalog.set(name, found);
   }
@@ -129,9 +148,14 @@ type Nullable<T> = { [K in keyof T]: T[K] | null };
  * devolve o resultado como o PostgREST devolvia: valor (escalar), objeto (registro), lista (`setof`/`table`) ou nulo.
  * Argumentos `undefined` ficam de fora (vale o padrão da função).
  */
-export async function rpc<F extends keyof Functions & string>(db: Db, fn: F, args: Nullable<Functions[F]["Args"]>): Promise<Functions[F]["Returns"]> {
+export async function rpc<F extends keyof Functions & string>(
+  db: Db,
+  fn: F,
+  args: Nullable<Functions[F]["Args"]>,
+): Promise<Functions[F]["Returns"]> {
   const entries = Object.entries(args as Record<string, unknown>).filter(([, value]) => value !== undefined);
-  if (![fn, ...entries.map(([name]) => name)].every((name) => /^[a-z_][a-z0-9_]*$/.test(name))) throw new DataError(`Nome inválido em ${fn}.`);
+  if (![fn, ...entries.map(([name]) => name)].every((name) => /^[a-z_][a-z0-9_]*$/.test(name)))
+    throw new DataError(`Nome inválido em ${fn}.`);
   const given = entries.map(([name]) => name);
   let signature: Overload;
   try {
@@ -146,10 +170,18 @@ export async function rpc<F extends keyof Functions & string>(db: Db, fn: F, arg
   // nomes e tipos vêm do catálogo (conferidos acima); os valores vão como parâmetros
   const list = entries.map(([name], i) => `${name} => $${i + 1}::${typeOf.get(name)}`).join(", ");
   const call = `public.${fn}(${list})`;
-  const text = signature.returnKind === "scalar" && !signature.set ? `select ${call} as result` : `select * from ${call}`;
-  const result = await run(db, (sql) => sql.unsafe(text, entries.map(([, value]) => value as never), { prepare: true }));
+  const text =
+    signature.returnKind === "scalar" && !signature.set ? `select ${call} as result` : `select * from ${call}`;
+  const result = await run(db, (sql) =>
+    sql.unsafe(
+      text,
+      entries.map(([, value]) => value as never),
+      { prepare: true },
+    ),
+  );
   if (signature.returnKind === "void") return null as Functions[F]["Returns"];
-  if (signature.set) return (signature.returnKind === "scalar" ? result.map((row) => row[fn]) : [...result]) as Functions[F]["Returns"];
+  if (signature.set)
+    return (signature.returnKind === "scalar" ? result.map((row) => row[fn]) : [...result]) as Functions[F]["Returns"];
   if (signature.returnKind === "row") return (result[0] ?? null) as Functions[F]["Returns"];
   return (result[0]?.result ?? null) as Functions[F]["Returns"];
 }

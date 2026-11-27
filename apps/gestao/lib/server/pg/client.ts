@@ -31,7 +31,10 @@ const globalPool = globalThis as unknown as { geasSql?: Sql };
 /** Pool único por processo (no `next dev`, sobrevive ao recarregamento dos módulos). */
 export function pool(url = process.env.DATABASE_URL): Sql {
   if (globalPool.geasSql) return globalPool.geasSql;
-  if (!url) throw new Error("DATABASE_URL não configurada. Em desenvolvimento, rode `npm run infra:start` para gerar o .env.local.");
+  if (!url)
+    throw new Error(
+      "DATABASE_URL não configurada. Em desenvolvimento, rode `npm run infra:start` para gerar o .env.local.",
+    );
   globalPool.geasSql = postgres(url, connectionOptions()) as unknown as Sql;
   return globalPool.geasSql;
 }

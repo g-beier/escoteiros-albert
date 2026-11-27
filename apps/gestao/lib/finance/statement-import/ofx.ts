@@ -1,13 +1,6 @@
 import { computePeriod, computeTotals, headerSignature, isPreviousBalance, matchIgnore, splitKind } from "./profile";
 import { collapseSpaces } from "./text";
-import type {
-  IgnoredRow,
-  OfxAccount,
-  OfxProfileSettings,
-  OfxStatement,
-  StatementIssue,
-  StatementLine,
-} from "./types";
+import type { IgnoredRow, OfxAccount, OfxProfileSettings, OfxStatement, StatementIssue, StatementLine } from "./types";
 import { isoDate, parseAmount } from "./values";
 
 function decodeEntities(value: string) {
@@ -155,7 +148,8 @@ export function applyOfxProfile(parsed: OfxStatement, settings: OfxProfileSettin
     if (ignoredBy) {
       ignored.push({ sourceRow: original.sourceRow, reason: `Contém "${ignoredBy}"` });
       // O Itaú lança o saldo anterior como pseudo-transação: vira o saldo inicial.
-      if (openingBalanceCents === undefined && isPreviousBalance(original.description)) openingBalanceCents = original.amountCents;
+      if (openingBalanceCents === undefined && isPreviousBalance(original.description))
+        openingBalanceCents = original.amountCents;
       continue;
     }
     const line: StatementLine = { ...original };
