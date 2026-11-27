@@ -174,7 +174,7 @@ O template exige esta tabela completa antes da aprovação final. Sem login ela 
 - [x] Renovar o cookie de sessão
 - [x] `.env.example`, BACKLOG, `db/README.md` para rede privada
 - [x] Commit e push da branch
-- [ ] PR e CI (quando o usuário pedir); combinar o rebase do PR #4
+- [x] PR e CI (PRs #8 a #11, mergeados)
 
 Nenhum teste foi escrito nem executado para estes ajustes, por decisão do usuário.
 
@@ -182,7 +182,7 @@ Nenhum teste foi escrito nem executado para estes ajustes, por decisão do usuá
 - [x] `Link` sem prefetch em todo o app (`packages/ui/src/components/link.tsx`) e cache de `public/`
 - [x] Compressão RSC, `router.refresh()` duplicado, cache de 1 ano de logo e ícones
 - [ ] Paginação de Materiais (só se ficar lento)
-- [ ] Importador da planilha de inventário que sirva para produção
+- [x] Importador da planilha de inventário que sirva para produção (`/importar`, migration 010)
 
 ### Etapa 1: preparar artefatos (feita em 2026-11-22, sem login)
 - [x] `output: "standalone"` e Dockerfile linux/amd64 com estáticos, `public` e fontes, usuário não root (`apps/gestao/Dockerfile`, alvo `app`, 99,5 MB)
