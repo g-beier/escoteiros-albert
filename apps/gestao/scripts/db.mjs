@@ -3,7 +3,8 @@
 //                                 prepara o Azurite e grava o bloco gerado de .env.local (o resto do arquivo fica)
 //   node scripts/db.mjs stop      para a infra local (os dados ficam nos volumes)
 //   node scripts/db.mjs migrate   aplica as migrations novas em DATABASE_ADMIN_URL (local ou Azure)
-//   node scripts/db.mjs reset     recria o banco LOCAL do zero (apaga os dados) e aplica tudo
+//   node scripts/db.mjs reset     recria o banco LOCAL do zero (apaga os dados), aplica tudo e cria o grupo com o
+//                                 administrador padrão (BOOTSTRAP_ADMIN_EMAIL / BOOTSTRAP_GROUP_NAME mudam os padrões)
 //   node scripts/db.mjs test      roda db/tests com pg_prove dentro do container (cada arquivo desfaz o que fez)
 //   node scripts/db.mjs status    migrations aplicadas e pendentes
 //
@@ -241,6 +242,25 @@ async function reset() {
   await ensureLocalDatabase();
   process.env.APP_DB_ROLE = LOCAL.appRole;
   await migrate(localAdminUrl());
+  await bootstrapLocalGroup(localAdminUrl());
+}
+
+/** Banco local recém-criado: o grupo e o primeiro administrador (todos os módulos), como `maintenance.mjs bootstrap`. */
+async function bootstrapLocalGroup(url) {
+  const email = (process.env.BOOTSTRAP_ADMIN_EMAIL || "diretoria@escoteirosalbert.com.br").trim().toLowerCase();
+  const name = process.env.BOOTSTRAP_GROUP_NAME || "Grupo Escoteiro Albert Schweitzer";
+  const sql = connect(url);
+  try {
+    const [group] = await sql`select 1 from public.groups limit 1`;
+    if (group) return;
+    await sql.begin(async (tx) => {
+      await tx`insert into auth.users(email) values (${email}) on conflict (email) do nothing`;
+      await tx`select public.admin_bootstrap_group(${email}, ${name})`;
+    });
+    console.log(`Grupo "${name}" criado com ${email} (Administrador em todos os módulos).`);
+  } finally {
+    await sql.end();
+  }
 }
 
 function test() {

@@ -46,7 +46,7 @@ export type PaymentMethodItem = {
 export async function settingsCatalogs(db: Db, groupId: string) {
   return run(db, async (sql) => {
     const [categories, paymentMethods, accounts] = await Promise.all([
-      sql`select c.id, c.name, c.active, c.code, c.kind, c.parent_id, c.ledger_code, c.sells_items,
+      sql`select c.id, c.name, c.active, c.code, c.kind, c.parent_id, c.ledger_code, c.sells_items, c.transfer,
             (select count(*) from public.entry_splits s where s.category_id = c.id) as usage
           from public.categories c where c.group_id = ${groupId}`,
       sql`select p.id, p.name, p.active, p.default_account_id,

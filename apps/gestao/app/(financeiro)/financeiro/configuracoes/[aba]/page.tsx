@@ -74,9 +74,12 @@ export default async function SettingsPage({ params }: { params: Promise<{ aba: 
     active: c.active,
     usage: c.usage,
     sells_items: c.sells_items,
+    transfer: c.transfer,
   }));
   const categoriesVersion = savedCategories
-    .map((c) => [c.id, c.parent_id, c.code, c.name, c.ledger_code, c.active, c.sells_items, c.usage].join("|"))
+    .map((c) =>
+      [c.id, c.parent_id, c.code, c.name, c.ledger_code, c.active, c.sells_items, c.transfer, c.usage].join("|"),
+    )
     .join(";");
 
   return (

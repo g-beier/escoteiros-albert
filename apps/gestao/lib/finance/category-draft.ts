@@ -17,6 +17,8 @@ export type SavedCategory = {
   usage: number;
   /** Marcada "venda de itens" (019). */
   sells_items?: boolean;
+  /** Simples transferência (028): primeira filha da raiz, código `.0`. */
+  transfer?: boolean;
 };
 
 export type DraftNode = {
@@ -29,6 +31,8 @@ export type DraftNode = {
   active: boolean;
   /** Marcada "venda de itens" (Lojinha, 019): só receitas; vale também para as de baixo. */
   sellsItems: boolean;
+  /** Simples transferência (028): fica direto abaixo da raiz, sempre em primeiro, com código `.0`. */
+  transfer: boolean;
   /** Rateios gravados nela. */
   usage: number;
   /** 1 Receitas e 2 Despesas: fixas. */
@@ -75,6 +79,7 @@ export function createDraft(items: SavedCategory[]): Draft {
       ledgerCode: item.ledger_code,
       active: item.active,
       sellsItems: item.sells_items ?? false,
+      transfer: item.transfer ?? false,
       usage: item.usage,
       isRoot: !parentKey && item.code !== null,
       savedKind: item.kind,
@@ -127,8 +132,10 @@ export function draftRows(draft: Draft): DraftRow[] {
     };
     rows.push(row);
     const kids = draft.children[key] ?? [];
+    // com uma de simples transferência (sempre a primeira), ela é `.0` e as outras seguem `.1`, `.2`…
+    const start = kids.some((kid) => draft.nodes[kid].transfer) ? 0 : 1;
     kids.forEach((kid, index) => {
-      const child = visit(kid, depth + 1, code ? `${code}.${index + 1}` : null, kind, sells);
+      const child = visit(kid, depth + 1, code ? `${code}.${index + start}` : null, kind, sells);
       row.height = Math.max(row.height, child.height + 1);
       row.subtree.push(...child.subtree);
       row.subtreeUsage += child.subtreeUsage;
@@ -155,6 +162,8 @@ export function dropError(draft: Draft, key: string, target: string, place: Drop
   const goal = rows.find((row) => row.node.key === target);
   if (!source || !goal || key === target) return "";
   if (source.node.isRoot) return "As rubricas raiz (1 Receitas, 2 Despesas) não mudam de lugar.";
+  if (source.node.transfer) return "A simples transferência fica sempre em primeiro (1.0, 2.0) e não muda de lugar.";
+  if (goal.node.transfer && place === "before") return "A simples transferência fica sempre em primeiro.";
   if (source.subtree.includes(target)) return "Uma rubrica não pode ficar dentro dela mesma.";
   const parent = place === "inside" ? goal : rows.find((row) => row.node.key === goal.node.parentKey);
   if (!parent || !parent.code) return "Solte dentro de uma rubrica da árvore (abaixo de 1 Receitas ou 2 Despesas).";
@@ -179,6 +188,8 @@ export function moveNode(draft: Draft, key: string, target: string, place: DropP
   const list = [...(children[parentKey] ?? [])];
   const index = place === "inside" ? list.length : list.indexOf(target) + (place === "after" ? 1 : 0);
   list.splice(index, 0, key);
+  // a de simples transferência continua a primeira (o banco numera assim)
+  list.sort((a, b) => Number(draft.nodes[b].transfer) - Number(draft.nodes[a].transfer));
   return {
     ...draft,
     children: { ...children, [parentKey]: list },
@@ -205,6 +216,7 @@ export function addNode(draft: Draft, parentKey: string, name = "Nova rubrica"):
     ledgerCode: null,
     active: true,
     sellsItems: false,
+    transfer: false,
     usage: 0,
     isRoot: false,
     savedKind: null,

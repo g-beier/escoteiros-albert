@@ -168,7 +168,7 @@ export function CategoriesManager({ categories, canEdit }: { categories: SavedCa
                   row={row}
                   saved={saved}
                   canEdit={canEdit}
-                  draggable={canEdit && !onlyMissing && !row.node.isRoot && !saving}
+                  draggable={canEdit && !onlyMissing && !row.node.isRoot && !row.node.transfer && !saving}
                   dragging={dragKey === row.node.key}
                   drop={drag.dropFor(row.node.key)}
                   autoFocus={focusKey === row.node.key}
@@ -470,7 +470,7 @@ function CategoryTableRow({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuGroup>
-                  {!node.isRoot && (
+                  {!node.isRoot && !node.transfer && (
                     <DropdownMenuItem onClick={onMove}>
                       <IconArrowsMove /> Mover para dentro de…
                     </DropdownMenuItem>
