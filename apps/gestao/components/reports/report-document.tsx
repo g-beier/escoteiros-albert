@@ -22,12 +22,22 @@ export const HEADER_HEIGHT = 40 * MM;
 /** Altura útil na página com cabeçalho. */
 export const CONTENT_HEIGHT = PAGE_BODY_HEIGHT - HEADER_HEIGHT;
 
-const image = (name: string) => ({ data: fs.readFileSync(path.join(process.cwd(), "public", "images", "report", name)), format: "png" as const });
+const image = (name: string) => ({
+  data: fs.readFileSync(path.join(process.cwd(), "public", "images", "report", name)),
+  format: "png" as const,
+});
 let logos: { face: ReturnType<typeof image>; wosm: ReturnType<typeof image> } | null = null;
 const loadLogos = () => (logos ??= { face: image("rosto.png"), wosm: image("wosm.png") });
 
 const styles = StyleSheet.create({
-  page: { fontFamily: REPORT_FONT, fontSize: 10, color: "#000", paddingTop: MARGIN.top, paddingBottom: MARGIN.bottom, paddingHorizontal: MARGIN.x },
+  page: {
+    fontFamily: REPORT_FONT,
+    fontSize: 10,
+    color: "#000",
+    paddingTop: MARGIN.top,
+    paddingBottom: MARGIN.bottom,
+    paddingHorizontal: MARGIN.x,
+  },
   header: { marginBottom: 6 * MM },
   brand: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 2 * MM },
   face: { width: 17 * MM, height: 23 * MM, objectFit: "contain" },
@@ -35,11 +45,35 @@ const styles = StyleSheet.create({
   org: { flex: 1, alignItems: "center", paddingHorizontal: 4 * MM },
   region: { fontSize: 11, fontWeight: 400 },
   group: { fontSize: 15, fontWeight: 700, marginTop: 1 },
-  title: { borderTopWidth: 2, borderBottomWidth: 2, borderColor: RULE_PURPLE, paddingVertical: 1.2 * MM, textAlign: "center", fontSize: 15, fontWeight: 700, textTransform: "uppercase" },
-  footer: { position: "absolute", left: MARGIN.x, right: MARGIN.x, bottom: 8 * MM, flexDirection: "row", justifyContent: "space-between", fontSize: 8.5, color: "#5F6170" },
+  title: {
+    borderTopWidth: 2,
+    borderBottomWidth: 2,
+    borderColor: RULE_PURPLE,
+    paddingVertical: 1.2 * MM,
+    textAlign: "center",
+    fontSize: 15,
+    fontWeight: 700,
+    textTransform: "uppercase",
+  },
+  footer: {
+    position: "absolute",
+    left: MARGIN.x,
+    right: MARGIN.x,
+    bottom: 8 * MM,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    fontSize: 8.5,
+    color: "#5F6170",
+  },
 });
 
-export function ReportDocument({ title, footerName, issuedOn, children, parts }: {
+export function ReportDocument({
+  title,
+  footerName,
+  issuedOn,
+  children,
+  parts,
+}: {
   /** Título no cabeçalho (fica em maiúsculas). */
   title: string;
   /** Nome no rodapé ("Documento 10 - Lista simples de efetivo"). */
@@ -54,26 +88,34 @@ export function ReportDocument({ title, footerName, issuedOn, children, parts }:
   registerReportFonts();
   const { face, wosm } = loadLogos();
   const sections = parts ?? [children];
-  return <Document title={`${footerName} (${issuedOn})`} author="Grupo Escoteiro Albert Schweitzer - 38º/RS" language="pt-BR">
-    {sections.map((content, index) => <Page key={index} size="A4" orientation="portrait" style={styles.page}>
-      <View style={styles.header}>
-        <View style={styles.brand}>
-          {/* eslint-disable-next-line jsx-a11y/alt-text -- Image do react-pdf, não <img> */}
-          <Image src={face} style={styles.face} />
-          <View style={styles.org}>
-            <Text style={styles.region}>União dos Escoteiros do Brasil - Região do Rio Grande do Sul</Text>
-            <Text style={styles.group}>Grupo Escoteiro Albert Schweitzer - 38º/RS</Text>
+  return (
+    <Document
+      title={`${footerName} (${issuedOn})`}
+      author="Grupo Escoteiro Albert Schweitzer - 38º/RS"
+      language="pt-BR"
+    >
+      {sections.map((content, index) => (
+        <Page key={index} size="A4" orientation="portrait" style={styles.page}>
+          <View style={styles.header}>
+            <View style={styles.brand}>
+              {/* eslint-disable-next-line jsx-a11y/alt-text -- Image do react-pdf, não <img> */}
+              <Image src={face} style={styles.face} />
+              <View style={styles.org}>
+                <Text style={styles.region}>União dos Escoteiros do Brasil - Região do Rio Grande do Sul</Text>
+                <Text style={styles.group}>Grupo Escoteiro Albert Schweitzer - 38º/RS</Text>
+              </View>
+              {/* eslint-disable-next-line jsx-a11y/alt-text -- Image do react-pdf, não <img> */}
+              <Image src={wosm} style={styles.wosm} />
+            </View>
+            <Text style={styles.title}>{title}</Text>
           </View>
-          {/* eslint-disable-next-line jsx-a11y/alt-text -- Image do react-pdf, não <img> */}
-          <Image src={wosm} style={styles.wosm} />
-        </View>
-        <Text style={styles.title}>{title}</Text>
-      </View>
-      {content}
-      <View style={styles.footer} fixed>
-        <Text>{footerName}</Text>
-        <Text>Atualizado em: {updatedLabel(issuedOn)}</Text>
-      </View>
-    </Page>)}
-  </Document>;
+          {content}
+          <View style={styles.footer} fixed>
+            <Text>{footerName}</Text>
+            <Text>Atualizado em: {updatedLabel(issuedOn)}</Text>
+          </View>
+        </Page>
+      ))}
+    </Document>
+  );
 }

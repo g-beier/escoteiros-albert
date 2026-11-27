@@ -24,7 +24,11 @@ type FilterOptions = { dimensions: FilterDimensions; associates?: AssociateFilte
 const OptionsContext = createContext<FilterOptions | null>(null);
 
 /** `associates`: divisões e pessoas do filtro da coluna Associado (por nome ou por divisão). */
-export function FilterOptionsProvider({ dimensions, associates, children }: FilterOptions & { children: React.ReactNode }) {
+export function FilterOptionsProvider({
+  dimensions,
+  associates,
+  children,
+}: FilterOptions & { children: React.ReactNode }) {
   return <OptionsContext.Provider value={{ dimensions, associates }}>{children}</OptionsContext.Provider>;
 }
 
@@ -53,17 +57,27 @@ export function useListParams() {
   const params = useSearchParams();
   const [pending, startTransition] = useTransition();
 
-  const apply = useCallback((patch: Record<string, string | null>) => {
-    const next = new URLSearchParams(params.toString());
-    for (const [key, value] of Object.entries(patch)) {
-      if (value) next.set(key, value);
-      else next.delete(key);
-    }
-    const query = next.toString();
-    startTransition(() => router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false }));
-  }, [params, pathname, router]);
+  const apply = useCallback(
+    (patch: Record<string, string | null>) => {
+      const next = new URLSearchParams(params.toString());
+      for (const [key, value] of Object.entries(patch)) {
+        if (value) next.set(key, value);
+        else next.delete(key);
+      }
+      const query = next.toString();
+      startTransition(() => router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false }));
+    },
+    [params, pathname, router],
+  );
 
-  const values = useCallback((key: string) => (params.get(key) ?? "").split(",").map((v) => v.trim()).filter(Boolean), [params]);
+  const values = useCallback(
+    (key: string) =>
+      (params.get(key) ?? "")
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean),
+    [params],
+  );
 
   return { params, values, apply, pending };
 }

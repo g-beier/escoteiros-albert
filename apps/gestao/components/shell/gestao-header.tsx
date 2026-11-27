@@ -13,8 +13,14 @@ const sections: { href: string; label: string; module?: keyof ModuleAccess; matc
 
 /** Papel mostrado nas telas comuns: o maior entre os módulos. */
 function highestRole(member: Member) {
-  return [member.finance, member.inventory, member.associates].reduce((best, next) => (next.canAdmin || (!best.canAdmin && next.canReview) ||
-    (!best.canReview && next.canWrite) || (!best.canWrite && next.canRead) ? next : best));
+  return [member.finance, member.inventory, member.associates].reduce((best, next) =>
+    next.canAdmin ||
+    (!best.canAdmin && next.canReview) ||
+    (!best.canReview && next.canWrite) ||
+    (!best.canWrite && next.canRead)
+      ? next
+      : best,
+  );
 }
 
 /**
@@ -23,8 +29,25 @@ function highestRole(member: Member) {
  */
 export function GestaoHeader({ current, member, quick = false }: { current: string; member: Member; quick?: boolean }) {
   const access = moduleAccess(member);
-  return <AppHeader brand={<Brand module="gestao" />}
-    navigation={sections.filter((item) => !item.module || access[item.module]).map((item) => ({ href: item.href, label: item.label, active: item.match(current) }))}
-    utilities={quick ? [{ href: "/rapido", label: "Registro rápido", icon: <IconBolt size={18} />, active: current.startsWith("/rapido") }] : undefined}
-    account={<AccountMenu member={member} role={roleLabel(highestRole(member))} current={current} />} />;
+  return (
+    <AppHeader
+      brand={<Brand module="gestao" />}
+      navigation={sections
+        .filter((item) => !item.module || access[item.module])
+        .map((item) => ({ href: item.href, label: item.label, active: item.match(current) }))}
+      utilities={
+        quick
+          ? [
+              {
+                href: "/rapido",
+                label: "Registro rápido",
+                icon: <IconBolt size={18} />,
+                active: current.startsWith("/rapido"),
+              },
+            ]
+          : undefined
+      }
+      account={<AccountMenu member={member} role={roleLabel(highestRole(member))} current={current} />}
+    />
+  );
 }

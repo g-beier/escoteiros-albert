@@ -4,7 +4,10 @@
  * 3 dígitos é milhar ("1.234" = mil duzentos e trinta e quatro). `null` = inválido.
  * `allowNegative: false` (Inventário: valores de material) recusa negativos.
  */
-export function parseMoneyToCents(raw: string, { allowNegative = true }: { allowNegative?: boolean } = {}): number | null {
+export function parseMoneyToCents(
+  raw: string,
+  { allowNegative = true }: { allowNegative?: boolean } = {},
+): number | null {
   let value = raw.replace(/\s/g, "").replace(/^(-?)R\$/i, "$1");
   const negative = value.startsWith("-");
   if (negative) value = value.slice(1).replace(/^R\$/i, "");

@@ -21,7 +21,9 @@ export function AssociateFilters() {
 
   const apply = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
-    for (const [key, value] of Object.entries(changes)) if (value) next.set(key, value); else next.delete(key);
+    for (const [key, value] of Object.entries(changes))
+      if (value) next.set(key, value);
+      else next.delete(key);
     const query = next.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
@@ -32,15 +34,32 @@ export function AssociateFilters() {
   };
   useEffect(() => () => clearTimeout(timer.current), []);
 
-  return <div className="flex flex-wrap items-end gap-3">
-    <div className="relative min-w-48 flex-1">
-      <IconSearch className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
-      <Input type="search" aria-label="Buscar associado pelo nome" placeholder="Buscar associado" className={cn("pl-7", q.trim() && "border-primary")} value={q} onChange={(event) => onSearch(event.target.value)} />
+  return (
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="relative min-w-48 flex-1">
+        <IconSearch
+          className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
+        <Input
+          type="search"
+          aria-label="Buscar associado pelo nome"
+          placeholder="Buscar associado"
+          className={cn("pl-7", q.trim() && "border-primary")}
+          value={q}
+          onChange={(event) => onSearch(event.target.value)}
+        />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="filter-status">Situação</Label>
+        <OptionSelect
+          id="filter-status"
+          value={statusFilter(params.get("situacao") ?? undefined)}
+          options={statusOptions}
+          className="w-40"
+          onValueChange={(value) => apply({ situacao: value === "ativos" ? null : value })}
+        />
+      </div>
     </div>
-    <div className="grid gap-1.5">
-      <Label htmlFor="filter-status">Situação</Label>
-      <OptionSelect id="filter-status" value={statusFilter(params.get("situacao") ?? undefined)} options={statusOptions} className="w-40"
-        onValueChange={(value) => apply({ situacao: value === "ativos" ? null : value })} />
-    </div>
-  </div>;
+  );
 }

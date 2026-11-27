@@ -38,7 +38,10 @@ const connect = () => postgres(required("DATABASE_ADMIN_URL"), { max: 1, onnotic
 
 /** As migrations ficam com o runner de sempre (scripts/db.mjs), que também concede os papéis ao APP_DB_ROLE. */
 function runMigrations(command = "migrate") {
-  execFileSync(process.execPath, [join(here, "db.mjs"), command], { stdio: "inherit", env: { ...process.env, APP_DB_ROLE: APP_ROLE } });
+  execFileSync(process.execPath, [join(here, "db.mjs"), command], {
+    stdio: "inherit",
+    env: { ...process.env, APP_DB_ROLE: APP_ROLE },
+  });
 }
 
 async function setup() {
@@ -48,7 +51,8 @@ async function setup() {
   try {
     const [role] = await sql`select 1 from pg_roles where rolname = ${APP_ROLE}`;
     // a senha vai como literal (DDL não aceita parâmetro); format('%L') escapa no próprio servidor
-    const [{ ddl }] = await sql`select format(${role ? "alter role %I login noinherit password %L" : "create role %I login noinherit password %L"}, ${APP_ROLE}::text, ${password}::text) as ddl`;
+    const [{ ddl }] =
+      await sql`select format(${role ? "alter role %I login noinherit password %L" : "create role %I login noinherit password %L"}, ${APP_ROLE}::text, ${password}::text) as ddl`;
     await sql.unsafe(ddl);
     console.log(role ? `Senha do papel ${APP_ROLE} atualizada.` : `Papel ${APP_ROLE} criado.`);
   } finally {
@@ -62,7 +66,8 @@ async function bootstrap() {
   const sql = connect();
   try {
     const [group] = await sql`select 1 from public.groups limit 1`;
-    if (group) throw new Error("O banco já tem um grupo: o bootstrap só roda uma vez. Novos usuários entram por /usuarios.");
+    if (group)
+      throw new Error("O banco já tem um grupo: o bootstrap só roda uma vez. Novos usuários entram por /usuarios.");
     await sql.begin(async (tx) => {
       await tx`insert into auth.users(email) values (${email}) on conflict (email) do nothing`;
       await tx`select public.admin_bootstrap_group(${email}, ${GROUP_NAME})`;
@@ -110,8 +115,12 @@ async function dump() {
     await pgDump(file);
     const { BlobServiceClient } = await import("@azure/storage-blob");
     const { DefaultAzureCredential } = await import("@azure/identity");
-    const blob = new BlobServiceClient(accountUrl, new DefaultAzureCredential()).getContainerClient(BACKUP_CONTAINER).getBlockBlobClient(name);
-    await blob.uploadStream(createReadStream(file), 4 * 1024 * 1024, 4, { blobHTTPHeaders: { blobContentType: "application/octet-stream" } });
+    const blob = new BlobServiceClient(accountUrl, new DefaultAzureCredential())
+      .getContainerClient(BACKUP_CONTAINER)
+      .getBlockBlobClient(name);
+    await blob.uploadStream(createReadStream(file), 4 * 1024 * 1024, 4, {
+      blobHTTPHeaders: { blobContentType: "application/octet-stream" },
+    });
     console.log(`Dump enviado: ${BACKUP_CONTAINER}/${name} (${Math.round(statSync(file).size / 1024)} kB).`);
   } finally {
     rmSync(dir, { recursive: true, force: true });

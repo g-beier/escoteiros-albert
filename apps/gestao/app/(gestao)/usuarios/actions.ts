@@ -35,6 +35,9 @@ export async function removeUser(_previous: ActionResult, formData: FormData) {
     const left = await users.removeUser(db, groupId, user.id, String(formData.get("userId") ?? ""));
     revalidatePath("/usuarios");
     const email = String(formData.get("email") ?? "");
-    return { success: left ? `${email} saiu do grupo.` : `Acesso de ${email} aos seus módulos removido.`, tone: "neutral" };
+    return {
+      success: left ? `${email} saiu do grupo.` : `Acesso de ${email} aos seus módulos removido.`,
+      tone: "neutral",
+    };
   });
 }

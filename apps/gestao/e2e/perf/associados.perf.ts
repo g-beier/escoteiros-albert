@@ -51,7 +51,9 @@ function seed() {
 }
 
 test.beforeAll(() => seed());
-test.afterAll(() => { if (!process.env.PERF_KEEP) cleanup(); });
+test.afterAll(() => {
+  if (!process.env.PERF_KEEP) cleanup();
+});
 
 test("associados: controle (jovens)", async ({ page }) => {
   test.setTimeout(900_000);

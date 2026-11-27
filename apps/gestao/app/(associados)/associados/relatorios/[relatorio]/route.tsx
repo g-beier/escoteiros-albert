@@ -19,13 +19,41 @@ type Builder = (context: Context) => Promise<ReactElement<DocumentProps>>;
 /** Montador de cada relatório (slug do catálogo `REPORTS`). */
 const BUILDERS: Record<string, Builder> = {
   "doc-10": async ({ db, groupId, report, issuedOn }) =>
-    <Doc10Report doc={await reports.doc10(db, groupId, issuedOn)} title={report.title} footerName={reportFooterName(report)} issuedOn={issuedOn} /> as ReactElement<DocumentProps>,
+    (
+      <Doc10Report
+        doc={await reports.doc10(db, groupId, issuedOn)}
+        title={report.title}
+        footerName={reportFooterName(report)}
+        issuedOn={issuedOn}
+      />
+    ) as ReactElement<DocumentProps>,
   "doc-13": async ({ db, groupId, report, issuedOn }) =>
-    <Doc13Report doc={await reports.doc13(db, groupId, issuedOn)} title={report.title} footerName={reportFooterName(report)} issuedOn={issuedOn} /> as ReactElement<DocumentProps>,
+    (
+      <Doc13Report
+        doc={await reports.doc13(db, groupId, issuedOn)}
+        title={report.title}
+        footerName={reportFooterName(report)}
+        issuedOn={issuedOn}
+      />
+    ) as ReactElement<DocumentProps>,
   "doc-14a": async ({ db, groupId, report, issuedOn }) =>
-    <Doc14Report doc={await reports.doc14(db, groupId, issuedOn)} title={report.title} footerName={reportFooterName(report)} issuedOn={issuedOn} /> as ReactElement<DocumentProps>,
+    (
+      <Doc14Report
+        doc={await reports.doc14(db, groupId, issuedOn)}
+        title={report.title}
+        footerName={reportFooterName(report)}
+        issuedOn={issuedOn}
+      />
+    ) as ReactElement<DocumentProps>,
   "doc-14b": async ({ db, groupId, report, issuedOn }) =>
-    <LifeReportDocument doc={await reports.lifeReport(db, groupId, issuedOn)} title={report.title} footerName={reportFooterName(report)} issuedOn={issuedOn} /> as ReactElement<DocumentProps>,
+    (
+      <LifeReportDocument
+        doc={await reports.lifeReport(db, groupId, issuedOn)}
+        title={report.title}
+        footerName={reportFooterName(report)}
+        issuedOn={issuedOn}
+      />
+    ) as ReactElement<DocumentProps>,
 };
 
 /**

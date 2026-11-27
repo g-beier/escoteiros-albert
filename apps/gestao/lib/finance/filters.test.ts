@@ -1,14 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { ALL_DATES, defaultFrom, DIVISION_PARAM, hasAnyFilter, likePattern, listValues, parseEntrySort, parseFilters, parseOrder } from "./filters";
+import {
+  ALL_DATES,
+  defaultFrom,
+  DIVISION_PARAM,
+  hasAnyFilter,
+  likePattern,
+  listValues,
+  parseEntrySort,
+  parseFilters,
+  parseOrder,
+} from "./filters";
 
 const id = "0b6c7a4e-5d1f-4c1e-9a8b-2f3d4e5f6a7b";
 const id2 = "1b6c7a4e-5d1f-4c1e-9a8b-2f3d4e5f6a7c";
 
 describe("parseFilters", () => {
   it("lê filtros com vários valores", () => {
-    expect(parseFilters({ de: "2026-01-01", ate: "2026-01-31", conta: id2, forma: `${id},${id2}`, pasta: "pendente", associado: `${id},nenhum`, rubrica: id, q: " lanche " })).toEqual({
-      from: "2026-01-01", to: "2026-01-31", accountIds: [id2], paymentMethodIds: [id, id2], folder: "pendente",
-      associateIds: [id], withoutAssociate: true, categoryTokens: [id], q: "lanche",
+    expect(
+      parseFilters({
+        de: "2026-01-01",
+        ate: "2026-01-31",
+        conta: id2,
+        forma: `${id},${id2}`,
+        pasta: "pendente",
+        associado: `${id},nenhum`,
+        rubrica: id,
+        q: " lanche ",
+      }),
+    ).toEqual({
+      from: "2026-01-01",
+      to: "2026-01-31",
+      accountIds: [id2],
+      paymentMethodIds: [id, id2],
+      folder: "pendente",
+      associateIds: [id],
+      withoutAssociate: true,
+      categoryTokens: [id],
+      q: "lanche",
     });
   });
 
@@ -20,8 +48,18 @@ describe("parseFilters", () => {
   });
 
   it("descarta valores malformados", () => {
-    expect(parseFilters({ de: "01/01/2026", conta: "y", forma: "x", pasta: "talvez", rubrica: "' or 1=1", q: "  " })).toEqual({
-      from: defaultFrom(), to: undefined, accountIds: [], paymentMethodIds: [], folder: undefined, associateIds: [], withoutAssociate: false, categoryTokens: [], q: undefined,
+    expect(
+      parseFilters({ de: "01/01/2026", conta: "y", forma: "x", pasta: "talvez", rubrica: "' or 1=1", q: "  " }),
+    ).toEqual({
+      from: defaultFrom(),
+      to: undefined,
+      accountIds: [],
+      paymentMethodIds: [],
+      folder: undefined,
+      associateIds: [],
+      withoutAssociate: false,
+      categoryTokens: [],
+      q: undefined,
     });
   });
 
@@ -38,8 +76,14 @@ describe("parseFilters", () => {
   });
 
   it("lê a faixa de valor em reais, com sinal (despesas negativas)", () => {
-    expect(parseFilters({ valor_de: "1.234,56", valor_ate: "2000" })).toMatchObject({ minCents: 123456, maxCents: 200000 });
-    expect(parseFilters({ valor_de: "-500", valor_ate: "-R$ 10,5" })).toMatchObject({ minCents: -50000, maxCents: -1050 });
+    expect(parseFilters({ valor_de: "1.234,56", valor_ate: "2000" })).toMatchObject({
+      minCents: 123456,
+      maxCents: 200000,
+    });
+    expect(parseFilters({ valor_de: "-500", valor_ate: "-R$ 10,5" })).toMatchObject({
+      minCents: -50000,
+      maxCents: -1050,
+    });
     expect(parseFilters({ valor_de: "0" }).minCents).toBe(0);
     const invalid = parseFilters({ valor_de: "abc", valor_ate: "1,2,3" });
     expect(invalid.minCents).toBeUndefined();
@@ -47,7 +91,10 @@ describe("parseFilters", () => {
   });
 
   it("lê o recorte por divisão (tokens válidos) à parte dos associados por nome", () => {
-    const filters = parseFilters({ [DIVISION_PARAM]: `r:lobinho,-s:${id},nenhum,xyz,s:abc`, associado: `${id2},s:${id}` });
+    const filters = parseFilters({
+      [DIVISION_PARAM]: `r:lobinho,-s:${id},nenhum,xyz,s:abc`,
+      associado: `${id2},s:${id}`,
+    });
     expect(filters.divisionTokens).toEqual(["r:lobinho", `-s:${id}`, "nenhum"]);
     expect(filters.associateIds).toEqual([id2]);
     expect(filters.withoutAssociate).toBe(false);

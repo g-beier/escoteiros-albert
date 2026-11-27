@@ -20,9 +20,20 @@ export type AccountingRow = {
   account: string;
 };
 
-export type AccountingSplit = Pick<SplitRow,
-  "entry_date" | "entry_name" | "description" | "amount_cents" | "document" | "category_code" | "category_name"
-  | "category_ledger_code" | "account_name" | "account_ledger_code" | "external_ids">;
+export type AccountingSplit = Pick<
+  SplitRow,
+  | "entry_date"
+  | "entry_name"
+  | "description"
+  | "amount_cents"
+  | "document"
+  | "category_code"
+  | "category_name"
+  | "category_ledger_code"
+  | "account_name"
+  | "account_ledger_code"
+  | "external_ids"
+>;
 
 export const HISTORY_MAX = 200;
 
@@ -35,22 +46,24 @@ export function accountingHistory(entryName: string, description: string) {
 }
 
 export function toAccountingRows(splits: AccountingSplit[]): AccountingRow[] {
-  return splits.filter((split) => split.amount_cents !== 0).map((split) => {
-    const category = split.category_ledger_code ?? "";
-    const bank = split.account_ledger_code ?? "";
-    const inflow = split.amount_cents > 0;
-    return {
-      date: split.entry_date,
-      debit: inflow ? bank : category,
-      credit: inflow ? category : bank,
-      amountCents: Math.abs(split.amount_cents),
-      history: accountingHistory(split.entry_name, split.description),
-      document: split.document ?? "",
-      ofxId: ofxIds(split.external_ids),
-      category: [split.category_code, split.category_name].filter(Boolean).join(" "),
-      account: split.account_name,
-    };
-  });
+  return splits
+    .filter((split) => split.amount_cents !== 0)
+    .map((split) => {
+      const category = split.category_ledger_code ?? "";
+      const bank = split.account_ledger_code ?? "";
+      const inflow = split.amount_cents > 0;
+      return {
+        date: split.entry_date,
+        debit: inflow ? bank : category,
+        credit: inflow ? category : bank,
+        amountCents: Math.abs(split.amount_cents),
+        history: accountingHistory(split.entry_name, split.description),
+        document: split.document ?? "",
+        ofxId: ofxIds(split.external_ids),
+        category: [split.category_code, split.category_name].filter(Boolean).join(" "),
+        account: split.account_name,
+      };
+    });
 }
 
 /** Rubricas usadas no período sem conta contábil: sem elas o arquivo sairia incompleto. */

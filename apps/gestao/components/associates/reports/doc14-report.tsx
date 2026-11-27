@@ -21,50 +21,96 @@ const styles = StyleSheet.create({
 const monthRows = (month: Doc14Month) => month.people.length + 2;
 
 function MonthGroup({ month }: { month: Doc14Month }) {
-  return <View wrap={false}>
-    <Band>{month.label}</Band>
-    {month.people.map((person) => <Row key={person.id}>
-      <Cell fill={person.color} fit={NAME_FIT} color={person.red ? PENDING_RED : undefined}>{person.name}</Cell>
-      <Cell width={DATE}>{person.date}</Cell>
-    </Row>)}
-    <SpacerRow columns={COLUMNS} />
-  </View>;
+  return (
+    <View wrap={false}>
+      <Band>{month.label}</Band>
+      {month.people.map((person) => (
+        <Row key={person.id}>
+          <Cell fill={person.color} fit={NAME_FIT} color={person.red ? PENDING_RED : undefined}>
+            {person.name}
+          </Cell>
+          <Cell width={DATE}>{person.date}</Cell>
+        </Row>
+      ))}
+      <SpacerRow columns={COLUMNS} />
+    </View>
+  );
 }
 
 /** Coluna de meses; `rows`: altura da coluna mais alta, completada com linhas vazias para as duas fecharem juntas. */
 function MonthColumn({ months, rows, joined = false }: { months: Doc14Month[]; rows: number; joined?: boolean }) {
   const used = months.reduce((sum, month) => sum + monthRows(month), 0);
-  return <Table joined={joined}>
-    {months.map((month) => <MonthGroup key={month.month} month={month} />)}
-    {Array.from({ length: rows - used }, (_, i) => <SpacerRow key={`v${i}`} columns={COLUMNS} />)}
-  </Table>;
+  return (
+    <Table joined={joined}>
+      {months.map((month) => (
+        <MonthGroup key={month.month} month={month} />
+      ))}
+      {Array.from({ length: rows - used }, (_, i) => (
+        <SpacerRow key={`v${i}`} columns={COLUMNS} />
+      ))}
+    </Table>
+  );
 }
 
 function WithoutColumn({ people, rows, joined = false }: { people: Doc14Person[]; rows: number; joined?: boolean }) {
-  return <Table joined={joined}>
-    {people.map((person) => <Row key={person.id}>
-      <Cell fill={person.color} fit={NAME_FIT} color={person.red ? PENDING_RED : undefined}>{person.name}</Cell>
-      <Cell width={DATE} />
-    </Row>)}
-    {Array.from({ length: rows - people.length }, (_, i) => <SpacerRow key={i} columns={COLUMNS} />)}
-  </Table>;
+  return (
+    <Table joined={joined}>
+      {people.map((person) => (
+        <Row key={person.id}>
+          <Cell fill={person.color} fit={NAME_FIT} color={person.red ? PENDING_RED : undefined}>
+            {person.name}
+          </Cell>
+          <Cell width={DATE} />
+        </Row>
+      ))}
+      {Array.from({ length: rows - people.length }, (_, i) => (
+        <SpacerRow key={i} columns={COLUMNS} />
+      ))}
+    </Table>
+  );
 }
 
-export function Doc14Report({ doc, title, footerName, issuedOn }: { doc: Doc14; title: string; footerName: string; issuedOn: string }) {
+export function Doc14Report({
+  doc,
+  title,
+  footerName,
+  issuedOn,
+}: {
+  doc: Doc14;
+  title: string;
+  footerName: string;
+  issuedOn: string;
+}) {
   const [left, right] = splitInTwo(doc.months, monthRows);
-  const columnRows = Math.max(...[left, right].map((column) => column.reduce((sum, month) => sum + monthRows(month), 0)));
+  const columnRows = Math.max(
+    ...[left, right].map((column) => column.reduce((sum, month) => sum + monthRows(month), 0)),
+  );
   const half = Math.ceil(doc.without.length / 2);
   const rows = Math.max(half, 1) + BLANK_WITHOUT_ROWS;
-  return <ReportDocument title={title} footerName={footerName} issuedOn={issuedOn}>
-    {doc.months.length
-      ? <TwoColumns joined left={<MonthColumn months={left} rows={columnRows} />} right={<MonthColumn months={right} rows={columnRows} joined />} />
-      : <Text style={styles.note}>Nenhuma data de promessa registrada.</Text>}
-    <View break>
-      <Table><Band>Sem promessa</Band></Table>
-      <Text style={[styles.note, { marginTop: 2 * MM }]}>Associados ativos sem data de promessa registrada: confira quem já fez a promessa e quem ainda não fez.</Text>
-      <TwoColumns joined
-        left={<WithoutColumn people={doc.without.slice(0, half)} rows={rows} />}
-        right={<WithoutColumn people={doc.without.slice(half)} rows={rows} joined />} />
-    </View>
-  </ReportDocument>;
+  return (
+    <ReportDocument title={title} footerName={footerName} issuedOn={issuedOn}>
+      {doc.months.length ? (
+        <TwoColumns
+          joined
+          left={<MonthColumn months={left} rows={columnRows} />}
+          right={<MonthColumn months={right} rows={columnRows} joined />}
+        />
+      ) : (
+        <Text style={styles.note}>Nenhuma data de promessa registrada.</Text>
+      )}
+      <View break>
+        <Table>
+          <Band>Sem promessa</Band>
+        </Table>
+        <Text style={[styles.note, { marginTop: 2 * MM }]}>
+          Associados ativos sem data de promessa registrada: confira quem já fez a promessa e quem ainda não fez.
+        </Text>
+        <TwoColumns
+          joined
+          left={<WithoutColumn people={doc.without.slice(0, half)} rows={rows} />}
+          right={<WithoutColumn people={doc.without.slice(half)} rows={rows} joined />}
+        />
+      </View>
+    </ReportDocument>
+  );
 }

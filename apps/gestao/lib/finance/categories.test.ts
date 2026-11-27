@@ -1,8 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { categoryLabel, compareCodes, decodeCategorySelection, encodeCategorySelection, depthOf, descendantsMap, sortCategories, type CategoryItem } from "./categories";
+import {
+  categoryLabel,
+  compareCodes,
+  decodeCategorySelection,
+  encodeCategorySelection,
+  depthOf,
+  descendantsMap,
+  sortCategories,
+  type CategoryItem,
+} from "./categories";
 
-const item = (id: string, code: string | null, name: string, parent_id: string | null): CategoryItem =>
-  ({ id, code, name, parent_id, active: true, kind: code?.startsWith("1") ? "receita" : "despesa" });
+const item = (id: string, code: string | null, name: string, parent_id: string | null): CategoryItem => ({
+  id,
+  code,
+  name,
+  parent_id,
+  active: true,
+  kind: code?.startsWith("1") ? "receita" : "despesa",
+});
 const tree = [
   item("d", "2", "Despesas", null),
   item("p", "2.5", "Pastelada", "d"),
@@ -41,10 +56,15 @@ describe("descendantsMap / depthOf", () => {
 describe("encodeCategorySelection / decodeCategorySelection", () => {
   // d › d1 › (d11, d12); d › d2; e é outra raiz
   const tree = [
-    { id: "d", parent_id: null }, { id: "d1", parent_id: "d" }, { id: "d11", parent_id: "d1" },
-    { id: "d12", parent_id: "d1" }, { id: "d2", parent_id: "d" }, { id: "e", parent_id: null },
+    { id: "d", parent_id: null },
+    { id: "d1", parent_id: "d" },
+    { id: "d11", parent_id: "d1" },
+    { id: "d12", parent_id: "d1" },
+    { id: "d2", parent_id: "d" },
+    { id: "e", parent_id: null },
   ];
-  const roundTrip = (selected: string[]) => decodeCategorySelection(encodeCategorySelection(selected, tree), tree).sort();
+  const roundTrip = (selected: string[]) =>
+    decodeCategorySelection(encodeCategorySelection(selected, tree), tree).sort();
 
   it("um grupo inteiro vira um só token", () => {
     expect(encodeCategorySelection(["d", "d1", "d11", "d12", "d2"], tree)).toEqual(["d"]);

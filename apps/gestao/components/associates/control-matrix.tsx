@@ -1,15 +1,27 @@
 import { Link } from "@geas/ui/components/link";
 import { cn } from "@geas/ui/lib/utils";
 import {
-  cellStatusLabel, cellValue, directorateLabels, itemKindLabels, matrixCell, statusMap, statusShortLabels, statusTone, validityLabel,
-  type ControlItem, type ControlStatusRow, type Directorate, type MatrixPerson,
+  cellStatusLabel,
+  cellValue,
+  directorateLabels,
+  itemKindLabels,
+  matrixCell,
+  statusMap,
+  statusShortLabels,
+  statusTone,
+  validityLabel,
+  type ControlItem,
+  type ControlStatusRow,
+  type Directorate,
+  type MatrixPerson,
 } from "@/lib/associates/controls";
 import { chunk, cvCols, cvRows } from "@/components/shell/cv-rows";
 import { dateBR } from "@/lib/format";
 import { ControlBadge } from "./control-badge";
 import { ControlMatrixEditor } from "./control-matrix-editor";
 
-const HEAD = "h-auto border-0 bg-muted px-1.5 py-1.5 text-left align-bottom text-[11px] font-semibold text-muted-foreground";
+const HEAD =
+  "h-auto border-0 bg-muted px-1.5 py-1.5 text-left align-bottom text-[11px] font-semibold text-muted-foreground";
 /** Coluna do nome: mesma borda forte das divisões entre diretorias, para seguir visível ao rolar. */
 const STICKY = "sticky left-0 z-10 w-44 min-w-44 max-w-44 border-0";
 /** Largura fixa das colunas de item: a tabela não estica, as colunas se acumulam à esquerda. */
@@ -75,83 +87,210 @@ export type MatrixRow = { key: string; person: MatrixPerson; parent?: string };
  * (botão) e abre o diálogo da situação. Item fora do público da pessoa: célula cinza, sem texto.
  * Componente de servidor: as células não têm handler; quem edita ganha um só ouvinte delegado (`ControlMatrixEditor`).
  */
-export function ControlMatrix({ groups, people, rows, canEdit, today, caption }: {
-  groups: Group[]; people: MatrixRow[]; rows: ControlStatusRow[]; canEdit: boolean; today: string; caption: string;
+export function ControlMatrix({
+  groups,
+  people,
+  rows,
+  canEdit,
+  today,
+  caption,
+}: {
+  groups: Group[];
+  people: MatrixRow[];
+  rows: ControlStatusRow[];
+  canEdit: boolean;
+  today: string;
+  caption: string;
 }) {
   const map = statusMap(rows);
   const items = groups.flatMap((group) => group.items);
   const firstOfGroup = new Set(groups.map((group) => group.items[0]?.id));
   const firstItem = items[0]?.id;
-  const edge = (item: ControlItem): Edge => item.id === firstItem ? "none" : firstOfGroup.has(item.id) ? "strong" : "soft";
+  const edge = (item: ControlItem): Edge =>
+    item.id === firstItem ? "none" : firstOfGroup.has(item.id) ? "strong" : "soft";
 
-  const matrix = <div className="w-full max-w-full scroll-x-reserved" data-testid="control-matrix-scroll">
-      <table style={cvCols(["11rem", `repeat(${items.length}, 6rem)`])} className={cn("cv-table w-max border-separate [--grid:color-mix(in_oklab,var(--foreground)_10%,var(--card))] [--grid-strong:color-mix(in_oklab,var(--foreground)_28%,var(--card))] border-spacing-0 text-xs", BODY)} lang="pt-BR">
+  const matrix = (
+    <div className="scroll-x-reserved w-full max-w-full" data-testid="control-matrix-scroll">
+      <table
+        style={cvCols(["11rem", `repeat(${items.length}, 6rem)`])}
+        className={cn(
+          "cv-table w-max border-separate border-spacing-0 text-xs [--grid-strong:color-mix(in_oklab,var(--foreground)_28%,var(--card))] [--grid:color-mix(in_oklab,var(--foreground)_10%,var(--card))]",
+          BODY,
+        )}
+        lang="pt-BR"
+      >
         <caption className="sr-only">{caption}</caption>
-        <colgroup><col className="w-44" /></colgroup>
-        <colgroup>{items.map((item) => <col key={item.id} className={ITEM_COL} />)}</colgroup>
+        <colgroup>
+          <col className="w-44" />
+        </colgroup>
+        <colgroup>
+          {items.map((item) => (
+            <col key={item.id} className={ITEM_COL} />
+          ))}
+        </colgroup>
         {/* Cabeçalho em duas linhas: as linhas viram `contents` na grade (`cv-table`) e as células ocupam as faixas. */}
         <thead>
           <tr className="contents!">
-            <th scope="col" rowSpan={2} className={cn(HEAD, STICKY, LINE_B_STICKY, "z-20 row-span-2 px-2")}>Associado</th>
-            {groups.map((group, index) => <th key={group.directorate} scope="colgroup" colSpan={group.items.length} style={{ gridColumn: `span ${group.items.length}` }}
-              className={cn(HEAD, index > 0 ? LINE_B_STRONG : LINE_B, BAND[group.directorate], "py-1 text-center text-xs font-semibold text-foreground uppercase")}>
-              {directorateLabels[group.directorate]}
-            </th>)}
+            <th scope="col" rowSpan={2} className={cn(HEAD, STICKY, LINE_B_STICKY, "z-20 row-span-2 px-2")}>
+              Associado
+            </th>
+            {groups.map((group, index) => (
+              <th
+                key={group.directorate}
+                scope="colgroup"
+                colSpan={group.items.length}
+                style={{ gridColumn: `span ${group.items.length}` }}
+                className={cn(
+                  HEAD,
+                  index > 0 ? LINE_B_STRONG : LINE_B,
+                  BAND[group.directorate],
+                  "py-1 text-center text-xs font-semibold text-foreground uppercase",
+                )}
+              >
+                {directorateLabels[group.directorate]}
+              </th>
+            ))}
           </tr>
           <tr className="contents!">
-            {items.map((item) => <th key={item.id} scope="col" className={cn(HEAD, ITEM_COL, "px-2.5 py-1.5 text-center align-middle text-[11px] font-semibold leading-tight tracking-normal text-foreground normal-case whitespace-normal", LINE[edge(item) === "soft" ? "none" : edge(item)])}
-              title={`${item.name} · ${itemKindLabels[item.kind]} · ${validityLabel(item.validity_months)}`}>
-              {/* Fonte pequena com quebra de linha, centralizada, como no Doc 22. */}
-              {item.name}
-            </th>)}
+            {items.map((item) => (
+              <th
+                key={item.id}
+                scope="col"
+                className={cn(
+                  HEAD,
+                  ITEM_COL,
+                  "px-2.5 py-1.5 text-center align-middle text-[11px] leading-tight font-semibold tracking-normal whitespace-normal text-foreground normal-case",
+                  LINE[edge(item) === "soft" ? "none" : edge(item)],
+                )}
+                title={`${item.name} · ${itemKindLabels[item.kind]} · ${validityLabel(item.validity_months)}`}
+              >
+                {/* Fonte pequena com quebra de linha, centralizada, como no Doc 22. */}
+                {item.name}
+              </th>
+            ))}
           </tr>
         </thead>
         {/* Corpo em blocos de linhas (`cv-rows`): o navegador pula estilo, layout e pintura dos que estão fora da tela. */}
-        {chunk(people).map((block, index) => <tbody key={index} className="cv-rows" style={cvRows(block.length, "2.5rem")}>{block.map(({ key, person, parent }) => {
-          const who = parent ? `${person.name} (responsável de ${parent})` : person.name;
-          const sub = [!person.active && "desligado", person.detail].filter(Boolean).join(" · ");
-          // pessoa na linha (uma vez), não em cada célula: o editor lê daqui e acha o item pela coluna
-          return <tr key={key} className="group" data-relative={person.relative ? "" : undefined} data-person-id={canEdit ? person.id : undefined}
-            data-person-name={canEdit ? person.name : undefined} data-context={canEdit && parent ? `responsável de ${parent}` : undefined}>
-            <th scope="row" className={cn(STICKY, LINE_B_STICKY, "bg-card py-1 pr-2 text-left text-xs font-medium tracking-normal text-foreground normal-case group-hover:bg-muted",
-              parent ? "pl-5 font-normal" : "pl-2", !person.active && "text-muted-foreground")}>
-              {parent
-                ? <span title={who} className="block truncate"><span className="sr-only">Responsável: </span>{person.name}</span>
-                : <Link href={`/associados/${person.id}`} title={person.name} className="block truncate hover:underline">{person.name}</Link>}
-              {sub && <span className="block truncate text-[10px] font-normal text-muted-foreground" title={sub}>{sub}</span>}
-            </th>
-            {items.map((item) => {
-              const cell = matrixCell(person, item, map);
-              if (!cell.applies && !cell.row) {
-                // Fora do público do item: cinza preenchido, sem texto e sem edição.
-                return <td key={item.id} data-na="" data-e={EDGE_ATTR[edge(item)]}><span className="sr-only">não se aplica a este tipo de pessoa</span></td>;
-              }
-              // item que mostra um valor (ano, data): o valor na cor da situação; a situação vai no nome acessível
-              const value = cellValue(item, cell.row);
-              const status = cellStatusLabel(cell.status);
-              const label = `${item.name}, ${who}: ${value ? `${value} (${status})` : status}`;
-              const detail = cell.row && [cell.row.status_date && `data ${dateBR(cell.row.status_date)}`, cell.row.valid_until && `validade ${dateBR(cell.row.valid_until)}`, cell.row.note].filter(Boolean).join(" · ");
-              const text = value ?? (cell.status === "sem_registro" ? "—" : statusShortLabels[cell.status]);
-              const tone = statusTone[cell.status];
-              return <td key={item.id} data-e={EDGE_ATTR[edge(item)]} title={detail || undefined}>
-                {canEdit
-                  // o nome acessível (aria-label) diz item, pessoa e situação: o selo dentro fica só visual
-                  ? <button type="button" aria-label={`Editar ${label}`} data-cell=""><span data-t={tone} aria-hidden className={value ? "num" : undefined}>{text}</span>{cell.row?.note && <span aria-hidden data-note="">*</span>}</button>
-                  : <span data-v=""><span data-t={tone} className={value ? "num" : undefined}><span aria-hidden>{text}</span><span className="sr-only">{value ? ` (${status})` : status}</span></span></span>}
-              </td>;
+        {chunk(people).map((block, index) => (
+          <tbody key={index} className="cv-rows" style={cvRows(block.length, "2.5rem")}>
+            {block.map(({ key, person, parent }) => {
+              const who = parent ? `${person.name} (responsável de ${parent})` : person.name;
+              const sub = [!person.active && "desligado", person.detail].filter(Boolean).join(" · ");
+              // pessoa na linha (uma vez), não em cada célula: o editor lê daqui e acha o item pela coluna
+              return (
+                <tr
+                  key={key}
+                  className="group"
+                  data-relative={person.relative ? "" : undefined}
+                  data-person-id={canEdit ? person.id : undefined}
+                  data-person-name={canEdit ? person.name : undefined}
+                  data-context={canEdit && parent ? `responsável de ${parent}` : undefined}
+                >
+                  <th
+                    scope="row"
+                    className={cn(
+                      STICKY,
+                      LINE_B_STICKY,
+                      "bg-card py-1 pr-2 text-left text-xs font-medium tracking-normal text-foreground normal-case group-hover:bg-muted",
+                      parent ? "pl-5 font-normal" : "pl-2",
+                      !person.active && "text-muted-foreground",
+                    )}
+                  >
+                    {parent ? (
+                      <span title={who} className="block truncate">
+                        <span className="sr-only">Responsável: </span>
+                        {person.name}
+                      </span>
+                    ) : (
+                      <Link
+                        href={`/associados/${person.id}`}
+                        title={person.name}
+                        className="block truncate hover:underline"
+                      >
+                        {person.name}
+                      </Link>
+                    )}
+                    {sub && (
+                      <span className="block truncate text-[10px] font-normal text-muted-foreground" title={sub}>
+                        {sub}
+                      </span>
+                    )}
+                  </th>
+                  {items.map((item) => {
+                    const cell = matrixCell(person, item, map);
+                    if (!cell.applies && !cell.row) {
+                      // Fora do público do item: cinza preenchido, sem texto e sem edição.
+                      return (
+                        <td key={item.id} data-na="" data-e={EDGE_ATTR[edge(item)]}>
+                          <span className="sr-only">não se aplica a este tipo de pessoa</span>
+                        </td>
+                      );
+                    }
+                    // item que mostra um valor (ano, data): o valor na cor da situação; a situação vai no nome acessível
+                    const value = cellValue(item, cell.row);
+                    const status = cellStatusLabel(cell.status);
+                    const label = `${item.name}, ${who}: ${value ? `${value} (${status})` : status}`;
+                    const detail =
+                      cell.row &&
+                      [
+                        cell.row.status_date && `data ${dateBR(cell.row.status_date)}`,
+                        cell.row.valid_until && `validade ${dateBR(cell.row.valid_until)}`,
+                        cell.row.note,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ");
+                    const text = value ?? (cell.status === "sem_registro" ? "—" : statusShortLabels[cell.status]);
+                    const tone = statusTone[cell.status];
+                    return (
+                      <td key={item.id} data-e={EDGE_ATTR[edge(item)]} title={detail || undefined}>
+                        {canEdit ? (
+                          // o nome acessível (aria-label) diz item, pessoa e situação: o selo dentro fica só visual
+                          <button type="button" aria-label={`Editar ${label}`} data-cell="">
+                            <span data-t={tone} aria-hidden className={value ? "num" : undefined}>
+                              {text}
+                            </span>
+                            {cell.row?.note && (
+                              <span aria-hidden data-note="">
+                                *
+                              </span>
+                            )}
+                          </button>
+                        ) : (
+                          <span data-v="">
+                            <span data-t={tone} className={value ? "num" : undefined}>
+                              <span aria-hidden>{text}</span>
+                              <span className="sr-only">{value ? ` (${status})` : status}</span>
+                            </span>
+                          </span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
             })}
-          </tr>;
-        })}</tbody>)}
+          </tbody>
+        ))}
       </table>
-    </div>;
-  return canEdit ? <ControlMatrixEditor items={items} rows={rows} today={today}>{matrix}</ControlMatrixEditor> : matrix;
+    </div>
+  );
+  return canEdit ? (
+    <ControlMatrixEditor items={items} rows={rows} today={today}>
+      {matrix}
+    </ControlMatrixEditor>
+  ) : (
+    matrix
+  );
 }
 
 /** Legenda da matriz: cinza (fora do público), N/A (marcado à mão) e "—" (sem registro). */
 export function ControlLegend() {
-  return <p className="m-0 flex flex-wrap items-center gap-x-1.5 gap-y-1 border-t px-4 py-2 text-[11px] text-muted-foreground">
-    <span aria-hidden className={cn("inline-block h-3 w-5 rounded-sm align-middle", NOT_APPLICABLE)} /> cinza: não se aplica a este tipo de pessoa
-    <span aria-hidden>·</span> <ControlBadge status="nao_se_aplica" short /> marcado como não se aplica
-    <span aria-hidden>·</span> <ControlBadge status="sem_registro" short /> sem registro (pendência)
-  </p>;
+  return (
+    <p className="m-0 flex flex-wrap items-center gap-x-1.5 gap-y-1 border-t px-4 py-2 text-[11px] text-muted-foreground">
+      <span aria-hidden className={cn("inline-block h-3 w-5 rounded-sm align-middle", NOT_APPLICABLE)} /> cinza: não se
+      aplica a este tipo de pessoa
+      <span aria-hidden>·</span> <ControlBadge status="nao_se_aplica" short /> marcado como não se aplica
+      <span aria-hidden>·</span> <ControlBadge status="sem_registro" short /> sem registro (pendência)
+    </p>
+  );
 }

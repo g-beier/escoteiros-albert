@@ -8,5 +8,11 @@ export function normalizeSearch(text: string) {
 
 /** Palavras da busca, normalizadas e sem repetição. */
 export function searchTerms(query: string | undefined) {
-  return [...new Set(normalizeSearch(query ?? "").split(/\s+/).filter(Boolean))];
+  return [
+    ...new Set(
+      normalizeSearch(query ?? "")
+        .split(/\s+/)
+        .filter(Boolean),
+    ),
+  ];
 }

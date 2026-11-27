@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { ATTACHMENT_MAX_BYTES, attachmentPath, attachmentProblem, attachmentType, cleanFileName, fileSize } from "./attachments";
+import {
+  ATTACHMENT_MAX_BYTES,
+  attachmentPath,
+  attachmentProblem,
+  attachmentType,
+  cleanFileName,
+  fileSize,
+} from "./attachments";
 
 describe("attachmentType", () => {
   it("aceita os tipos do bucket pelo MIME", () => {
@@ -25,7 +32,9 @@ describe("attachmentProblem", () => {
   it("explica tipo, vazio e tamanho", () => {
     expect(attachmentProblem({ name: "a.doc", type: "application/msword", size: 10 })).toMatch(/não é PDF/);
     expect(attachmentProblem({ name: "a.pdf", type: "application/pdf", size: 0 })).toMatch(/vazio/);
-    expect(attachmentProblem({ name: "a.pdf", type: "application/pdf", size: ATTACHMENT_MAX_BYTES + 1 })).toMatch(/limite é 10 MB/);
+    expect(attachmentProblem({ name: "a.pdf", type: "application/pdf", size: ATTACHMENT_MAX_BYTES + 1 })).toMatch(
+      /limite é 10 MB/,
+    );
   });
 });
 

@@ -35,7 +35,8 @@ function integer(data: FormData, key: string, label: string, required = true) {
     if (required) throw new InputError(`Informe ${label}.`);
     return null;
   }
-  if (!/^\d+$/.test(value)) throw new InputError(`${label[0].toUpperCase()}${label.slice(1)} deve ser um número inteiro.`);
+  if (!/^\d+$/.test(value))
+    throw new InputError(`${label[0].toUpperCase()}${label.slice(1)} deve ser um número inteiro.`);
   return Number(value);
 }
 function cents(data: FormData, key: string) {
@@ -64,8 +65,12 @@ function reason(data: FormData) {
 }
 
 const entry = (data: FormData): EntryInput => ({
-  unitValueCents: cents(data, "value"), acquiredOn: date(data, "acquiredOn"), origin: oneOf(data, "origin", ORIGINS, "nao_informada"),
-  supplier: optional(data, "supplier"), invoice: optional(data, "invoice"), notes: optional(data, "notes"),
+  unitValueCents: cents(data, "value"),
+  acquiredOn: date(data, "acquiredOn"),
+  origin: oneOf(data, "origin", ORIGINS, "nao_informada"),
+  supplier: optional(data, "supplier"),
+  invoice: optional(data, "invoice"),
+  notes: optional(data, "notes"),
 });
 
 /** Registra para chefe, gestor ou administrador e atualiza a lista, o material e o resumo. */
@@ -89,8 +94,15 @@ function firstEntry(formData: FormData, tracking: Tracking) {
   if (!locationId) throw new InputError("Escolha a divisão da primeira entrada.");
   const quantity = integer(formData, "quantity", "a quantidade");
   if (quantity < 1) throw new InputError("A quantidade deve ser pelo menos 1.");
-  if (tracking === "unit" && quantity > MAX_UNITS_ON_CREATE) throw new InputError(`No cadastro, registre até ${MAX_UNITS_ON_CREATE} peças; as demais, no detalhe do material.`);
-  return { locationId, quantity, condition: oneOf(formData, "condition", CONDITIONS), expiresOn: date(formData, "expiresOn"), ...entry(formData) };
+  if (tracking === "unit" && quantity > MAX_UNITS_ON_CREATE)
+    throw new InputError(`No cadastro, registre até ${MAX_UNITS_ON_CREATE} peças; as demais, no detalhe do material.`);
+  return {
+    locationId,
+    quantity,
+    condition: oneOf(formData, "condition", CONDITIONS),
+    expiresOn: date(formData, "expiresOn"),
+    ...entry(formData),
+  };
 }
 
 /**
@@ -105,9 +117,13 @@ export async function saveMaterial(_previous: ActionResult, formData: FormData):
     const id = optionalId(formData, "id");
     const stock = !id && formData.get("withStock") === "on" ? firstEntry(formData, tracking) : null;
     savedId = await materials.save(db, groupId, {
-      id, familyId: optionalId(formData, "familyId"), name: text(formData, "name"), tracking,
+      id,
+      familyId: optionalId(formData, "familyId"),
+      name: text(formData, "name"),
+      tracking,
       consumable: tracking === "lot" && formData.get("consumable") === "on",
-      minimumQuantity: integer(formData, "minimum", "o estoque mínimo", false), description: optional(formData, "description"),
+      minimumQuantity: integer(formData, "minimum", "o estoque mínimo", false),
+      description: optional(formData, "description"),
       active: formData.get("active") !== "off",
     });
     revalidatePath("/inventario/materiais");
@@ -120,13 +136,21 @@ export async function saveMaterial(_previous: ActionResult, formData: FormData):
         await materials.addLot(db, { materialId: savedId, ...stock });
       } else {
         for (let i = 0; i < stock.quantity; i++) {
-          await materials.addUnit(db, { materialId: savedId, ...stock, tag: null, legacyCode: null, description: null });
+          await materials.addUnit(db, {
+            materialId: savedId,
+            ...stock,
+            tag: null,
+            legacyCode: null,
+            description: null,
+          });
         }
       }
     } catch (error) {
       if (!(error instanceof DataError)) throw error;
       savedId = "";
-      throw new DataError(`Material cadastrado, mas a primeira entrada falhou: ${error.message} Registre-a no detalhe do material.`);
+      throw new DataError(
+        `Material cadastrado, mas a primeira entrada falhou: ${error.message} Registre-a no detalhe do material.`,
+      );
     }
   });
   if (result.error || !savedId) return result;
@@ -136,8 +160,13 @@ export async function saveMaterial(_previous: ActionResult, formData: FormData):
 export async function addLot(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
     const { merged } = await materials.addLot(db, {
-      materialId: id(formData, "materialId"), locationId: optionalId(formData, "locationId"), quantity: integer(formData, "quantity", "a quantidade"),
-      condition: oneOf(formData, "condition", CONDITIONS), expiresOn: date(formData, "expiresOn"), variant: optional(formData, "variant"), ...entry(formData),
+      materialId: id(formData, "materialId"),
+      locationId: optionalId(formData, "locationId"),
+      quantity: integer(formData, "quantity", "a quantidade"),
+      condition: oneOf(formData, "condition", CONDITIONS),
+      expiresOn: date(formData, "expiresOn"),
+      variant: optional(formData, "variant"),
+      ...entry(formData),
       ...sale(formData),
     });
     return merged ? "Somado ao lote igual que já existia." : "Lote adicionado.";
@@ -154,7 +183,13 @@ function sale(formData: FormData) {
 export async function setLotSale(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
     const { forSale, salePriceCents } = sale(formData);
-    await materials.setLotSale(db, id(formData, "lotId"), forSale, salePriceCents, integer(formData, "quantity", "a quantidade"));
+    await materials.setLotSale(
+      db,
+      id(formData, "lotId"),
+      forSale,
+      salePriceCents,
+      integer(formData, "quantity", "a quantidade"),
+    );
     return forSale ? "Lote à venda na Lojinha." : "Lote fora da venda.";
   });
 }
@@ -162,8 +197,12 @@ export async function setLotSale(_previous: ActionResult, formData: FormData) {
 export async function addUnit(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
     await materials.addUnit(db, {
-      materialId: id(formData, "materialId"), locationId: optionalId(formData, "locationId"), tag: optional(formData, "tag"),
-      legacyCode: optional(formData, "legacyCode"), description: optional(formData, "description"), condition: oneOf(formData, "condition", CONDITIONS),
+      materialId: id(formData, "materialId"),
+      locationId: optionalId(formData, "locationId"),
+      tag: optional(formData, "tag"),
+      legacyCode: optional(formData, "legacyCode"),
+      description: optional(formData, "description"),
+      condition: oneOf(formData, "condition", CONDITIONS),
       ...entry(formData),
     });
     return "Peça adicionada.";
@@ -172,35 +211,62 @@ export async function addUnit(_previous: ActionResult, formData: FormData) {
 
 export async function transferLot(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
-    await materials.transferLot(db, id(formData, "lotId"), optionalId(formData, "locationId"), integer(formData, "quantity", "a quantidade"), optional(formData, "notes"));
+    await materials.transferLot(
+      db,
+      id(formData, "lotId"),
+      optionalId(formData, "locationId"),
+      integer(formData, "quantity", "a quantidade"),
+      optional(formData, "notes"),
+    );
     return "Lote transferido.";
   });
 }
 
 export async function transferUnit(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
-    await materials.transferUnit(db, id(formData, "unitId"), optionalId(formData, "locationId"), optional(formData, "notes"));
+    await materials.transferUnit(
+      db,
+      id(formData, "unitId"),
+      optionalId(formData, "locationId"),
+      optional(formData, "notes"),
+    );
     return "Peça transferida.";
   });
 }
 
 export async function setLotCondition(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
-    await materials.setLotCondition(db, id(formData, "lotId"), oneOf(formData, "condition", CONDITIONS), integer(formData, "quantity", "a quantidade"), optional(formData, "notes"));
+    await materials.setLotCondition(
+      db,
+      id(formData, "lotId"),
+      oneOf(formData, "condition", CONDITIONS),
+      integer(formData, "quantity", "a quantidade"),
+      optional(formData, "notes"),
+    );
     return "Condição registrada.";
   });
 }
 
 export async function setUnitCondition(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
-    await materials.setUnitCondition(db, id(formData, "unitId"), oneOf(formData, "condition", CONDITIONS), optional(formData, "notes"));
+    await materials.setUnitCondition(
+      db,
+      id(formData, "unitId"),
+      oneOf(formData, "condition", CONDITIONS),
+      optional(formData, "notes"),
+    );
     return "Condição registrada.";
   });
 }
 
 export async function adjustLot(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
-    await materials.adjustLot(db, id(formData, "lotId"), integer(formData, "quantity", "a quantidade contada"), optional(formData, "notes"));
+    await materials.adjustLot(
+      db,
+      id(formData, "lotId"),
+      integer(formData, "quantity", "a quantidade contada"),
+      optional(formData, "notes"),
+    );
     return "Contagem ajustada.";
   });
 }
@@ -215,33 +281,76 @@ export async function bulkEdit(_previous: ActionResult, formData: FormData): Pro
     const action = oneOf<BulkAction>(formData, "action", [...BULK_ACTIONS]);
     if (!action) throw new InputError("Escolha a ação.");
     let keys: unknown;
-    try { keys = JSON.parse(text(formData, "targets") || "[]"); } catch { keys = null; }
+    try {
+      keys = JSON.parse(text(formData, "targets") || "[]");
+    } catch {
+      keys = null;
+    }
     const uuid = /^[0-9a-f-]{36}$/i;
     if (!Array.isArray(keys) || !keys.length) throw new InputError("Selecione pelo menos um material.");
     const targets: BulkTarget[] = keys.map((key) => {
       const [materialId = "", locationId = ""] = String(key).split("|");
-      if (!uuid.test(materialId) || (locationId && !uuid.test(locationId))) throw new InputError("Seleção inválida. Recarregue a página.");
+      if (!uuid.test(materialId) || (locationId && !uuid.test(locationId)))
+        throw new InputError("Seleção inválida. Recarregue a página.");
       return { materialId, locationId: locationId || null };
     });
     const stock = action === "transferir" || action === "condicao" || action === "baixa" || action === "venda";
     if (stock && !targets.some((t) => t.locationId)) throw new InputError("As linhas escolhidas não têm estoque.");
     const args: Record<string, string | boolean | null> =
-      action === "transferir" ? { to_location_id: id(formData, "locationId") }
-      : action === "condicao" ? { condition: oneOf(formData, "condition", CONDITIONS) ?? (() => { throw new InputError("Escolha a condição."); })() }
-      : action === "baixa" ? { reason: reason(formData) }
-      : action === "familia" ? { family_id: optionalId(formData, "familyId") }
-      : action === "venda" ? { value: (() => { const v = text(formData, "forSale"); if (v !== "sim" && v !== "nao") throw new InputError("Escolha se fica à venda."); return v === "sim"; })() }
-      : { value: (() => { const v = text(formData, "consumable"); if (v !== "sim" && v !== "nao") throw new InputError("Escolha consumível ou não."); return v === "sim"; })() };
+      action === "transferir"
+        ? { to_location_id: id(formData, "locationId") }
+        : action === "condicao"
+          ? {
+              condition:
+                oneOf(formData, "condition", CONDITIONS) ??
+                (() => {
+                  throw new InputError("Escolha a condição.");
+                })(),
+            }
+          : action === "baixa"
+            ? { reason: reason(formData) }
+            : action === "familia"
+              ? { family_id: optionalId(formData, "familyId") }
+              : action === "venda"
+                ? {
+                    value: (() => {
+                      const v = text(formData, "forSale");
+                      if (v !== "sim" && v !== "nao") throw new InputError("Escolha se fica à venda.");
+                      return v === "sim";
+                    })(),
+                  }
+                : {
+                    value: (() => {
+                      const v = text(formData, "consumable");
+                      if (v !== "sim" && v !== "nao") throw new InputError("Escolha consumível ou não.");
+                      return v === "sim";
+                    })(),
+                  };
     const changed = await materials.bulk(db, groupId, action, targets, args, optional(formData, "notes"));
     revalidatePath("/inventario/materiais");
     revalidatePath("/inventario");
-    const what = action === "venda" ? (changed === 1 ? "lote" : "lotes") : stock ? (changed === 1 ? "lote ou peça" : "lotes ou peças") : changed === 1 ? "material" : "materiais";
+    const what =
+      action === "venda"
+        ? changed === 1
+          ? "lote"
+          : "lotes"
+        : stock
+          ? changed === 1
+            ? "lote ou peça"
+            : "lotes ou peças"
+          : changed === 1
+            ? "material"
+            : "materiais";
     return changed ? `${BULK_DONE[action]}: ${changed} ${what}.` : "Nada mudou: as linhas escolhidas já estavam assim.";
   });
 }
 
 const BULK_DONE: Record<BulkAction, string> = {
-  transferir: "Transferido", condicao: "Condição registrada", baixa: "Baixa registrada", familia: "Família alterada", consumivel: "Cadastro alterado",
+  transferir: "Transferido",
+  condicao: "Condição registrada",
+  baixa: "Baixa registrada",
+  familia: "Família alterada",
+  consumivel: "Cadastro alterado",
   venda: "Lojinha atualizada",
 };
 
@@ -249,11 +358,20 @@ const BULK_DONE: Record<BulkAction, string> = {
  * Lotes de um material numa divisão, para o diálogo ± da lista (a lista não leva os lotes de cada linha no HTML).
  * Leitura: devolve os lotes ou a mensagem de erro.
  */
-export async function loadRowLots(materialId: unknown, locationId: unknown): Promise<{ lots: Awaited<ReturnType<typeof materials.openLotsAt>> } | { error: string }> {
+export async function loadRowLots(
+  materialId: unknown,
+  locationId: unknown,
+): Promise<{ lots: Awaited<ReturnType<typeof materials.openLotsAt>> } | { error: string }> {
   const member = await inventoryWriterOrError();
   if ("error" in member) return member;
   const uuid = /^[0-9a-f-]{36}$/i;
-  if (typeof materialId !== "string" || typeof locationId !== "string" || !uuid.test(materialId) || !uuid.test(locationId)) return { error: "Registro inválido. Recarregue a página." };
+  if (
+    typeof materialId !== "string" ||
+    typeof locationId !== "string" ||
+    !uuid.test(materialId) ||
+    !uuid.test(locationId)
+  )
+    return { error: "Registro inválido. Recarregue a página." };
   try {
     return { lots: await materials.openLotsAt(member.db, materialId, locationId) };
   } catch (error) {
@@ -263,7 +381,13 @@ export async function loadRowLots(materialId: unknown, locationId: unknown): Pro
 
 export async function writeOffLot(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
-    await materials.writeOffLot(db, id(formData, "lotId"), integer(formData, "quantity", "a quantidade"), reason(formData), optional(formData, "notes"));
+    await materials.writeOffLot(
+      db,
+      id(formData, "lotId"),
+      integer(formData, "quantity", "a quantidade"),
+      reason(formData),
+      optional(formData, "notes"),
+    );
     return "Baixa registrada.";
   });
 }
@@ -277,7 +401,12 @@ export async function writeOffUnit(_previous: ActionResult, formData: FormData) 
 
 export async function updateLot(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
-    await materials.updateLot(db, { lotId: id(formData, "lotId"), expiresOn: date(formData, "expiresOn"), variant: optional(formData, "variant"), ...entry(formData) });
+    await materials.updateLot(db, {
+      lotId: id(formData, "lotId"),
+      expiresOn: date(formData, "expiresOn"),
+      variant: optional(formData, "variant"),
+      ...entry(formData),
+    });
     return "Dados do lote salvos.";
   });
 }
@@ -285,8 +414,11 @@ export async function updateLot(_previous: ActionResult, formData: FormData) {
 export async function updateUnit(_previous: ActionResult, formData: FormData) {
   return record(formData, async (db) => {
     await materials.updateUnit(db, {
-      unitId: id(formData, "unitId"), tag: optional(formData, "tag"), legacyCode: optional(formData, "legacyCode"),
-      description: optional(formData, "description"), ...entry(formData),
+      unitId: id(formData, "unitId"),
+      tag: optional(formData, "tag"),
+      legacyCode: optional(formData, "legacyCode"),
+      description: optional(formData, "description"),
+      ...entry(formData),
     });
     return "Dados da peça salvos.";
   });
@@ -294,11 +426,15 @@ export async function updateUnit(_previous: ActionResult, formData: FormData) {
 
 /** Ordem dos materiais de uma divisão (tela Ordenar): a lista inteira, na ordem da tela. Só Editor. */
 export async function orderMaterials(locationId: string, materialIds: string[]): Promise<ActionResult> {
-  return runAction(() => inventoryEditorOrError("Apenas editores do Inventário ordenam os materiais."), async ({ db }) => {
-    const uuid = /^[0-9a-f-]{36}$/i;
-    if (!uuid.test(locationId) || !materialIds.every((value) => uuid.test(value))) throw new InputError("Registro inválido. Recarregue a página.");
-    await materials.orderMaterials(db, locationId, materialIds);
-    revalidatePath("/inventario/materiais");
-    return "Ordem salva.";
-  });
+  return runAction(
+    () => inventoryEditorOrError("Apenas editores do Inventário ordenam os materiais."),
+    async ({ db }) => {
+      const uuid = /^[0-9a-f-]{36}$/i;
+      if (!uuid.test(locationId) || !materialIds.every((value) => uuid.test(value)))
+        throw new InputError("Registro inválido. Recarregue a página.");
+      await materials.orderMaterials(db, locationId, materialIds);
+      revalidatePath("/inventario/materiais");
+      return "Ordem salva.";
+    },
+  );
 }

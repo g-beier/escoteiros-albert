@@ -6,7 +6,17 @@ import { DataError, type Db } from "@/lib/server/db";
 import * as statements from "@/lib/server/finance/statements";
 import { memberOrError } from "@/lib/server/session";
 import {
-  type AccountBalance, fromRpcAccountBalance, fromRpcImportResult, fromRpcPreview, type ImportPreview, importLinesSchema, MAX_IMPORT_LINES, importProfileSchema, importSummary, parseStatementLines, toRpcLines,
+  type AccountBalance,
+  fromRpcAccountBalance,
+  fromRpcImportResult,
+  fromRpcPreview,
+  type ImportPreview,
+  importLinesSchema,
+  MAX_IMPORT_LINES,
+  importProfileSchema,
+  importSummary,
+  parseStatementLines,
+  toRpcLines,
   type ImportResult,
 } from "@/lib/finance/import-schema";
 
@@ -23,7 +33,10 @@ export type ImportProfile = {
 type ActionResult<T = undefined> = { error?: string; success?: string; data?: T };
 
 /** Membro (e, com `denied`, só tesouraria/administração); `DataError` vira `{ error }`. */
-async function withDb<T>(denied: string | null, work: (db: Db, groupId: string) => Promise<ActionResult<T>>): Promise<ActionResult<T>> {
+async function withDb<T>(
+  denied: string | null,
+  work: (db: Db, groupId: string) => Promise<ActionResult<T>>,
+): Promise<ActionResult<T>> {
   const ctx = await memberOrError();
   if ("error" in ctx) return { error: ctx.error };
   if (denied && !ctx.finance.canReview) return { error: denied };
@@ -52,7 +65,9 @@ export async function importStatementLines(payload: unknown): Promise<ActionResu
   const lines = parseStatementLines(parsed.data.lines);
   if ("error" in lines) return { error: lines.error };
   return withDb("Sem permissão para importar extratos.", async (db) => {
-    const result = fromRpcImportResult(await statements.importLines(db, { ...parsed.data, lines: toRpcLines(lines.lines) }));
+    const result = fromRpcImportResult(
+      await statements.importLines(db, { ...parsed.data, lines: toRpcLines(lines.lines) }),
+    );
     if (!result) return { error: "Resposta inesperada do banco ao importar." };
     revalidatePath("/", "layout");
     return { success: importSummary(result), data: result };
@@ -73,7 +88,15 @@ export async function previewStatementImport(payload: unknown): Promise<ActionRe
   const lines = parseStatementLines(parsed.data.lines);
   if ("error" in lines) return { error: lines.error };
   return withDb("Sem permissão para importar extratos.", async (db) => {
-    const preview = fromRpcPreview(await statements.previewLines(db, parsed.data.accountId, parsed.data.periodFrom ?? null, parsed.data.periodTo ?? null, toRpcLines(lines.lines)));
+    const preview = fromRpcPreview(
+      await statements.previewLines(
+        db,
+        parsed.data.accountId,
+        parsed.data.periodFrom ?? null,
+        parsed.data.periodTo ?? null,
+        toRpcLines(lines.lines),
+      ),
+    );
     return preview ? { data: preview } : { error: "Resposta inesperada do banco na conferência." };
   });
 }
@@ -86,11 +109,18 @@ export async function deleteStatementImport(importId: unknown): Promise<ActionRe
     const result = await statements.deleteImport(db, id.data);
     revalidatePath("/", "layout");
     const lines = `${result.lines} ${result.lines === 1 ? "linha removida" : "linhas removidas"}`;
-    return { success: result.unlinked ? `Importação desfeita: ${lines}; ${result.unlinked} ${result.unlinked === 1 ? "conciliação desfeita" : "conciliações desfeitas"}.` : `Importação desfeita: ${lines}.` };
+    return {
+      success: result.unlinked
+        ? `Importação desfeita: ${lines}; ${result.unlinked} ${result.unlinked === 1 ? "conciliação desfeita" : "conciliações desfeitas"}.`
+        : `Importação desfeita: ${lines}.`,
+    };
   });
 }
 
-const balancePayload = z.object({ accountId: z.uuid({ message: "Escolha a conta." }), date: z.iso.date({ message: "Data inválida." }) });
+const balancePayload = z.object({
+  accountId: z.uuid({ message: "Escolha a conta." }),
+  date: z.iso.date({ message: "Data inválida." }),
+});
 
 /** Saldo da conta no sistema no começo da primeira data do arquivo, para conferir com o saldo inicial do OFX. */
 export async function accountBalanceBefore(payload: unknown): Promise<ActionResult<AccountBalance>> {

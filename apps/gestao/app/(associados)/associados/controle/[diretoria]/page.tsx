@@ -5,7 +5,11 @@ import { audienceFromSlug, audienceSlugs } from "@/lib/associates/controls";
  * Rota antiga (uma aba por diretoria): a matriz agora é única em `/associados/controle`. Redireciona mantendo os
  * filtros; o público antigo (jovem, escotista, dirigente) vira jovens ou adultos.
  */
-export default async function OldControlDirectoratePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+export default async function OldControlDirectoratePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const search = await searchParams;
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(search)) {

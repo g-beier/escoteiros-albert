@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { activityPeriods, ageInYears, ageInYearsMonths, ageLabel, ageYearsMonthsLabel, nextBranch, patrolChoices, placementLabel, placementOptions, placementValue, resolvePlacement, sectionChoices, statusFilter } from "./model";
+import {
+  activityPeriods,
+  ageInYears,
+  ageInYearsMonths,
+  ageLabel,
+  ageYearsMonthsLabel,
+  nextBranch,
+  patrolChoices,
+  placementLabel,
+  placementOptions,
+  placementValue,
+  resolvePlacement,
+  sectionChoices,
+  statusFilter,
+} from "./model";
 import { FILHOTES_ENABLED } from "@/lib/features";
 
 describe("seções cadastradas", () => {
@@ -39,7 +53,16 @@ describe("divisão (seleção única Ramo › Seção › Equipe)", () => {
   it("monta a hierarquia: Adulto e Clã sem divisões abaixo", () => {
     // o Filhote só aparece com o ramo ligado (lib/features.ts)
     expect(placementOptions(sections, patrols).map((o) => `${o.depth}:${o.name}`)).toEqual([
-      ...(FILHOTES_ENABLED ? ["0:Filhote"] : []), "0:Lobinho", "1:Alcateia Seeonee", "0:Escoteiro", "1:Tropa Tupã", "2:Lobo", "0:Sênior", "0:Pioneiro", "1:Clã Sol", "0:Adulto",
+      ...(FILHOTES_ENABLED ? ["0:Filhote"] : []),
+      "0:Lobinho",
+      "1:Alcateia Seeonee",
+      "0:Escoteiro",
+      "1:Tropa Tupã",
+      "2:Lobo",
+      "0:Sênior",
+      "0:Pioneiro",
+      "1:Clã Sol",
+      "0:Adulto",
     ]);
   });
   it("mantém a divisão atual mesmo fora das regras", () => {
@@ -48,14 +71,22 @@ describe("divisão (seleção única Ramo › Seção › Equipe)", () => {
     expect(placementOptions(sections, patrols, { sectionId: "s6" }).map((o) => o.value)).toContain("s:s6");
   });
   it("passagem: só o ramo seguinte, com suas seções e equipes", () => {
-    expect(placementOptions(sections, patrols, undefined, "escoteiro").map((o) => `${o.depth}:${o.name}`)).toEqual(["0:Escoteiro", "1:Tropa Tupã", "2:Lobo"]);
+    expect(placementOptions(sections, patrols, undefined, "escoteiro").map((o) => `${o.depth}:${o.name}`)).toEqual([
+      "0:Escoteiro",
+      "1:Tropa Tupã",
+      "2:Lobo",
+    ]);
     expect(nextBranch("lobinho")).toBe("escoteiro");
     expect(nextBranch("pioneiro")).toBe("adulto");
     expect(nextBranch("filhote")).toBe("lobinho");
     expect(nextBranch("adulto")).toBeNull();
   });
   it("a equipe define a seção e o ramo; a seção define o ramo", () => {
-    expect(resolvePlacement("p:p1", sections, patrols)).toEqual({ branch: "escoteiro", sectionId: "s2", patrolId: "p1" });
+    expect(resolvePlacement("p:p1", sections, patrols)).toEqual({
+      branch: "escoteiro",
+      sectionId: "s2",
+      patrolId: "p1",
+    });
     expect(resolvePlacement("s:s1", sections, patrols)).toEqual({ branch: "lobinho", sectionId: "s1", patrolId: "" });
     expect(resolvePlacement("b:adulto", sections, patrols)).toEqual({ branch: "adulto", sectionId: "", patrolId: "" });
     expect(resolvePlacement("", sections, patrols)).toEqual({ branch: "", sectionId: "", patrolId: "" });
@@ -63,7 +94,9 @@ describe("divisão (seleção única Ramo › Seção › Equipe)", () => {
   it("valor e rótulo", () => {
     expect(placementValue({ branch: "escoteiro", sectionId: "s2", patrolId: "p1" })).toBe("p:p1");
     expect(placementValue({ branch: "adulto", sectionId: "", patrolId: "" })).toBe("b:adulto");
-    expect(placementLabel({ branch: "escoteiro", section: "Tropa Tupã", patrol: "Lobo" })).toBe("Escoteiro › Tropa Tupã › Lobo");
+    expect(placementLabel({ branch: "escoteiro", section: "Tropa Tupã", patrol: "Lobo" })).toBe(
+      "Escoteiro › Tropa Tupã › Lobo",
+    );
     expect(placementLabel({ branch: "adulto", section: null, patrol: null })).toBe("Adulto");
   });
 });
@@ -89,9 +122,22 @@ describe("idade e períodos", () => {
     expect(ageYearsMonthsLabel(null)).toBe("—");
   });
   it("monta os períodos a partir das entradas e saídas", () => {
-    const m = (id: string, kind: "entrada" | "saida", date: string) => ({ id, kind, movement_date: date, reason: null, created_at: `${date}T00:00:00Z` });
-    const periods = activityPeriods([m("c", "entrada", "2024-03-01"), m("a", "entrada", "2020-02-01"), m("b", "saida", "2023-12-10")]);
-    expect(periods.map((p) => [p.start?.id ?? null, p.end?.id ?? null])).toEqual([["a", "b"], ["c", null]]);
+    const m = (id: string, kind: "entrada" | "saida", date: string) => ({
+      id,
+      kind,
+      movement_date: date,
+      reason: null,
+      created_at: `${date}T00:00:00Z`,
+    });
+    const periods = activityPeriods([
+      m("c", "entrada", "2024-03-01"),
+      m("a", "entrada", "2020-02-01"),
+      m("b", "saida", "2023-12-10"),
+    ]);
+    expect(periods.map((p) => [p.start?.id ?? null, p.end?.id ?? null])).toEqual([
+      ["a", "b"],
+      ["c", null],
+    ]);
     expect(activityPeriods([m("x", "saida", "2022-01-01")]).map((p) => [p.start, p.end?.id])).toEqual([[null, "x"]]);
   });
   it("lê a situação da URL", () => {

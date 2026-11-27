@@ -13,8 +13,16 @@ describe("readImportFile", () => {
   });
 
   it("converte valores e guarda só as células preenchidas", () => {
-    const { file } = readImportFile("pessoas.csv", "Nome,Nascimento,Ramo,Situação,Desligado em\nAna Souza,14/05/2015,Alcateia,,\n");
-    expect(file!.rows[0]).toEqual({ line: 2, values: { name: "Ana Souza", birth: "2015-05-14", branch: "lobinho" }, dynamic: {}, errors: [] });
+    const { file } = readImportFile(
+      "pessoas.csv",
+      "Nome,Nascimento,Ramo,Situação,Desligado em\nAna Souza,14/05/2015,Alcateia,,\n",
+    );
+    expect(file!.rows[0]).toEqual({
+      line: 2,
+      values: { name: "Ana Souza", birth: "2015-05-14", branch: "lobinho" },
+      dynamic: {},
+      errors: [],
+    });
   });
 
   it("erros por célula, linha em branco ignorada, coluna desconhecida vira aviso", () => {
@@ -33,7 +41,10 @@ describe("readImportFile", () => {
     const controle = readImportFile("controle.csv", "público;pessoa;Ficha de saúde;Paxtu\njovem;Ana;OK;\n").file!;
     expect(controle.dynamicColumns).toEqual(["Ficha de saúde", "Paxtu"]);
     expect(controle.rows[0]!.dynamic).toEqual({ "Ficha de saúde": "OK" });
-    const lotes = readImportFile("inventario-lotes.csv", "divisão;material;Contagem 2025;contagem 2026;sobra\nA;Panela;3;2;x\n").file!;
+    const lotes = readImportFile(
+      "inventario-lotes.csv",
+      "divisão;material;Contagem 2025;contagem 2026;sobra\nA;Panela;3;2;x\n",
+    ).file!;
     expect(lotes.dynamicColumns).toEqual(["Contagem 2025", "contagem 2026"]);
     expect(lotes.warnings).toHaveLength(1);
     expect(countYear("Contagem 2025")).toBe(2025);

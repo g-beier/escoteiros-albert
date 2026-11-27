@@ -25,7 +25,10 @@ test("mensalidades: sugestão do lançamento, confirmar, marcar, limpar e isenta
   await page.goto("/financeiro/configuracoes/mensalidades");
   const settings = page.getByRole("region", { name: "Mensalidades" });
   await settings.getByRole("combobox", { name: "Rubrica de mensalidade" }).fill("Mensalidades");
-  await page.getByRole("option", { name: /Mensalidades/ }).first().click();
+  await page
+    .getByRole("option", { name: /Mensalidades/ })
+    .first()
+    .click();
   await settings.getByRole("button", { name: "Salvar" }).click();
   await expect(page.getByText("Configurações de mensalidade salvas.")).toBeVisible();
 

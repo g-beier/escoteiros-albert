@@ -6,8 +6,34 @@ export type PeriodPreset =
 
 export type Period = { from: string; to: string };
 
-export const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"] as const;
-export const MONTHS_SHORT = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"] as const;
+export const MONTHS = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+] as const;
+export const MONTHS_SHORT = [
+  "JAN",
+  "FEV",
+  "MAR",
+  "ABR",
+  "MAI",
+  "JUN",
+  "JUL",
+  "AGO",
+  "SET",
+  "OUT",
+  "NOV",
+  "DEZ",
+] as const;
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -24,7 +50,10 @@ export function periodBounds(preset: PeriodPreset): Period | null {
   if (preset.kind === "ano") return { from: `${preset.year}-01-01`, to: `${preset.year}-12-31` };
   if (preset.kind === "mes") {
     const lastDay = new Date(Date.UTC(preset.year, preset.month, 0)).getUTCDate();
-    return { from: `${preset.year}-${pad(preset.month)}-01`, to: `${preset.year}-${pad(preset.month)}-${pad(lastDay)}` };
+    return {
+      from: `${preset.year}-${pad(preset.month)}-01`,
+      to: `${preset.year}-${pad(preset.month)}-${pad(lastDay)}`,
+    };
   }
   if (!isIsoDate(preset.from) || !isIsoDate(preset.to) || preset.from > preset.to) return null;
   return { from: preset.from, to: preset.to };

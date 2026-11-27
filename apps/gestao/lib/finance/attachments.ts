@@ -20,7 +20,12 @@ const TYPES = {
 export type AttachmentType = keyof typeof TYPES;
 
 const BY_EXTENSION: Record<string, AttachmentType> = {
-  pdf: "application/pdf", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", heic: "image/heic", heif: "image/heif",
+  pdf: "application/pdf",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  heic: "image/heic",
+  heif: "image/heif",
 };
 
 /** Para o `accept` do campo de arquivo (extensões ajudam quando o sistema não conhece HEIC). */
@@ -50,7 +55,8 @@ export function attachmentType(fileName: string, mime: string): AttachmentType |
 export function attachmentProblem(file: { name: string; type: string; size: number }): string | null {
   if (!attachmentType(file.name, file.type)) return `“${file.name}” não é PDF, JPG, PNG nem HEIC.`;
   if (file.size <= 0) return `“${file.name}” está vazio.`;
-  if (file.size > ATTACHMENT_MAX_BYTES) return `“${file.name}” tem ${fileSize(file.size)}; o limite é ${fileSize(ATTACHMENT_MAX_BYTES)}.`;
+  if (file.size > ATTACHMENT_MAX_BYTES)
+    return `“${file.name}” tem ${fileSize(file.size)}; o limite é ${fileSize(ATTACHMENT_MAX_BYTES)}.`;
   return null;
 }
 
@@ -61,7 +67,11 @@ export function attachmentPath(groupId: string, entryId: string, fileId: string,
 
 /** Nome mostrado e usado no download: sem diretórios nem caracteres de controle, até 200 caracteres. */
 export function cleanFileName(name: string) {
-  const base = name.split(/[\\/]/).pop()!.replace(/[\u0000-\u001f\u007f]/g, "").trim();
+  const base = name
+    .split(/[\\/]/)
+    .pop()!
+    .replace(/[\u0000-\u001f\u007f]/g, "")
+    .trim();
   return base.slice(0, 200) || "comprovante";
 }
 

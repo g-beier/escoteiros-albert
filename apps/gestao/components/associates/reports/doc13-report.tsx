@@ -19,32 +19,70 @@ const FRAME = { borderTopWidth: LINE, borderLeftWidth: LINE, borderColor: "#000"
 
 function AgeRow({ row }: { row?: Doc13Row }) {
   const bold = row?.current ?? false;
-  return <Row>
-    <Cell fit={NAME_FIT} bold={bold} color={row?.red ? PENDING_RED : undefined}>{row?.name}</Cell>
-    <Cell width={BIRTH} bold={bold}>{row ? row.birth ?? "—" : undefined}</Cell>
-    <Cell width={AGE} bold={bold} uppercase={false}>{row?.age}</Cell>
-    <Cell width={PERIOD} bold={bold} uppercase={false}>{row ? row.period ?? "—" : undefined}</Cell>
-  </Row>;
+  return (
+    <Row>
+      <Cell fit={NAME_FIT} bold={bold} color={row?.red ? PENDING_RED : undefined}>
+        {row?.name}
+      </Cell>
+      <Cell width={BIRTH} bold={bold}>
+        {row ? (row.birth ?? "—") : undefined}
+      </Cell>
+      <Cell width={AGE} bold={bold} uppercase={false}>
+        {row?.age}
+      </Cell>
+      <Cell width={PERIOD} bold={bold} uppercase={false}>
+        {row ? (row.period ?? "—") : undefined}
+      </Cell>
+    </Row>
+  );
 }
 
 function SectionGroup({ section }: { section: Doc13Section }) {
-  return <View wrap={false} style={FRAME}>
-    <Band fill={BRANCH_COLORS[section.branch]} weight={500} uppercase={false}>{section.label}</Band>
-    {section.rows.map((row) => <AgeRow key={row.id} row={row} />)}
-    {Array.from({ length: BLANK_AGE_ROWS }, (_, i) => <AgeRow key={`v${i}`} />)}
-  </View>;
+  return (
+    <View wrap={false} style={FRAME}>
+      <Band fill={BRANCH_COLORS[section.branch]} weight={500} uppercase={false}>
+        {section.label}
+      </Band>
+      {section.rows.map((row) => (
+        <AgeRow key={row.id} row={row} />
+      ))}
+      {Array.from({ length: BLANK_AGE_ROWS }, (_, i) => (
+        <AgeRow key={`v${i}`} />
+      ))}
+    </View>
+  );
 }
 
-export function Doc13Report({ doc, title, footerName, issuedOn }: { doc: Doc13; title: string; footerName: string; issuedOn: string }) {
-  return <ReportDocument title={title} footerName={footerName} issuedOn={issuedOn}>
-    <View style={[FRAME, { marginTop: 0 }]}>
-      <Row>
-        <Cell bold>Nome</Cell>
-        <Cell width={BIRTH} bold>Nascimento</Cell>
-        <Cell width={AGE} bold>Idade</Cell>
-        <Cell width={PERIOD} bold fit={19}>Período de transição</Cell>
-      </Row>
-    </View>
-    {doc.sections.map((section) => <SectionGroup key={section.key} section={section} />)}
-  </ReportDocument>;
+export function Doc13Report({
+  doc,
+  title,
+  footerName,
+  issuedOn,
+}: {
+  doc: Doc13;
+  title: string;
+  footerName: string;
+  issuedOn: string;
+}) {
+  return (
+    <ReportDocument title={title} footerName={footerName} issuedOn={issuedOn}>
+      <View style={[FRAME, { marginTop: 0 }]}>
+        <Row>
+          <Cell bold>Nome</Cell>
+          <Cell width={BIRTH} bold>
+            Nascimento
+          </Cell>
+          <Cell width={AGE} bold>
+            Idade
+          </Cell>
+          <Cell width={PERIOD} bold fit={19}>
+            Período de transição
+          </Cell>
+        </Row>
+      </View>
+      {doc.sections.map((section) => (
+        <SectionGroup key={section.key} section={section} />
+      ))}
+    </ReportDocument>
+  );
 }

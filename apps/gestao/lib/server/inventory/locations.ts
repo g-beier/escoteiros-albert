@@ -8,8 +8,11 @@ import { one, rows, rpc, run } from "@/lib/server/pg/db";
 
 /** Divisões com o caminho completo ("Cozinha › Estante de canecas › 2º nível"), na ordem da árvore. */
 export async function listPaths(db: Db, groupId: string): Promise<LocationPath[]> {
-  const list = await rows<LocationPath>(db, (sql) => sql`
-    select id, parent_id, name, path, depth, active, ancestors, sort_key from public.inventory_location_paths where group_id = ${groupId}`);
+  const list = await rows<LocationPath>(
+    db,
+    (sql) => sql`
+    select id, parent_id, name, path, depth, active, ancestors, sort_key from public.inventory_location_paths where group_id = ${groupId}`,
+  );
   return list.sort(treeOrder);
 }
 
@@ -39,8 +42,16 @@ export async function listForSettings(db: Db, groupId: string): Promise<Location
     for (const ancestor of row.ancestors) total.set(ancestor, (total.get(ancestor) ?? 0) + count);
   }
   return paths.map((row) => ({
-    id: row.id, parentId: row.parent_id, name: row.name, description: descriptions.get(row.id) ?? null, path: row.path,
-    depth: row.depth, ancestors: row.ancestors, active: row.active, own: own.get(row.id) ?? 0, total: total.get(row.id) ?? 0,
+    id: row.id,
+    parentId: row.parent_id,
+    name: row.name,
+    description: descriptions.get(row.id) ?? null,
+    path: row.path,
+    depth: row.depth,
+    ancestors: row.ancestors,
+    active: row.active,
+    own: own.get(row.id) ?? 0,
+    total: total.get(row.id) ?? 0,
   }));
 }
 
@@ -49,17 +60,30 @@ export type LocationInput = { id: string | null; parentId: string | null; name: 
 /** Cria (sem `id`) ou edita uma divisão. */
 export async function save(db: Db, groupId: string, input: LocationInput): Promise<void> {
   await rpc(db, "inventory_save_location", {
-    p_group_id: groupId, p_id: input.id, p_parent_id: input.parentId, p_name: input.name, p_description: input.description, p_active: true,
+    p_group_id: groupId,
+    p_id: input.id,
+    p_parent_id: input.parentId,
+    p_name: input.name,
+    p_description: input.description,
+    p_active: true,
   });
 }
 
 /** Inativa ou reativa, mantendo nome, descrição e lugar na árvore; devolve o nome. */
 export async function setActive(db: Db, groupId: string, id: string, active: boolean): Promise<string> {
-  const location = await one<{ parent_id: string | null; name: string; description: string | null }>(db, (sql) => sql`
-    select parent_id, name, description from public.inventory_locations where id = ${id} and group_id = ${groupId}`);
+  const location = await one<{ parent_id: string | null; name: string; description: string | null }>(
+    db,
+    (sql) => sql`
+    select parent_id, name, description from public.inventory_locations where id = ${id} and group_id = ${groupId}`,
+  );
   if (!location) throw new DataError("Divisão não encontrada.");
   await rpc(db, "inventory_save_location", {
-    p_group_id: groupId, p_id: id, p_parent_id: location.parent_id, p_name: location.name, p_description: location.description, p_active: active,
+    p_group_id: groupId,
+    p_id: id,
+    p_parent_id: location.parent_id,
+    p_name: location.name,
+    p_description: location.description,
+    p_active: active,
   });
   return location.name;
 }

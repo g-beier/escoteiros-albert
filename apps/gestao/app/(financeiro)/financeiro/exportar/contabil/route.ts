@@ -15,7 +15,10 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const period = periodBounds({ kind: "personalizado", from: params.get("de") ?? "", to: params.get("ate") ?? "" });
   if (!period) return errorResponse("Período inválido: informe datas válidas, com início antes do fim.");
-  const account = z.uuid().optional().safeParse(params.get("conta") || undefined);
+  const account = z
+    .uuid()
+    .optional()
+    .safeParse(params.get("conta") || undefined);
   if (!account.success) return errorResponse("Conta inválida.");
   const raw = params.get("codificacao");
   const encoding: CsvEncoding = isCsvEncoding(raw) ? raw : "windows-1252";
@@ -27,7 +30,10 @@ export async function GET(request: NextRequest) {
     const missing = missingLedgerCodes(splits);
     if (missing.length) {
       const list = missing.slice(0, 8).join(", ") + (missing.length > 8 ? ` e mais ${missing.length - 8}` : "");
-      return errorResponse(`Rubricas sem conta contábil: ${list}. Cadastre a conta contábil em Configurações › Rubricas antes de exportar.`, 422);
+      return errorResponse(
+        `Rubricas sem conta contábil: ${list}. Cadastre a conta contábil em Configurações › Rubricas antes de exportar.`,
+        422,
+      );
     }
     const csv = toCsv(ACCOUNTING_COLUMNS, toAccountingRows(splits));
     return csvResponse(encodeCsv(csv, encoding), `contabil_${period.from}_${period.to}.csv`, encoding);

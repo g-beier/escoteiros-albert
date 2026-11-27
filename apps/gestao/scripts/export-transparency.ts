@@ -32,7 +32,9 @@ function clearReports() {
 
 function fail(reason: string): never {
   console.error(`\n✖ Prestação de contas não gerada: ${reason}`);
-  console.error("  O build do site foi interrompido. Corrija e rode de novo (TRANSPARENCY_SKIP=1 pula, só para testes).\n");
+  console.error(
+    "  O build do site foi interrompido. Corrija e rode de novo (TRANSPARENCY_SKIP=1 pula, só para testes).\n",
+  );
   process.exit(1);
 }
 
@@ -55,7 +57,9 @@ async function main() {
 
   pool(url);
   const db = ownerDb();
-  const groupId = await groupIdByName(db, GROUP_NAME).catch((error: Error) => fail(`banco indisponível em ${hostOf(url)} (${error.message}). O banco está no ar?`));
+  const groupId = await groupIdByName(db, GROUP_NAME).catch((error: Error) =>
+    fail(`banco indisponível em ${hostOf(url)} (${error.message}). O banco está no ar?`),
+  );
   if (!groupId) fail(`grupo "${GROUP_NAME}" não encontrado.`);
 
   const { first, last } = await entryDateRange(db, groupId);
@@ -63,7 +67,9 @@ async function main() {
 
   const years: number[] = [];
   for (let y = Number(first.slice(0, 4)); y <= Number(last.slice(0, 4)); y++) years.push(y);
-  const reports = await Promise.all(years.map(async (y) => buildTransparencyReport(await fetchRealizedModel(db, groupId, y))));
+  const reports = await Promise.all(
+    years.map(async (y) => buildTransparencyReport(await fetchRealizedModel(db, groupId, y))),
+  );
 
   // só troca os arquivos depois de ler tudo: uma falha no meio não deixa o site com metade dos anos
   clearReports();

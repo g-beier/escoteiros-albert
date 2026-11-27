@@ -27,5 +27,7 @@ export function formatLedgerCode(input: string) {
 export function parseLedgerCode(value: unknown): { ok: true; value: string | null } | { ok: false; error: string } {
   const text = typeof value === "string" ? value.trim() : "";
   if (!text) return { ok: true, value: null };
-  return isLedgerCode(text) ? { ok: true, value: text } : { ok: false, error: `Conta contábil no formato ${LEDGER_CODE_MASK}.` };
+  return isLedgerCode(text)
+    ? { ok: true, value: text }
+    : { ok: false, error: `Conta contábil no formato ${LEDGER_CODE_MASK}.` };
 }

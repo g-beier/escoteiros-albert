@@ -2,24 +2,48 @@ import { describe, expect, it } from "vitest";
 import { describeHistory, snapshotChanges, type AuditRow, type HistoryNames } from "./entry-history";
 
 const names: HistoryNames = {
-  accounts: new Map([["acc-a", "A definir"], ["acc-cora", "Cora"]]),
-  paymentMethods: new Map([["pix", "PIX"], ["din", "Dinheiro"]]),
-  categories: new Map([["cat-1", "2.1 Material"], ["cat-2", "2.2 Transporte"]]),
+  accounts: new Map([
+    ["acc-a", "A definir"],
+    ["acc-cora", "Cora"],
+  ]),
+  paymentMethods: new Map([
+    ["pix", "PIX"],
+    ["din", "Dinheiro"],
+  ]),
+  categories: new Map([
+    ["cat-1", "2.1 Material"],
+    ["cat-2", "2.2 Transporte"],
+  ]),
   associates: new Map([["ass-1", "Ana"]]),
 };
 
-const row = (action: string, details: Record<string, unknown>, id = 1): AuditRow =>
-  ({ id, created_at: "2026-11-12T12:00:00Z", action, actor_email: "tes@escoteirosalbert.com.br", details });
+const row = (action: string, details: Record<string, unknown>, id = 1): AuditRow => ({
+  id,
+  created_at: "2026-11-12T12:00:00Z",
+  action,
+  actor_email: "tes@escoteirosalbert.com.br",
+  details,
+});
 
 const base = {
-  entry_date: "2026-05-18", name: "Papelaria", account_id: "acc-a", payment_method_id: "pix", document: null,
-  document_filed: false, total_cents: -3000, notes: null,
+  entry_date: "2026-05-18",
+  name: "Papelaria",
+  account_id: "acc-a",
+  payment_method_id: "pix",
+  document: null,
+  document_filed: false,
+  total_cents: -3000,
+  notes: null,
   splits: [{ category_id: "cat-1", amount_cents: -3000, description: "Cartolina", associate_id: null }],
 };
 
 describe("snapshotChanges", () => {
   it("lists changed fields with names instead of ids", () => {
-    const changes = snapshotChanges(base, { ...base, account_id: "acc-cora", payment_method_id: "din", document_filed: true, notes: "Nota 12" }, names);
+    const changes = snapshotChanges(
+      base,
+      { ...base, account_id: "acc-cora", payment_method_id: "din", document_filed: true, notes: "Nota 12" },
+      names,
+    );
     expect(changes).toEqual([
       { label: "Conta", before: "A definir", after: "Cora" },
       { label: "Forma de pagamento", before: "PIX", after: "Dinheiro" },
@@ -44,15 +68,32 @@ describe("snapshotChanges", () => {
 
 describe("describeHistory", () => {
   it("describes creation, account moves and reconciliation", () => {
-    const items = describeHistory([
-      row("ledger_entry.created", { entry_date: "2026-05-18", name: "Papelaria", account_id: "acc-a", payment_method_id: "pix", total_cents: -3000 }, 1),
-      row("ledger_entry.account_changed", { from: "acc-a", to: "acc-cora", reason: "em lote" }, 2),
-      row("reconciliation.linked", { statement_line_ids: ["l1"], ledger_entry_ids: ["e1"], amount_cents: -3000 }, 3),
-      row("reconciliation.unlinked", { reason: "lançamento alterado (valor ou conta)" }, 4),
-      { ...row("ledger_entry.document_filed", { filed: true }, 5), actor_email: null },
-    ], names);
+    const items = describeHistory(
+      [
+        row(
+          "ledger_entry.created",
+          {
+            entry_date: "2026-05-18",
+            name: "Papelaria",
+            account_id: "acc-a",
+            payment_method_id: "pix",
+            total_cents: -3000,
+          },
+          1,
+        ),
+        row("ledger_entry.account_changed", { from: "acc-a", to: "acc-cora", reason: "em lote" }, 2),
+        row("reconciliation.linked", { statement_line_ids: ["l1"], ledger_entry_ids: ["e1"], amount_cents: -3000 }, 3),
+        row("reconciliation.unlinked", { reason: "lançamento alterado (valor ou conta)" }, 4),
+        { ...row("ledger_entry.document_filed", { filed: true }, 5), actor_email: null },
+      ],
+      names,
+    );
     expect(items.map((item) => item.title)).toEqual([
-      "Lançamento criado", "Conta alterada em lote", "Conciliado com o extrato", "Conciliação desfeita", "Documento arquivado",
+      "Lançamento criado",
+      "Conta alterada em lote",
+      "Conciliado com o extrato",
+      "Conciliação desfeita",
+      "Documento arquivado",
     ]);
     expect(items[0].changes).toContainEqual({ label: "Histórico", after: "Papelaria" });
     expect(items[1].changes).toEqual([{ label: "Conta", before: "A definir", after: "Cora" }]);
@@ -61,25 +102,46 @@ describe("describeHistory", () => {
   });
 
   it("describes attachments", () => {
-    const [added, removed] = describeHistory([row("ledger_entry.attachment_added", { file_name: "nf.pdf" }), row("ledger_entry.attachment_removed", { file_name: "nf.pdf" }, 2)], names);
+    const [added, removed] = describeHistory(
+      [
+        row("ledger_entry.attachment_added", { file_name: "nf.pdf" }),
+        row("ledger_entry.attachment_removed", { file_name: "nf.pdf" }, 2),
+      ],
+      names,
+    );
     expect(added).toMatchObject({ title: "Comprovante anexado", changes: [{ label: "Arquivo", after: "nf.pdf" }] });
     expect(removed).toMatchObject({ title: "Comprovante removido", changes: [{ label: "Arquivo", before: "nf.pdf" }] });
   });
 
   it("describes splits moved by a deleted category, with the names stored in the event", () => {
-    const [item] = describeHistory([row("ledger_entry.category_merged", {
-      from: [{ code: "2.2.2", name: "Acampamento de Grupo" }, { code: "2.2.2.1", name: "Transporte" }],
-      to: { id: "x", code: "2.2", name: "Programa" }, splits: 2,
-    })], names);
-    expect(item).toMatchObject({ title: "Rubrica excluída: rateios movidos", changes: [{ label: "Rubrica", before: "2.2.2 Acampamento de Grupo, 2.2.2.1 Transporte", after: "2.2 Programa" }] });
+    const [item] = describeHistory(
+      [
+        row("ledger_entry.category_merged", {
+          from: [
+            { code: "2.2.2", name: "Acampamento de Grupo" },
+            { code: "2.2.2.1", name: "Transporte" },
+          ],
+          to: { id: "x", code: "2.2", name: "Programa" },
+          splits: 2,
+        }),
+      ],
+      names,
+    );
+    expect(item).toMatchObject({
+      title: "Rubrica excluída: rateios movidos",
+      changes: [{ label: "Rubrica", before: "2.2.2 Acampamento de Grupo, 2.2.2.1 Transporte", after: "2.2 Programa" }],
+    });
   });
 
   it("marks bulk changes (012): payment method, category of splits and filed documents", () => {
     const after = { ...base, payment_method_id: "din", splits: [{ ...base.splits[0], category_id: "cat-2" }] };
-    const [edit, filed] = describeHistory([
-      row("ledger_entry.updated", { before: base, after, reason: "em lote" }),
-      row("ledger_entry.document_filed", { filed: true, reason: "em lote" }, 2),
-    ], names);
+    const [edit, filed] = describeHistory(
+      [
+        row("ledger_entry.updated", { before: base, after, reason: "em lote" }),
+        row("ledger_entry.document_filed", { filed: true, reason: "em lote" }, 2),
+      ],
+      names,
+    );
     expect(edit.title).toBe("Lançamento alterado em lote");
     // Intl separa "R$" do número com espaço não separável
     expect(JSON.parse(JSON.stringify(edit.changes).replace(/\u00a0/g, " "))).toEqual([
@@ -91,6 +153,8 @@ describe("describeHistory", () => {
   });
 
   it("marks an edit without differences", () => {
-    expect(describeHistory([row("ledger_entry.updated", { before: base, after: base })], names)[0].title).toBe("Lançamento salvo sem alterações");
+    expect(describeHistory([row("ledger_entry.updated", { before: base, after: base })], names)[0].title).toBe(
+      "Lançamento salvo sem alterações",
+    );
   });
 });

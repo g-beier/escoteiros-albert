@@ -1,23 +1,33 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { IconMinus, IconPlus } from '@tabler/icons-react';
+import { useState } from "react";
+import { IconMinus, IconPlus } from "@tabler/icons-react";
 import {
   Field as ChoiceField,
   FieldContent,
   FieldDescription,
   FieldLabel,
   FieldTitle,
-} from '@geas/ui/components/field';
-import { Input } from '@geas/ui/components/input';
-import type { Option } from '@geas/ui/components/option-controls';
-import { RadioGroup, RadioGroupItem } from '@geas/ui/components/radio-group';
-import { cn } from '@geas/ui/lib/utils';
-import { addLot, writeOffLot } from '@/app/(inventario)/inventario/materiais/actions';
-import { ConditionPill } from '@/components/inventory/condition-pill';
-import { dateBR, writeOffOptions, type Condition } from '@/lib/inventory/vocabulary';
-import { ActionDialog, type FormAction } from '@/components/shell/action-dialog';
-import { ConditionField, EntryFields, Field, LocationField, NotesField, QuantityField, SaleFields, SelectField, VariantField } from './fields';
+} from "@geas/ui/components/field";
+import { Input } from "@geas/ui/components/input";
+import type { Option } from "@geas/ui/components/option-controls";
+import { RadioGroup, RadioGroupItem } from "@geas/ui/components/radio-group";
+import { cn } from "@geas/ui/lib/utils";
+import { addLot, writeOffLot } from "@/app/(inventario)/inventario/materiais/actions";
+import { ConditionPill } from "@/components/inventory/condition-pill";
+import { dateBR, writeOffOptions, type Condition } from "@/lib/inventory/vocabulary";
+import { ActionDialog, type FormAction } from "@/components/shell/action-dialog";
+import {
+  ConditionField,
+  EntryFields,
+  Field,
+  LocationField,
+  NotesField,
+  QuantityField,
+  SaleFields,
+  SelectField,
+  VariantField,
+} from "./fields";
 
 // Saída do estoque como baixa (consumo, perda, descarte…), o caminho normal quando unidades saem. "Corrigir
 // contagem" fica para quando o registro estava errado. Usado no detalhe do material e na lista de Materiais.
@@ -33,10 +43,10 @@ export type WithdrawLot = {
 };
 
 /** Rótulo da saída: consumível consome; o resto dá baixa. */
-export const withdrawLabel = (consumable: boolean) => (consumable ? 'Consumir' : 'Dar baixa');
+export const withdrawLabel = (consumable: boolean) => (consumable ? "Consumir" : "Dar baixa");
 
 /** Vence antes sai primeiro; sem validade por último. */
-const byExpiry = (a: WithdrawLot, b: WithdrawLot) => (a.expires_on ?? '9999').localeCompare(b.expires_on ?? '9999');
+const byExpiry = (a: WithdrawLot, b: WithdrawLot) => (a.expires_on ?? "9999").localeCompare(b.expires_on ?? "9999");
 
 /** Campos da baixa: lote (cartões, quando há mais de um), quantidade, motivo e observação; o id do lote vai oculto. */
 function WithdrawFields({
@@ -51,7 +61,7 @@ function WithdrawFields({
   defaultQuantity?: number;
 }) {
   const sorted = [...lots].sort(byExpiry);
-  const [lotId, setLotId] = useState(defaultLotId ?? sorted[0]?.id ?? '');
+  const [lotId, setLotId] = useState(defaultLotId ?? sorted[0]?.id ?? "");
   const lot = sorted.find((row) => row.id === lotId);
   return (
     <>
@@ -78,7 +88,7 @@ function WithdrawFields({
                       {row.path}
                       {row.expires_on && (
                         <>
-                          {' '}
+                          {" "}
                           · vence <span className="num">{dateBR(row.expires_on)}</span>
                         </>
                       )}
@@ -94,7 +104,7 @@ function WithdrawFields({
       <QuantityField
         key={lotId}
         id="withdraw-quantity"
-        label={lot ? `Quantidade (de ${lot.quantity})` : 'Quantidade'}
+        label={lot ? `Quantidade (de ${lot.quantity})` : "Quantidade"}
         max={lot?.quantity}
         defaultValue={Math.min(defaultQuantity, lot?.quantity ?? defaultQuantity)}
       />
@@ -103,7 +113,7 @@ function WithdrawFields({
         name="reason"
         label="Motivo"
         options={writeOffOptions}
-        defaultValue={consumable ? 'consumo' : ''}
+        defaultValue={consumable ? "consumo" : ""}
       />
       <NotesField id="withdraw-notes" />
     </>
@@ -112,7 +122,7 @@ function WithdrawFields({
 
 const WITHDRAW_HINT = (
   <>
-    Saída definitiva do estoque, com o motivo no histórico. Se a contagem estava errada (nada saiu de fato), use{' '}
+    Saída definitiva do estoque, com o motivo no histórico. Se a contagem estava errada (nada saiu de fato), use{" "}
     <strong>Corrigir contagem</strong> no material.
   </>
 );
@@ -192,11 +202,11 @@ export function AddLotDialog({
   );
 }
 
-type Direction = 'remover' | 'incluir';
+type Direction = "remover" | "incluir";
 
 /** Remover = baixa (lotId); incluir = lote novo na divisão da linha. A direção vai no formulário. */
 const moveStock: FormAction = (previous, formData) =>
-  (formData.get('direction') === 'incluir' ? addLot : writeOffLot)(previous, formData);
+  (formData.get("direction") === "incluir" ? addLot : writeOffLot)(previous, formData);
 
 /**
  * Diálogo ± de uma linha da lista de Materiais (material por quantidade numa divisão): escolhe entre remover
@@ -220,24 +230,24 @@ export function RowStockDialog({
   locationPath: string;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [direction, setDirection] = useState<Direction>(lots.length > 0 ? 'remover' : 'incluir');
-  const out = direction === 'remover';
+  const [direction, setDirection] = useState<Direction>(lots.length > 0 ? "remover" : "incluir");
+  const out = direction === "remover";
   return (
     <ActionDialog
       open
       onOpenChange={onOpenChange}
       title={materialName}
       action={moveStock}
-      submitLabel={out ? withdrawLabel(consumable) : 'Incluir'}
+      submitLabel={out ? withdrawLabel(consumable) : "Incluir"}
       destructive={out && !consumable}
-      hidden={{ materialId, direction, ...(out ? {} : { locationId, origin: 'nao_informada' }) }}
+      hidden={{ materialId, direction, ...(out ? {} : { locationId, origin: "nao_informada" }) }}
       description={
         out ? (
           WITHDRAW_HINT
         ) : (
           <>
-            Entrada de unidades em <strong>{locationPath || '—'}</strong>. Se já houver um lote igual, a quantidade
-            soma nele.
+            Entrada de unidades em <strong>{locationPath || "—"}</strong>. Se já houver um lote igual, a quantidade soma
+            nele.
           </>
         )
       }
@@ -250,14 +260,14 @@ export function RowStockDialog({
       >
         {(
           [
-            ['remover', 'Retirar', IconMinus, lots.length === 0],
-            ['incluir', 'Incluir', IconPlus, false],
+            ["remover", "Retirar", IconMinus, lots.length === 0],
+            ["incluir", "Incluir", IconPlus, false],
           ] as const
         ).map(([value, title, Icon, disabled]) => (
           <FieldLabel
             key={value}
             htmlFor={`stock-${value}`}
-            className={cn('has-data-checked:border-primary', disabled && 'opacity-50')}
+            className={cn("has-data-checked:border-primary", disabled && "opacity-50")}
           >
             <ChoiceField orientation="horizontal">
               <FieldContent>

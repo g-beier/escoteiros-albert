@@ -33,7 +33,9 @@ test.afterAll(() => {
 });
 
 const names = async (page: import("@playwright/test").Page, within: string) =>
-  (await page.locator(within).getByRole("link").filter({ hasText: /ordem/ }).allTextContents()).filter((text) => text === first || text === second);
+  (await page.locator(within).getByRole("link").filter({ hasText: /ordem/ }).allTextContents()).filter(
+    (text) => text === first || text === second,
+  );
 
 test("gestor ordena os materiais da divisão e a lista segue a ordem", async ({ page }) => {
   await page.goto("/inventario/materiais");
@@ -45,7 +47,10 @@ test("gestor ordena os materiais da divisão e a lista segue a ordem", async ({ 
   const rows = page.getByRole("table", { name: "Materiais da divisão, na ordem escolhida" }).getByRole("row");
   const target = rows.filter({ hasText: first });
   const box = await target.boundingBox();
-  await rows.filter({ hasText: second }).locator("[draggable=true]").dragTo(target, { targetPosition: { x: 40, y: Math.max(2, (box?.height ?? 20) / 4) } });
+  await rows
+    .filter({ hasText: second })
+    .locator("[draggable=true]")
+    .dragTo(target, { targetPosition: { x: 40, y: Math.max(2, (box?.height ?? 20) / 4) } });
   await expect(rows.nth(1)).toContainText(second);
   await page.getByRole("button", { name: "Salvar ordem" }).click();
   await expect(page.getByText("Ordem salva.")).toBeVisible();

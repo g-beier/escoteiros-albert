@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { matchesSection, NO_SECTION_PARAM, sectionsOf } from "./associates";
 
 const people = [
-  { name: "bruno", section: "Tropa Tupã" }, { name: "Ana", section: "Alcateia" }, { name: "Érica", section: null },
-  { name: "Carla", section: "Alcateia " }, { name: "Diego", section: "" },
+  { name: "bruno", section: "Tropa Tupã" },
+  { name: "Ana", section: "Alcateia" },
+  { name: "Érica", section: null },
+  { name: "Carla", section: "Alcateia " },
+  { name: "Diego", section: "" },
 ];
 
 describe("seções", () => {

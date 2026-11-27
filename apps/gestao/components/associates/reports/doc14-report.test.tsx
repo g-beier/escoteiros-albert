@@ -10,7 +10,14 @@ import { Doc14Report } from "./doc14-report";
 
 const render = async (input: Parameters<typeof buildDoc14>[0], name: string) => {
   const report = reportBySlug("doc-14a")!;
-  const pdf = await renderReport(<Doc14Report doc={buildDoc14(input)} title={report.title} footerName={reportFooterName(report)} issuedOn="2026-11-20" />);
+  const pdf = await renderReport(
+    <Doc14Report
+      doc={buildDoc14(input)}
+      title={report.title}
+      footerName={reportFooterName(report)}
+      issuedOn="2026-11-20"
+    />,
+  );
   if (process.env.REPORT_OUT) writeFileSync(`${process.env.REPORT_OUT}-${name}.pdf`, pdf);
   return pdf.toString("latin1");
 };
@@ -19,7 +26,13 @@ const pages = (text: string) => text.match(/\/Type \/Page\b/g)?.length ?? 0;
 // datas espalhadas pelos meses, metade sem promessa
 const dated = <T extends { associates: { id: string }[] }>(input: T, every = 1) => ({
   ...input,
-  associates: input.associates.map((a, i) => ({ ...a, promise_date: i % (every + 1) === every ? null : `20${String(10 + (i % 15)).padStart(2, "0")}-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 27) + 1).padStart(2, "0")}` })),
+  associates: input.associates.map((a, i) => ({
+    ...a,
+    promise_date:
+      i % (every + 1) === every
+        ? null
+        : `20${String(10 + (i % 15)).padStart(2, "0")}-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 27) + 1).padStart(2, "0")}`,
+  })),
 });
 
 describe("Doc 14 em PDF", () => {

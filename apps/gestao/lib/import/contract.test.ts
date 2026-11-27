@@ -12,11 +12,16 @@ describe("contrato de importação", () => {
     expect(block).toBe(contractMarkdown());
   });
 
-  it.each(FILES.map((spec) => [spec.file, spec] as const))("%s: nomes de coluna únicos e exemplo coerente", (_, spec) => {
-    const names = spec.columns.flatMap((column) => [...new Set([column.header, ...(column.aliases ?? [])].map(normalizeText))]);
-    expect(new Set(names).size).toBe(names.length);
-    for (const row of spec.example.rows) expect(row).toHaveLength(spec.example.header.length);
-    const fixed = spec.example.header.filter((header) => names.includes(normalizeText(header)));
-    expect(fixed).toHaveLength(spec.columns.length);
-  });
+  it.each(FILES.map((spec) => [spec.file, spec] as const))(
+    "%s: nomes de coluna únicos e exemplo coerente",
+    (_, spec) => {
+      const names = spec.columns.flatMap((column) => [
+        ...new Set([column.header, ...(column.aliases ?? [])].map(normalizeText)),
+      ]);
+      expect(new Set(names).size).toBe(names.length);
+      for (const row of spec.example.rows) expect(row).toHaveLength(spec.example.header.length);
+      const fixed = spec.example.header.filter((header) => names.includes(normalizeText(header)));
+      expect(fixed).toHaveLength(spec.columns.length);
+    },
+  );
 });

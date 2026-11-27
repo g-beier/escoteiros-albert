@@ -16,16 +16,43 @@ export type EditableEntry = {
   /** Veio do registro rápido e ainda não foi revisado (049). */
   toReview?: boolean;
   splits: {
-    categoryId: string; amountCents: number; description: string; associateId: string | null; items: SaleItem[];
+    categoryId: string;
+    amountCents: number;
+    description: string;
+    associateId: string | null;
+    items: SaleItem[];
     /** Dívida que o rateio paga (023). */
     debtId: string | null;
   }[];
   /** Linhas de dívida que este lançamento gerou (024): editáveis no formulário. */
-  debtLines?: { debtId: string; categoryId: string; description: string; associateId: string; amountCents: number; paidCents: number }[];
+  debtLines?: {
+    debtId: string;
+    categoryId: string;
+    description: string;
+    associateId: string;
+    amountCents: number;
+    paidCents: number;
+  }[];
 };
 
-
-const LIST_KEYS = ["ordem", "dir", "de", "ate", "conta", "forma", "pasta", "conciliado", "associado", "divisao", "rubrica", "q", "ofx", "valor_de", "valor_ate", "revisao"] as const;
+const LIST_KEYS = [
+  "ordem",
+  "dir",
+  "de",
+  "ate",
+  "conta",
+  "forma",
+  "pasta",
+  "conciliado",
+  "associado",
+  "divisao",
+  "rubrica",
+  "q",
+  "ofx",
+  "valor_de",
+  "valor_ate",
+  "revisao",
+] as const;
 
 /** Caminho de uma visão da lista (`/financeiro/lancamentos/movimentacoes` ou `/financeiro/lancamentos/detalhamento`), com a query dos filtros. */
 export function entriesPath(view: EntryView, query = "") {
@@ -34,7 +61,7 @@ export function entriesPath(view: EntryView, query = "") {
 
 /** Query string da lista (só chaves conhecidas): os filtros, que seguem de uma visão para a outra e voltam dos detalhes. */
 export function listQuery(params: Record<string, string | string[] | undefined> | URLSearchParams) {
-  const get = (key: string) => params instanceof URLSearchParams ? params.get(key) : [params[key]].flat()[0];
+  const get = (key: string) => (params instanceof URLSearchParams ? params.get(key) : [params[key]].flat()[0]);
   const allowed = new URLSearchParams();
   for (const key of LIST_KEYS) {
     const value = get(key)?.trim();

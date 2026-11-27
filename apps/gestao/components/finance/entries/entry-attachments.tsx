@@ -3,14 +3,29 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { IconDownload, IconFileText, IconFileUpload, IconPhoto, IconTrash } from "@tabler/icons-react";
-import { prepareAttachmentUpload, registerAttachment, removeAttachment } from "@/app/(financeiro)/financeiro/lancamentos/actions";
+import {
+  prepareAttachmentUpload,
+  registerAttachment,
+  removeAttachment,
+} from "@/app/(financeiro)/financeiro/lancamentos/actions";
 import { SectionCard, SectionHeader } from "@geas/ui/components/section-card";
 import { Button } from "@geas/ui/components/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@geas/ui/components/dialog";
 import { Label } from "@geas/ui/components/label";
 import { ATTACHMENT_ACCEPT, attachmentProblem, fileSize, type Attachment } from "@/lib/finance/attachments";
 
-const dateTime = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
+const dateTime = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+  timeZone: "America/Sao_Paulo",
+});
 
 /** Envia um arquivo: URL assinada (servidor) → PUT direto no Blob Storage → registro auditado. */
 export async function upload(entryId: string, file: File): Promise<string | null> {
@@ -19,7 +34,12 @@ export async function upload(entryId: string, file: File): Promise<string | null
   const response = await fetch(ticket.uploadUrl, {
     method: "PUT",
     body: file,
-    headers: { "content-type": ticket.contentType, "x-ms-blob-type": "BlockBlob", "x-ms-blob-content-type": ticket.contentType, "x-ms-blob-cache-control": "private, max-age=3600" },
+    headers: {
+      "content-type": ticket.contentType,
+      "x-ms-blob-type": "BlockBlob",
+      "x-ms-blob-content-type": ticket.contentType,
+      "x-ms-blob-cache-control": "private, max-age=3600",
+    },
   }).catch(() => null);
   if (!response?.ok) {
     console.error("envio do anexo", response?.status, await response?.text().catch(() => null));
@@ -29,7 +49,15 @@ export async function upload(entryId: string, file: File): Promise<string | null
   return result.error ?? null;
 }
 
-export function EntryAttachments({ entryId, attachments, canEdit }: { entryId: string; attachments: Attachment[]; canEdit: boolean }) {
+export function EntryAttachments({
+  entryId,
+  attachments,
+  canEdit,
+}: {
+  entryId: string;
+  attachments: Attachment[];
+  canEdit: boolean;
+}) {
   const [uploading, setUploading] = useState<string | null>(null);
   const [toRemove, setToRemove] = useState<Attachment | null>(null);
   const [removing, startRemove] = useTransition();
@@ -41,13 +69,19 @@ export function EntryAttachments({ entryId, attachments, canEdit }: { entryId: s
     let sent = 0;
     for (const file of files) {
       const problem = attachmentProblem(file);
-      if (problem) { toast.error(problem); continue; }
+      if (problem) {
+        toast.error(problem);
+        continue;
+      }
       setUploading(file.name);
       const error = await upload(entryId, file);
-      if (error) toast.error(error); else sent++;
+      if (error) toast.error(error);
+      else sent++;
     }
     setUploading(null);
-    if (sent) { toast.success(sent === 1 ? "Comprovante anexado." : `${sent} comprovantes anexados.`); }
+    if (sent) {
+      toast.success(sent === 1 ? "Comprovante anexado." : `${sent} comprovantes anexados.`);
+    }
   }
 
   function remove() {
@@ -55,51 +89,116 @@ export function EntryAttachments({ entryId, attachments, canEdit }: { entryId: s
     startRemove(async () => {
       const result = await removeAttachment(toRemove.id);
       setToRemove(null);
-      if (result.error) { toast.error(result.error); return; }
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
       toast.info("Comprovante excluído.");
     });
   }
 
-  return <SectionCard aria-labelledby="attachments-title">
-    <SectionHeader title="Comprovantes" titleId="attachments-title"
-      description="Cópia digital de notas e recibos (PDF, JPG, PNG ou HEIC, até 10 MB cada). A situação Pendente/Arquivado continua indicando a pasta física." />
-    <div className="grid gap-3 p-5">
-      {attachments.length > 0
-        ? <ul className="m-0 grid list-none gap-1 p-0">{attachments.map((attachment) => {
-            const Icon = attachment.content_type === "application/pdf" ? IconFileText : IconPhoto;
-            return <li key={attachment.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-1 py-1 hover:bg-muted/50">
-              <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-              <a href={`${base}/${attachment.id}`} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 truncate font-medium text-primary hover:underline"
-                title={`Abrir ${attachment.file_name}`}>{attachment.file_name}</a>
-              <span className="text-xs text-muted-foreground num">{fileSize(attachment.size_bytes)} · {dateTime.format(new Date(attachment.created_at))}</span>
-              <a href={`${base}/${attachment.id}?baixar=1`} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                aria-label={`Baixar ${attachment.file_name}`}><IconDownload className="size-3.5" aria-hidden /> Baixar</a>
-              {canEdit && <Button variant="ghost" size="icon-sm" aria-label={`Excluir ${attachment.file_name}`} title="Excluir comprovante" onClick={() => setToRemove(attachment)}><IconTrash /></Button>}
-            </li>;
-          })}</ul>
-        : <p className="m-0 text-xs text-muted-foreground">Nenhum comprovante anexado.</p>}
+  return (
+    <SectionCard aria-labelledby="attachments-title">
+      <SectionHeader
+        title="Comprovantes"
+        titleId="attachments-title"
+        description="Cópia digital de notas e recibos (PDF, JPG, PNG ou HEIC, até 10 MB cada). A situação Pendente/Arquivado continua indicando a pasta física."
+      />
+      <div className="grid gap-3 p-5">
+        {attachments.length > 0 ? (
+          <ul className="m-0 grid list-none gap-1 p-0">
+            {attachments.map((attachment) => {
+              const Icon = attachment.content_type === "application/pdf" ? IconFileText : IconPhoto;
+              return (
+                <li
+                  key={attachment.id}
+                  className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-1 py-1 hover:bg-muted/50"
+                >
+                  <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <a
+                    href={`${base}/${attachment.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="min-w-0 flex-1 truncate font-medium text-primary hover:underline"
+                    title={`Abrir ${attachment.file_name}`}
+                  >
+                    {attachment.file_name}
+                  </a>
+                  <span className="num text-xs text-muted-foreground">
+                    {fileSize(attachment.size_bytes)} · {dateTime.format(new Date(attachment.created_at))}
+                  </span>
+                  <a
+                    href={`${base}/${attachment.id}?baixar=1`}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                    aria-label={`Baixar ${attachment.file_name}`}
+                  >
+                    <IconDownload className="size-3.5" aria-hidden /> Baixar
+                  </a>
+                  {canEdit && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Excluir ${attachment.file_name}`}
+                      title="Excluir comprovante"
+                      onClick={() => setToRemove(attachment)}
+                    >
+                      <IconTrash />
+                    </Button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="m-0 text-xs text-muted-foreground">Nenhum comprovante anexado.</p>
+        )}
 
-      {canEdit && <div className="grid max-w-md gap-1.5">
-        <Label htmlFor="attachment-file">Anexar comprovante</Label>
-        <label className="flex h-7 cursor-pointer items-center gap-2 rounded-md border border-dashed border-input bg-card px-2 text-xs hover:bg-muted/50 focus-within:ring-2 focus-within:ring-ring/30 has-disabled:cursor-wait has-disabled:opacity-60">
-          <IconFileUpload className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-          <span className="truncate" aria-live="polite">{uploading ? `Enviando “${uploading}”…` : "Escolher arquivos…"}</span>
-          <input id="attachment-file" type="file" multiple accept={ATTACHMENT_ACCEPT} className="sr-only" onChange={onFiles} disabled={uploading !== null} />
-        </label>
-      </div>}
-    </div>
+        {canEdit && (
+          <div className="grid max-w-md gap-1.5">
+            <Label htmlFor="attachment-file">Anexar comprovante</Label>
+            <label className="flex h-7 cursor-pointer items-center gap-2 rounded-md border border-dashed border-input bg-card px-2 text-xs focus-within:ring-2 focus-within:ring-ring/30 hover:bg-muted/50 has-disabled:cursor-wait has-disabled:opacity-60">
+              <IconFileUpload className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="truncate" aria-live="polite">
+                {uploading ? `Enviando “${uploading}”…` : "Escolher arquivos…"}
+              </span>
+              <input
+                id="attachment-file"
+                type="file"
+                multiple
+                accept={ATTACHMENT_ACCEPT}
+                className="sr-only"
+                onChange={onFiles}
+                disabled={uploading !== null}
+              />
+            </label>
+          </div>
+        )}
+      </div>
 
-    <Dialog open={toRemove !== null} onOpenChange={(open) => { if (!open) setToRemove(null); }}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Excluir comprovante?</DialogTitle>
-          <DialogDescription>“{toRemove?.file_name}” será apagado do armazenamento. A exclusão fica registrada na auditoria; a situação da pasta física não muda.</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setToRemove(null)}>Cancelar</Button>
-          <Button variant="destructive" onClick={remove} disabled={removing}>{removing ? "Excluindo…" : "Excluir"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  </SectionCard>;
+      <Dialog
+        open={toRemove !== null}
+        onOpenChange={(open) => {
+          if (!open) setToRemove(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir comprovante?</DialogTitle>
+            <DialogDescription>
+              “{toRemove?.file_name}” será apagado do armazenamento. A exclusão fica registrada na auditoria; a situação
+              da pasta física não muda.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setToRemove(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={remove} disabled={removing}>
+              {removing ? "Excluindo…" : "Excluir"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </SectionCard>
+  );
 }

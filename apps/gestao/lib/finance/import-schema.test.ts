@@ -1,46 +1,112 @@
 import { describe, expect, it } from "vitest";
-import { fromRpcAccountBalance, fromRpcImportResult, fromRpcPreview, importLinesSchema, importProfileSchema, importSummary, parseStatementLines, toRpcLines } from "./import-schema";
+import {
+  fromRpcAccountBalance,
+  fromRpcImportResult,
+  fromRpcPreview,
+  importLinesSchema,
+  importProfileSchema,
+  importSummary,
+  parseStatementLines,
+  toRpcLines,
+} from "./import-schema";
 
 const id = "0b6c7a4e-5d1f-4c1e-9a8b-2f3d4e5f6a7b";
 
 describe("parseStatementLines", () => {
   it("aceita linhas no formato da biblioteca de importação", () => {
     const result = parseStatementLines([
-      { date: "2026-11-03", amountCents: -1500, description: " PIX ENVIADO ", counterparty: "Fulano", balanceCents: 1000 },
+      {
+        date: "2026-11-03",
+        amountCents: -1500,
+        description: " PIX ENVIADO ",
+        counterparty: "Fulano",
+        balanceCents: 1000,
+      },
       { date: "2026-11-04", amountCents: 2500, description: "TED", externalId: "ABC1", kind: null },
     ]);
     expect("lines" in result && result.lines[0].description).toBe("PIX ENVIADO");
   });
 
   it("aponta a linha inválida", () => {
-    expect(parseStatementLines([{ date: "2026-11-03", amountCents: 1, description: "a" }, { date: "03/11/2026", amountCents: 1, description: "a" }]))
-      .toEqual({ error: "Linha 2: Data inválida." });
-    expect(parseStatementLines([{ date: "2026-11-03", amountCents: 1.5, description: "a" }])).toEqual({ error: "Linha 1: Use centavos inteiros." });
-    expect(parseStatementLines([{ date: "2026-11-03", amountCents: 0, description: "a" }])).toEqual({ error: "Linha 1: O valor não pode ser zero." });
-    expect(parseStatementLines([{ date: "2026-11-03", amountCents: 5, description: " " }])).toEqual({ error: "Linha 1: Histórico obrigatório." });
+    expect(
+      parseStatementLines([
+        { date: "2026-11-03", amountCents: 1, description: "a" },
+        { date: "03/11/2026", amountCents: 1, description: "a" },
+      ]),
+    ).toEqual({ error: "Linha 2: Data inválida." });
+    expect(parseStatementLines([{ date: "2026-11-03", amountCents: 1.5, description: "a" }])).toEqual({
+      error: "Linha 1: Use centavos inteiros.",
+    });
+    expect(parseStatementLines([{ date: "2026-11-03", amountCents: 0, description: "a" }])).toEqual({
+      error: "Linha 1: O valor não pode ser zero.",
+    });
+    expect(parseStatementLines([{ date: "2026-11-03", amountCents: 5, description: " " }])).toEqual({
+      error: "Linha 1: Histórico obrigatório.",
+    });
   });
 });
 
 describe("importSummary e pré-conferência", () => {
   it("resume duplicadas e suspeitas deixadas de fora", () => {
-    expect(importSummary({ inserted: 2, skippedDuplicates: 1, skippedByUser: 1 })).toBe("2 linhas importadas, 1 já existia, 1 linha suspeita deixada de fora.");
+    expect(importSummary({ inserted: 2, skippedDuplicates: 1, skippedByUser: 1 })).toBe(
+      "2 linhas importadas, 1 já existia, 1 linha suspeita deixada de fora.",
+    );
   });
   it("lê a pré-conferência e envia skip", () => {
-    expect(fromRpcPreview({ lines: [{ index: 1, status: "suspeita", matchDescription: "X", matchStatus: "aberta" }], orphans: [] })?.lines[0].status).toBe("suspeita");
+    expect(
+      fromRpcPreview({
+        lines: [{ index: 1, status: "suspeita", matchDescription: "X", matchStatus: "aberta" }],
+        orphans: [],
+      })?.lines[0].status,
+    ).toBe("suspeita");
     expect(fromRpcPreview({ lines: [{ index: 1, status: "outra" }], orphans: [] })).toBeNull();
-    expect(toRpcLines([{ date: "2026-01-01", amountCents: 1, description: "x", skip: true }])[0]).toMatchObject({ skip: true });
+    expect(toRpcLines([{ date: "2026-01-01", amountCents: 1, description: "x", skip: true }])[0]).toMatchObject({
+      skip: true,
+    });
   });
 });
 
 describe("toRpcLines", () => {
   it("omite campos opcionais vazios e mantém saldo zero", () => {
-    expect(toRpcLines([{ date: "2026-11-03", amountCents: -1500, description: "PIX", kind: "", counterparty: null, externalId: undefined, balanceCents: 0 }]))
-      .toEqual([{ date: "2026-11-03", amountCents: -1500, description: "PIX", balanceCents: 0 }]);
+    expect(
+      toRpcLines([
+        {
+          date: "2026-11-03",
+          amountCents: -1500,
+          description: "PIX",
+          kind: "",
+          counterparty: null,
+          externalId: undefined,
+          balanceCents: 0,
+        },
+      ]),
+    ).toEqual([{ date: "2026-11-03", amountCents: -1500, description: "PIX", balanceCents: 0 }]);
   });
 
   it("envia os campos do OFX", () => {
-    expect(toRpcLines([{ date: "2026-11-03", amountCents: -1, description: "x", trnType: "PAYMENT", checkNumber: "12", reference: "R", payee: "Loja" }]))
-      .toEqual([{ date: "2026-11-03", amountCents: -1, description: "x", trnType: "PAYMENT", checkNumber: "12", reference: "R", payee: "Loja" }]);
+    expect(
+      toRpcLines([
+        {
+          date: "2026-11-03",
+          amountCents: -1,
+          description: "x",
+          trnType: "PAYMENT",
+          checkNumber: "12",
+          reference: "R",
+          payee: "Loja",
+        },
+      ]),
+    ).toEqual([
+      {
+        date: "2026-11-03",
+        amountCents: -1,
+        description: "x",
+        trnType: "PAYMENT",
+        checkNumber: "12",
+        reference: "R",
+        payee: "Loja",
+      },
+    ]);
   });
 });
 
@@ -49,26 +115,42 @@ describe("importLinesSchema", () => {
   it("exige conta e linhas", () => {
     expect(importLinesSchema.safeParse(base).success).toBe(true);
     expect(importLinesSchema.safeParse({ ...base, accountId: "" }).error?.issues[0]?.message).toBe("Escolha a conta.");
-    expect(importLinesSchema.safeParse({ ...base, lines: [] }).error?.issues[0]?.message).toBe("Nenhuma linha para importar.");
+    expect(importLinesSchema.safeParse({ ...base, lines: [] }).error?.issues[0]?.message).toBe(
+      "Nenhuma linha para importar.",
+    );
   });
 
   it("rejeita período invertido", () => {
-    expect(importLinesSchema.safeParse({ ...base, periodFrom: "2026-11-30", periodTo: "2026-11-01" }).error?.issues[0]?.message).toMatch(/período/);
+    expect(
+      importLinesSchema.safeParse({ ...base, periodFrom: "2026-11-30", periodTo: "2026-11-01" }).error?.issues[0]
+        ?.message,
+    ).toMatch(/período/);
   });
 });
 
 describe("importProfileSchema", () => {
   it("valida nome, formato e configurações", () => {
-    expect(importProfileSchema.safeParse({ name: "Sicredi OFX", format: "ofx", settings: { memoSplit: true } }).success).toBe(true);
-    expect(importProfileSchema.safeParse({ name: "Sicredi", format: "csv", settings: {} }).error?.issues[0]?.message).toBe("Formato de arquivo inválido.");
+    expect(
+      importProfileSchema.safeParse({ name: "Sicredi OFX", format: "ofx", settings: { memoSplit: true } }).success,
+    ).toBe(true);
+    expect(
+      importProfileSchema.safeParse({ name: "Sicredi", format: "csv", settings: {} }).error?.issues[0]?.message,
+    ).toBe("Formato de arquivo inválido.");
     expect(importProfileSchema.safeParse({ name: "Sicredi", format: "ofx", settings: [] }).success).toBe(false);
   });
 });
 
 describe("resultado da importação", () => {
   it("converte o jsonb do banco", () => {
-    expect(fromRpcImportResult({ import_id: id, inserted: 3, skipped_duplicates: 1 })).toEqual({ importId: id, inserted: 3, skippedDuplicates: 1, skippedByUser: 0 });
-    expect(fromRpcImportResult({ import_id: id, inserted: 3, skipped_duplicates: 1, skipped_by_user: 2 })).toMatchObject({ skippedByUser: 2 });
+    expect(fromRpcImportResult({ import_id: id, inserted: 3, skipped_duplicates: 1 })).toEqual({
+      importId: id,
+      inserted: 3,
+      skippedDuplicates: 1,
+      skippedByUser: 0,
+    });
+    expect(
+      fromRpcImportResult({ import_id: id, inserted: 3, skipped_duplicates: 1, skipped_by_user: 2 }),
+    ).toMatchObject({ skippedByUser: 2 });
     expect(fromRpcImportResult(null)).toBeNull();
   });
 
@@ -81,9 +163,36 @@ describe("resultado da importação", () => {
 
 describe("saldo da conta", () => {
   it("converte o jsonb de account_balance_before", () => {
-    expect(fromRpcAccountBalance({ date: "2026-03-01", opening_balance_cents: 100000, opening_date: "2026-01-01", before_opening: false, movements_cents: 1800, entry_count: 2, balance_cents: 101800 }))
-      .toEqual({ date: "2026-03-01", openingBalanceCents: 100000, openingDate: "2026-01-01", beforeOpening: false, movementsCents: 1800, entryCount: 2, balanceCents: 101800 });
-    expect(fromRpcAccountBalance({ date: "2025-12-01", opening_balance_cents: 0, opening_date: "2026-01-01", before_opening: true, movements_cents: null, entry_count: null, balance_cents: null })?.balanceCents).toBeNull();
+    expect(
+      fromRpcAccountBalance({
+        date: "2026-03-01",
+        opening_balance_cents: 100000,
+        opening_date: "2026-01-01",
+        before_opening: false,
+        movements_cents: 1800,
+        entry_count: 2,
+        balance_cents: 101800,
+      }),
+    ).toEqual({
+      date: "2026-03-01",
+      openingBalanceCents: 100000,
+      openingDate: "2026-01-01",
+      beforeOpening: false,
+      movementsCents: 1800,
+      entryCount: 2,
+      balanceCents: 101800,
+    });
+    expect(
+      fromRpcAccountBalance({
+        date: "2025-12-01",
+        opening_balance_cents: 0,
+        opening_date: "2026-01-01",
+        before_opening: true,
+        movements_cents: null,
+        entry_count: null,
+        balance_cents: null,
+      })?.balanceCents,
+    ).toBeNull();
     expect(fromRpcAccountBalance(null)).toBeNull();
   });
 });

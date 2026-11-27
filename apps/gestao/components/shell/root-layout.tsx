@@ -23,5 +23,12 @@ export const baseMetadata: Metadata = {
  * mantém `data-app` no <html> e, com ele, a cor certa também nos portais (diálogos, menus, toasts).
  */
 export function RootHtml({ module, children }: { module: GestaoModule; children: ReactNode }) {
-  return <html lang="pt-BR" data-app={module}><body>{children}<Toaster /></body></html>;
+  return (
+    <html lang="pt-BR" data-app={module}>
+      <body>
+        {children}
+        <Toaster />
+      </body>
+    </html>
+  );
 }

@@ -3,11 +3,15 @@ import { MODULE_ROLES, roleAtLeast } from "@geas/ui/lib/roles";
 import { isValidEmail } from "./auth";
 
 describe("isValidEmail", () => {
-  it.each([" Pessoa@Example.com ", "nome.sobrenome@gmail.com", "x@sub.exemplo.org"])("aceita %s, de qualquer domínio", (email) =>
-    expect(isValidEmail(email)).toBe(true));
+  it.each([" Pessoa@Example.com ", "nome.sobrenome@gmail.com", "x@sub.exemplo.org"])(
+    "aceita %s, de qualquer domínio",
+    (email) => expect(isValidEmail(email)).toBe(true),
+  );
 
-  it.each(["@exemplo.org", "duplo@@exemplo.org", "sem-arroba", "nome@semponto", "com espaço@exemplo.org"])("rejeita %s", (email) =>
-    expect(isValidEmail(email)).toBe(false));
+  it.each(["@exemplo.org", "duplo@@exemplo.org", "sem-arroba", "nome@semponto", "com espaço@exemplo.org"])(
+    "rejeita %s",
+    (email) => expect(isValidEmail(email)).toBe(false),
+  );
 });
 
 describe("roleAtLeast", () => {

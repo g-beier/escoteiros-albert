@@ -14,7 +14,10 @@ function isWordBoundary(text: string, index: number) {
 
 /** Strip separators like " - " or ": " left between a kind prefix and the counterparty. */
 function cleanCounterparty(rest: string) {
-  return rest.replace(/^[\s\-–—:|/]+/, "").replace(/[\s\-–—:|/]+$/, "").trim();
+  return rest
+    .replace(/^[\s\-–—:|/]+/, "")
+    .replace(/[\s\-–—:|/]+$/, "")
+    .trim();
 }
 
 /**
@@ -33,7 +36,11 @@ export function splitKind(description: string, kindPrefixes: string[] = []) {
   }
   let best: { kind: string; length: number } | null = null;
   for (const prefix of kindPrefixes) {
-    const key = prefix.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const key = prefix
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
     if (!key) continue;
     // Allow any run of whitespace in the description where the prefix has a single space.
     const pattern = new RegExp(`^\\s*${key.split(/\s+/).map(escapeRegExp).join("\\s+")}`);

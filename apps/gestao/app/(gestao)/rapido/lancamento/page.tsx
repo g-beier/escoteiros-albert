@@ -15,14 +15,21 @@ export default async function QuickEntry() {
   if (!member) return <SetupNeeded email={user.email} />;
   if (!member.finance.canWrite) redirect("/rapido");
   const { paymentMethods } = await entryCatalogs(member.db, member.groupId);
-  return <div className="shell">
-    <GestaoHeader current="/rapido/lancamento" member={member} quick />
-    <PageBody width="narrow">
-      <PageHeader title="Lançamento financeiro" crumbs={[{ label: "Registro rápido", href: "/rapido" }, { label: "Lançamento financeiro" }]}
-        description={`Receita ou despesa, valor e histórico${ATTACHMENTS_ENABLED ? ", com a foto do comprovante" : ""}. A conta é a padrão da forma de pagamento; rubrica, documento e rateio quem revisa completa.`} />
-      <SectionCard><div className="p-4">
-        <QuickEntryForm paymentMethods={paymentMethods} today={todayInSaoPaulo()} />
-      </div></SectionCard>
-    </PageBody>
-  </div>;
+  return (
+    <div className="shell">
+      <GestaoHeader current="/rapido/lancamento" member={member} quick />
+      <PageBody width="narrow">
+        <PageHeader
+          title="Lançamento financeiro"
+          crumbs={[{ label: "Registro rápido", href: "/rapido" }, { label: "Lançamento financeiro" }]}
+          description={`Receita ou despesa, valor e histórico${ATTACHMENTS_ENABLED ? ", com a foto do comprovante" : ""}. A conta é a padrão da forma de pagamento; rubrica, documento e rateio quem revisa completa.`}
+        />
+        <SectionCard>
+          <div className="p-4">
+            <QuickEntryForm paymentMethods={paymentMethods} today={todayInSaoPaulo()} />
+          </div>
+        </SectionCard>
+      </PageBody>
+    </div>
+  );
 }

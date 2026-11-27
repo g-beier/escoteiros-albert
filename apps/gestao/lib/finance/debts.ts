@@ -8,11 +8,20 @@
 export type DebtOrigin = "manual" | "lancamento" | "venda" | "mensalidade";
 
 export const DEBT_ORIGIN_LABELS: Record<DebtOrigin, string> = {
-  manual: "Anotada", lancamento: "Diferença de lançamento", venda: "Venda a pagar", mensalidade: "Mensalidade",
+  manual: "Anotada",
+  lancamento: "Diferença de lançamento",
+  venda: "Venda a pagar",
+  mensalidade: "Mensalidade",
 };
 
 /** Rateio que pagou (parte de) a dívida. */
-export type DebtPayment = { entryId: string; entryDate: string; entryName: string; splitId: string; amountCents: number };
+export type DebtPayment = {
+  entryId: string;
+  entryDate: string;
+  entryName: string;
+  splitId: string;
+  amountCents: number;
+};
 
 export type Debt = {
   id: string;
@@ -42,11 +51,22 @@ export type Debt = {
 };
 
 /** Dívida em aberto oferecida no rateio do lançamento ("Pagar dívida"), para quem lança no Financeiro. */
-export type OpenDebt = { id: string; associate_id: string; category_id: string; description: string; debt_date: string; open_cents: number };
+export type OpenDebt = {
+  id: string;
+  associate_id: string;
+  category_id: string;
+  description: string;
+  debt_date: string;
+  open_cents: number;
+};
 
 export type DebtStatus = "aberta" | "parcial" | "quitada";
 
-export const DEBT_STATUS_LABELS: Record<DebtStatus, string> = { aberta: "Em aberto", parcial: "Parcial", quitada: "Quitada" };
+export const DEBT_STATUS_LABELS: Record<DebtStatus, string> = {
+  aberta: "Em aberto",
+  parcial: "Parcial",
+  quitada: "Quitada",
+};
 
 export function debtStatus(debt: Pick<Debt, "amountCents" | "paidCents">): DebtStatus {
   if (debt.paidCents >= debt.amountCents) return "quitada";
@@ -54,7 +74,8 @@ export function debtStatus(debt: Pick<Debt, "amountCents" | "paidCents">): DebtS
 }
 
 /** Quanto falta pagar (nunca negativo). */
-export const debtOpenCents = (debt: Pick<Debt, "amountCents" | "paidCents">) => Math.max(debt.amountCents - debt.paidCents, 0);
+export const debtOpenCents = (debt: Pick<Debt, "amountCents" | "paidCents">) =>
+  Math.max(debt.amountCents - debt.paidCents, 0);
 
 export function debtTotals(debts: Debt[]) {
   const open = debts.filter((debt) => debtStatus(debt) !== "quitada");
@@ -87,7 +108,17 @@ export function groupDebts(debts: Debt[]): DebtorGroup[] {
   const groups = new Map<string, DebtorGroup>();
   for (const debt of debts) {
     const key = debt.associateId ?? `devedor-${debt.debtorNumber}`;
-    const group = groups.get(key) ?? { key, label: debt.associateName ?? `Devedor ${debt.debtorNumber}`, associateId: debt.associateId, debts: [], amountCents: 0, paidCents: 0, openCents: 0, openCount: 0, agreement: debt.agreement };
+    const group = groups.get(key) ?? {
+      key,
+      label: debt.associateName ?? `Devedor ${debt.debtorNumber}`,
+      associateId: debt.associateId,
+      debts: [],
+      amountCents: 0,
+      paidCents: 0,
+      openCents: 0,
+      openCount: 0,
+      agreement: debt.agreement,
+    };
     group.debts.push(debt);
     group.amountCents += debt.amountCents;
     group.paidCents += debt.paidCents;
@@ -96,15 +127,19 @@ export function groupDebts(debts: Debt[]): DebtorGroup[] {
     groups.set(key, group);
   }
   const number = (group: DebtorGroup) => group.debts[0].debtorNumber;
-  return [...groups.values()].sort((a, b) => b.openCents - a.openCents
-    || (a.associateId && b.associateId ? a.label.localeCompare(b.label, "pt-BR") : number(a) - number(b)));
+  return [...groups.values()].sort(
+    (a, b) =>
+      b.openCents - a.openCents ||
+      (a.associateId && b.associateId ? a.label.localeCompare(b.label, "pt-BR") : number(a) - number(b)),
+  );
 }
 
 const MONTHS = ["jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."];
 
 /** "Mensalidade abr./2026", "Venda a pagar", "Diferença de lançamento", "Anotada". */
 export function debtOriginLabel(debt: Pick<Debt, "origin" | "feeYear" | "feeMonth">): string {
-  if (debt.origin === "mensalidade" && debt.feeYear && debt.feeMonth) return `Mensalidade ${MONTHS[debt.feeMonth - 1]}/${debt.feeYear}`;
+  if (debt.origin === "mensalidade" && debt.feeYear && debt.feeMonth)
+    return `Mensalidade ${MONTHS[debt.feeMonth - 1]}/${debt.feeYear}`;
   return DEBT_ORIGIN_LABELS[debt.origin];
 }
 

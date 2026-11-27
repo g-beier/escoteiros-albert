@@ -41,7 +41,8 @@ const tokenId = (token: string) => sha256(token).toString("hex");
 function googleConfig() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  if (!clientId || !clientSecret) throw new DataError("Login com Google não configurado (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET).");
+  if (!clientId || !clientSecret)
+    throw new DataError("Login com Google não configurado (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET).");
   return { clientId, clientSecret, redirectUri: `${appUrl()}/auth/callback` };
 }
 
@@ -63,12 +64,23 @@ export async function startGoogleLogin(next: string): Promise<string> {
   const nonce = base64url(randomBytes(32));
   const store = await cookies();
   store.set(flowCookieName(), JSON.stringify({ state, verifier, nonce, next: safeNext(next) }), {
-    httpOnly: true, secure: secure(), sameSite: "lax", path: "/", maxAge: FLOW_MINUTES * 60,
+    httpOnly: true,
+    secure: secure(),
+    sameSite: "lax",
+    path: "/",
+    maxAge: FLOW_MINUTES * 60,
   });
   const url = new URL(GOOGLE_AUTHORIZE);
   url.search = new URLSearchParams({
-    client_id: clientId, redirect_uri: redirectUri, response_type: "code", scope: "openid email",
-    state, nonce, code_challenge: base64url(sha256(verifier)), code_challenge_method: "S256", prompt: "select_account",
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: "openid email",
+    state,
+    nonce,
+    code_challenge: base64url(sha256(verifier)),
+    code_challenge_method: "S256",
+    prompt: "select_account",
   }).toString();
   return url.toString();
 }
@@ -90,18 +102,29 @@ export async function finishGoogleLogin(params: URLSearchParams): Promise<string
   const response = await fetch(GOOGLE_TOKEN, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: "authorization_code", code_verifier: flow.verifier }),
+    body: new URLSearchParams({
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code",
+      code_verifier: flow.verifier,
+    }),
     cache: "no-store",
   });
   const tokens = (await response.json().catch(() => null)) as { id_token?: string } | null;
   if (!response.ok || !tokens?.id_token) throw new LoginError("O Google não confirmou o login. Tente de novo.");
 
-  const { payload } = await jwtVerify(tokens.id_token, googleKeys, { issuer: GOOGLE_ISSUERS, audience: clientId }).catch(() => {
+  const { payload } = await jwtVerify(tokens.id_token, googleKeys, {
+    issuer: GOOGLE_ISSUERS,
+    audience: clientId,
+  }).catch(() => {
     throw new LoginError("O Google não confirmou o login. Tente de novo.");
   });
   const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : "";
   if (payload.nonce !== flow.nonce || !payload.sub) throw new LoginError("O login expirou. Tente de novo.");
-  if (!email || payload.email_verified !== true) throw new LoginError("A conta Google precisa ter o e-mail verificado.");
+  if (!email || payload.email_verified !== true)
+    throw new LoginError("A conta Google precisa ter o e-mail verificado.");
 
   const userId = await signInUser(email, payload.sub);
   await openSession(userId);
@@ -118,8 +141,12 @@ async function signInUser(email: string, googleSub: string): Promise<string> {
     await sql`update auth.users set google_sub = ${googleSub}, last_sign_in_at = now() where id = ${found.id}`;
     return found.id as string;
   });
-  if (user === "other-account") throw new LoginError("Este e-mail já entrou com outra conta Google. Peça ao administrador para refazer o cadastro.");
-  if (!user) throw new LoginError("Este e-mail não tem acesso ao Gestão. Peça ao administrador do grupo para cadastrá-lo.");
+  if (user === "other-account")
+    throw new LoginError(
+      "Este e-mail já entrou com outra conta Google. Peça ao administrador para refazer o cadastro.",
+    );
+  if (!user)
+    throw new LoginError("Este e-mail não tem acesso ao Gestão. Peça ao administrador do grupo para cadastrá-lo.");
   return user;
 }
 
@@ -127,10 +154,17 @@ async function signInUser(email: string, googleSub: string): Promise<string> {
 export async function openSession(userId: string): Promise<void> {
   const token = base64url(randomBytes(32));
   const expires = new Date(Date.now() + SESSION_DAYS * 86_400_000);
-  await run(authDb(), (sql) => sql`
-    insert into auth.sessions(id, user_id, expires_at) values (${tokenId(token)}, ${userId}, ${expires.toISOString()})`);
+  await run(
+    authDb(),
+    (sql) => sql`
+    insert into auth.sessions(id, user_id, expires_at) values (${tokenId(token)}, ${userId}, ${expires.toISOString()})`,
+  );
   (await cookies()).set(sessionCookieName(), token, {
-    httpOnly: true, secure: secure(), sameSite: "lax", path: "/", expires,
+    httpOnly: true,
+    secure: secure(),
+    sameSite: "lax",
+    path: "/",
+    expires,
   });
 }
 
@@ -140,15 +174,21 @@ export async function currentUser(): Promise<SessionUser | null> {
   const token = (await cookies()).get(sessionCookieName())?.value;
   if (!token || token.length > 100) return null;
   const id = tokenId(token);
-  const session = await one<{ user_id: string; email: string; last_seen_at: string }>(authDb(), (sql) => sql`
+  const session = await one<{ user_id: string; email: string; last_seen_at: string }>(
+    authDb(),
+    (sql) => sql`
     select s.user_id, u.email, s.last_seen_at from auth.sessions s join auth.users u on u.id = s.user_id
-    where s.id = ${id} and s.expires_at > now() and (u.banned_until is null or u.banned_until <= now())`);
+    where s.id = ${id} and s.expires_at > now() and (u.banned_until is null or u.banned_until <= now())`,
+  );
   if (!session) return null;
   if (Date.now() - Date.parse(session.last_seen_at) > RENEW_AFTER_MS) {
     // o banco decide a validade; o cookie é renovado em proxy.ts (Server Components não gravam cookies)
-    await run(authDb(), (sql) => sql`
+    await run(
+      authDb(),
+      (sql) => sql`
       update auth.sessions set last_seen_at = now(), expires_at = greatest(expires_at, now() + make_interval(days => ${SESSION_DAYS}))
-      where id = ${id}`).catch(() => undefined);
+      where id = ${id}`,
+    ).catch(() => undefined);
   }
   return { id: session.user_id, email: session.email };
 }
@@ -156,13 +196,16 @@ export async function currentUser(): Promise<SessionUser | null> {
 export async function signOut() {
   const store = await cookies();
   const token = store.get(sessionCookieName())?.value;
-  if (token) await run(authDb(), (sql) => sql`delete from auth.sessions where id = ${tokenId(token)}`).catch(() => undefined);
+  if (token)
+    await run(authDb(), (sql) => sql`delete from auth.sessions where id = ${tokenId(token)}`).catch(() => undefined);
   store.delete(sessionCookieName());
 }
 
 /** Apaga sessões vencidas (chamado de vez em quando no login). */
 export async function pruneSessions() {
-  await run(authDb(), (sql) => sql`delete from auth.sessions where expires_at < now() - interval '1 day'`).catch(() => undefined);
+  await run(authDb(), (sql) => sql`delete from auth.sessions where expires_at < now() - interval '1 day'`).catch(
+    () => undefined,
+  );
 }
 
 // Testes E2E -----------------------------------------------------------------------------------------
@@ -175,9 +218,12 @@ export const e2eLoginEnabled = () => process.env.E2E_LOGIN === "1" && process.en
 
 export async function e2eSignIn(email: string): Promise<boolean> {
   if (!e2eLoginEnabled()) return false;
-  const user = await one<{ id: string }>(authDb(), (sql) => sql`
+  const user = await one<{ id: string }>(
+    authDb(),
+    (sql) => sql`
     update auth.users set last_sign_in_at = now() where email = ${email.trim().toLowerCase()} and (banned_until is null or banned_until <= now())
-    returning id`);
+    returning id`,
+  );
   if (!user) return false;
   await openSession(user.id);
   return true;

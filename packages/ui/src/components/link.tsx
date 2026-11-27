@@ -1,5 +1,5 @@
-import NextLink from "next/link"
-import type { ComponentProps } from "react"
+import NextLink from "next/link";
+import type { ComponentProps } from "react";
 
 /**
  * Link dos apps internos: `next/link` sem prefetch. As páginas são dinâmicas e sem `loading.tsx`, então o prefetch
@@ -7,5 +7,5 @@ import type { ComponentProps } from "react"
  * Passe `prefetch` só onde houver ganho medido.
  */
 export function Link({ prefetch = false, ...props }: ComponentProps<typeof NextLink>) {
-  return <NextLink prefetch={prefetch} {...props} />
+  return <NextLink prefetch={prefetch} {...props} />;
 }

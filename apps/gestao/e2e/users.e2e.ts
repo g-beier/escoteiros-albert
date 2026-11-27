@@ -29,9 +29,16 @@ test("cadastrar, mudar papel e remover um usuário", async ({ page }) => {
     await expect(page.getByText(`Acesso de ${invited} salvo.`)).toBeVisible();
     await expect(async () => {
       await page.reload();
-      await expect(row.getByRole("combobox", { name: `Papel no Financeiro de ${invited}` })).toContainText("Consulta", { timeout: 2_000 });
-      await expect(row.getByRole("combobox", { name: `Papel no Inventário de ${invited}` })).toContainText("Colaborador", { timeout: 2_000 });
-      await expect(row.getByRole("combobox", { name: `Papel no Associados de ${invited}` })).toContainText("Editor", { timeout: 2_000 });
+      await expect(row.getByRole("combobox", { name: `Papel no Financeiro de ${invited}` })).toContainText("Consulta", {
+        timeout: 2_000,
+      });
+      await expect(row.getByRole("combobox", { name: `Papel no Inventário de ${invited}` })).toContainText(
+        "Colaborador",
+        { timeout: 2_000 },
+      );
+      await expect(row.getByRole("combobox", { name: `Papel no Associados de ${invited}` })).toContainText("Editor", {
+        timeout: 2_000,
+      });
     }).toPass();
   });
 

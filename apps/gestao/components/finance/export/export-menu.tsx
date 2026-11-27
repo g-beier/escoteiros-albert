@@ -5,8 +5,21 @@ import { IconChevronDown, IconDownload } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { OptionSelect } from "@geas/ui/components/option-controls";
 import { Button } from "@geas/ui/components/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@geas/ui/components/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@geas/ui/components/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@geas/ui/components/dropdown-menu";
 import { Input } from "@geas/ui/components/input";
 import { Label } from "@geas/ui/components/label";
 import { ToggleGroup, ToggleGroupItem } from "@geas/ui/components/toggle-group";
@@ -21,27 +34,39 @@ type Mode = "fluxo" | "realizado" | "contabil" | null;
 type Format = "xlsx" | "csv";
 
 const monthOptions = MONTHS.map((label, i) => ({ value: String(i + 1), label }));
-const viewOptions = [{ value: "movimentacoes", label: "Movimentações" }, { value: "detalhamento", label: "Detalhamento" }];
-const formatOptions = [{ value: "xlsx", label: "Planilha XLSX" }, { value: "csv", label: "CSV" }];
-const TITLES = { fluxo: "Exportar fluxo de caixa", realizado: "Exportar Realizado anual", contabil: "Exportar para a contabilidade" } as const;
+const viewOptions = [
+  { value: "movimentacoes", label: "Movimentações" },
+  { value: "detalhamento", label: "Detalhamento" },
+];
+const formatOptions = [
+  { value: "xlsx", label: "Planilha XLSX" },
+  { value: "csv", label: "CSV" },
+];
+const TITLES = {
+  fluxo: "Exportar fluxo de caixa",
+  realizado: "Exportar Realizado anual",
+  contabil: "Exportar para a contabilidade",
+} as const;
 const DESCRIPTIONS = {
   fluxo: "Todos os lançamentos do período, sem os demais filtros da lista. As datas-limite estão incluídas.",
   realizado: "Planilha com receitas e despesas por rubrica, mês a mês, com totais por grupo.",
-  contabil: "CSV em partida dobrada, uma linha por rateio: débito e crédito pelas contas contábeis da rubrica e da conta, histórico e ID OFX. Toda rubrica usada precisa ter conta contábil.",
+  contabil:
+    "CSV em partida dobrada, uma linha por rateio: débito e crédito pelas contas contábeis da rubrica e da conta, histórico e ID OFX. Toda rubrica usada precisa ter conta contábil.",
 } as const;
 
 /** Baixa o arquivo da rota; em caso de erro, mostra a mensagem da rota em um toast. */
 async function download(url: string) {
   const response = await fetch(url);
   if (!response.ok) {
-    const body = await response.json().catch(() => null) as { error?: string } | null;
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
     throw new Error(body?.error ?? "Não foi possível gerar o arquivo.");
   }
   // sem sessão, o proxy redireciona para /login e a resposta vira HTML
   if (response.redirected || !/attachment/.test(response.headers.get("Content-Disposition") ?? "")) {
     throw new Error("Sessão expirada. Entre novamente para exportar.");
   }
-  const filename = /filename="([^"]+)"/.exec(response.headers.get("Content-Disposition") ?? "")?.[1] ?? "exportacao.xlsx";
+  const filename =
+    /filename="([^"]+)"/.exec(response.headers.get("Content-Disposition") ?? "")?.[1] ?? "exportacao.xlsx";
   const href = URL.createObjectURL(await response.blob());
   const link = Object.assign(document.createElement("a"), { href, download: filename });
   document.body.append(link);
@@ -51,7 +76,19 @@ async function download(url: string) {
   return filename;
 }
 
-export function ExportMenu({ view, from, to, years, accounts = [] }: { view: View; from?: string; to?: string; years: number[]; accounts?: Option[] }) {
+export function ExportMenu({
+  view,
+  from,
+  to,
+  years,
+  accounts = [],
+}: {
+  view: View;
+  from?: string;
+  to?: string;
+  years: number[];
+  accounts?: Option[];
+}) {
   const now = new Date();
   const currentYear = now.getFullYear();
   const yearOptions = years.map((y) => ({ value: String(y), label: String(y) }));
@@ -67,9 +104,13 @@ export function ExportMenu({ view, from, to, years, accounts = [] }: { view: Vie
   const [encoding, setEncoding] = useState<CsvEncoding>("windows-1252");
   const [accountId, setAccountId] = useState("");
 
-  const period = periodBounds(preset === "mes" ? { kind: "mes", year: Number(year), month: Number(month) }
-    : preset === "ano" ? { kind: "ano", year: Number(year) }
-    : { kind: "personalizado", from: customFrom, to: customTo });
+  const period = periodBounds(
+    preset === "mes"
+      ? { kind: "mes", year: Number(year), month: Number(month) }
+      : preset === "ano"
+        ? { kind: "ano", year: Number(year) }
+        : { kind: "personalizado", from: customFrom, to: customTo },
+  );
 
   function open(next: Mode) {
     setFlowView(view);
@@ -82,7 +123,10 @@ export function ExportMenu({ view, from, to, years, accounts = [] }: { view: Vie
     if (mode === "realizado") url = `/financeiro/exportar/realizado?ano=${year}`;
     else if (period && mode === "fluxo") {
       const query = new URLSearchParams({ visao: flowView, de: period.from, ate: period.to });
-      if (format === "csv") { query.set("formato", "csv"); query.set("codificacao", "utf-8"); }
+      if (format === "csv") {
+        query.set("formato", "csv");
+        query.set("codificacao", "utf-8");
+      }
       url = `/financeiro/exportar/fluxo?${query}`;
     } else if (period && mode === "contabil") {
       const query = new URLSearchParams({ de: period.from, ate: period.to, codificacao: encoding });
@@ -102,63 +146,182 @@ export function ExportMenu({ view, from, to, years, accounts = [] }: { view: Vie
     }
   }
 
-  return <>
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" size="lg"><IconDownload data-icon="inline-start" /> Exportar <IconChevronDown data-icon="inline-end" /></Button>} />
-      <DropdownMenuContent align="end">
-        <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => open("fluxo")}>Fluxo de caixa…</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => open("realizado")}>Realizado anual…</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => open("contabil")}>Contabilidade (CSV)…</DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="outline" size="lg">
+              <IconDownload data-icon="inline-start" /> Exportar <IconChevronDown data-icon="inline-end" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuGroup>
+            <DropdownMenuItem onClick={() => open("fluxo")}>Fluxo de caixa…</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => open("realizado")}>Realizado anual…</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => open("contabil")}>Contabilidade (CSV)…</DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-    <Dialog open={mode !== null} onOpenChange={(isOpen) => { if (!isOpen) setMode(null); }}>
-      <DialogContent>
-        <form onSubmit={submit} className="grid gap-4">
-          <DialogHeader>
-            <DialogTitle>{mode && TITLES[mode]}</DialogTitle>
-            <DialogDescription>{mode && DESCRIPTIONS[mode]}</DialogDescription>
-          </DialogHeader>
+      <Dialog
+        open={mode !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setMode(null);
+        }}
+      >
+        <DialogContent>
+          <form onSubmit={submit} className="grid gap-4">
+            <DialogHeader>
+              <DialogTitle>{mode && TITLES[mode]}</DialogTitle>
+              <DialogDescription>{mode && DESCRIPTIONS[mode]}</DialogDescription>
+            </DialogHeader>
 
-          {mode === "fluxo" && <div className="grid items-start gap-3 sm:grid-cols-2">
-            <div className="grid gap-1.5"><Label htmlFor="export-view">Visão</Label><OptionSelect id="export-view" value={flowView} onValueChange={(v) => setFlowView(v as View)} options={viewOptions} /></div>
-            <div className="grid gap-1.5"><Label htmlFor="export-format">Formato</Label><OptionSelect id="export-format" value={format} onValueChange={(v) => setFormat(v as Format)} options={formatOptions} /></div>
-          </div>}
-          {mode === "contabil" && <div className="grid items-start gap-3 sm:grid-cols-2">
-            <div className="grid gap-1.5"><Label htmlFor="export-account">Conta</Label><OptionSelect id="export-account" value={accountId} onValueChange={setAccountId} emptyLabel="Todas as contas" options={accounts} /></div>
-            <div className="grid gap-1.5"><Label htmlFor="export-encoding">Codificação</Label><OptionSelect id="export-encoding" value={encoding} onValueChange={(v) => setEncoding(v as CsvEncoding)} options={CSV_ENCODINGS} /></div>
-          </div>}
-          {(mode === "fluxo" || mode === "contabil") && <>
-            <ToggleGroup aria-label="Período" value={[preset]} onValueChange={(next) => { if (next[0]) setPreset(next[0] as PresetKind); }}
-              className="gap-0 rounded-full bg-secondary p-0.5">
-              {([["mes", "Mês"], ["ano", "Ano"], ["personalizado", "Personalizado"]] as const).map(([value, label]) =>
-                <ToggleGroupItem key={value} value={value}
-                  className="h-auto rounded-full px-3 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:bg-transparent hover:text-foreground aria-pressed:bg-foreground aria-pressed:text-background">{label}</ToggleGroupItem>)}
-            </ToggleGroup>
-            {preset === "mes" && <div className="grid items-start gap-3 sm:grid-cols-2">
-              <div className="grid gap-1.5"><Label htmlFor="export-month">Mês</Label><OptionSelect id="export-month" value={month} onValueChange={setMonth} options={monthOptions} /></div>
-              <div className="grid gap-1.5"><Label htmlFor="export-year">Ano</Label><OptionSelect id="export-year" value={year} onValueChange={setYear} options={yearOptions} /></div>
-            </div>}
-            {preset === "ano" && <div className="grid gap-1.5"><Label htmlFor="export-year">Ano</Label><OptionSelect id="export-year" value={year} onValueChange={setYear} options={yearOptions} /></div>}
-            {preset === "personalizado" && <div className="grid items-start gap-3 sm:grid-cols-2">
-              <div className="grid gap-1.5"><Label htmlFor="export-from">De</Label><Input id="export-from" type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} required /></div>
-              <div className="grid gap-1.5"><Label htmlFor="export-to">Até (inclusive)</Label><Input id="export-to" type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} required /></div>
-            </div>}
-            <p className={cn("text-xs", period ? "text-muted-foreground" : "text-destructive")}>
-              {period ? `Período: ${describePeriod(period)}` : "Informe um período válido: a data inicial não pode ser depois da final."}
-            </p>
-          </>}
+            {mode === "fluxo" && (
+              <div className="grid items-start gap-3 sm:grid-cols-2">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="export-view">Visão</Label>
+                  <OptionSelect
+                    id="export-view"
+                    value={flowView}
+                    onValueChange={(v) => setFlowView(v as View)}
+                    options={viewOptions}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="export-format">Formato</Label>
+                  <OptionSelect
+                    id="export-format"
+                    value={format}
+                    onValueChange={(v) => setFormat(v as Format)}
+                    options={formatOptions}
+                  />
+                </div>
+              </div>
+            )}
+            {mode === "contabil" && (
+              <div className="grid items-start gap-3 sm:grid-cols-2">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="export-account">Conta</Label>
+                  <OptionSelect
+                    id="export-account"
+                    value={accountId}
+                    onValueChange={setAccountId}
+                    emptyLabel="Todas as contas"
+                    options={accounts}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="export-encoding">Codificação</Label>
+                  <OptionSelect
+                    id="export-encoding"
+                    value={encoding}
+                    onValueChange={(v) => setEncoding(v as CsvEncoding)}
+                    options={CSV_ENCODINGS}
+                  />
+                </div>
+              </div>
+            )}
+            {(mode === "fluxo" || mode === "contabil") && (
+              <>
+                <ToggleGroup
+                  aria-label="Período"
+                  value={[preset]}
+                  onValueChange={(next) => {
+                    if (next[0]) setPreset(next[0] as PresetKind);
+                  }}
+                  className="gap-0 rounded-full bg-secondary p-0.5"
+                >
+                  {(
+                    [
+                      ["mes", "Mês"],
+                      ["ano", "Ano"],
+                      ["personalizado", "Personalizado"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <ToggleGroupItem
+                      key={value}
+                      value={value}
+                      className="h-auto rounded-full px-3 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:bg-transparent hover:text-foreground aria-pressed:bg-foreground aria-pressed:text-background"
+                    >
+                      {label}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+                {preset === "mes" && (
+                  <div className="grid items-start gap-3 sm:grid-cols-2">
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="export-month">Mês</Label>
+                      <OptionSelect id="export-month" value={month} onValueChange={setMonth} options={monthOptions} />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="export-year">Ano</Label>
+                      <OptionSelect id="export-year" value={year} onValueChange={setYear} options={yearOptions} />
+                    </div>
+                  </div>
+                )}
+                {preset === "ano" && (
+                  <div className="grid gap-1.5">
+                    <Label htmlFor="export-year">Ano</Label>
+                    <OptionSelect id="export-year" value={year} onValueChange={setYear} options={yearOptions} />
+                  </div>
+                )}
+                {preset === "personalizado" && (
+                  <div className="grid items-start gap-3 sm:grid-cols-2">
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="export-from">De</Label>
+                      <Input
+                        id="export-from"
+                        type="date"
+                        value={customFrom}
+                        onChange={(e) => setCustomFrom(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="export-to">Até (inclusive)</Label>
+                      <Input
+                        id="export-to"
+                        type="date"
+                        value={customTo}
+                        onChange={(e) => setCustomTo(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+                <p className={cn("text-xs", period ? "text-muted-foreground" : "text-destructive")}>
+                  {period
+                    ? `Período: ${describePeriod(period)}`
+                    : "Informe um período válido: a data inicial não pode ser depois da final."}
+                </p>
+              </>
+            )}
 
-          {mode === "realizado" && <div className="grid gap-1.5"><Label htmlFor="export-realized-year">Ano</Label><OptionSelect id="export-realized-year" value={year} onValueChange={setYear} options={yearOptions} /></div>}
+            {mode === "realizado" && (
+              <div className="grid gap-1.5">
+                <Label htmlFor="export-realized-year">Ano</Label>
+                <OptionSelect id="export-realized-year" value={year} onValueChange={setYear} options={yearOptions} />
+              </div>
+            )}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setMode(null)}>Cancelar</Button>
-            <Button type="submit" disabled={pending || (mode !== "realizado" && !period)}><IconDownload data-icon="inline-start" /> {pending ? "Gerando…" : mode === "realizado" || (mode === "fluxo" && format === "xlsx") ? "Baixar planilha" : "Baixar CSV"}</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  </>;
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setMode(null)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={pending || (mode !== "realizado" && !period)}>
+                <IconDownload data-icon="inline-start" />{" "}
+                {pending
+                  ? "Gerando…"
+                  : mode === "realizado" || (mode === "fluxo" && format === "xlsx")
+                    ? "Baixar planilha"
+                    : "Baixar CSV"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }

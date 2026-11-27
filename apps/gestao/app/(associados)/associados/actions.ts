@@ -46,10 +46,23 @@ export async function saveAssociate(_previous: ActionResult, formData: FormData)
       const registration = text(formData, "registration");
       if (!isRegistration(registration)) throw new InputError("Escolha o registro (provisório ou definitivo).");
       const nickname = notes(formData, "nickname", NICKNAME_MAX);
-      await associates.update(db, { id: editing, name: name(formData), notes: notes(formData), registration, nickname, placement: placement(formData), ...dates(formData) });
+      await associates.update(db, {
+        id: editing,
+        name: name(formData),
+        notes: notes(formData),
+        registration,
+        nickname,
+        placement: placement(formData),
+        ...dates(formData),
+      });
       savedId = editing;
     } else {
-      savedId = await associates.create(db, groupId, { name: name(formData), notes: notes(formData), ...placement(formData), ...dates(formData) });
+      savedId = await associates.create(db, groupId, {
+        name: name(formData),
+        notes: notes(formData),
+        ...placement(formData),
+        ...dates(formData),
+      });
     }
     revalidate();
   });
@@ -71,7 +84,11 @@ export async function reviewAssociate(_previous: ActionResult, formData: FormDat
 export async function setTransition(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   return runAction(associatesWriterOrError, async ({ db }) => {
     const clear = text(formData, "clear") === "1";
-    await associates.setTransition(db, id(formData, "id"), clear ? null : date(formData, "date", "a data de início", true));
+    await associates.setTransition(
+      db,
+      id(formData, "id"),
+      clear ? null : date(formData, "date", "a data de início", true),
+    );
     revalidate();
     revalidatePath("/");
     return clear ? "Marca de transição removida." : "Transição marcada como iniciada.";
@@ -82,7 +99,11 @@ export async function setTransition(_previous: ActionResult, formData: FormData)
 export async function moveAssociate(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   return runAction(associatesWriterOrError, async ({ db }) => {
     const associateId = id(formData, "associateId");
-    await associates.move(db, { id: associateId, date: date(formData, "date", "a data da passagem", true), ...placement(formData) });
+    await associates.move(db, {
+      id: associateId,
+      date: date(formData, "date", "a data da passagem", true),
+      ...placement(formData),
+    });
     revalidate();
     return "Passagem registrada.";
   });
@@ -91,7 +112,12 @@ export async function moveAssociate(_previous: ActionResult, formData: FormData)
 export async function leaveAssociate(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   return runAction(associatesWriterOrError, async ({ db }) => {
     const associateId = id(formData, "associateId");
-    await associates.leave(db, associateId, date(formData, "date", "a data do desligamento", true), notes(formData, "reason", 120));
+    await associates.leave(
+      db,
+      associateId,
+      date(formData, "date", "a data do desligamento", true),
+      notes(formData, "reason", 120),
+    );
     revalidate();
     return { success: "Associado desligado.", tone: "neutral" };
   });
@@ -100,7 +126,12 @@ export async function leaveAssociate(_previous: ActionResult, formData: FormData
 export async function rejoinAssociate(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   return runAction(associatesWriterOrError, async ({ db }) => {
     const associateId = id(formData, "associateId");
-    await associates.rejoin(db, associateId, date(formData, "date", "a data do reingresso", true), notes(formData, "reason", 120));
+    await associates.rejoin(
+      db,
+      associateId,
+      date(formData, "date", "a data do reingresso", true),
+      notes(formData, "reason", 120),
+    );
     revalidate();
     return "Reingresso registrado.";
   });
@@ -135,7 +166,13 @@ function functionInput(data: FormData): functions.FunctionInput {
   if (!isFunctionKind(kind)) throw new InputError("Escolha o tipo da função.");
   const sectionId = kind === "escotista" ? optionalId(data, "sectionId") : null;
   if (kind === "escotista" && !sectionId) throw new InputError("Escolha a seção do escotista.");
-  return { kind, sectionId, title: notes(data, "title", 80), startedOn: date(data, "startedOn", "o início da função", true), elected: kind === "dirigente" && data.get("elected") === "on" };
+  return {
+    kind,
+    sectionId,
+    title: notes(data, "title", 80),
+    startedOn: date(data, "startedOn", "o início da função", true),
+    elected: kind === "dirigente" && data.get("elected") === "on",
+  };
 }
 
 export async function addFunction(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -149,7 +186,10 @@ export async function addFunction(_previous: ActionResult, formData: FormData): 
 /** Edita tipo, seção, cargo e datas; fim vazio = em exercício. */
 export async function updateFunction(_previous: ActionResult, formData: FormData): Promise<ActionResult> {
   return runAction(associatesWriterOrError, async ({ db }) => {
-    await functions.update(db, id(formData, "functionId"), { ...functionInput(formData), endedOn: date(formData, "endedOn", "o fim da função") });
+    await functions.update(db, id(formData, "functionId"), {
+      ...functionInput(formData),
+      endedOn: date(formData, "endedOn", "o fim da função"),
+    });
     revalidate();
     return "Função salva.";
   });
@@ -194,7 +234,11 @@ export async function addRelative(_previous: ActionResult, formData: FormData): 
       return "Responsável vinculado.";
     }
     const relativeName = name(formData);
-    await relatives.create(db, associateId, { ...input, name: relativeName, relativeAssociateId: optionalId(formData, "relativeAssociateId") });
+    await relatives.create(db, associateId, {
+      ...input,
+      name: relativeName,
+      relativeAssociateId: optionalId(formData, "relativeAssociateId"),
+    });
     revalidate();
     return `Responsável “${relativeName}” adicionado.`;
   });
@@ -206,7 +250,13 @@ export async function updateRelative(_previous: ActionResult, formData: FormData
     const input = linkInput(formData);
     const relativeName = name(formData);
     await relatives.updateLink(db, id(formData, "linkId"), input);
-    await relatives.rename(db, id(formData, "relativeId"), relativeName, optionalId(formData, "relativeAssociateId"), notes(formData, "notes", 200));
+    await relatives.rename(
+      db,
+      id(formData, "relativeId"),
+      relativeName,
+      optionalId(formData, "relativeAssociateId"),
+      notes(formData, "notes", 200),
+    );
     revalidate();
     return `Responsável “${relativeName}” salvo.`;
   });

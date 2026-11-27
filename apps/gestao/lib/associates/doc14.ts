@@ -6,7 +6,20 @@ import { isFunctionActive, type AssociateFunction, type FunctionKind } from "./c
 import type { AssociateProfile, ScoutBranch, SectionItem } from "./model";
 import { personColor } from "./reports";
 
-export const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+export const MONTH_NAMES = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
 /** Linhas vazias no fim da lista "Sem promessa" (cada coluna). */
 export const BLANK_WITHOUT_ROWS = 3;
 
@@ -15,7 +28,12 @@ export type Doc14Promise = Doc14Person & { date: string };
 export type Doc14Month = { month: number; label: string; people: Doc14Promise[] };
 export type Doc14 = { months: Doc14Month[]; without: Doc14Person[] };
 
-export type Doc14Input = { associates: AssociateProfile[]; functions: AssociateFunction[]; sections: SectionItem[]; today: string };
+export type Doc14Input = {
+  associates: AssociateProfile[];
+  functions: AssociateFunction[];
+  sections: SectionItem[];
+  today: string;
+};
 
 const collator = new Intl.Collator("pt-BR", { sensitivity: "base", numeric: true });
 
@@ -36,7 +54,8 @@ export function buildDoc14({ associates, functions, sections, today }: Doc14Inpu
     if (branch && !scouterBranch.has(fn.associate_id)) scouterBranch.set(fn.associate_id, branch);
   }
   const person = (a: AssociateProfile): Doc14Person => ({
-    id: a.id, name: a.name,
+    id: a.id,
+    name: a.name,
     color: personColor({ branch: a.branch, functions: kinds.get(a.id), scouterBranch: scouterBranch.get(a.id) }),
     ...(a.review_status === "para_revisar" ? { red: true } : {}),
   });
@@ -45,12 +64,19 @@ export function buildDoc14({ associates, functions, sections, today }: Doc14Inpu
     const month = index + 1;
     const people = active
       .filter((a) => a.promise_date && Number(a.promise_date.slice(5, 7)) === month)
-      .sort((a, b) => Number(a.promise_date!.slice(8, 10)) - Number(b.promise_date!.slice(8, 10))
-        || a.promise_date!.localeCompare(b.promise_date!) || collator.compare(a.name, b.name))
+      .sort(
+        (a, b) =>
+          Number(a.promise_date!.slice(8, 10)) - Number(b.promise_date!.slice(8, 10)) ||
+          a.promise_date!.localeCompare(b.promise_date!) ||
+          collator.compare(a.name, b.name),
+      )
       .map((a) => ({ ...person(a), date: shortPromiseDate(a.promise_date!) }));
     return { month, label, people };
   }).filter((m) => m.people.length > 0);
 
-  const without = active.filter((a) => !a.promise_date).sort((a, b) => collator.compare(a.name, b.name)).map(person);
+  const without = active
+    .filter((a) => !a.promise_date)
+    .sort((a, b) => collator.compare(a.name, b.name))
+    .map(person);
   return { months, without };
 }

@@ -39,13 +39,20 @@ export function isModuleRole(value: unknown): value is ModuleRole {
 /** Módulos com papel próprio, como o banco os nomeia (`admin_set_module_role`). */
 export const ROLE_MODULES = ["finance", "inventory", "associates"] as const;
 export type RoleModule = (typeof ROLE_MODULES)[number];
-export const ROLE_MODULE_LABELS: Record<RoleModule, string> = { finance: "Financeiro", inventory: "Inventário", associates: "Associados" };
+export const ROLE_MODULE_LABELS: Record<RoleModule, string> = {
+  finance: "Financeiro",
+  inventory: "Inventário",
+  associates: "Associados",
+};
 
 export type ModuleRoles = Record<RoleModule, ModuleRole>;
 
 /** Pessoa com acesso ao grupo, como a tela de Usuários mostra. */
 export type GroupUser = {
-  userId: string; email: string; signedIn: boolean; roles: ModuleRoles;
+  userId: string;
+  email: string;
+  signedIn: boolean;
+  roles: ModuleRoles;
   /** Associado adulto ligado ao acesso (avisos da seção do chefe, nome no lugar do e-mail). */
   associateId: string | null;
 };

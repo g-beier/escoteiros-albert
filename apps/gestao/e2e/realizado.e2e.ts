@@ -9,7 +9,15 @@ test.afterAll(() => cleanupE2eGroup());
 
 test("Realizado mostra a rubrica no mês e detalha os rateios", async ({ page }) => {
   const name = uniqueName("Realizado");
-  await createEntry(page, { name, direction: "saida", date: "2001-03-15", total: "40,00", account: E2E_ACCOUNTS[0], category: "Telefone", description: "conta de março" });
+  await createEntry(page, {
+    name,
+    direction: "saida",
+    date: "2001-03-15",
+    total: "40,00",
+    account: E2E_ACCOUNTS[0],
+    category: "Telefone",
+    description: "conta de março",
+  });
 
   await page.goto("/financeiro/lancamentos/realizado?ano=2001");
   await expect(page.getByRole("navigation", { name: "Caminho" })).toContainText("Realizado 2001");

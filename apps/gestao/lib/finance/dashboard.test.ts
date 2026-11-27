@@ -22,13 +22,20 @@ describe("recentListStart", () => {
 
 describe("monthlyTotals", () => {
   it("separa receitas e despesas pelo tipo da rubrica, e pelo sinal quando não há tipo", () => {
-    const kinds = new Map<string, "receita" | "despesa" | null>([["r", "receita"], ["d", "despesa"], ["x", null]]);
-    const months = monthlyTotals([
-      { category_id: "r", month: 1, amount_cents: 1000 },
-      { category_id: "d", month: 1, amount_cents: -400 },
-      { category_id: "x", month: 2, amount_cents: -50 },
-      { category_id: "x", month: 2, amount_cents: 70 },
-    ], kinds);
+    const kinds = new Map<string, "receita" | "despesa" | null>([
+      ["r", "receita"],
+      ["d", "despesa"],
+      ["x", null],
+    ]);
+    const months = monthlyTotals(
+      [
+        { category_id: "r", month: 1, amount_cents: 1000 },
+        { category_id: "d", month: 1, amount_cents: -400 },
+        { category_id: "x", month: 2, amount_cents: -50 },
+        { category_id: "x", month: 2, amount_cents: 70 },
+      ],
+      kinds,
+    );
     expect(months[0]).toEqual({ income: 1000, expense: 400 });
     expect(months[1]).toEqual({ income: 70, expense: 50 });
     expect(months).toHaveLength(12);

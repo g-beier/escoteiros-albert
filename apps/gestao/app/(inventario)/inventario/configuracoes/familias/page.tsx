@@ -11,14 +11,22 @@ export default async function FamiliesPage() {
   if (!member) return <SetupNeeded email={user.email} />;
   const items = await families.listForSettings(member.db, member.groupId);
 
-  return <div className="shell">
-    <AppHeader current="/inventario/configuracoes/familias" member={member} />
-    <PageBody width="narrow">
-      <PageHeader title="Configurações" tabs={<SettingsTabs current="familias" />} crumbs={settingsCrumbs("familias")}
-        description={member.inventory.canReview
-          ? "Tipos de material. Clique numa família para ver os materiais dela."
-          : "Tipos de material. Só o gestor do inventário altera as famílias."} />
-      <FamiliesManager families={items} canManage={member.inventory.canReview} />
-    </PageBody>
-  </div>;
+  return (
+    <div className="shell">
+      <AppHeader current="/inventario/configuracoes/familias" member={member} />
+      <PageBody width="narrow">
+        <PageHeader
+          title="Configurações"
+          tabs={<SettingsTabs current="familias" />}
+          crumbs={settingsCrumbs("familias")}
+          description={
+            member.inventory.canReview
+              ? "Tipos de material. Clique numa família para ver os materiais dela."
+              : "Tipos de material. Só o gestor do inventário altera as famílias."
+          }
+        />
+        <FamiliesManager families={items} canManage={member.inventory.canReview} />
+      </PageBody>
+    </div>
+  );
 }

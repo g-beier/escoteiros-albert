@@ -25,7 +25,11 @@ const subscribeNarrow = (onChange: () => void) => {
  * as duas versões vão no HTML e o CSS escolhe; depois só a versão visível é montada.
  */
 function useNarrow() {
-  return useSyncExternalStore<boolean | null>(subscribeNarrow, () => window.matchMedia(NARROW_QUERY).matches, () => null);
+  return useSyncExternalStore<boolean | null>(
+    subscribeNarrow,
+    () => window.matchMedia(NARROW_QUERY).matches,
+    () => null,
+  );
 }
 
 /**
@@ -33,7 +37,13 @@ function useNarrow() {
  * pedidas quando o fim da lista aparece na tela. O componente é recriado (via `key`)
  * quando filtros, visão ou ordem mudam.
  */
-const SORT_NAMES = { data: "data", historico: "histórico", conta: "conta", forma: "forma de pagamento", valor: "valor" } as const;
+const SORT_NAMES = {
+  data: "data",
+  historico: "histórico",
+  conta: "conta",
+  forma: "forma de pagamento",
+  valor: "valor",
+} as const;
 
 /** Rodapé: a ordem da lista em palavras. */
 function sortLabel(order: SortOrder, sort?: EntrySort) {
@@ -41,9 +51,25 @@ function sortLabel(order: SortOrder, sort?: EntrySort) {
   return `Por ${SORT_NAMES[sort.key]}, ${sort.dir === "asc" ? "crescente" : "decrescente"}`;
 }
 
-export function InfiniteEntries({ initial, query, filtered, order, sort, sortHref }: { initial: EntryPage; query: string; filtered: boolean; order: SortOrder; sort?: EntrySort; sortHref: string }) {
+export function InfiniteEntries({
+  initial,
+  query,
+  filtered,
+  order,
+  sort,
+  sortHref,
+}: {
+  initial: EntryPage;
+  query: string;
+  filtered: boolean;
+  order: SortOrder;
+  sort?: EntrySort;
+  sortHref: string;
+}) {
   const [pages, setPages] = useState<EntryPage[]>([initial]);
-  const [status, setStatus] = useState<Status>(initial.error ? "error" : initial.rows.length < PAGE_SIZE ? "done" : "idle");
+  const [status, setStatus] = useState<Status>(
+    initial.error ? "error" : initial.rows.length < PAGE_SIZE ? "done" : "idle",
+  );
   const [error, setError] = useState(initial.error ?? "");
   const sentinel = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -59,9 +85,15 @@ export function InfiniteEntries({ initial, query, filtered, order, sort, sortHre
     if (loading.current) return;
     loading.current = true;
     setStatus("loading");
-    const page = await loadEntryPage(view, query, offset).catch(() => ({ ...initial, rows: [], error: "Falha de conexão." }) as EntryPage);
+    const page = await loadEntryPage(view, query, offset).catch(
+      () => ({ ...initial, rows: [], error: "Falha de conexão." }) as EntryPage,
+    );
     loading.current = false;
-    if (page.error) { setError(page.error); setStatus("error"); return; }
+    if (page.error) {
+      setError(page.error);
+      setStatus("error");
+      return;
+    }
     setPages((current) => [...current, page]);
     setStatus(page.rows.length < PAGE_SIZE ? "done" : "idle");
   }, [view, query, offset, initial]);
@@ -72,12 +104,23 @@ export function InfiniteEntries({ initial, query, filtered, order, sort, sortHre
     if (shownVersion.current === listVersion) return;
     shownVersion.current = listVersion;
     loading.current = true;
-    loadEntryPage(view, query, 0).then((page) => {
-      loading.current = false;
-      if (page.error) { setError(page.error); setStatus("error"); return; }
-      setPages([page]);
-      setStatus(page.rows.length < PAGE_SIZE ? "done" : "idle");
-    }, () => { loading.current = false; setError("Falha de conexão."); setStatus("error"); });
+    loadEntryPage(view, query, 0).then(
+      (page) => {
+        loading.current = false;
+        if (page.error) {
+          setError(page.error);
+          setStatus("error");
+          return;
+        }
+        setPages([page]);
+        setStatus(page.rows.length < PAGE_SIZE ? "done" : "idle");
+      },
+      () => {
+        loading.current = false;
+        setError("Falha de conexão.");
+        setStatus("error");
+      },
+    );
   }, [listVersion, view, query]);
 
   useEffect(() => {
@@ -86,7 +129,12 @@ export function InfiniteEntries({ initial, query, filtered, order, sort, sortHre
     // No desktop a tabela rola dentro do próprio contêiner; no celular, a página inteira rola.
     const scroller = scrollerRef.current;
     const root = scroller && scroller.scrollHeight > scroller.clientHeight ? scroller : null;
-    const observer = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) loadMore(); }, { root, rootMargin: "0px 0px 800px 0px" });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadMore();
+      },
+      { root, rootMargin: "0px 0px 800px 0px" },
+    );
     observer.observe(target);
     return () => observer.disconnect();
   }, [status, loadMore]);
@@ -94,25 +142,31 @@ export function InfiniteEntries({ initial, query, filtered, order, sort, sortHre
   const rows = useMemo(() => {
     const seen = new Set<string>();
     const all = pages.flatMap((page) => page.rows as (LedgerRow | SplitRow)[]);
-    return all.filter((row) => {
-      const id = "split_id" in row ? row.split_id : row.entry_id;
-      if (seen.has(id) || overrides[row.entry_id]?.deleted) return false;
-      seen.add(id);
-      return true;
-    }).map((row) => {
-      const override = overrides[row.entry_id];
-      const split = "split_id" in row ? overrides[row.split_id] : undefined;
-      if (!override && !split) return row;
-      return {
-        ...row,
-        ...(override?.filed !== undefined && { document_filed: override.filed }),
-        ...(override?.accountName !== undefined && { account_name: override.accountName }),
-        ...(override?.reconciled !== undefined && { reconciled: override.reconciled }),
-        ...(override?.paymentMethodName !== undefined && { payment_method_name: override.paymentMethodName }),
-        ...(split?.category && { category_name: split.category.name, category_code: split.category.code, category_kind: split.category.kind }),
-        ...(split?.associateName !== undefined && { associate_name: split.associateName }),
-      };
-    });
+    return all
+      .filter((row) => {
+        const id = "split_id" in row ? row.split_id : row.entry_id;
+        if (seen.has(id) || overrides[row.entry_id]?.deleted) return false;
+        seen.add(id);
+        return true;
+      })
+      .map((row) => {
+        const override = overrides[row.entry_id];
+        const split = "split_id" in row ? overrides[row.split_id] : undefined;
+        if (!override && !split) return row;
+        return {
+          ...row,
+          ...(override?.filed !== undefined && { document_filed: override.filed }),
+          ...(override?.accountName !== undefined && { account_name: override.accountName }),
+          ...(override?.reconciled !== undefined && { reconciled: override.reconciled }),
+          ...(override?.paymentMethodName !== undefined && { payment_method_name: override.paymentMethodName }),
+          ...(split?.category && {
+            category_name: split.category.name,
+            category_code: split.category.code,
+            category_kind: split.category.kind,
+          }),
+          ...(split?.associateName !== undefined && { associate_name: split.associateName }),
+        };
+      });
   }, [pages, overrides]);
 
   const narrow = useNarrow();
@@ -121,33 +175,72 @@ export function InfiniteEntries({ initial, query, filtered, order, sort, sortHre
   const deleted = Object.values(overrides).filter((o) => o.deleted).length;
   const knownTotal = total === null ? null : Math.max(total - deleted, rows.length);
 
-  return <>
-    {/* No desktop só esta área rola, sob o cabeçalho fixo da tabela; no celular a página inteira rola. */}
-    <div ref={scrollerRef} className="md:min-h-0 md:flex-1 md:overflow-auto md:overscroll-contain" data-slot="entries-scroller">
-      {narrow !== true && <div className={cn(narrow === null && "max-md:hidden")}>
-        {view === "detalhamento"
-          ? <SplitTable rows={rows as SplitRow[]} filtered={filtered} order={order} sortHref={sortHref} scroller={scrollerRef} />
-          : <LedgerTable rows={rows as LedgerRow[]} filtered={filtered} order={order} sortHref={sortHref} scroller={scrollerRef} />}
-      </div>}
-      {narrow !== false && <div className={cn(narrow === null && "md:hidden")}>
-        {view === "detalhamento"
-          ? <SplitCards rows={rows as SplitRow[]} filtered={filtered} order={order} sortHref={sortHref} />
-          : <LedgerCards rows={rows as LedgerRow[]} filtered={filtered} order={order} sortHref={sortHref} />}
-      </div>}
-      {rows.length > 0 && <div ref={sentinel} className="flex h-10 items-center justify-center text-xs text-muted-foreground" aria-live="polite">
-        {status === "loading" && "Carregando mais…"}
-        {status === "done" && "Fim da lista"}
-        {status === "error" && <span className="flex items-center gap-2 text-destructive">{error || "Não foi possível carregar."} <Button variant="outline" size="sm" onClick={loadMore}>Tentar de novo</Button></span>}
-      </div>}
-    </div>
-    <footer className="sticky bottom-0 flex items-center justify-between border-t bg-muted px-3 py-1 md:static md:bg-muted/60 text-xs text-muted-foreground">
-      <span>
-        {knownTotal !== null && rows.length < knownTotal
-          ? `${number.format(rows.length)} de ${number.format(knownTotal)} ${unit[1]}`
-          : `${number.format(rows.length)} ${rows.length === 1 ? unit[0] : unit[1]}`}
-        {filtered ? " no filtro" : ""}
-      </span>
-      <span>{sortLabel(order, sort)}</span>
-    </footer>
-  </>;
+  return (
+    <>
+      {/* No desktop só esta área rola, sob o cabeçalho fixo da tabela; no celular a página inteira rola. */}
+      <div
+        ref={scrollerRef}
+        className="md:min-h-0 md:flex-1 md:overflow-auto md:overscroll-contain"
+        data-slot="entries-scroller"
+      >
+        {narrow !== true && (
+          <div className={cn(narrow === null && "max-md:hidden")}>
+            {view === "detalhamento" ? (
+              <SplitTable
+                rows={rows as SplitRow[]}
+                filtered={filtered}
+                order={order}
+                sortHref={sortHref}
+                scroller={scrollerRef}
+              />
+            ) : (
+              <LedgerTable
+                rows={rows as LedgerRow[]}
+                filtered={filtered}
+                order={order}
+                sortHref={sortHref}
+                scroller={scrollerRef}
+              />
+            )}
+          </div>
+        )}
+        {narrow !== false && (
+          <div className={cn(narrow === null && "md:hidden")}>
+            {view === "detalhamento" ? (
+              <SplitCards rows={rows as SplitRow[]} filtered={filtered} order={order} sortHref={sortHref} />
+            ) : (
+              <LedgerCards rows={rows as LedgerRow[]} filtered={filtered} order={order} sortHref={sortHref} />
+            )}
+          </div>
+        )}
+        {rows.length > 0 && (
+          <div
+            ref={sentinel}
+            className="flex h-10 items-center justify-center text-xs text-muted-foreground"
+            aria-live="polite"
+          >
+            {status === "loading" && "Carregando mais…"}
+            {status === "done" && "Fim da lista"}
+            {status === "error" && (
+              <span className="flex items-center gap-2 text-destructive">
+                {error || "Não foi possível carregar."}{" "}
+                <Button variant="outline" size="sm" onClick={loadMore}>
+                  Tentar de novo
+                </Button>
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+      <footer className="sticky bottom-0 flex items-center justify-between border-t bg-muted px-3 py-1 text-xs text-muted-foreground md:static md:bg-muted/60">
+        <span>
+          {knownTotal !== null && rows.length < knownTotal
+            ? `${number.format(rows.length)} de ${number.format(knownTotal)} ${unit[1]}`
+            : `${number.format(rows.length)} ${rows.length === 1 ? unit[0] : unit[1]}`}
+          {filtered ? " no filtro" : ""}
+        </span>
+        <span>{sortLabel(order, sort)}</span>
+      </footer>
+    </>
+  );
 }

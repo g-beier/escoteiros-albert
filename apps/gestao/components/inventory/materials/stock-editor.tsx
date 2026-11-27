@@ -5,7 +5,14 @@ import { toast } from "sonner";
 import { loadRowLots } from "@/app/(inventario)/inventario/materiais/actions";
 import { RowStockDialog, type WithdrawLot } from "./withdraw";
 
-type Target = { materialId: string; materialName: string; consumable: boolean; locationId: string; locationPath: string; lots: WithdrawLot[] };
+type Target = {
+  materialId: string;
+  materialName: string;
+  consumable: boolean;
+  locationId: string;
+  locationPath: string;
+  lots: WithdrawLot[];
+};
 
 /**
  * Botões ± da lista de Materiais com um só ouvinte de clique (delegado). Os botões (`button[data-stock]`) são
@@ -25,10 +32,17 @@ export function StockEditor({ children }: { children: ReactNode }) {
     button.setAttribute("aria-busy", "true");
     try {
       const result = await loadRowLots(materialId, locationId);
-      if ("error" in result) { toast.error(result.error); return; }
+      if ("error" in result) {
+        toast.error(result.error);
+        return;
+      }
       const locationPath = path ?? "";
       setTarget({
-        materialId, materialName: name, consumable: cons !== undefined, locationId, locationPath,
+        materialId,
+        materialName: name,
+        consumable: cons !== undefined,
+        locationId,
+        locationPath,
         lots: result.lots.map((lot) => ({ ...lot, path: locationPath || "—" })),
       });
     } catch {
@@ -38,9 +52,21 @@ export function StockEditor({ children }: { children: ReactNode }) {
     }
   }
 
-  return <>
-    {/* Delegação: o clique (ou Enter/Espaço, que o navegador converte em clique no botão) sobe até aqui. */}
-    <div onClick={onClick} className="contents">{children}</div>
-    {target && <RowStockDialog key={`${target.materialId}|${target.locationId}`} {...target} onOpenChange={(open) => { if (!open) setTarget(null); }} />}
-  </>;
+  return (
+    <>
+      {/* Delegação: o clique (ou Enter/Espaço, que o navegador converte em clique no botão) sobe até aqui. */}
+      <div onClick={onClick} className="contents">
+        {children}
+      </div>
+      {target && (
+        <RowStockDialog
+          key={`${target.materialId}|${target.locationId}`}
+          {...target}
+          onOpenChange={(open) => {
+            if (!open) setTarget(null);
+          }}
+        />
+      )}
+    </>
+  );
 }

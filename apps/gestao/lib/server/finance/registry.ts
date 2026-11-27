@@ -23,13 +23,24 @@ export async function entryCatalogs(db: Db, groupId: string): Promise<Catalogs> 
       sql`select id, material_id, material_name, variant, location_path, for_sale, sale_price_cents::int as sale_price_cents, quantity
           from public.finance_sale_lots(${groupId})`,
     ]);
-    return { categories: [...categories], paymentMethods: [...paymentMethods], associates: [...associates], accounts: [...accounts],
-      saleLots: [...saleLots] } as unknown as Catalogs;
+    return {
+      categories: [...categories],
+      paymentMethods: [...paymentMethods],
+      associates: [...associates],
+      accounts: [...accounts],
+      saleLots: [...saleLots],
+    } as unknown as Catalogs;
   }).then(async (catalogs) => ({ ...catalogs, openDebts: await openDebts(db, groupId) }));
 }
 
 export type CategoryWithUsage = CategoryItem & { ledger_code: string | null; usage: number };
-export type PaymentMethodItem = { id: string; name: string; active: boolean; usage: number; defaultAccountId: string | null };
+export type PaymentMethodItem = {
+  id: string;
+  name: string;
+  active: boolean;
+  usage: number;
+  defaultAccountId: string | null;
+};
 
 /** Configurações: rubricas, formas de pagamento e contas, cada uma com quantos lançamentos ou rateios a usam. */
 export async function settingsCatalogs(db: Db, groupId: string) {
@@ -48,7 +59,11 @@ export async function settingsCatalogs(db: Db, groupId: string) {
     return {
       categories: [...categories] as unknown as CategoryWithUsage[],
       paymentMethods: paymentMethods.map((row): PaymentMethodItem => ({
-        id: row.id, name: row.name, active: row.active, usage: Number(row.usage), defaultAccountId: row.default_account_id,
+        id: row.id,
+        name: row.name,
+        active: row.active,
+        usage: Number(row.usage),
+        defaultAccountId: row.default_account_id,
       })),
       accounts: [...accounts] as unknown as AccountItem[],
     };
@@ -57,8 +72,11 @@ export async function settingsCatalogs(db: Db, groupId: string) {
 
 /** Importações com perfil: em quais contas cada perfil de leitura foi usado. */
 export async function profileImports(db: Db, groupId: string): Promise<ProfileImport[]> {
-  return rows<ProfileImport>(db, (sql) => sql`
-    select profile_id, account_id, imported_at from public.statement_imports where group_id = ${groupId} and profile_id is not null`);
+  return rows<ProfileImport>(
+    db,
+    (sql) => sql`
+    select profile_id, account_id, imported_at from public.statement_imports where group_id = ${groupId} and profile_id is not null`,
+  );
 }
 
 // Formas de pagamento
@@ -91,13 +109,25 @@ export async function setAccountActive(db: Db, id: string, active: boolean) {
 
 // Rubricas: a árvore inteira (rascunho da tela) numa chamada.
 
-export type CategoryTreeNode = { key: string; id: string | null; parent: string; position: number; name: string; ledgerCode: string | null; active: boolean;
+export type CategoryTreeNode = {
+  key: string;
+  id: string | null;
+  parent: string;
+  position: number;
+  name: string;
+  ledgerCode: string | null;
+  active: boolean;
   /** Marcada "venda de itens" (Lojinha, 019). */
   sellsItems: boolean;
 };
 
 /** Grava a árvore; devolve quantos rateios (e de quantos lançamentos) mudaram de rubrica por exclusões. */
-export async function saveCategoryTree(db: Db, groupId: string, nodes: CategoryTreeNode[], deleted: { id: string; target: string | null }[]) {
+export async function saveCategoryTree(
+  db: Db,
+  groupId: string,
+  nodes: CategoryTreeNode[],
+  deleted: { id: string; target: string | null }[],
+) {
   const data = await rpc(db, "save_category_tree", { p_group_id: groupId, p_nodes: nodes, p_deleted: deleted });
   const { splits = 0, entries = 0 } = (data ?? {}) as { splits?: number; entries?: number };
   return { splits, entries };

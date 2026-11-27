@@ -9,7 +9,11 @@ export const SETTINGS_HOME = "/inventario/configuracoes/divisoes";
 
 /** Caminho das telas de Configurações: Início › Inventário › Configurações › aba. */
 export function settingsCrumbs(current: SettingsTab): Crumb[] {
-  return [{ label: "Inventário", href: "/inventario" }, { label: "Configurações", href: SETTINGS_HOME }, { label: SETTINGS_LABELS[current] }];
+  return [
+    { label: "Inventário", href: "/inventario" },
+    { label: "Configurações", href: SETTINGS_HOME },
+    { label: SETTINGS_LABELS[current] },
+  ];
 }
 
 /**
@@ -17,7 +21,10 @@ export function settingsCrumbs(current: SettingsTab): Crumb[] {
  * no menu da conta (Administração).
  */
 export function SettingsTabs({ current }: { current: SettingsTab }) {
-  const tabs = (Object.keys(SETTINGS_LABELS) as SettingsTab[])
-    .map((tab) => ({ href: `/inventario/configuracoes/${tab}`, label: SETTINGS_LABELS[tab], active: tab === current }));
+  const tabs = (Object.keys(SETTINGS_LABELS) as SettingsTab[]).map((tab) => ({
+    href: `/inventario/configuracoes/${tab}`,
+    label: SETTINGS_LABELS[tab],
+    active: tab === current,
+  }));
   return <SectionTabs label="Configurações" tabs={tabs} />;
 }

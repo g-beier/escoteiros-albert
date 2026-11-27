@@ -14,4 +14,5 @@ export function chunk<T>(items: T[], size = CV_BLOCK): T[][] {
 
 /** Colunas da grade (`--cv-cols`) e altura estimada de um bloco (`--cv-rows` linhas, `--cv-row-h` cada). */
 export const cvCols = (columns: string[]) => ({ "--cv-cols": columns.join(" ") }) as CSSProperties;
-export const cvRows = (rows: number, rowHeight?: string) => ({ "--cv-rows": rows, ...(rowHeight && { "--cv-row-h": rowHeight }) }) as CSSProperties;
+export const cvRows = (rows: number, rowHeight?: string) =>
+  ({ "--cv-rows": rows, ...(rowHeight && { "--cv-row-h": rowHeight }) }) as CSSProperties;

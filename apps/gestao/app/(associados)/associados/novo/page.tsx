@@ -13,15 +13,22 @@ export default async function NewAssociate() {
   if (!member) return <SetupNeeded email={user.email} />;
   if (!member.associates.canWrite) redirect("/associados");
   const catalog = await sections.catalog(member.db, member.groupId);
-  return <div className="shell">
-    <AppHeader current="/associados/novo" member={member} />
-    <PageBody width="narrow">
-      <PageHeader title="Novo associado" crumbs={[{ label: "Associados", href: "/associados" }, { label: "Novo associado" }]}
-        description="Nome, divisão e datas. Documentos e contatos ficam no Paxtu." />
-      <SectionCard>
-        <SectionHeader title="Associado" />
-        <div className="p-4"><AssociateForm catalog={catalog} today={todayISO()} /></div>
-      </SectionCard>
-    </PageBody>
-  </div>;
+  return (
+    <div className="shell">
+      <AppHeader current="/associados/novo" member={member} />
+      <PageBody width="narrow">
+        <PageHeader
+          title="Novo associado"
+          crumbs={[{ label: "Associados", href: "/associados" }, { label: "Novo associado" }]}
+          description="Nome, divisão e datas. Documentos e contatos ficam no Paxtu."
+        />
+        <SectionCard>
+          <SectionHeader title="Associado" />
+          <div className="p-4">
+            <AssociateForm catalog={catalog} today={todayISO()} />
+          </div>
+        </SectionCard>
+      </PageBody>
+    </div>
+  );
 }

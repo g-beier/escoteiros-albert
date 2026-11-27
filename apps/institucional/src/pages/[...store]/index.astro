@@ -24,9 +24,7 @@ const { product } = Astro.props as Props;
 
 const url = getCanonical(getPermalink(product.permalink, 'store'));
 const images = (await Promise.all((product?.images ?? []).map((img) => findImage(img)))) as (
-  | ImageMetadata
-  | string
-  | undefined
+  ImageMetadata | string | undefined
 )[];
 
 const metadata = merge(

@@ -7,10 +7,28 @@
 export const FEE_MONTHS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 export type FeeMonth = (typeof FEE_MONTHS)[number];
 export const FEE_MONTH_LABELS: Record<number, string> = {
-  3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun", 7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez",
+  3: "Mar",
+  4: "Abr",
+  5: "Mai",
+  6: "Jun",
+  7: "Jul",
+  8: "Ago",
+  9: "Set",
+  10: "Out",
+  11: "Nov",
+  12: "Dez",
 };
 export const FEE_MONTH_NAMES: Record<number, string> = {
-  3: "março", 4: "abril", 5: "maio", 6: "junho", 7: "julho", 8: "agosto", 9: "setembro", 10: "outubro", 11: "novembro", 12: "dezembro",
+  3: "março",
+  4: "abril",
+  5: "maio",
+  6: "junho",
+  7: "julho",
+  8: "agosto",
+  9: "setembro",
+  10: "outubro",
+  11: "novembro",
+  12: "dezembro",
 };
 
 export type DueRule = "dia_fixo" | "dia_util" | "fim_do_mes";
@@ -31,16 +49,28 @@ const addDays = (date: Date, days: number) => new Date(date.getTime() + days * 8
 
 /** Domingo de Páscoa (algoritmo de Meeus/Jones/Butcher). */
 export function easter(year: number) {
-  const a = year % 19, b = Math.floor(year / 100), c = year % 100, d = Math.floor(b / 4), e = b % 4;
-  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+  const a = year % 19,
+    b = Math.floor(year / 100),
+    c = year % 100,
+    d = Math.floor(b / 4),
+    e = b % 4;
+  const f = Math.floor((b + 8) / 25),
+    g = Math.floor((b - f + 1) / 3),
+    h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4),
+    k = c % 4,
+    l = (32 + 2 * e + 2 * i - h - k) % 7,
+    m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31),
+    day = ((h + l - 7 * m + 114) % 31) + 1;
   return utc(year, month, day);
 }
 
 /** Feriados nacionais (fixos e móveis: Carnaval, Sexta-feira Santa, Corpus Christi). */
 export function brazilHolidays(year: number): Set<string> {
-  const fixed = ["01-01", "04-21", "05-01", "09-07", "10-12", "11-02", "11-15", "11-20", "12-25"].map((md) => `${year}-${md}`);
+  const fixed = ["01-01", "04-21", "05-01", "09-07", "10-12", "11-02", "11-15", "11-20", "12-25"].map(
+    (md) => `${year}-${md}`,
+  );
   const sunday = easter(year);
   const movable = [-48, -47, -2, 60].map((offset) => fromUtc(addDays(sunday, offset)));
   return new Set([...fixed, ...movable]);
@@ -73,14 +103,26 @@ export function todayInSaoPaulo(now = new Date()) {
  * "isento" é o mês que não se cobra (ok sem ser pago): não conta como pago, dívida, alerta nem previsto.
  */
 export type FeeStatus = "pago" | "atencao" | "nao_pago" | "isento";
-export type FeeRecord = { associateId: string; month: number; status: FeeStatus; note: string | null; splitIds: string[] };
+export type FeeRecord = {
+  associateId: string;
+  month: number;
+  status: FeeStatus;
+  note: string | null;
+  splitIds: string[];
+};
 
 /** pago/atencao registrados; atrasado = passou do vencimento sem registro; sugestao = rateio a confirmar; vazio = o resto. */
 /** "fora": mês em que o associado não está no grupo (saiu, ainda não entrou): sem cobrança nem atraso. */
 export type CellState = "pago" | "atencao" | "nao_pago" | "isento" | "atrasado" | "sugestao" | "vazio" | "fora";
 
 export type MovementKind = "entrada" | "saida";
-export type AssociateMovement = { id: string; associateId: string; date: string; kind: MovementKind; reason: string | null };
+export type AssociateMovement = {
+  id: string;
+  associateId: string;
+  date: string;
+  kind: MovementKind;
+  reason: string | null;
+};
 
 /**
  * Meses (de FEE_MONTHS) em que o associado está no grupo, pelas entradas, saídas e retornos.
@@ -114,14 +156,22 @@ export function cellState(record: FeeRecord | undefined, due: string, today: str
   return today > due ? "atrasado" : "vazio";
 }
 
-export type FeeSplit = { splitId: string; associateId: string; entryId: string; entryDate: string; amountCents: number; description: string; linkedPeriods: number[] };
+export type FeeSplit = {
+  splitId: string;
+  associateId: string;
+  entryId: string;
+  entryDate: string;
+  amountCents: number;
+  description: string;
+  linkedPeriods: number[];
+};
 
 /** Valor do ano: mensal e desconto percentual para o pagamento integral (10 meses) até a data-limite. */
 export type FeePrice = { monthlyCents: number; discountPct: number; deadline: string | null };
 
 export function annualAmounts(price: FeePrice) {
   const full = price.monthlyCents * FEE_MONTHS.length;
-  const discounted = Math.round(full * (100 - price.discountPct) / 100);
+  const discounted = Math.round((full * (100 - price.discountPct)) / 100);
   return { full, discounted };
 }
 
@@ -129,11 +179,18 @@ export function annualAmounts(price: FeePrice) {
 export function isIntegralPayment(split: Pick<FeeSplit, "amountCents" | "entryDate">, price: FeePrice) {
   const { full, discounted } = annualAmounts(price);
   if (split.amountCents === full) return true;
-  return price.discountPct > 0 && price.deadline !== null && split.entryDate <= price.deadline && split.amountCents === discounted;
+  return (
+    price.discountPct > 0 &&
+    price.deadline !== null &&
+    split.entryDate <= price.deadline &&
+    split.amountCents === discounted
+  );
 }
 
 export type FeeSuggestion = {
-  associateId: string; month: number; splitId: string;
+  associateId: string;
+  month: number;
+  splitId: string;
   /** pago, ou atencao quando o valor não fecha uma mensalidade inteira. */
   status: FeeStatus;
   note?: string;
@@ -156,8 +213,12 @@ export function priceForAssociate(base: FeePrice | null, individualCents: number
   return { monthlyCents: individualCents, discountPct: base?.discountPct ?? 0, deadline: base?.deadline ?? null };
 }
 
-export function suggestFeeMonths(year: number, splits: FeeSplit[], records: FeeRecord[],
-  price?: FeePrice | null | ((associateId: string) => FeePrice | null)): FeeSuggestion[] {
+export function suggestFeeMonths(
+  year: number,
+  splits: FeeSplit[],
+  records: FeeRecord[],
+  price?: FeePrice | null | ((associateId: string) => FeePrice | null),
+): FeeSuggestion[] {
   const priceOf = typeof price === "function" ? price : () => price ?? null;
   const taken = new Set(records.map((r) => `${r.associateId}:${r.month}`));
   const result: FeeSuggestion[] = [];
@@ -168,7 +229,10 @@ export function suggestFeeMonths(year: number, splits: FeeSplit[], records: FeeR
     const free = FEE_MONTHS.filter((month) => !taken.has(`${split.associateId}:${month}`));
     if (!free.length) continue;
     const entryMonth = Number(split.entryDate.slice(5, 7));
-    const start = Math.max(0, free.findIndex((month) => month >= entryMonth));
+    const start = Math.max(
+      0,
+      free.findIndex((month) => month >= entryMonth),
+    );
     const ordered = free.includes(entryMonth as FeeMonth) ? [...free.slice(start), ...free.slice(0, start)] : free;
     const push = (month: number, extra: Partial<FeeSuggestion> = {}) => {
       taken.add(`${split.associateId}:${month}`);
@@ -176,12 +240,19 @@ export function suggestFeeMonths(year: number, splits: FeeSplit[], records: FeeR
     };
     const own = priceOf(split.associateId);
     // sem valor (ou valor zero, ex.: bolsa integral) não há como conferir: um mês por rateio
-    if (!own || own.monthlyCents <= 0) { push(ordered[0]); continue; }
-    if (isIntegralPayment(split, own)) { ordered.forEach((month) => push(month, { integral: true })); continue; }
+    if (!own || own.monthlyCents <= 0) {
+      push(ordered[0]);
+      continue;
+    }
+    if (isIntegralPayment(split, own)) {
+      ordered.forEach((month) => push(month, { integral: true }));
+      continue;
+    }
     const whole = Math.floor(split.amountCents / own.monthlyCents);
     const rest = split.amountCents % own.monthlyCents;
     ordered.slice(0, whole).forEach((month) => push(month));
-    if (rest > 0 && ordered[whole] !== undefined) push(ordered[whole], { status: "atencao", note: `pagou ${brl(rest)} de ${brl(own.monthlyCents)}` });
+    if (rest > 0 && ordered[whole] !== undefined)
+      push(ordered[whole], { status: "atencao", note: `pagou ${brl(rest)} de ${brl(own.monthlyCents)}` });
   }
   return result;
 }
@@ -192,14 +263,21 @@ export type FeeBalance = { expected: number; received: number; open: number; int
  * Previsto × recebido por associado: 10 mensalidades (ou o valor integral com desconto, se pago assim);
  * isento no ano não tem previsto; meses marcados "isento" saem do previsto. `open` nunca é negativo.
  */
-export function feeBalance(row: Pick<FeeRow, "exemption"> & { monthsInGroup?: number; exemptMonths?: number }, splits: FeeSplit[], year: number, price: FeePrice | null): FeeBalance {
+export function feeBalance(
+  row: Pick<FeeRow, "exemption"> & { monthsInGroup?: number; exemptMonths?: number },
+  splits: FeeSplit[],
+  year: number,
+  price: FeePrice | null,
+): FeeBalance {
   const inYear = splits.filter((s) => s.entryDate.startsWith(`${year}-`));
   const received = inYear.reduce((sum, s) => sum + s.amountCents, 0);
   if (!price || row.exemption) return { expected: 0, received, open: 0, integral: false };
   const months = Math.max(0, (row.monthsInGroup ?? FEE_MONTHS.length) - (row.exemptMonths ?? 0));
   const { full, discounted } = annualAmounts(price);
   // o desconto do integral só vale para quem está no grupo o ano todo
-  const integral = months === FEE_MONTHS.length && inYear.some((s) => isIntegralPayment(s, price) && s.amountCents === discounted && discounted !== full);
+  const integral =
+    months === FEE_MONTHS.length &&
+    inYear.some((s) => isIntegralPayment(s, price) && s.amountCents === discounted && discounted !== full);
   const expected = integral ? discounted : months === FEE_MONTHS.length ? full : price.monthlyCents * months;
   return { expected, received, open: Math.max(0, expected - received), integral };
 }
@@ -210,7 +288,17 @@ export type MonthSummary = Record<CellState, number> & { late: number };
 /** Totais por mês (as linhas passadas; a grade exclui os ocultos). */
 export function monthSummary(states: CellState[][]): MonthSummary[] {
   return FEE_MONTHS.map((_, column) => {
-    const summary: MonthSummary = { pago: 0, atencao: 0, nao_pago: 0, isento: 0, atrasado: 0, sugestao: 0, vazio: 0, fora: 0, late: 0 };
+    const summary: MonthSummary = {
+      pago: 0,
+      atencao: 0,
+      nao_pago: 0,
+      isento: 0,
+      atrasado: 0,
+      sugestao: 0,
+      vazio: 0,
+      fora: 0,
+      late: 0,
+    };
     for (const row of states) {
       const state = row[column];
       if (!state) continue;
@@ -223,7 +311,14 @@ export function monthSummary(states: CellState[][]): MonthSummary[] {
 
 // Grade do ano -------------------------------------------------------------------------
 
-export type FeeAssociate = { id: string; name: string; branch: string; section: string | null; patrol?: string | null; active: boolean };
+export type FeeAssociate = {
+  id: string;
+  name: string;
+  branch: string;
+  section: string | null;
+  patrol?: string | null;
+  active: boolean;
+};
 export type FeeExemption = { associateId: string; reason: string };
 
 export type FeeRow = {
@@ -243,15 +338,22 @@ export type FeeRow = {
   overdue: number;
 };
 
-const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
+const byName = (a: { name: string }, b: { name: string }) =>
+  a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
 
 /**
  * Linhas da grade: associados ativos e os inativos com registro no ano, em ordem alfabética.
  * Isentos vêm marcados (sem atrasos); `overdue` conta os meses atrasados.
  */
 export function buildFeeRows(input: {
-  year: number; today: string; settings: FeeSettings; associates: FeeAssociate[]; records: FeeRecord[];
-  exemptions: FeeExemption[]; suggestions: FeeSuggestion[]; movements?: AssociateMovement[];
+  year: number;
+  today: string;
+  settings: FeeSettings;
+  associates: FeeAssociate[];
+  records: FeeRecord[];
+  exemptions: FeeExemption[];
+  suggestions: FeeSuggestion[];
+  movements?: AssociateMovement[];
 }): FeeRow[] {
   const { year, today, settings } = input;
   const dues = FEE_MONTHS.map((month) => dueDate(year, month, settings));
@@ -275,15 +377,19 @@ export function buildFeeRows(input: {
         const record = records.get(recordKey(associate.id, month));
         const suggestion = suggestions.get(recordKey(associate.id, month));
         // fora do grupo: sem cobrança (um registro manual continua valendo)
-        const state: CellState = !record && !inGroup.has(month) ? "fora" : cellState(record, dues[i], today, Boolean(suggestion));
+        const state: CellState =
+          !record && !inGroup.has(month) ? "fora" : cellState(record, dues[i], today, Boolean(suggestion));
         // isento não fica atrasado
-        return { month, state: exemption && state === "atrasado" ? "vazio" as const : state, record, suggestion };
+        return { month, state: exemption && state === "atrasado" ? ("vazio" as const) : state, record, suggestion };
       });
       return {
-        associate, exemption, cells, movements,
+        associate,
+        exemption,
+        cells,
+        movements,
         monthsInGroup: inGroup.size,
         exemptMonths: cells.filter((c) => c.state === "isento" && inGroup.has(c.month)).length,
-        hidden: exemption ? "isento" as const : inGroup.size === 0 ? "fora" as const : null,
+        hidden: exemption ? ("isento" as const) : inGroup.size === 0 ? ("fora" as const) : null,
         paid: cells.filter((c) => c.state === "pago").length,
         // atrasado (calculado) e não pago (registrado) contam como dívida
         overdue: cells.filter((c) => c.state === "atrasado" || c.state === "nao_pago").length,
@@ -293,7 +399,8 @@ export function buildFeeRows(input: {
 
 /** Quem tem mensalidades atrasadas, do maior número para o menor (empate: nome). */
 export function overdueRanking(rows: FeeRow[]) {
-  return rows.filter((row) => !row.hidden && row.overdue > 0)
+  return rows
+    .filter((row) => !row.hidden && row.overdue > 0)
     .sort((a, b) => b.overdue - a.overdue || byName(a.associate, b.associate))
     .map((row) => ({ associate: row.associate, overdue: row.overdue }));
 }
@@ -320,7 +427,8 @@ export function feeAmounts(year: number, splitsByAssociate: Record<string, FeeSp
       if (!split.entryDate.startsWith(`${year}-`)) continue;
       const month = Number(split.entryDate.slice(5, 7));
       const column = FEE_MONTHS.indexOf(month as FeeMonth);
-      if (column >= 0) result.byMonth[column] += split.amountCents; else result.outsideGrid += split.amountCents;
+      if (column >= 0) result.byMonth[column] += split.amountCents;
+      else result.outsideGrid += split.amountCents;
       result.byAssociate[associateId] = (result.byAssociate[associateId] ?? 0) + split.amountCents;
       result.total += split.amountCents;
       result.count += 1;

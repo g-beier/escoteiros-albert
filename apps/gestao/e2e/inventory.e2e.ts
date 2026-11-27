@@ -41,7 +41,8 @@ test.afterAll(async () => {
   await deleteUsers([CHIEF, VIEWER]);
 });
 
-const lotRow = (page: Page, path: string) => page.getByRole("table", { name: "Lotes do material" }).getByRole("row").filter({ hasText: path });
+const lotRow = (page: Page, path: string) =>
+  page.getByRole("table", { name: "Lotes do material" }).getByRole("row").filter({ hasText: path });
 
 test("gestor: divisões, família, material por quantidade com lote, transferência e baixa", async ({ page }) => {
   await page.goto("/inventario/configuracoes");
@@ -105,7 +106,10 @@ test("gestor: divisões, família, material por quantidade com lote, transferên
   await adjust.getByRole("button", { name: "Corrigir" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.goto(`/inventario/movimentacoes`);
-  const moves = page.getByRole("table", { name: "Movimentações do inventário" }).getByRole("row").filter({ hasText: lotMaterial });
+  const moves = page
+    .getByRole("table", { name: "Movimentações do inventário" })
+    .getByRole("row")
+    .filter({ hasText: lotMaterial });
   await expect(moves.filter({ hasText: "Condição" })).toContainText("Bom→paraEm manutenção");
   const adjusted = moves.filter({ hasText: "Ajuste" });
   await expect(adjusted).toContainText("4 → 5");
@@ -145,7 +149,9 @@ test("gestor: divisões, família, material por quantidade com lote, transferên
   const line = page.getByRole("row").filter({ has: page.getByRole("link", { name: lotMaterial }) });
   await expect(line).toContainText("6");
   await page.goto("/inventario/movimentacoes?tipo=transferencia");
-  await expect(page.getByRole("table", { name: "Movimentações do inventário" })).toContainText(`${root} → ${root} › ${sub}`);
+  await expect(page.getByRole("table", { name: "Movimentações do inventário" })).toContainText(
+    `${root} → ${root} › ${sub}`,
+  );
   await page.goto("/inventario/movimentacoes?tipo=baixa");
   await expect(page.getByRole("table", { name: "Movimentações do inventário" })).toContainText(lotMaterial);
 });
@@ -175,7 +181,8 @@ test("lista: filtros por estado e valor, ordem e colunas; o detalhe volta com tu
   await expect(line).toContainText("R$ 1.234,56");
 
   // menu da coluna Estado: só "Ruim" esconde o material (lote bom); com "Bom" também, volta
-  const columnMenu = (name: string) => page.getByRole("columnheader", { name: new RegExp(`^${name}`) }).getByRole("button");
+  const columnMenu = (name: string) =>
+    page.getByRole("columnheader", { name: new RegExp(`^${name}`) }).getByRole("button");
   await columnMenu("Estado").click();
   await page.getByRole("dialog").getByRole("button", { name: "Limpar", exact: true }).click();
   await page.getByRole("checkbox", { name: "Ruim" }).click();
@@ -299,7 +306,11 @@ test("chefe registra, fica para revisar, e o gestor revisa", async ({ browser, p
   await expect(page.getByText("Movimento revisado.")).toBeVisible();
   await expect(list.getByRole("row").filter({ hasText: lotMaterial })).toHaveCount(0);
   await page.goto(`/inventario/movimentacoes?revisao=revisado`);
-  const reviewed = page.getByRole("table", { name: "Movimentações do inventário" }).getByRole("row").filter({ hasText: lotMaterial }).first();
+  const reviewed = page
+    .getByRole("table", { name: "Movimentações do inventário" })
+    .getByRole("row")
+    .filter({ hasText: lotMaterial })
+    .first();
   await reviewed.getByRole("button", { name: "Ver a nota da revisão" }).click();
   await expect(page.getByRole("dialog")).toContainText("conferido com o chefe");
 });
@@ -318,7 +329,10 @@ test("registro rápido (celular): fica para revisar mesmo do gestor", async ({ p
   await expect(page.getByRole("status")).toContainText("Retirada registrada. Fica para revisar.");
 
   await page.goto("/inventario/movimentacoes?revisao=para_revisar");
-  const row = page.getByRole("table", { name: "Movimentações do inventário" }).getByRole("row").filter({ hasText: lotMaterial });
+  const row = page
+    .getByRole("table", { name: "Movimentações do inventário" })
+    .getByRole("row")
+    .filter({ hasText: lotMaterial });
   await expect(row).toHaveCount(1);
   await expect(row).toContainText("Baixa");
   await row.getByRole("button", { name: "Detalhes da revisão" }).click();
@@ -353,7 +367,13 @@ test("lista: um botão ± na linha inclui ou remove, sem abrir o material", asyn
   await out.getByRole("button", { name: "Dar baixa" }).click();
   await expect(page.getByText("Baixa registrada.")).toBeVisible();
   await page.goto("/inventario/movimentacoes?tipo=baixa");
-  await expect(page.getByRole("table", { name: "Movimentações do inventário" }).getByRole("row").filter({ hasText: lotMaterial }).first()).toContainText("Perda");
+  await expect(
+    page
+      .getByRole("table", { name: "Movimentações do inventário" })
+      .getByRole("row")
+      .filter({ hasText: lotMaterial })
+      .first(),
+  ).toContainText("Perda");
 });
 
 test("consulta: só vê, sem cadastrar nem movimentar", async ({ browser }) => {

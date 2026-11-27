@@ -23,7 +23,9 @@ export function ControlFilters({ hidden }: { hidden: Directorate[] }) {
 
   const apply = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
-    for (const [key, value] of Object.entries(changes)) if (value) next.set(key, value); else next.delete(key);
+    for (const [key, value] of Object.entries(changes))
+      if (value) next.set(key, value);
+      else next.delete(key);
     const query = next.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   };
@@ -35,32 +37,73 @@ export function ControlFilters({ hidden }: { hidden: Directorate[] }) {
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const toggleHidden = (directorate: Directorate) =>
-    apply({ ocultar: hiddenParam(hidden.includes(directorate) ? hidden.filter((d) => d !== directorate) : [...hidden, directorate]) || null });
+    apply({
+      ocultar:
+        hiddenParam(
+          hidden.includes(directorate) ? hidden.filter((d) => d !== directorate) : [...hidden, directorate],
+        ) || null,
+    });
 
-  return <div className="grid gap-3">
-    <div className="flex flex-wrap items-end gap-3">
-      <div className="relative min-w-48 flex-1">
-        <IconSearch className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
-        <Input type="search" aria-label="Buscar associado pelo nome" placeholder="Buscar associado" className={cn("pl-7", q.trim() && "border-primary")} value={q} onChange={(event) => onSearch(event.target.value)} />
+  return (
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="relative min-w-48 flex-1">
+          <IconSearch
+            className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <Input
+            type="search"
+            aria-label="Buscar associado pelo nome"
+            placeholder="Buscar associado"
+            className={cn("pl-7", q.trim() && "border-primary")}
+            value={q}
+            onChange={(event) => onSearch(event.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2 pb-1.5">
+          <Checkbox
+            id="filter-pending"
+            checked={params.get("pendencias") === "1"}
+            onCheckedChange={(checked) => apply({ pendencias: checked === true ? "1" : null })}
+          />
+          <Label htmlFor="filter-pending">Só pendências</Label>
+        </div>
+        <div className="flex items-center gap-2 pb-1.5">
+          <Checkbox
+            id="filter-inactive"
+            checked={params.get("desligados") === "1"}
+            onCheckedChange={(checked) => apply({ desligados: checked === true ? "1" : null })}
+          />
+          <Label htmlFor="filter-inactive">Incluir desligados</Label>
+        </div>
       </div>
-      <div className="flex items-center gap-2 pb-1.5">
-        <Checkbox id="filter-pending" checked={params.get("pendencias") === "1"} onCheckedChange={(checked) => apply({ pendencias: checked === true ? "1" : null })} />
-        <Label htmlFor="filter-pending">Só pendências</Label>
-      </div>
-      <div className="flex items-center gap-2 pb-1.5">
-        <Checkbox id="filter-inactive" checked={params.get("desligados") === "1"} onCheckedChange={(checked) => apply({ desligados: checked === true ? "1" : null })} />
-        <Label htmlFor="filter-inactive">Incluir desligados</Label>
+      <div role="group" aria-labelledby="filter-hide-label" className="flex flex-wrap items-center gap-1.5">
+        <span id="filter-hide-label" className="mr-1 text-xs font-medium text-muted-foreground">
+          Ocultar diretoria
+        </span>
+        {DIRECTORATES.map((directorate) => {
+          const off = hidden.includes(directorate);
+          return (
+            <Button
+              key={directorate}
+              type="button"
+              size="sm"
+              variant="outline"
+              aria-pressed={off}
+              onClick={() => toggleHidden(directorate)}
+              className={cn("rounded-full", off && "border-dashed text-muted-foreground line-through")}
+            >
+              {off ? (
+                <IconEyeOff data-icon="inline-start" aria-hidden />
+              ) : (
+                <IconEye data-icon="inline-start" aria-hidden />
+              )}
+              {directorateLabels[directorate]}
+            </Button>
+          );
+        })}
       </div>
     </div>
-    <div role="group" aria-labelledby="filter-hide-label" className="flex flex-wrap items-center gap-1.5">
-      <span id="filter-hide-label" className="mr-1 text-xs font-medium text-muted-foreground">Ocultar diretoria</span>
-      {DIRECTORATES.map((directorate) => {
-        const off = hidden.includes(directorate);
-        return <Button key={directorate} type="button" size="sm" variant="outline" aria-pressed={off} onClick={() => toggleHidden(directorate)}
-          className={cn("rounded-full", off && "border-dashed text-muted-foreground line-through")}>
-          {off ? <IconEyeOff data-icon="inline-start" aria-hidden /> : <IconEye data-icon="inline-start" aria-hidden />}{directorateLabels[directorate]}
-        </Button>;
-      })}
-    </div>
-  </div>;
+  );
 }

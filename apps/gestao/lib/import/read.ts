@@ -1,6 +1,15 @@
 import { readCsv } from "@/lib/csv-reader";
 import { FILES, fileSpec, type Column, type FileKind, type FileSpec } from "@/lib/import/contract";
-import { cleanText, parseCents, parseChoice, parseDate, parseInteger, parseMonthOrDate, parseYesNo, type Parsed } from "@/lib/import/values";
+import {
+  cleanText,
+  parseCents,
+  parseChoice,
+  parseDate,
+  parseInteger,
+  parseMonthOrDate,
+  parseYesNo,
+  type Parsed,
+} from "@/lib/import/values";
 import { normalizeText } from "@/lib/text";
 
 /**
@@ -67,7 +76,9 @@ export function detectKind(fileName: string, header: string[]): FileKind | null 
   let best: { kind: FileKind; score: number } | null = null;
   for (const spec of FILES) {
     const matched = header.filter((cell) => matchColumn(spec, cell)).length;
-    const required = spec.columns.filter((column) => column.required === "sempre").every((column) => header.some((cell) => matchColumn(spec, cell) === column));
+    const required = spec.columns
+      .filter((column) => column.required === "sempre")
+      .every((column) => header.some((cell) => matchColumn(spec, cell) === column));
     const score = required ? matched : 0;
     if (score > 0 && (!best || score > best.score)) best = { kind: spec.kind, score };
   }
@@ -89,14 +100,23 @@ export function parseCell(column: Column, raw: string): Parsed<string | number |
       if (text.length > type.max) return { error: `${column.header}: máximo de ${type.max} caracteres` };
       return { value: text };
     case "id":
-      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(text) ? { value: text.toLowerCase() } : { error: `${column.header}: "${text}" não é um id do app` };
-    case "data": return parseDate(text);
-    case "mes_ou_data": return parseMonthOrDate(text, column.key === "end");
-    case "sim_nao": return parseYesNo(text);
-    case "inteiro": return parseInteger(text, type.min, type.max);
-    case "dinheiro": return parseCents(text);
-    case "lista": return parseChoice(text, type.choices);
-    case "situacao_controle": return { value: text };
+      return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(text)
+        ? { value: text.toLowerCase() }
+        : { error: `${column.header}: "${text}" não é um id do app` };
+    case "data":
+      return parseDate(text);
+    case "mes_ou_data":
+      return parseMonthOrDate(text, column.key === "end");
+    case "sim_nao":
+      return parseYesNo(text);
+    case "inteiro":
+      return parseInteger(text, type.min, type.max);
+    case "dinheiro":
+      return parseCents(text);
+    case "lista":
+      return parseChoice(text, type.choices);
+    case "situacao_controle":
+      return { value: text };
   }
 }
 
@@ -107,7 +127,10 @@ export function readImportFile(name: string, text: string, kind?: FileKind): Rea
   const table = readCsv(clean, { delimiter: delimiterOf(clean), headerRow: 1 });
   const header = table.header.map((cell) => cleanText(cell));
   const detected = kind ?? detectKind(name, header);
-  if (!detected) return { error: `${name}: tipo não reconhecido. Use o nome de um dos arquivos do contrato (ex.: pessoas.csv) e o cabeçalho na primeira linha.` };
+  if (!detected)
+    return {
+      error: `${name}: tipo não reconhecido. Use o nome de um dos arquivos do contrato (ex.: pessoas.csv) e o cabeçalho na primeira linha.`,
+    };
   const spec = fileSpec(detected);
 
   const warnings: string[] = [];
@@ -122,11 +145,16 @@ export function readImportFile(name: string, text: string, kind?: FileKind): Rea
     } else if (isDynamic(spec, cell)) dynamicAt.set(index, cell);
     else warnings.push(`Coluna "${cell}" não faz parte de ${spec.file} e foi ignorada.`);
   });
-  const missing = spec.columns.filter((column) => column.required === "sempre" && ![...at.values()].includes(column)).map((column) => column.header);
+  const missing = spec.columns
+    .filter((column) => column.required === "sempre" && ![...at.values()].includes(column))
+    .map((column) => column.header);
   if (missing.length) return { error: `${name}: falta a coluna ${missing.join(", ")} (${spec.file}).` };
 
-  const records = table.rows.map((record, i) => ({ record, line: table.rowNumbers[i] ?? i + 2 })).filter(({ record }) => record.some((cell) => cell.trim() !== ""));
-  if (records.length > MAX_ROWS) return { error: `${name}: no máximo ${MAX_ROWS.toLocaleString("pt-BR")} linhas por arquivo.` };
+  const records = table.rows
+    .map((record, i) => ({ record, line: table.rowNumbers[i] ?? i + 2 }))
+    .filter(({ record }) => record.some((cell) => cell.trim() !== ""));
+  if (records.length > MAX_ROWS)
+    return { error: `${name}: no máximo ${MAX_ROWS.toLocaleString("pt-BR")} linhas por arquivo.` };
 
   const rows = records.map(({ record, line }): ReadRow => {
     const values: Values = {};
@@ -139,7 +167,8 @@ export function readImportFile(name: string, text: string, kind?: FileKind): Rea
         continue;
       }
       const parsed = parseCell(column, raw);
-      if (parsed.error !== undefined) errors.push(parsed.error.startsWith(column.header) ? parsed.error : `${column.header}: ${parsed.error}`);
+      if (parsed.error !== undefined)
+        errors.push(parsed.error.startsWith(column.header) ? parsed.error : `${column.header}: ${parsed.error}`);
       else values[column.key] = parsed.value;
     }
     for (const [index, headerName] of dynamicAt) {
@@ -149,11 +178,23 @@ export function readImportFile(name: string, text: string, kind?: FileKind): Rea
     return { line, values, dynamic, errors };
   });
 
-  return { file: { kind: detected, name, columns: [...at.values()].map((column) => column.key), dynamicColumns: [...dynamicAt.values()], rows, warnings } };
+  return {
+    file: {
+      kind: detected,
+      name,
+      columns: [...at.values()].map((column) => column.key),
+      dynamicColumns: [...dynamicAt.values()],
+      rows,
+      warnings,
+    },
+  };
 }
 
 /** CSV de um arquivo do contrato (modelo vazio, exemplo ou exportação), `;` e BOM para o Excel abrir em UTF-8. */
-export function writeImportCsv(header: readonly string[], rows: readonly (readonly (string | number | null | undefined)[])[]): string {
+export function writeImportCsv(
+  header: readonly string[],
+  rows: readonly (readonly (string | number | null | undefined)[])[],
+): string {
   const escape = (value: string | number | null | undefined) => {
     const text = value == null ? "" : String(value);
     return /[";\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;

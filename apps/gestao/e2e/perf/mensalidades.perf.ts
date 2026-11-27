@@ -13,7 +13,9 @@ const SCROLLER = '[data-slot="fees-scroller"]';
 const group = `(select m.group_id from public.memberships m join auth.users u on u.id = m.user_id where u.email = ${lit(E2E_ADMIN_EMAIL)})`;
 
 function seed() {
-  const existing = Number(psql(`select count(*) from public.associates where group_id = ${group} and name like 'E2E Perf %'`));
+  const existing = Number(
+    psql(`select count(*) from public.associates where group_id = ${group} and name like 'E2E Perf %'`),
+  );
   if (existing >= ROWS) return;
   psql(`
     begin;

@@ -12,7 +12,11 @@ import { pageSession } from "@/lib/server/session";
  * Ordem dos materiais de uma divisão (só os que estão nela, não nas subdivisões), escolhida pelo Editor: vale na
  * lista de Materiais (ordem padrão) e no PDF de conferência.
  */
-export default async function OrderMaterials({ searchParams }: { searchParams: Promise<{ divisao?: string; voltar?: string }> }) {
+export default async function OrderMaterials({
+  searchParams,
+}: {
+  searchParams: Promise<{ divisao?: string; voltar?: string }>;
+}) {
   const params = await searchParams;
   const back = materialsBackHref(params.voltar);
   const { user, member } = await pageSession();
@@ -29,23 +33,50 @@ export default async function OrderMaterials({ searchParams }: { searchParams: P
   if (!location) redirect(back);
 
   const byId = new Map(materialData.map((material) => [material.id, material]));
-  const lines = stock.filter((row) => row.location_id === location.id && byId.has(row.material_id))
-    .map((row) => ({ ...row, material: byId.get(row.material_id)!, previous: [null, null] as [null, null], position: positions.get(`${location.id}|${row.material_id}`) ?? null }))
+  const lines = stock
+    .filter((row) => row.location_id === location.id && byId.has(row.material_id))
+    .map((row) => ({
+      ...row,
+      material: byId.get(row.material_id)!,
+      previous: [null, null] as [null, null],
+      position: positions.get(`${location.id}|${row.material_id}`) ?? null,
+    }))
     .sort(compareLines("posicao", "asc"));
   const items: OrderItem[] = lines.map((line) => ({
-    id: line.material_id, name: line.material.name, quantity: line.quantity,
-    detail: [line.material.active ? null : "Inativo", conditionBreakdown(line.conditions) || null].filter(Boolean).join(" · ") || null,
+    id: line.material_id,
+    name: line.material.name,
+    quantity: line.quantity,
+    detail:
+      [line.material.active ? null : "Inativo", conditionBreakdown(line.conditions) || null]
+        .filter(Boolean)
+        .join(" · ") || null,
   }));
 
-  return <div className="shell">
-    <AppHeader current="/inventario/materiais" member={member} />
-    <PageBody width="narrow">
-      <PageHeader title={`Ordenar ${location.name}`}
-        crumbs={[{ label: "Inventário", href: "/inventario" }, { label: "Materiais", href: back }, { label: `Ordenar ${location.name}` }]}
-        description={`${location.path}: a ordem vale na lista de Materiais e no PDF de conferência. Subdivisões têm a sua própria ordem.`} />
-      {items.length === 0
-        ? <p className="text-sm text-muted-foreground">Nenhum material nesta divisão.</p>
-        : <MaterialOrder locationId={location.id} title={location.path} items={items} allPlaced={lines.every((line) => line.position !== null)} back={back} />}
-    </PageBody>
-  </div>;
+  return (
+    <div className="shell">
+      <AppHeader current="/inventario/materiais" member={member} />
+      <PageBody width="narrow">
+        <PageHeader
+          title={`Ordenar ${location.name}`}
+          crumbs={[
+            { label: "Inventário", href: "/inventario" },
+            { label: "Materiais", href: back },
+            { label: `Ordenar ${location.name}` },
+          ]}
+          description={`${location.path}: a ordem vale na lista de Materiais e no PDF de conferência. Subdivisões têm a sua própria ordem.`}
+        />
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nenhum material nesta divisão.</p>
+        ) : (
+          <MaterialOrder
+            locationId={location.id}
+            title={location.path}
+            items={items}
+            allPlaced={lines.every((line) => line.position !== null)}
+            back={back}
+          />
+        )}
+      </PageBody>
+    </div>
+  );
 }

@@ -10,7 +10,14 @@ import { Doc10Report } from "./doc10-report";
 
 const render = async (input: Parameters<typeof buildDoc10>[0], name: string) => {
   const report = reportBySlug("doc-10")!;
-  const pdf = await renderReport(<Doc10Report doc={buildDoc10(input)} title={report.title} footerName={reportFooterName(report)} issuedOn="2026-11-20" />);
+  const pdf = await renderReport(
+    <Doc10Report
+      doc={buildDoc10(input)}
+      title={report.title}
+      footerName={reportFooterName(report)}
+      issuedOn="2026-11-20"
+    />,
+  );
   if (process.env.REPORT_OUT) writeFileSync(`${process.env.REPORT_OUT}-${name}.pdf`, pdf);
   return pdf.toString("latin1");
 };

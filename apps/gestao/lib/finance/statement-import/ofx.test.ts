@@ -3,14 +3,21 @@ import { describe, expect, it } from "vitest";
 import { applyOfxProfile, parseOfxDate, readOfx } from "./ofx";
 import { decodeBytes } from "./text";
 
-const fixture = (name: string) => decodeBytes(new Uint8Array(readFileSync(new URL(`./__fixtures__/${name}`, import.meta.url))));
+const fixture = (name: string) =>
+  decodeBytes(new Uint8Array(readFileSync(new URL(`./__fixtures__/${name}`, import.meta.url))));
 
 describe("readOfx — Nubank (com tags de fechamento)", () => {
   const parsed = readOfx(fixture("nubank.ofx").text);
 
   it("lê conta, período, saldo final e transações", () => {
     expect(parsed.errors).toEqual([]);
-    expect(parsed.account).toEqual({ org: "NU PAGAMENTOS S.A.", bankId: "0260", branchId: "1", acctId: "00000000-0", currency: "BRL" });
+    expect(parsed.account).toEqual({
+      org: "NU PAGAMENTOS S.A.",
+      bankId: "0260",
+      branchId: "1",
+      acctId: "00000000-0",
+      currency: "BRL",
+    });
     expect(parsed.signature).toBe("ofx:nu pagamentos s.a.");
     expect(parsed.periodFrom).toBe("2026-10-01");
     expect(parsed.periodTo).toBe("2026-10-31");
@@ -121,8 +128,24 @@ describe("readOfx — casos tolerados", () => {
       "<STMTTRN><DTPOSTED>2026<TRNAMT>x</STMTTRN></BANKTRANLIST></OFX>";
     const parsed = readOfx(text);
     expect(parsed.lines).toEqual([
-      { date: "2026-01-05", amountCents: -1050, description: "Loja A & B", externalId: "A1", trnType: "DEBIT", payee: "Loja A & B", sourceRow: 1 },
-      { date: "2026-01-06", amountCents: 500, description: "Pix", counterparty: "Fulano", trnType: "CREDIT", payee: "Fulano", sourceRow: 1 },
+      {
+        date: "2026-01-05",
+        amountCents: -1050,
+        description: "Loja A & B",
+        externalId: "A1",
+        trnType: "DEBIT",
+        payee: "Loja A & B",
+        sourceRow: 1,
+      },
+      {
+        date: "2026-01-06",
+        amountCents: 500,
+        description: "Pix",
+        counterparty: "Fulano",
+        trnType: "CREDIT",
+        payee: "Fulano",
+        sourceRow: 1,
+      },
     ]);
     expect(parsed.errors).toEqual([{ sourceRow: 1, message: 'DTPOSTED inválido "2026"; TRNAMT inválido "x".' }]);
     expect(parsed.periodFrom).toBe("2026-01-05");
@@ -130,7 +153,9 @@ describe("readOfx — casos tolerados", () => {
   });
 
   it("lê REFNUM", () => {
-    const parsed = readOfx("<OFX><BANKACCTFROM><BANKID>1</BANKACCTFROM><STMTTRN><TRNTYPE>payment<DTPOSTED>20260105<TRNAMT>-1<REFNUM>R-9<MEMO>Conta</STMTTRN></OFX>");
+    const parsed = readOfx(
+      "<OFX><BANKACCTFROM><BANKID>1</BANKACCTFROM><STMTTRN><TRNTYPE>payment<DTPOSTED>20260105<TRNAMT>-1<REFNUM>R-9<MEMO>Conta</STMTTRN></OFX>",
+    );
     expect(parsed.lines[0]).toMatchObject({ trnType: "PAYMENT", reference: "R-9" });
   });
 

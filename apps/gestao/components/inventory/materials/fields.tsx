@@ -11,91 +11,267 @@ import { conditionOptions, originOptions } from "@/lib/inventory/vocabulary";
 import { centsToInput } from "@/lib/format";
 
 /** Campo com rótulo visível acima. */
-export function Field({ id, label, className, children }: { id: string; label: string; className?: string; children: ReactNode }) {
-  return <div className={cn("grid gap-1.5", className)}><Label htmlFor={id}>{label}</Label>{children}</div>;
+export function Field({
+  id,
+  label,
+  className,
+  children,
+}: {
+  id: string;
+  label: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className={cn("grid gap-1.5", className)}>
+      <Label htmlFor={id}>{label}</Label>
+      {children}
+    </div>
+  );
 }
 
 /** OptionSelect que também envia o valor no formulário (campo oculto `name`). */
-export function SelectField({ id, name, label, options, defaultValue = "", emptyLabel, className }: {
-  id: string; name: string; label: string; options: Option[]; defaultValue?: string; emptyLabel?: string; className?: string;
+export function SelectField({
+  id,
+  name,
+  label,
+  options,
+  defaultValue = "",
+  emptyLabel,
+  className,
+}: {
+  id: string;
+  name: string;
+  label: string;
+  options: Option[];
+  defaultValue?: string;
+  emptyLabel?: string;
+  className?: string;
 }) {
   const [value, setValue] = useState(defaultValue);
-  return <Field id={id} label={label} className={className}>
-    <OptionSelect id={id} value={value} onValueChange={setValue} options={options} emptyLabel={emptyLabel} />
-    <input type="hidden" name={name} value={value} />
-  </Field>;
+  return (
+    <Field id={id} label={label} className={className}>
+      <OptionSelect id={id} value={value} onValueChange={setValue} options={options} emptyLabel={emptyLabel} />
+      <input type="hidden" name={name} value={value} />
+    </Field>
+  );
 }
 
-export function ConditionField({ id, defaultValue = "", label = "Condição" }: { id: string; defaultValue?: string; label?: string }) {
-  return <SelectField id={id} name="condition" label={label} options={conditionOptions} defaultValue={defaultValue} emptyLabel="Não informada" />;
+export function ConditionField({
+  id,
+  defaultValue = "",
+  label = "Condição",
+}: {
+  id: string;
+  defaultValue?: string;
+  label?: string;
+}) {
+  return (
+    <SelectField
+      id={id}
+      name="condition"
+      label={label}
+      options={conditionOptions}
+      defaultValue={defaultValue}
+      emptyLabel="Não informada"
+    />
+  );
 }
 
-export function LocationField({ id, locations, defaultValue = "", label = "Divisão" }: { id: string; locations: Option[]; defaultValue?: string; label?: string }) {
-  return <SelectField id={id} name="locationId" label={label} options={locations} defaultValue={defaultValue} className="sm:col-span-2" />;
+export function LocationField({
+  id,
+  locations,
+  defaultValue = "",
+  label = "Divisão",
+}: {
+  id: string;
+  locations: Option[];
+  defaultValue?: string;
+  label?: string;
+}) {
+  return (
+    <SelectField
+      id={id}
+      name="locationId"
+      label={label}
+      options={locations}
+      defaultValue={defaultValue}
+      className="sm:col-span-2"
+    />
+  );
 }
 
 export type EntryDefaults = {
-  unit_value_cents?: number | null; acquired_on?: string | null; origin?: string | null;
-  supplier?: string | null; invoice?: string | null; notes?: string | null;
+  unit_value_cents?: number | null;
+  acquired_on?: string | null;
+  origin?: string | null;
+  supplier?: string | null;
+  invoice?: string | null;
+  notes?: string | null;
 };
 
 /** Dados de entrada: valor estimado, data, origem (obrigatórios no modelo) e fornecedor, nota fiscal, observação (opcionais). */
-export function EntryFields({ prefix, defaults = {}, valueLabel = "Valor estimado (unidade)" }: { prefix: string; defaults?: EntryDefaults; valueLabel?: string }) {
-  return <>
-    <Field id={`${prefix}-value`} label={valueLabel}>
-      <Input id={`${prefix}-value`} name="value" inputMode="decimal" placeholder="Ex.: 35,00" defaultValue={centsToInput(defaults.unit_value_cents)} className="num" />
-    </Field>
-    <Field id={`${prefix}-acquired`} label="Data de entrada">
-      <Input id={`${prefix}-acquired`} name="acquiredOn" type="date" defaultValue={defaults.acquired_on ?? ""} className="num" />
-    </Field>
-    <SelectField id={`${prefix}-origin`} name="origin" label="Origem" options={originOptions} defaultValue={defaults.origin ?? "nao_informada"} />
-    <Field id={`${prefix}-supplier`} label="Fornecedor">
-      <Input id={`${prefix}-supplier`} name="supplier" maxLength={120} defaultValue={defaults.supplier ?? ""} />
-    </Field>
-    <Field id={`${prefix}-invoice`} label="Nota fiscal">
-      <Input id={`${prefix}-invoice`} name="invoice" maxLength={60} defaultValue={defaults.invoice ?? ""} />
-    </Field>
-    <NotesField id={`${prefix}-notes`} defaultValue={defaults.notes ?? ""} />
-  </>;
+export function EntryFields({
+  prefix,
+  defaults = {},
+  valueLabel = "Valor estimado (unidade)",
+}: {
+  prefix: string;
+  defaults?: EntryDefaults;
+  valueLabel?: string;
+}) {
+  return (
+    <>
+      <Field id={`${prefix}-value`} label={valueLabel}>
+        <Input
+          id={`${prefix}-value`}
+          name="value"
+          inputMode="decimal"
+          placeholder="Ex.: 35,00"
+          defaultValue={centsToInput(defaults.unit_value_cents)}
+          className="num"
+        />
+      </Field>
+      <Field id={`${prefix}-acquired`} label="Data de entrada">
+        <Input
+          id={`${prefix}-acquired`}
+          name="acquiredOn"
+          type="date"
+          defaultValue={defaults.acquired_on ?? ""}
+          className="num"
+        />
+      </Field>
+      <SelectField
+        id={`${prefix}-origin`}
+        name="origin"
+        label="Origem"
+        options={originOptions}
+        defaultValue={defaults.origin ?? "nao_informada"}
+      />
+      <Field id={`${prefix}-supplier`} label="Fornecedor">
+        <Input id={`${prefix}-supplier`} name="supplier" maxLength={120} defaultValue={defaults.supplier ?? ""} />
+      </Field>
+      <Field id={`${prefix}-invoice`} label="Nota fiscal">
+        <Input id={`${prefix}-invoice`} name="invoice" maxLength={60} defaultValue={defaults.invoice ?? ""} />
+      </Field>
+      <NotesField id={`${prefix}-notes`} defaultValue={defaults.notes ?? ""} />
+    </>
+  );
 }
 
 /** Variação do lote: só quando o item difere dos outros do mesmo material (lotes iguais se juntam). */
-export function VariantField({ id, defaultValue = "", className = "sm:col-span-2" }: { id: string; defaultValue?: string; className?: string }) {
-  return <div className={cn("grid gap-1.5", className)}>
-    <Label htmlFor={id}>Variação (opcional)</Label>
-    <Input id={id} name="variant" maxLength={80} defaultValue={defaultValue} placeholder="Ex.: modelo antigo" aria-describedby={`${id}-help`} />
-    <span id={`${id}-help`} className="text-[11px] text-muted-foreground">Só quando é diferente dos outros deste material. Entrada igual (mesma divisão, condição, validade e variação) soma no lote que já existe.</span>
-  </div>;
+export function VariantField({
+  id,
+  defaultValue = "",
+  className = "sm:col-span-2",
+}: {
+  id: string;
+  defaultValue?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("grid gap-1.5", className)}>
+      <Label htmlFor={id}>Variação (opcional)</Label>
+      <Input
+        id={id}
+        name="variant"
+        maxLength={80}
+        defaultValue={defaultValue}
+        placeholder="Ex.: modelo antigo"
+        aria-describedby={`${id}-help`}
+      />
+      <span id={`${id}-help`} className="text-[11px] text-muted-foreground">
+        Só quando é diferente dos outros deste material. Entrada igual (mesma divisão, condição, validade e variação)
+        soma no lote que já existe.
+      </span>
+    </div>
+  );
 }
 
-export function NotesField({ id, defaultValue = "", label = "Observação", required = false }: { id: string; defaultValue?: string; label?: string; required?: boolean }) {
-  return <Field id={id} label={label} className="sm:col-span-2">
-    <Textarea id={id} name="notes" maxLength={500} rows={2} defaultValue={defaultValue} required={required} />
-  </Field>;
+export function NotesField({
+  id,
+  defaultValue = "",
+  label = "Observação",
+  required = false,
+}: {
+  id: string;
+  defaultValue?: string;
+  label?: string;
+  required?: boolean;
+}) {
+  return (
+    <Field id={id} label={label} className="sm:col-span-2">
+      <Textarea id={id} name="notes" maxLength={500} rows={2} defaultValue={defaultValue} required={required} />
+    </Field>
+  );
 }
 
-export function QuantityField({ id, label = "Quantidade", max, defaultValue, min = 1 }: { id: string; label?: string; max?: number; defaultValue?: number; min?: number }) {
-  return <Field id={id} label={label}>
-    <Input id={id} name="quantity" type="number" inputMode="numeric" min={min} max={max} defaultValue={defaultValue} required className="num" />
-  </Field>;
+export function QuantityField({
+  id,
+  label = "Quantidade",
+  max,
+  defaultValue,
+  min = 1,
+}: {
+  id: string;
+  label?: string;
+  max?: number;
+  defaultValue?: number;
+  min?: number;
+}) {
+  return (
+    <Field id={id} label={label}>
+      <Input
+        id={id}
+        name="quantity"
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        defaultValue={defaultValue}
+        required
+        className="num"
+      />
+    </Field>
+  );
 }
 
 /**
  * Lojinha (021): "À venda na Lojinha" e o preço de venda do lote (só para o Editor). O preço aparece com a marca e é
  * sugerido no lançamento; lote à venda só junta com lote à venda do mesmo preço.
  */
-export function SaleFields({ prefix, forSale = false, priceCents = null }: { prefix: string; forSale?: boolean; priceCents?: number | null }) {
+export function SaleFields({
+  prefix,
+  forSale = false,
+  priceCents = null,
+}: {
+  prefix: string;
+  forSale?: boolean;
+  priceCents?: number | null;
+}) {
   const [checked, setChecked] = useState(forSale);
-  return <div className="grid gap-2 rounded-lg bg-muted/50 p-3 sm:col-span-2">
-    <div className="flex items-center gap-2">
-      <Checkbox id={`${prefix}-for-sale`} checked={checked} onCheckedChange={(value) => setChecked(value === true)} />
-      <Label htmlFor={`${prefix}-for-sale`}>À venda na Lojinha</Label>
-      <input type="hidden" name="forSale" value={checked ? "on" : "off"} />
+  return (
+    <div className="grid gap-2 rounded-lg bg-muted/50 p-3 sm:col-span-2">
+      <div className="flex items-center gap-2">
+        <Checkbox id={`${prefix}-for-sale`} checked={checked} onCheckedChange={(value) => setChecked(value === true)} />
+        <Label htmlFor={`${prefix}-for-sale`}>À venda na Lojinha</Label>
+        <input type="hidden" name="forSale" value={checked ? "on" : "off"} />
+      </div>
+      {checked && (
+        <Field id={`${prefix}-sale-price`} label="Preço de venda (unidade)">
+          <Input
+            id={`${prefix}-sale-price`}
+            name="salePrice"
+            inputMode="decimal"
+            placeholder="Ex.: 25,00"
+            className="num sm:max-w-40"
+            defaultValue={priceCents != null ? centsToInput(priceCents) : ""}
+          />
+        </Field>
+      )}
+      <span className="text-[11px] text-muted-foreground">
+        Aparece nos itens vendidos do Financeiro; a venda dá baixa neste lote.
+      </span>
     </div>
-    {checked && <Field id={`${prefix}-sale-price`} label="Preço de venda (unidade)">
-      <Input id={`${prefix}-sale-price`} name="salePrice" inputMode="decimal" placeholder="Ex.: 25,00" className="num sm:max-w-40"
-        defaultValue={priceCents != null ? centsToInput(priceCents) : ""} />
-    </Field>}
-    <span className="text-[11px] text-muted-foreground">Aparece nos itens vendidos do Financeiro; a venda dá baixa neste lote.</span>
-  </div>;
+  );
 }

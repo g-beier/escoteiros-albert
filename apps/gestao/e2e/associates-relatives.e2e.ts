@@ -42,7 +42,7 @@ async function choose(page: Page, scope: Locator, label: string, option: string)
   await expect(visibleLists).toHaveCount(0);
   const trigger = scope.getByLabel(label, { exact: true });
   await expect(async () => {
-    if (await visibleLists.count() === 0) await trigger.click();
+    if ((await visibleLists.count()) === 0) await trigger.click();
     await expect(visibleLists).toHaveCount(1, { timeout: 1_000 });
   }).toPass();
   const choice = visibleLists.getByRole("option", { name: option, exact: true });
@@ -72,13 +72,17 @@ async function createYouth(page: Page, name: string, branch = "Lobinho") {
 }
 
 const relativesTable = (page: Page) => page.getByRole("table", { name: "Responsáveis do jovem" });
-const cell = (page: Page, item: string, person: string) => page.getByRole("button", { name: new RegExp(`^Editar ${escape(item)}, ${escape(person)}: `) });
+const cell = (page: Page, item: string, person: string) =>
+  page.getByRole("button", { name: new RegExp(`^Editar ${escape(item)}, ${escape(person)}: `) });
 const motherCell = (page: Page, item: string, youth: string) => cell(page, item, `${mother} (responsável de ${youth})`);
 
 test("valor inicial, mãe compartilhada por irmãos e situação dela na matriz", async ({ page }) => {
   // itens: um de jovem (pendente) e responsável (convidado); outro só de responsável (sem registro)
   await page.goto("/associados/configuracoes/itens");
-  await newItem(page, shared, [{ audience: "Jovem", initial: "Pendente" }, { audience: "Responsável", initial: "Convidado" }]);
+  await newItem(page, shared, [
+    { audience: "Jovem", initial: "Pendente" },
+    { audience: "Responsável", initial: "Convidado" },
+  ]);
   await newItem(page, onlyRelative, [{ audience: "Responsável", initial: "Sem registro" }]);
   await expect(page.getByRole("row").filter({ hasText: shared })).toContainText("Jovem: Pend. · Responsável: Conv.");
   await expect(page.getByRole("row").filter({ hasText: onlyRelative })).toContainText("Responsável: —");
@@ -90,7 +94,9 @@ test("valor inicial, mãe compartilhada por irmãos e situação dela na matriz"
   // jovem novo: a situação inicial já está gravada
   await createYouth(page, first);
   const firstUrl = page.url();
-  await expect(page.getByRole("table", { name: "Controle de dados do associado" }).getByRole("row").filter({ hasText: shared })).toContainText("Pendente");
+  await expect(
+    page.getByRole("table", { name: "Controle de dados do associado" }).getByRole("row").filter({ hasText: shared }),
+  ).toContainText("Pendente");
 
   // mãe nova, com descrição livre só quando "outro"
   await page.getByRole("button", { name: "Adicionar responsável" }).click();
@@ -112,7 +118,9 @@ test("valor inicial, mãe compartilhada por irmãos e situação dela na matriz"
   await page.getByRole("option", { name: new RegExp(escape(mother)) }).click();
   await dialog.getByRole("button", { name: "Vincular responsável" }).click();
   await expect(page.getByText("Responsável vinculado.")).toBeVisible();
-  await expect(relativesTable(page).getByRole("row").filter({ hasText: mother })).toContainText("compartilhado com 1 irmão");
+  await expect(relativesTable(page).getByRole("row").filter({ hasText: mother })).toContainText(
+    "compartilhado com 1 irmão",
+  );
 
   // matriz: a busca pelo nome da mãe mostra os dois irmãos; a mãe aparece uma vez só, sob o primeiro da lista
   const [top, other] = [first, second].sort((a, b) => a.localeCompare(b, "pt-BR"));
@@ -124,7 +132,9 @@ test("valor inicial, mãe compartilhada por irmãos e situação dela na matriz"
   await expect(motherCell(page, shared, other)).toHaveCount(0);
   // item só de responsável: célula do jovem cinza (sem botão), a da mãe sem registro
   await expect(cell(page, onlyRelative, first)).toHaveCount(0);
-  await expect(page.getByRole("row").filter({ has: page.getByRole("link", { name: first }) })).toContainText("não se aplica a este tipo de pessoa");
+  await expect(page.getByRole("row").filter({ has: page.getByRole("link", { name: first }) })).toContainText(
+    "não se aplica a este tipo de pessoa",
+  );
   await expect(motherCell(page, onlyRelative, top)).toHaveAccessibleName(/: Sem registro$/);
 
   await motherCell(page, shared, top).click();
@@ -151,7 +161,10 @@ test("valor inicial, mãe compartilhada por irmãos e situação dela na matriz"
   await expect(page.getByText(`Responsável “${father}” adicionado.`)).toBeVisible();
   const fatherRow = relativesTable(page).getByRole("row").filter({ hasText: father });
   await expect(fatherRow).toContainText("Pai");
-  await expect(fatherRow.getByRole("link", { name: "também é associado" })).toHaveAttribute("href", new URL(fatherUrl).pathname);
+  await expect(fatherRow.getByRole("link", { name: "também é associado" })).toHaveAttribute(
+    "href",
+    new URL(fatherUrl).pathname,
+  );
   const fatherCell = (item: string) => cell(page, item, `${father} (responsável de ${first})`);
   await page.goto(`/associados/controle?publico=jovens&q=${encodeURIComponent(first)}`);
   await expect(motherCell(page, shared, first)).toBeVisible();

@@ -35,18 +35,29 @@ test.afterAll(() => {
 });
 
 const files = () => [
-  { name: "secoes.csv", mimeType: "text/csv", buffer: Buffer.from(`ramo;seção;patrulha\r\nescoteiro;${troop};${patrol}\r\n`, "utf8") },
   {
-    name: "pessoas.csv", mimeType: "text/csv", buffer: Buffer.from([
-      "nome;nascimento;ramo;seção;patrulha;entrada;situação;desligado em",
-      `${names[0]};14/05/2013;escoteiro;${troop};${patrol};10/03/2022;;`,
-      `${names[1]};02/09/2012;escoteiro;${troop};;05/02/2021;desligado;20/12/2025`,
-      "Sem Ramo E2E;;astronauta;;;;;",
-    ].join("\r\n"), "utf8"),
+    name: "secoes.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(`ramo;seção;patrulha\r\nescoteiro;${troop};${patrol}\r\n`, "utf8"),
+  },
+  {
+    name: "pessoas.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from(
+      [
+        "nome;nascimento;ramo;seção;patrulha;entrada;situação;desligado em",
+        `${names[0]};14/05/2013;escoteiro;${troop};${patrol};10/03/2022;;`,
+        `${names[1]};02/09/2012;escoteiro;${troop};;05/02/2021;desligado;20/12/2025`,
+        "Sem Ramo E2E;;astronauta;;;;;",
+      ].join("\r\n"),
+      "utf8",
+    ),
   },
 ];
 
-test("importar seções e pessoas com conferência; reenviar não duplica; endereços antigos redirecionam", async ({ page }) => {
+test("importar seções e pessoas com conferência; reenviar não duplica; endereços antigos redirecionam", async ({
+  page,
+}) => {
   await page.goto("/financeiro/configuracoes/associados");
   await expect(page).toHaveURL(/\/associados$/);
   await page.goto("/associados/configuracoes/importar");
@@ -62,8 +73,12 @@ test("importar seções e pessoas com conferência; reenviar não duplica; ender
   await expect(page.getByText(/^Importado\. /)).toBeVisible();
 
   await page.goto(`/associados?situacao=todos&q=${encodeURIComponent("Importado")}`);
-  await expect(page.getByRole("row").filter({ has: page.getByRole("link", { name: names[0]! }) })).not.toContainText("Desligado");
-  await expect(page.getByRole("row").filter({ has: page.getByRole("link", { name: names[1]! }) })).toContainText("Desligado");
+  await expect(page.getByRole("row").filter({ has: page.getByRole("link", { name: names[0]! }) })).not.toContainText(
+    "Desligado",
+  );
+  await expect(page.getByRole("row").filter({ has: page.getByRole("link", { name: names[1]! }) })).toContainText(
+    "Desligado",
+  );
 
   // reenviar o mesmo envio: tudo igual, nada a gravar
   await page.goto("/importar");
@@ -75,9 +90,27 @@ test("importar seções e pessoas com conferência; reenviar não duplica; ender
 test("importar funções e responsáveis de pessoas do mesmo envio", async ({ page }) => {
   await page.goto("/importar");
   await page.getByLabel("Arquivos CSV").setInputFiles([
-    { name: "pessoas.csv", mimeType: "text/csv", buffer: Buffer.from(`nome;nascimento;ramo\r\n${names[2]};21/11/1985;adulto\r\n`, "utf8") },
-    { name: "funcoes.csv", mimeType: "text/csv", buffer: Buffer.from(`pessoa;tipo;cargo;seção;início\r\n${names[2]};escotista;Assistente;${troop};01/03/2019\r\n`, "utf8") },
-    { name: "responsaveis.csv", mimeType: "text/csv", buffer: Buffer.from(`jovem;nascimento do jovem;responsável;parentesco;descrição do parentesco;legal;associado\r\n${names[0]};14/05/2013;${names[2]};outro;tia;sim;${names[2]}\r\n`, "utf8") },
+    {
+      name: "pessoas.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(`nome;nascimento;ramo\r\n${names[2]};21/11/1985;adulto\r\n`, "utf8"),
+    },
+    {
+      name: "funcoes.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(
+        `pessoa;tipo;cargo;seção;início\r\n${names[2]};escotista;Assistente;${troop};01/03/2019\r\n`,
+        "utf8",
+      ),
+    },
+    {
+      name: "responsaveis.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(
+        `jovem;nascimento do jovem;responsável;parentesco;descrição do parentesco;legal;associado\r\n${names[0]};14/05/2013;${names[2]};outro;tia;sim;${names[2]}\r\n`,
+        "utf8",
+      ),
+    },
   ]);
   await page.getByRole("button", { name: "Importar 3 linhas" }).click();
   await expect(page.getByText(/^Importado\. /)).toBeVisible();
@@ -89,8 +122,22 @@ test("importar funções e responsáveis de pessoas do mesmo envio", async ({ pa
 
 test("importar item de controle e situações (Doc 22)", async ({ page }) => {
   const files = () => [
-    { name: "itens-controle.csv", mimeType: "text/csv", buffer: Buffer.from(`item;diretoria;tipo;jovem;responsável\r\n${item};comunicação;canal;não;convidado\r\n`, "utf8") },
-    { name: "controle.csv", mimeType: "text/csv", buffer: Buffer.from(`público;pessoa;jovem;nascimento do jovem;${item}\r\nresponsável;${names[2]};${names[0]};14/05/2013;OK - entrou no grupo\r\n`, "utf8") },
+    {
+      name: "itens-controle.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(
+        `item;diretoria;tipo;jovem;responsável\r\n${item};comunicação;canal;não;convidado\r\n`,
+        "utf8",
+      ),
+    },
+    {
+      name: "controle.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(
+        `público;pessoa;jovem;nascimento do jovem;${item}\r\nresponsável;${names[2]};${names[0]};14/05/2013;OK - entrou no grupo\r\n`,
+        "utf8",
+      ),
+    },
   ];
   await page.goto("/importar");
   await page.getByLabel("Arquivos CSV").setInputFiles(files());
@@ -110,16 +157,22 @@ test("importar a vida escoteira substitui os períodos do cadastro", async ({ pa
     `${names[0]};14/05/2013;evento;;;;10/11/2024;Lis de Ouro`,
   ].join("\r\n");
   await page.goto("/importar");
-  await page.getByLabel("Arquivos CSV").setInputFiles({ name: "vida-escoteira.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") });
+  await page
+    .getByLabel("Arquivos CSV")
+    .setInputFiles({ name: "vida-escoteira.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") });
   const vida = page.locator("section").filter({ has: page.getByRole("heading", { name: /^vida-escoteira\.csv/ }) });
   await expect(vida).toContainText(/substitui \d+ períodos?/);
   await page.getByRole("button", { name: "Importar 3 linhas" }).click();
   await expect(page.getByText(/^Importado\. /)).toBeVisible();
-  await page.getByLabel("Arquivos CSV").setInputFiles({ name: "vida-escoteira.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") });
+  await page
+    .getByLabel("Arquivos CSV")
+    .setInputFiles({ name: "vida-escoteira.csv", mimeType: "text/csv", buffer: Buffer.from(csv, "utf8") });
   await expect(page.getByRole("button", { name: "Nada a importar" })).toBeDisabled();
 });
 
-test("Importar e Usuários ficam no menu da conta (Administração), não nas Configurações dos módulos", async ({ page }) => {
+test("Importar e Usuários ficam no menu da conta (Administração), não nas Configurações dos módulos", async ({
+  page,
+}) => {
   await page.goto("/associados/configuracoes/secoes");
   await expect(page.getByRole("link", { name: "Importar", exact: true })).toHaveCount(0);
   await page.getByLabel(/^Conta de /).click();

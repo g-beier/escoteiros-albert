@@ -13,8 +13,22 @@ test("criar, filtrar, editar e excluir lançamentos", async ({ page }) => {
   const expense = `${tag} saída`;
 
   await test.step("criar uma entrada e uma saída", async () => {
-    await createEntry(page, { name: income, direction: "entrada", total: "123,45", account: E2E_ACCOUNTS[0], category: "Mensalidades", description: "mensalidade março" });
-    await createEntry(page, { name: expense, direction: "saida", total: "40,00", account: E2E_ACCOUNTS[1], category: "Telefone", description: "conta de celular" });
+    await createEntry(page, {
+      name: income,
+      direction: "entrada",
+      total: "123,45",
+      account: E2E_ACCOUNTS[0],
+      category: "Mensalidades",
+      description: "mensalidade março",
+    });
+    await createEntry(page, {
+      name: expense,
+      direction: "saida",
+      total: "40,00",
+      account: E2E_ACCOUNTS[1],
+      category: "Telefone",
+      description: "conta de celular",
+    });
   });
 
   await test.step("buscar pelo histórico", async () => {
@@ -27,7 +41,10 @@ test("criar, filtrar, editar e excluir lançamentos", async ({ page }) => {
   });
 
   await test.step("filtrar por conta", async () => {
-    await entriesTable(page).getByRole("columnheader", { name: /^Conta/ }).getByRole("button").click();
+    await entriesTable(page)
+      .getByRole("columnheader", { name: /^Conta/ })
+      .getByRole("button")
+      .click();
     const panel = page.getByRole("dialog");
     await panel.getByRole("button", { name: "Limpar" }).click();
     await panel.getByRole("checkbox", { name: E2E_ACCOUNTS[0], exact: true }).click();
@@ -43,7 +60,11 @@ test("criar, filtrar, editar e excluir lançamentos", async ({ page }) => {
     await search(page, tag);
     // a coluna Rubrica fica no Detalhamento; o filtro segue para Movimentações
     await page.goto(page.url().replace("/movimentacoes", "/detalhamento"));
-    await page.getByRole("region", { name: "Detalhamento" }).getByRole("columnheader", { name: /^Rubrica/ }).getByRole("button").click();
+    await page
+      .getByRole("region", { name: "Detalhamento" })
+      .getByRole("columnheader", { name: /^Rubrica/ })
+      .getByRole("button")
+      .click();
     const panel = page.getByRole("dialog");
     await panel.getByRole("button", { name: "Só despesas" }).click();
     await panel.getByRole("button", { name: "Aplicar" }).click();
@@ -96,7 +117,10 @@ test("o formulário não salva enquanto o rateio não confere", async ({ page })
   await page.getByLabel("Histórico").fill(uniqueName("Rascunho"));
   await page.getByLabel(/^Valor total/).fill("10,00");
   await chooseOption(page, "Conta", E2E_ACCOUNTS[0]);
-  await page.getByRole("group", { name: "Rubrica 1" }).getByLabel(/^Valor \(R\$\)/).fill("4,00");
+  await page
+    .getByRole("group", { name: "Rubrica 1" })
+    .getByLabel(/^Valor \(R\$\)/)
+    .fill("4,00");
   await expect(page.getByRole("status").filter({ hasText: "Diferença" })).toContainText("6,00");
   await expect(page.getByRole("button", { name: "Salvar lançamento" })).toBeDisabled();
   await page.getByRole("button", { name: "Lançar diferença na última rubrica" }).click();
@@ -105,7 +129,14 @@ test("o formulário não salva enquanto o rateio não confere", async ({ page })
 
 test("mostrar e ocultar colunas: por visão, guardado entre visitas", async ({ page }) => {
   const name = uniqueName("Colunas");
-  await createEntry(page, { name, direction: "saida", total: "5,00", account: E2E_ACCOUNTS[0], category: "Telefone", description: "coluna" });
+  await createEntry(page, {
+    name,
+    direction: "saida",
+    total: "5,00",
+    account: E2E_ACCOUNTS[0],
+    category: "Telefone",
+    description: "coluna",
+  });
   await page.goto("/financeiro/lancamentos/movimentacoes");
   await search(page, name);
   const table = entriesTable(page);
@@ -123,7 +154,9 @@ test("mostrar e ocultar colunas: por visão, guardado entre visitas", async ({ p
   await expect(table.getByRole("columnheader", { name: /Forma pgto/ })).toHaveCount(0);
   // a outra visão tem a escolha dela
   await page.goto("/financeiro/lancamentos/detalhamento");
-  await expect(page.getByRole("region", { name: "Detalhamento" }).getByRole("columnheader", { name: /Forma pgto/ })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Detalhamento" }).getByRole("columnheader", { name: /Forma pgto/ }),
+  ).toBeVisible();
   await page.goto("/financeiro/lancamentos/movimentacoes");
   await search(page, name);
   await toggle("Forma pgto");

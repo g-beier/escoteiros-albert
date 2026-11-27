@@ -9,17 +9,28 @@ import { pageSession } from "@/lib/server/session";
 export default async function SectionsPage() {
   const { user, member } = await pageSession();
   if (!member) return <SetupNeeded email={user.email} />;
-  const [catalog, counts] = await Promise.all([sections.catalog(member.db, member.groupId), sections.activeCounts(member.db, member.groupId)]);
+  const [catalog, counts] = await Promise.all([
+    sections.catalog(member.db, member.groupId),
+    sections.activeCounts(member.db, member.groupId),
+  ]);
   const canEdit = member.associates.canReview;
 
-  return <div className="shell">
-    <AppHeader current="/associados/configuracoes/secoes" member={member} />
-    <PageBody width="narrow">
-      <PageHeader title="Configurações" tabs={<SettingsTabs current="secoes" canReview={member.associates.canReview} />} crumbs={settingsCrumbs("secoes")}
-        description={canEdit
-          ? "Seções de cada ramo e as equipes (matilhas, patrulhas) dos ramos que se dividem, com os jovens e os escotistas ativos. Inativas deixam de aparecer nos cadastros, passagens e funções."
-          : "Seções de cada ramo e as equipes dos ramos que se dividem. Só a secretaria altera."} />
-      <SectionsManager {...catalog} counts={counts} canEdit={canEdit} />
-    </PageBody>
-  </div>;
+  return (
+    <div className="shell">
+      <AppHeader current="/associados/configuracoes/secoes" member={member} />
+      <PageBody width="narrow">
+        <PageHeader
+          title="Configurações"
+          tabs={<SettingsTabs current="secoes" canReview={member.associates.canReview} />}
+          crumbs={settingsCrumbs("secoes")}
+          description={
+            canEdit
+              ? "Seções de cada ramo e as equipes (matilhas, patrulhas) dos ramos que se dividem, com os jovens e os escotistas ativos. Inativas deixam de aparecer nos cadastros, passagens e funções."
+              : "Seções de cada ramo e as equipes dos ramos que se dividem. Só a secretaria altera."
+          }
+        />
+        <SectionsManager {...catalog} counts={counts} canEdit={canEdit} />
+      </PageBody>
+    </div>
+  );
 }

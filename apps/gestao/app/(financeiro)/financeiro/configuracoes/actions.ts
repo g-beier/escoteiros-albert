@@ -16,7 +16,10 @@ const editor = () => financeEditorOrError("Sem permissão para alterar cadastros
 const profileEditor = () => financeEditorOrError("Sem permissão para alterar perfis de leitura.");
 
 /** Primeira mensagem de uma validação zod, como erro para o usuário. */
-function valid<T>(result: { success: true; data: T } | { success: false; error: z.ZodError }, fallback = "Dados inválidos."): T {
+function valid<T>(
+  result: { success: true; data: T } | { success: false; error: z.ZodError },
+  fallback = "Dados inválidos.",
+): T {
   if (!result.success) throw new InputError(result.error.issues[0]?.message ?? fallback);
   return result.data;
 }
@@ -28,7 +31,14 @@ function readKind(formData: FormData): CatalogKind {
 }
 
 const readName = (formData: FormData, kind: CatalogKind) =>
-  valid(z.string().trim().min(2, "Informe um nome com ao menos 2 caracteres.").max(CATALOG_KINDS[kind].maxLength).safeParse(formData.get("name") ?? ""));
+  valid(
+    z
+      .string()
+      .trim()
+      .min(2, "Informe um nome com ao menos 2 caracteres.")
+      .max(CATALOG_KINDS[kind].maxLength)
+      .safeParse(formData.get("name") ?? ""),
+  );
 const readId = (value: FormDataEntryValue | null, message: string) => valid(z.uuid().safeParse(value), message);
 
 function revalidate() {
@@ -56,7 +66,9 @@ export async function updateCatalogItem(_previous: CatalogFormState, formData: F
       const active = formData.get("active") === "true";
       await registry.setPaymentMethodActive(db, id, active);
       revalidate();
-      return active ? { success: "Forma de pagamento reativada." } : { success: "Forma de pagamento inativada.", tone: "neutral" };
+      return active
+        ? { success: "Forma de pagamento reativada." }
+        : { success: "Forma de pagamento inativada.", tone: "neutral" };
     }
     const name = readName(formData, kind);
     await registry.renamePaymentMethod(db, id, name);
@@ -66,7 +78,10 @@ export async function updateCatalogItem(_previous: CatalogFormState, formData: F
 }
 
 /** Conta padrão da forma de pagamento; `accountId` vazio remove o padrão. */
-export async function setPaymentMethodDefaultAccount(paymentMethodId: unknown, accountId: unknown): Promise<CatalogFormState> {
+export async function setPaymentMethodDefaultAccount(
+  paymentMethodId: unknown,
+  accountId: unknown,
+): Promise<CatalogFormState> {
   return runAction(editor, async ({ db }) => {
     const method = valid(z.uuid().safeParse(paymentMethodId));
     const account = valid(z.union([z.uuid(), z.literal("")]).safeParse(accountId));
@@ -79,13 +94,21 @@ export async function setPaymentMethodDefaultAccount(paymentMethodId: unknown, a
 // Rubricas: a tela edita a árvore como rascunho (lib/finance/category-draft.ts) e grava tudo de uma vez (036).
 
 const treeSchema = z.object({
-  nodes: z.array(z.object({
-    key: z.string().min(1).max(64), id: z.uuid().nullable(), parent: z.string().min(1).max(64),
-    position: z.number().int().min(0), name: z.string().trim().min(2, "Toda rubrica precisa de um nome com ao menos 2 caracteres.").max(100),
-    ledgerCode: z.string().nullable(), active: z.boolean(),
-    /** Lojinha (019): sem este campo o zod o descarta e a marca volta a falso. */
-    sellsItems: z.boolean().default(false),
-  })).max(2000),
+  nodes: z
+    .array(
+      z.object({
+        key: z.string().min(1).max(64),
+        id: z.uuid().nullable(),
+        parent: z.string().min(1).max(64),
+        position: z.number().int().min(0),
+        name: z.string().trim().min(2, "Toda rubrica precisa de um nome com ao menos 2 caracteres.").max(100),
+        ledgerCode: z.string().nullable(),
+        active: z.boolean(),
+        /** Lojinha (019): sem este campo o zod o descarta e a marca volta a falso. */
+        sellsItems: z.boolean().default(false),
+      }),
+    )
+    .max(2000),
   deleted: z.array(z.object({ id: z.uuid(), target: z.string().max(64).nullable() })).max(2000),
 });
 
@@ -142,7 +165,14 @@ export async function setAccountActive(_previous: CatalogFormState, formData: Fo
 export async function renameImportProfile(_previous: CatalogFormState, formData: FormData): Promise<CatalogFormState> {
   return runAction(profileEditor, async ({ db }) => {
     const id = readId(formData.get("id"), "Perfil inválido.");
-    const name = valid(z.string().trim().min(2, "Informe um nome de perfil com ao menos 2 caracteres.").max(80, "Use até 80 caracteres.").safeParse(formData.get("name") ?? ""));
+    const name = valid(
+      z
+        .string()
+        .trim()
+        .min(2, "Informe um nome de perfil com ao menos 2 caracteres.")
+        .max(80, "Use até 80 caracteres.")
+        .safeParse(formData.get("name") ?? ""),
+    );
     await registry.renameImportProfile(db, id, name);
     revalidate();
     return `Perfil “${name}” salvo.`;

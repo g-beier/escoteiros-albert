@@ -2,7 +2,14 @@
 
 import { useActionState, type ReactNode } from "react";
 import { Button } from "@geas/ui/components/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@geas/ui/components/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@geas/ui/components/dialog";
 import { toast } from "sonner";
 import type { ActionResult } from "@geas/ui/lib/use-action-toast";
 import { ActionForm } from "@geas/ui/components/action-form";
@@ -15,9 +22,28 @@ export type FormAction = (previous: ActionResult, formData: FormData) => Promise
  * Os campos ocultos (`hidden`) levam os ids; `children` são os campos visíveis (grade de 2 colunas). `footerStart`: botões
  * à esquerda do rodapé (ex.: Encerrar, Apagar), do tipo `button`.
  */
-export function ActionDialog({ open, onOpenChange, title, description, action, submitLabel, hidden, children, destructive, footerStart }: {
-  open: boolean; onOpenChange: (open: boolean) => void; title: string; description?: ReactNode;
-  action: FormAction; submitLabel: string; hidden: Record<string, string>; children: ReactNode; destructive?: boolean; footerStart?: ReactNode;
+export function ActionDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  action,
+  submitLabel,
+  hidden,
+  children,
+  destructive,
+  footerStart,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: ReactNode;
+  action: FormAction;
+  submitLabel: string;
+  hidden: Record<string, string>;
+  children: ReactNode;
+  destructive?: boolean;
+  footerStart?: ReactNode;
 }) {
   const [, formAction, pending] = useActionState(async (previous: ActionResult, formData: FormData) => {
     const result = await action(previous, formData);
@@ -28,23 +54,31 @@ export function ActionDialog({ open, onOpenChange, title, description, action, s
     }
     return result;
   }, {});
-  return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="w-[min(36rem,calc(100%-2rem))]">
-      <DialogHeader>
-        <DialogTitle>{title}</DialogTitle>
-        {description && <DialogDescription>{description}</DialogDescription>}
-      </DialogHeader>
-      <ActionForm action={formAction} className="grid gap-3">
-        {Object.entries(hidden).map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)}
-        <div className="grid items-start gap-3 sm:grid-cols-2">{children}</div>
-        <DialogFooter className={footerStart ? "sm:justify-between" : undefined}>
-          {footerStart && <div className="flex flex-col-reverse gap-2 sm:flex-row">{footerStart}</div>}
-          <div className="flex flex-col-reverse gap-2 sm:flex-row">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" variant={destructive ? "destructive" : "default"} disabled={pending}>{pending ? "Salvando…" : submitLabel}</Button>
-          </div>
-        </DialogFooter>
-      </ActionForm>
-    </DialogContent>
-  </Dialog>;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-[min(36rem,calc(100%-2rem))]">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {description && <DialogDescription>{description}</DialogDescription>}
+        </DialogHeader>
+        <ActionForm action={formAction} className="grid gap-3">
+          {Object.entries(hidden).map(([name, value]) => (
+            <input key={name} type="hidden" name={name} value={value} />
+          ))}
+          <div className="grid items-start gap-3 sm:grid-cols-2">{children}</div>
+          <DialogFooter className={footerStart ? "sm:justify-between" : undefined}>
+            {footerStart && <div className="flex flex-col-reverse gap-2 sm:flex-row">{footerStart}</div>}
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" variant={destructive ? "destructive" : "default"} disabled={pending}>
+                {pending ? "Salvando…" : submitLabel}
+              </Button>
+            </div>
+          </DialogFooter>
+        </ActionForm>
+      </DialogContent>
+    </Dialog>
+  );
 }

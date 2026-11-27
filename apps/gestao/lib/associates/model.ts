@@ -6,7 +6,9 @@ import { FILHOTES_ENABLED } from "@/lib/features";
 export const ALL_SCOUT_BRANCHES = ["filhote", "lobinho", "escoteiro", "senior", "pioneiro", "adulto"] as const;
 export type ScoutBranch = (typeof ALL_SCOUT_BRANCHES)[number];
 /** Ramos em uso: o Filhote só com o interruptor ligado (lib/features.ts). Desligado, não aparece nem é aceito. */
-export const SCOUT_BRANCHES = (FILHOTES_ENABLED ? ALL_SCOUT_BRANCHES : ALL_SCOUT_BRANCHES.filter((b) => b !== "filhote")) as [ScoutBranch, ...ScoutBranch[]];
+export const SCOUT_BRANCHES = (
+  FILHOTES_ENABLED ? ALL_SCOUT_BRANCHES : ALL_SCOUT_BRANCHES.filter((b) => b !== "filhote")
+) as [ScoutBranch, ...ScoutBranch[]];
 
 export const branchLabels: Record<ScoutBranch, string> = {
   filhote: "Filhote",
@@ -35,13 +37,17 @@ export type PatrolItem = { id: string; sectionId: string; name: string; active: 
 
 /** Seções que podem ser escolhidas para o ramo: as ativas, mais a atual (mesmo inativa). */
 export function sectionChoices(sections: SectionItem[], branch: string, currentId?: string | null): SectionItem[] {
-  return sections.filter((s) => s.branch === branch && (s.active || s.id === currentId)).sort((a, b) => byName(a.name, b.name));
+  return sections
+    .filter((s) => s.branch === branch && (s.active || s.id === currentId))
+    .sort((a, b) => byName(a.name, b.name));
 }
 
 /** Patrulhas que podem ser escolhidas na seção: as ativas, mais a atual (mesmo inativa). */
 export function patrolChoices(patrols: PatrolItem[], sectionId: string, currentId?: string | null): PatrolItem[] {
   if (!sectionId) return [];
-  return patrols.filter((p) => p.sectionId === sectionId && (p.active || p.id === currentId)).sort((a, b) => byName(a.name, b.name));
+  return patrols
+    .filter((p) => p.sectionId === sectionId && (p.active || p.id === currentId))
+    .sort((a, b) => byName(a.name, b.name));
 }
 
 /** Ramos com seções (Alcateia, Tropa, Clã…). Adulto é só o ramo, sem seção. */
@@ -64,15 +70,34 @@ export function placementValue({ branch, sectionId, patrolId }: Placement): stri
  * Hierarquia para a seleção única: cada ramo, suas seções e as equipes de cada seção.
  * Só ativas, mais a seção e a equipe atuais (mesmo inativas ou fora das regras de hoje). `only`: um ramo só (passagem).
  */
-export function placementOptions(sections: SectionItem[], patrols: PatrolItem[], current?: Partial<Placement>, only?: ScoutBranch): PlacementOption[] {
+export function placementOptions(
+  sections: SectionItem[],
+  patrols: PatrolItem[],
+  current?: Partial<Placement>,
+  only?: ScoutBranch,
+): PlacementOption[] {
   const options: PlacementOption[] = [];
   for (const branch of only ? [only] : SCOUT_BRANCHES) {
     options.push({ value: `b:${branch}`, name: branchLabels[branch], label: branchLabels[branch], depth: 0 });
-    const branchSections = sectionChoices(sections, branch, current?.sectionId).filter((s) => hasSections(branch) || s.id === current?.sectionId);
+    const branchSections = sectionChoices(sections, branch, current?.sectionId).filter(
+      (s) => hasSections(branch) || s.id === current?.sectionId,
+    );
     for (const section of branchSections) {
-      options.push({ value: `s:${section.id}`, name: section.active ? section.name : `${section.name} (inativa)`, label: section.name, depth: 1 });
-      for (const patrol of patrolChoices(patrols, section.id, current?.patrolId).filter((p) => hasPatrols(branch) || p.id === current?.patrolId)) {
-        options.push({ value: `p:${patrol.id}`, name: patrol.active ? patrol.name : `${patrol.name} (inativa)`, label: `${section.name} › ${patrol.name}`, depth: 2 });
+      options.push({
+        value: `s:${section.id}`,
+        name: section.active ? section.name : `${section.name} (inativa)`,
+        label: section.name,
+        depth: 1,
+      });
+      for (const patrol of patrolChoices(patrols, section.id, current?.patrolId).filter(
+        (p) => hasPatrols(branch) || p.id === current?.patrolId,
+      )) {
+        options.push({
+          value: `p:${patrol.id}`,
+          name: patrol.active ? patrol.name : `${patrol.name} (inativa)`,
+          label: `${section.name} › ${patrol.name}`,
+          depth: 2,
+        });
       }
     }
   }
@@ -92,16 +117,28 @@ export function resolvePlacement(value: string, sections: SectionItem[], patrols
   const patrol = kind === "p:" ? patrols.find((p) => p.id === id) : undefined;
   const sectionId = patrol?.sectionId ?? (kind === "s:" ? id : "");
   const section = sections.find((s) => s.id === sectionId);
-  return section ? { branch: section.branch, sectionId: section.id, patrolId: patrol?.id ?? "" } : { branch: "", sectionId: "", patrolId: "" };
+  return section
+    ? { branch: section.branch, sectionId: section.id, patrolId: patrol?.id ?? "" }
+    : { branch: "", sectionId: "", patrolId: "" };
 }
 
 // Cadastro do módulo Associados (040) ----------------------------------------------------------
 
 /** Linha de `associate_profile_rows`: o associado com seção, equipe, datas e o último desligamento (se inativo). */
 export type AssociateProfile = {
-  id: string; name: string; branch: ScoutBranch; active: boolean;
-  section_id: string | null; section: string | null; patrol_id: string | null; patrol: string | null;
-  birth_date: string | null; promise_date: string | null; joined_on: string | null; notes: string | null; left_on: string | null;
+  id: string;
+  name: string;
+  branch: ScoutBranch;
+  active: boolean;
+  section_id: string | null;
+  section: string | null;
+  patrol_id: string | null;
+  patrol: string | null;
+  birth_date: string | null;
+  promise_date: string | null;
+  joined_on: string | null;
+  notes: string | null;
+  left_on: string | null;
   /** `para_revisar`: cadastrado pelo registro rápido e ainda não conferido pela Diretoria (049). */
   review_status?: string;
   /** Transição de ramo iniciada (ou partida programada) neste ramo, em `AAAA-MM-DD` (050). */
@@ -115,17 +152,30 @@ export type AssociateProfile = {
 export const REGISTRATIONS = ["provisorio", "definitivo"] as const;
 export type Registration = (typeof REGISTRATIONS)[number];
 export const registrationLabels: Record<Registration, string> = { provisorio: "Provisório", definitivo: "Definitivo" };
-export const isRegistration = (value: string): value is Registration => (REGISTRATIONS as readonly string[]).includes(value);
+export const isRegistration = (value: string): value is Registration =>
+  (REGISTRATIONS as readonly string[]).includes(value);
 export const NICKNAME_MAX = 8;
 
 /** Passagem (`associate_moves`): de onde para onde, com data. A equipe de origem não é guardada. */
 export type AssociateMove = {
-  id: string; move_date: string; from_branch: ScoutBranch; to_branch: ScoutBranch;
-  from_section_id: string | null; to_section_id: string | null; to_patrol_id: string | null; created_at: string;
+  id: string;
+  move_date: string;
+  from_branch: ScoutBranch;
+  to_branch: ScoutBranch;
+  from_section_id: string | null;
+  to_section_id: string | null;
+  to_patrol_id: string | null;
+  created_at: string;
 };
 
 /** Entrada ou saída (`associate_movements`, 022). */
-export type AssociateMovement = { id: string; kind: "entrada" | "saida"; movement_date: string; reason: string | null; created_at: string };
+export type AssociateMovement = {
+  id: string;
+  kind: "entrada" | "saida";
+  movement_date: string;
+  reason: string | null;
+  created_at: string;
+};
 
 /** Período de atividade: uma entrada e, se houve, a saída seguinte. */
 export type ActivityPeriod = { start: AssociateMovement | null; end: AssociateMovement | null };
@@ -143,16 +193,27 @@ export const BRANCH_TABS: { value: ScoutBranch | ""; label: string }[] = [
 /** Situação na lista (`situacao` na URL): ativos (padrão), desligados ou todos. */
 export const STATUS_FILTERS = ["ativos", "desligados", "todos"] as const;
 export type StatusFilter = (typeof STATUS_FILTERS)[number];
-export const STATUS_LABELS: Record<StatusFilter, string> = { ativos: "Ativos", desligados: "Desligados", todos: "Todos" };
-export const statusFilter = (value: string | undefined): StatusFilter => (STATUS_FILTERS as readonly string[]).includes(value ?? "") ? value as StatusFilter : "ativos";
+export const STATUS_LABELS: Record<StatusFilter, string> = {
+  ativos: "Ativos",
+  desligados: "Desligados",
+  todos: "Todos",
+};
+export const statusFilter = (value: string | undefined): StatusFilter =>
+  (STATUS_FILTERS as readonly string[]).includes(value ?? "") ? (value as StatusFilter) : "ativos";
 
 /** Dias de quarentena entre o pedido de exclusão e a exclusão definitiva (018, `associates_deletion_days`). */
 export const DELETION_DAYS = 60;
 
 /** Associado em quarentena (Configurações › Excluídos). */
 export type QuarantinedAssociate = {
-  id: string; name: string; branch: ScoutBranch; active: boolean; deletion_due_on: string; deletion_requested_at: string;
-  requested_by: string | null; deletion_reason: string | null;
+  id: string;
+  name: string;
+  branch: ScoutBranch;
+  active: boolean;
+  deletion_due_on: string;
+  deletion_requested_at: string;
+  requested_by: string | null;
+  deletion_reason: string | null;
 };
 
 /** Hoje em São Paulo, `AAAA-MM-DD`. */
@@ -172,7 +233,10 @@ export function ageInYears(birthDate: string | null | undefined, on: string): nu
 export const ageLabel = (age: number | null) => (age === null ? "—" : `${age} ${age === 1 ? "ano" : "anos"}`);
 
 /** Idade em anos e meses completos na data `on`; nula como `ageInYears`. */
-export function ageInYearsMonths(birthDate: string | null | undefined, on: string): { years: number; months: number } | null {
+export function ageInYearsMonths(
+  birthDate: string | null | undefined,
+  on: string,
+): { years: number; months: number } | null {
   if (!birthDate) return null;
   const [by, bm, bd] = birthDate.split("-").map(Number);
   const [y, m, d] = on.split("-").map(Number);
@@ -192,7 +256,9 @@ export function ageYearsMonthsLabel(age: { years: number; months: number } | nul
  * seguinte o fecha. Uma saída sem entrada antes vira um período sem início (cadastros antigos, sem a entrada).
  */
 export function activityPeriods(movements: AssociateMovement[]): ActivityPeriod[] {
-  const sorted = [...movements].sort((a, b) => a.movement_date.localeCompare(b.movement_date) || a.created_at.localeCompare(b.created_at));
+  const sorted = [...movements].sort(
+    (a, b) => a.movement_date.localeCompare(b.movement_date) || a.created_at.localeCompare(b.created_at),
+  );
   const periods: ActivityPeriod[] = [];
   for (const movement of sorted) {
     const open = periods.at(-1);

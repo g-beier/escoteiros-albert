@@ -11,7 +11,10 @@ const FONT = "Arial";
 const argb = (hex: string) => ({ argb: `FF${hex.replace("#", "").toUpperCase()}` });
 const fill = (hex: string): ExcelJS.Fill => ({ type: "pattern", pattern: "solid", fgColor: argb(hex) });
 const reais = (cents: number) => cents / 100;
-const toDate = (iso: string) => { const [y, m, d] = iso.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+const toDate = (iso: string) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+};
 const today = () => new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 
 function newWorkbook() {
@@ -37,7 +40,15 @@ function cellValue<T>(column: Column<T>, row: T): ExcelJS.CellValue {
 
 const HEADER_ROW = 4;
 
-function flowSheet<T>(workbook: ExcelJS.Workbook, name: string, title: string, period: Period, columns: Column<T>[], rows: T[], amount: (row: T) => number) {
+function flowSheet<T>(
+  workbook: ExcelJS.Workbook,
+  name: string,
+  title: string,
+  period: Period,
+  columns: Column<T>[],
+  rows: T[],
+  amount: (row: T) => number,
+) {
   const sheet = workbook.addWorksheet(name, { views: [{ state: "frozen", ySplit: HEADER_ROW }] });
   sheet.properties.defaultRowHeight = 16;
   columns.forEach((column, i) => {
@@ -67,8 +78,15 @@ function flowSheet<T>(workbook: ExcelJS.Workbook, name: string, title: string, p
   });
   const firstData = HEADER_ROW + 1;
   const lastData = HEADER_ROW + rows.length;
-  if (rows.length) sheet.autoFilter = { from: { row: HEADER_ROW, column: 1 }, to: { row: lastData, column: columns.length } };
-  else sheet.addRow(["Nenhum lançamento no período."]).font = { name: FONT, size: 10, italic: true, color: argb("#5D5962") };
+  if (rows.length)
+    sheet.autoFilter = { from: { row: HEADER_ROW, column: 1 }, to: { row: lastData, column: columns.length } };
+  else
+    sheet.addRow(["Nenhum lançamento no período."]).font = {
+      name: FONT,
+      size: 10,
+      italic: true,
+      color: argb("#5D5962"),
+    };
 
   // totais: entradas, saídas e saldo, como fórmulas sobre a coluna de valor
   const moneyIndex = columns.findIndex((c) => c.type === "money");
@@ -95,13 +113,29 @@ function flowSheet<T>(workbook: ExcelJS.Workbook, name: string, title: string, p
 
 export async function ledgerWorkbook(rows: LedgerRow[], period: Period) {
   const workbook = newWorkbook();
-  flowSheet(workbook, "Movimentações", "Fluxo de caixa: movimentações", period, LEDGER_EXPORT_COLUMNS, rows, (r) => r.total_cents);
+  flowSheet(
+    workbook,
+    "Movimentações",
+    "Fluxo de caixa: movimentações",
+    period,
+    LEDGER_EXPORT_COLUMNS,
+    rows,
+    (r) => r.total_cents,
+  );
   return toBuffer(workbook);
 }
 
 export async function splitWorkbook(rows: SplitRow[], period: Period) {
   const workbook = newWorkbook();
-  flowSheet(workbook, "Detalhamento", "Fluxo de caixa: detalhamento", period, SPLIT_EXPORT_COLUMNS, rows, (r) => r.amount_cents);
+  flowSheet(
+    workbook,
+    "Detalhamento",
+    "Fluxo de caixa: detalhamento",
+    period,
+    SPLIT_EXPORT_COLUMNS,
+    rows,
+    (r) => r.amount_cents,
+  );
   return toBuffer(workbook);
 }
 
@@ -124,7 +158,10 @@ export async function realizedWorkbook(model: RealizedModel) {
   });
   sheet.getColumn(1).width = 2;
   sheet.getColumn(2).width = 40;
-  for (let c = FIRST_MONTH_COL; c <= TOTAL_COL; c++) { sheet.getColumn(c).width = 14; sheet.getColumn(c).numFmt = MONEY; }
+  for (let c = FIRST_MONTH_COL; c <= TOTAL_COL; c++) {
+    sheet.getColumn(c).width = 14;
+    sheet.getColumn(c).numFmt = MONEY;
+  }
   const col = (c: number) => sheet.getColumn(c).letter;
 
   // faixa de título
@@ -157,7 +194,10 @@ export async function realizedWorkbook(model: RealizedModel) {
     const root = model.roots[kind];
     if (root === undefined) continue;
     const block: number[] = [];
-    const walk = (i: number) => { block.push(i); model.rows[i].children.forEach(walk); };
+    const walk = (i: number) => {
+      block.push(i);
+      model.rows[i].children.forEach(walk);
+    };
     walk(root);
     if (blocks.length) next++;
     for (const i of block) rowNumber.set(i, next++);
@@ -177,7 +217,10 @@ export async function realizedWorkbook(model: RealizedModel) {
         excelRow.getCell(c).value = { formula: `SUM(${refs})${own}`, result: reais(row.total[m]) };
       } else excelRow.getCell(c).value = reais(row.own[m]);
     }
-    excelRow.getCell(TOTAL_COL).value = { formula: `SUM(${col(FIRST_MONTH_COL)}${r}:${col(TOTAL_COL - 1)}${r})`, result: reais(row.total.reduce((a, b) => a + b, 0)) };
+    excelRow.getCell(TOTAL_COL).value = {
+      formula: `SUM(${col(FIRST_MONTH_COL)}${r}:${col(TOTAL_COL - 1)}${r})`,
+      result: reais(row.total.reduce((a, b) => a + b, 0)),
+    };
     for (let c = 2; c <= TOTAL_COL; c++) {
       const cell = excelRow.getCell(c);
       cell.fill = fill(shade);
@@ -191,8 +234,10 @@ export async function realizedWorkbook(model: RealizedModel) {
     const first = rowNumber.get(block[0])!;
     const last = rowNumber.get(block[block.length - 1])!;
     for (let c = 2; c <= TOTAL_COL; c++) {
-      const top = sheet.getCell(first, c); top.border = { ...top.border, top: medium };
-      const bottom = sheet.getCell(last, c); bottom.border = { ...bottom.border, bottom: medium };
+      const top = sheet.getCell(first, c);
+      top.border = { ...top.border, top: medium };
+      const bottom = sheet.getCell(last, c);
+      bottom.border = { ...bottom.border, bottom: medium };
     }
   }
 
@@ -203,15 +248,24 @@ export async function realizedWorkbook(model: RealizedModel) {
   saldo.getCell(2).value = "Saldo (receitas − despesas)";
   for (let c = FIRST_MONTH_COL; c <= TOTAL_COL; c++) {
     const m = c - FIRST_MONTH_COL;
-    const ref = (i: number | undefined) => i === undefined ? "0" : `${col(c)}${rowNumber.get(i)}`;
-    const value = (i: number | undefined) => i === undefined ? 0 : m < 12 ? model.rows[i].total[m] : model.rows[i].total.reduce((a, b) => a + b, 0);
-    saldo.getCell(c).value = { formula: `${ref(income)}-${ref(expense)}`, result: reais(value(income) - value(expense)) };
+    const ref = (i: number | undefined) => (i === undefined ? "0" : `${col(c)}${rowNumber.get(i)}`);
+    const value = (i: number | undefined) =>
+      i === undefined ? 0 : m < 12 ? model.rows[i].total[m] : model.rows[i].total.reduce((a, b) => a + b, 0);
+    saldo.getCell(c).value = {
+      formula: `${ref(income)}-${ref(expense)}`,
+      result: reais(value(income) - value(expense)),
+    };
   }
   for (let c = 2; c <= TOTAL_COL; c++) {
     const cell = saldo.getCell(c);
     cell.font = { name: FONT, size: 10, bold: true };
     cell.fill = fill("#D9D9D9");
-    cell.border = { top: medium, bottom: medium, left: c === 2 ? medium : thin, right: c === TOTAL_COL ? medium : thin };
+    cell.border = {
+      top: medium,
+      bottom: medium,
+      left: c === 2 ? medium : thin,
+      right: c === TOTAL_COL ? medium : thin,
+    };
   }
 
   return toBuffer(workbook);

@@ -12,8 +12,9 @@ export type Column<T> = {
   value: (row: T) => string | number | null;
 };
 
-export const folderLabel = (filed: boolean) => filed ? "Arquivado" : "Pendente";
-const kindLabel = (kind: SplitRow["category_kind"]) => kind === "receita" ? "Receita" : kind === "despesa" ? "Despesa" : "";
+export const folderLabel = (filed: boolean) => (filed ? "Arquivado" : "Pendente");
+const kindLabel = (kind: SplitRow["category_kind"]) =>
+  kind === "receita" ? "Receita" : kind === "despesa" ? "Despesa" : "";
 /** IDs OFX (FITID) juntos numa célula; em geral é um só. */
 export const ofxIds = (ids: string[] | null | undefined) => (ids ?? []).join(" ");
 

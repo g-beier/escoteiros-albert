@@ -72,8 +72,20 @@ export type StateStatus = {
 };
 
 /** Vida escoteira de cada pessoa (004, 005). */
-export type StateLifePeriod = { associateId: string; branch: string; started: string; ended: string | null; place: string | null };
-export type StateLifeExclusion = { associateId: string; started: string; ended: string; reason: string; note: string | null };
+export type StateLifePeriod = {
+  associateId: string;
+  branch: string;
+  started: string;
+  ended: string | null;
+  place: string | null;
+};
+export type StateLifeExclusion = {
+  associateId: string;
+  started: string;
+  ended: string;
+  reason: string;
+  note: string | null;
+};
 export type StateLifeEvent = { associateId: string; date: string; title: string; description: string | null };
 export type StateStar = { associateId: string; star: number; branch: string | null; delivered: string | null };
 export type StateLife = {
@@ -86,14 +98,31 @@ export type StateLife = {
 };
 
 /** Inventário atual: só o tamanho (a carga por CSV substitui tudo) e se já houve uso pelo app. */
-export type StateInventory = { locations: number; materials: number; lots: number; units: number; appMovements: number };
+export type StateInventory = {
+  locations: number;
+  materials: number;
+  lots: number;
+  units: number;
+  appMovements: number;
+};
 
 /** Financeiro: catálogos (para achar rubrica, conta e forma pelo nome) e a assinatura dos lançamentos que já existem. */
-export type StateCategory = { id: string; code: string | null; name: string; kind: "receita" | "despesa" | null; active: boolean };
+export type StateCategory = {
+  id: string;
+  code: string | null;
+  name: string;
+  kind: "receita" | "despesa" | null;
+  active: boolean;
+};
 export type StateNamed = { id: string; name: string; active: boolean };
 /** Lançamento existente: data, conta, histórico e total identificam um lançamento sem `id` no CSV. */
 export type StateEntry = { id: string; date: string; account: string; name: string; total: number };
-export type StateFinance = { categories: StateCategory[]; accounts: StateNamed[]; paymentMethods: StateNamed[]; entries: StateEntry[] };
+export type StateFinance = {
+  categories: StateCategory[];
+  accounts: StateNamed[];
+  paymentMethods: StateNamed[];
+  entries: StateEntry[];
+};
 
 export type ImportState = {
   sections: StateSection[];
@@ -115,6 +144,15 @@ export const EMPTY_LIFE: StateLife = { periods: [], exclusions: [], events: [], 
 export const EMPTY_INVENTORY: StateInventory = { locations: 0, materials: 0, lots: 0, units: 0, appMovements: 0 };
 export const EMPTY_FINANCE: StateFinance = { categories: [], accounts: [], paymentMethods: [], entries: [] };
 export const EMPTY_STATE: ImportState = {
-  sections: [], patrols: [], people: [], functions: [], relatives: [], links: [], items: [], statuses: [], life: EMPTY_LIFE, inventory: EMPTY_INVENTORY,
+  sections: [],
+  patrols: [],
+  people: [],
+  functions: [],
+  relatives: [],
+  links: [],
+  items: [],
+  statuses: [],
+  life: EMPTY_LIFE,
+  inventory: EMPTY_INVENTORY,
   finance: EMPTY_FINANCE,
 };

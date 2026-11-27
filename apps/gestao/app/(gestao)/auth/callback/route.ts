@@ -17,4 +17,5 @@ export async function GET(request: NextRequest) {
   }
 }
 
-const failed = (message: string) => NextResponse.redirect(new URL(`/login?erro=${encodeURIComponent(message)}`, appUrl()), 303);
+const failed = (message: string) =>
+  NextResponse.redirect(new URL(`/login?erro=${encodeURIComponent(message)}`, appUrl()), 303);

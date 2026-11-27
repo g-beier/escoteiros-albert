@@ -29,7 +29,10 @@ export function ActionForm({ action, result, ...props }: Props) {
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const submitter = (event.nativeEvent as SubmitEvent).submitter;
-    const data = new FormData(event.currentTarget, submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement ? submitter : null);
+    const data = new FormData(
+      event.currentTarget,
+      submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement ? submitter : null,
+    );
     startTransition(() => action(data));
   };
   return <form ref={ref} {...props} onSubmit={submit} />;

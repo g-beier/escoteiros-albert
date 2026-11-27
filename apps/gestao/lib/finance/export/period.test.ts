@@ -8,10 +8,14 @@ describe("periodBounds", () => {
     expect(periodBounds({ kind: "mes", year: 2026, month: 12 })).toEqual({ from: "2026-12-01", to: "2026-12-31" });
   });
 
-  it("ano inteiro", () => expect(periodBounds({ kind: "ano", year: 2026 })).toEqual({ from: "2026-01-01", to: "2026-12-31" }));
+  it("ano inteiro", () =>
+    expect(periodBounds({ kind: "ano", year: 2026 })).toEqual({ from: "2026-01-01", to: "2026-12-31" }));
 
   it("personalizado mantém as datas-limite e aceita um único dia", () => {
-    expect(periodBounds({ kind: "personalizado", from: "2026-03-10", to: "2026-03-10" })).toEqual({ from: "2026-03-10", to: "2026-03-10" });
+    expect(periodBounds({ kind: "personalizado", from: "2026-03-10", to: "2026-03-10" })).toEqual({
+      from: "2026-03-10",
+      to: "2026-03-10",
+    });
   });
 
   it("rejeita personalizado invertido ou inválido", () => {

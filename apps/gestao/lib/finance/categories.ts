@@ -1,6 +1,11 @@
 export type CategoryKind = "receita" | "despesa";
 export type CategoryItem = {
-  id: string; name: string; active: boolean; code: string | null; kind: CategoryKind | null; parent_id: string | null;
+  id: string;
+  name: string;
+  active: boolean;
+  code: string | null;
+  kind: CategoryKind | null;
+  parent_id: string | null;
   /** Rubrica marcada "venda de itens" (019; vale também para as filhas: `categorySellsItems`). */
   sells_items?: boolean;
 };
@@ -43,7 +48,8 @@ export function categoryLabel(item: CategoryItem, byId: Map<string, CategoryItem
 /** IDs de todas as rubricas abaixo de cada rubrica. */
 export function descendantsMap(items: Pick<CategoryItem, "id" | "parent_id">[]) {
   const children = new Map<string, string[]>();
-  for (const item of items) if (item.parent_id) children.set(item.parent_id, [...(children.get(item.parent_id) ?? []), item.id]);
+  for (const item of items)
+    if (item.parent_id) children.set(item.parent_id, [...(children.get(item.parent_id) ?? []), item.id]);
   const result: Record<string, string[]> = {};
   const collect = (id: string): string[] => (children.get(id) ?? []).flatMap((child) => [child, ...collect(child)]);
   for (const item of items) result[item.id] = collect(item.id);
@@ -78,7 +84,11 @@ export function decodeCategorySelection(tokens: string[], items: TreeItem[]): st
   const byId = new Map(items.map((item) => [item.id, item]));
   const stateOf = (id: string): boolean => {
     const seen = new Set<string>();
-    for (let current = byId.get(id); current && !seen.has(current.id); current = current.parent_id ? byId.get(current.parent_id) : undefined) {
+    for (
+      let current = byId.get(id);
+      current && !seen.has(current.id);
+      current = current.parent_id ? byId.get(current.parent_id) : undefined
+    ) {
       seen.add(current.id);
       const mark = marks.get(current.id);
       if (mark !== undefined) return mark;
@@ -90,6 +100,7 @@ export function decodeCategorySelection(tokens: string[], items: TreeItem[]): st
 
 function childrenMap(items: TreeItem[]) {
   const children = new Map<string, string[]>();
-  for (const item of items) if (item.parent_id) children.set(item.parent_id, [...(children.get(item.parent_id) ?? []), item.id]);
+  for (const item of items)
+    if (item.parent_id) children.set(item.parent_id, [...(children.get(item.parent_id) ?? []), item.id]);
   return children;
 }

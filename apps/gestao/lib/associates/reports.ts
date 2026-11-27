@@ -16,14 +16,33 @@ export type ReportInfo = {
 
 /** Relatórios disponíveis. */
 export const REPORTS: ReportInfo[] = [
-  { slug: "doc-10", number: "10", title: "Lista simples de efetivo",
-    description: "Adultos e jovens por seção (registro definitivo e provisório), diretoria, outros, totais e os responsáveis de cada jovem." },
-  { slug: "doc-13", number: "13", title: "Controle de idade dos jovens",
-    description: "Jovens por seção com nascimento, idade e período de transição de ramo (em negrito quando já vigente)." },
-  { slug: "doc-14a", number: "14a", title: "Datas de promessa",
-    description: "Promessas por mês, com a data e a cor do ramo ou função; e quem não tem data de promessa registrada." },
-  { slug: "doc-14b", number: "14b", title: "Vida escoteira",
-    description: "Jovens e adultos escotistas ou dirigentes: promessa, estrelas de atividade por ramo, total e quem possui lacunas." },
+  {
+    slug: "doc-10",
+    number: "10",
+    title: "Lista simples de efetivo",
+    description:
+      "Adultos e jovens por seção (registro definitivo e provisório), diretoria, outros, totais e os responsáveis de cada jovem.",
+  },
+  {
+    slug: "doc-13",
+    number: "13",
+    title: "Controle de idade dos jovens",
+    description:
+      "Jovens por seção com nascimento, idade e período de transição de ramo (em negrito quando já vigente).",
+  },
+  {
+    slug: "doc-14a",
+    number: "14a",
+    title: "Datas de promessa",
+    description: "Promessas por mês, com a data e a cor do ramo ou função; e quem não tem data de promessa registrada.",
+  },
+  {
+    slug: "doc-14b",
+    number: "14b",
+    title: "Vida escoteira",
+    description:
+      "Jovens e adultos escotistas ou dirigentes: promessa, estrelas de atividade por ramo, total e quem possui lacunas.",
+  },
 ];
 
 export const reportBySlug = (slug: string) => REPORTS.find((report) => report.slug === slug) ?? null;
@@ -37,7 +56,13 @@ export function updatedLabel(iso: string) {
   return `${MONTHS_SHORT[Number(iso.slice(5, 7)) - 1]}/${iso.slice(2, 4)}`;
 }
 
-const slugify = (value: string) => value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const slugify = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 
 /** Arquivo: "doc-10-lista-simples-de-efetivo-2026-11-20.pdf". */
 export const reportFilename = (report: Pick<ReportInfo, "number" | "title">, issuedOn: string) =>
@@ -49,7 +74,10 @@ export function splitInTwo<T>(items: T[], weight: (item: T) => number = () => 1)
   let acc = 0;
   let cut = items.length;
   for (let i = 0; i < items.length; i += 1) {
-    if (acc >= total / 2) { cut = i; break; }
+    if (acc >= total / 2) {
+      cut = i;
+      break;
+    }
     acc += weight(items[i]);
   }
   return [items.slice(0, cut), items.slice(cut)];
@@ -81,14 +109,26 @@ export const RULE_PURPLE = "#7B6CD9";
 export const NO_COLOR = "#FFFFFF";
 
 /** Ordem de prioridade quando o adulto tem várias funções. */
-const ROLE_ORDER: Exclude<FunctionKind, "escotista">[] = ["dirigente", "comissao_fiscal", "honorifico", "colaborador", "contribuinte"];
+const ROLE_ORDER: Exclude<FunctionKind, "escotista">[] = [
+  "dirigente",
+  "comissao_fiscal",
+  "honorifico",
+  "colaborador",
+  "contribuinte",
+];
 
 /**
  * Cor da pessoa nos relatórios: jovem = cor do ramo; adulto = escotista com a cor do ramo da seção (`scouterBranch`),
  * senão dirigente (azul), senão comissão fiscal ou honorífico (laranja); sem função, sem cor.
  */
-export function personColor({ branch, functions, scouterBranch }: {
-  branch: ScoutBranch; functions?: Iterable<FunctionKind>; scouterBranch?: ScoutBranch | null;
+export function personColor({
+  branch,
+  functions,
+  scouterBranch,
+}: {
+  branch: ScoutBranch;
+  functions?: Iterable<FunctionKind>;
+  scouterBranch?: ScoutBranch | null;
 }): string {
   if (branch !== "adulto") return BRANCH_COLORS[branch];
   if (scouterBranch && scouterBranch !== "adulto") return BRANCH_COLORS[scouterBranch];

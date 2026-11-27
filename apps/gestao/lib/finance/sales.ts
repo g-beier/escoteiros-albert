@@ -7,18 +7,28 @@ import type { CategoryItem } from "./categories";
  * os antigos), com material, variação, divisão e preço do lote.
  */
 export type SaleLot = {
-  id: string; material_id: string; material_name: string; variant: string | null; location_path: string | null;
-  for_sale: boolean; sale_price_cents: number | null; quantity: number;
+  id: string;
+  material_id: string;
+  material_name: string;
+  variant: string | null;
+  location_path: string | null;
+  for_sale: boolean;
+  sale_price_cents: number | null;
+  quantity: number;
 };
 
 /** Item vendido num rateio: o lote, a quantidade e o preço unitário (centavos). */
 export type SaleItem = { lotId: string; quantity: number; unitPriceCents: number };
 
 /** "Anel de lenço · couro" (material e variação do lote). */
-export const saleLotName = (lot: Pick<SaleLot, "material_name" | "variant">) => (lot.variant ? `${lot.material_name} · ${lot.variant}` : lot.material_name);
+export const saleLotName = (lot: Pick<SaleLot, "material_name" | "variant">) =>
+  lot.variant ? `${lot.material_name} · ${lot.variant}` : lot.material_name;
 
 /** A rubrica ou alguma acima dela está marcada "venda de itens" (mesma regra de `category_sells_items`). */
-export function categorySellsItems(categoryId: string, categories: Pick<CategoryItem, "id" | "parent_id" | "sells_items">[]): boolean {
+export function categorySellsItems(
+  categoryId: string,
+  categories: Pick<CategoryItem, "id" | "parent_id" | "sells_items">[],
+): boolean {
   const byId = new Map(categories.map((c) => [c.id, c]));
   let current = byId.get(categoryId);
   for (let depth = 0; current && depth < 10; depth++) {
@@ -34,7 +44,13 @@ export function categorySellsItems(categoryId: string, categories: Pick<Category
  */
 export type DebtLinesInput = {
   date: string;
-  lines: { associateId: string; categoryId: string; description: string; amountCents: number | null; items: SaleItem[] }[];
+  lines: {
+    associateId: string;
+    categoryId: string;
+    description: string;
+    amountCents: number | null;
+    items: SaleItem[];
+  }[];
 };
 
 /** Soma dos itens (quantidade × preço). */
@@ -46,12 +62,23 @@ export function saleItemsTotal(items: Pick<SaleItem, "quantity" | "unitPriceCent
  * Quantidade disponível no lote para o lançamento: saldo de hoje mais o que este lançamento já tinha vendido dele (ao
  * editar, o que já saiu volta antes de sair de novo).
  */
-export function availableFor(lot: Pick<SaleLot, "id" | "quantity">, savedItems: Pick<SaleItem, "lotId" | "quantity">[]): number {
-  return lot.quantity + savedItems.filter((item) => item.lotId === lot.id).reduce((sum, item) => sum + item.quantity, 0);
+export function availableFor(
+  lot: Pick<SaleLot, "id" | "quantity">,
+  savedItems: Pick<SaleItem, "lotId" | "quantity">[],
+): number {
+  return (
+    lot.quantity + savedItems.filter((item) => item.lotId === lot.id).reduce((sum, item) => sum + item.quantity, 0)
+  );
 }
 
 /** Balanço da venda numa rubrica (025): itens vendidos = recebido no caixa (rateios) + a pagar (linhas de dívida). */
-export type SaleBalance = { categoryId: string; itemsCents: number; receivedCents: number; owedCents: number; missingCents: number };
+export type SaleBalance = {
+  categoryId: string;
+  itemsCents: number;
+  receivedCents: number;
+  owedCents: number;
+  missingCents: number;
+};
 
 /**
  * Por rubrica com itens vendidos no lançamento: soma dos itens, do que entrou nos rateios dessa rubrica e das linhas de

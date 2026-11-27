@@ -44,7 +44,11 @@ export async function linkReconciliation(lineIds: unknown, entryIds: unknown): P
 
 /** Aceita várias sugestões 1:1; cada par é gravado separadamente e os que falharem são informados. */
 export async function acceptSuggestions(pairs: unknown): Promise<ReconciliationResult> {
-  const parsed = z.array(z.object({ lineId: z.uuid(), entryId: z.uuid() })).min(1).max(500).safeParse(pairs);
+  const parsed = z
+    .array(z.object({ lineId: z.uuid(), entryId: z.uuid() }))
+    .min(1)
+    .max(500)
+    .safeParse(pairs);
   if (!parsed.success) return { error: "Nenhuma sugestão para aceitar." };
   const ctx = await financeEditorOrError("Sem permissão para conciliar.");
   if ("error" in ctx) return { error: ctx.error };
@@ -60,7 +64,12 @@ export async function acceptSuggestions(pairs: unknown): Promise<ReconciliationR
     }
   }
   if (accepted) revalidatePath("/", "layout");
-  if (firstError) return { error: accepted ? `${accepted} conciliadas; ${parsed.data.length - accepted} falharam: ${firstError}` : firstError };
+  if (firstError)
+    return {
+      error: accepted
+        ? `${accepted} conciliadas; ${parsed.data.length - accepted} falharam: ${firstError}`
+        : firstError,
+    };
   return { success: accepted === 1 ? "Sugestão aceita." : `${accepted} sugestões aceitas.` };
 }
 
@@ -126,7 +135,10 @@ export async function createEntryFromStatementLine(lineId: unknown, payload: unk
   const parsed = entrySchema.safeParse(payload);
   if (!id.success) return { error: "Linha inválida." };
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
-  return reconcile(async (db) => ({ success: "Lançamento criado e conciliado.", id: await reconciliation.createEntryFromLine(db, id.data, parsed.data) }));
+  return reconcile(async (db) => ({
+    success: "Lançamento criado e conciliado.",
+    id: await reconciliation.createEntryFromLine(db, id.data, parsed.data),
+  }));
 }
 
 const bulkItem = z.object({
@@ -142,11 +154,17 @@ const bulkItem = z.object({
  * entradas vão para 1 Receitas e saídas para 2 Despesas, para recategorizar depois.
  */
 export async function createEntriesFromLines(items: unknown): Promise<ReconciliationResult> {
-  const parsed = z.array(bulkItem).min(1, "Selecione ao menos uma linha.").max(500, "Crie no máximo 500 lançamentos por vez.").safeParse(items);
+  const parsed = z
+    .array(bulkItem)
+    .min(1, "Selecione ao menos uma linha.")
+    .max(500, "Crie no máximo 500 lançamentos por vez.")
+    .safeParse(items);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   return reconcile(async (db) => {
     const count = await reconciliation.createEntriesFromLines(db, parsed.data);
-    return { success: `${count} ${count === 1 ? "lançamento criado e conciliado" : "lançamentos criados e conciliados"}. Recategorize em Lançamentos › Detalhamento.` };
+    return {
+      success: `${count} ${count === 1 ? "lançamento criado e conciliado" : "lançamentos criados e conciliados"}. Recategorize em Lançamentos › Detalhamento.`,
+    };
   });
 }
 

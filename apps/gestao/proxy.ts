@@ -15,7 +15,11 @@ export function proxy(request: NextRequest) {
     const response = NextResponse.next();
     if (request.method === "GET" && (request.headers.get("sec-fetch-dest") ?? "document") === "document") {
       response.cookies.set(session.name, session.value, {
-        httpOnly: true, secure: session.name.startsWith("__Host-"), sameSite: "lax", path: "/", maxAge: SESSION_DAYS * 86_400,
+        httpOnly: true,
+        secure: session.name.startsWith("__Host-"),
+        sameSite: "lax",
+        path: "/",
+        maxAge: SESSION_DAYS * 86_400,
       });
     }
     return response;

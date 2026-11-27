@@ -5,7 +5,13 @@
 
 import { transitionWindow } from "./alerts";
 import { reportSections, type ReportSection } from "./doc10";
-import { ageInYearsMonths, ageYearsMonthsLabel, type AssociateProfile, type ScoutBranch, type SectionItem } from "./model";
+import {
+  ageInYearsMonths,
+  ageYearsMonthsLabel,
+  type AssociateProfile,
+  type ScoutBranch,
+  type SectionItem,
+} from "./model";
 import { monthYearBR } from "@/lib/format";
 
 /** Linhas vazias no fim de cada seção. */
@@ -21,7 +27,11 @@ export const BRANCH_AGE_RANGES: Record<Exclude<ScoutBranch, "adulto">, string> =
 };
 
 export type Doc13Row = {
-  id: string; name: string; birth: string | null; age: string; period: string | null;
+  id: string;
+  name: string;
+  birth: string | null;
+  age: string;
+  period: string | null;
   /** Período de transição vigente (já começou): linha em negrito. */
   current: boolean;
   /** Cadastro para revisar: nome em vermelho. */
@@ -35,7 +45,15 @@ const collator = new Intl.Collator("pt-BR", { sensitivity: "base", numeric: true
 /** "16/03/2019". */
 const fullDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
-export function buildDoc13({ associates, sections, today }: { associates: AssociateProfile[]; sections: SectionItem[]; today: string }): Doc13 {
+export function buildDoc13({
+  associates,
+  sections,
+  today,
+}: {
+  associates: AssociateProfile[];
+  sections: SectionItem[];
+  today: string;
+}): Doc13 {
   const youth = associates.filter((a) => a.active && a.branch !== "adulto");
   return {
     sections: reportSections(sections, youth).map((section): Doc13Section => ({
@@ -48,7 +66,8 @@ export function buildDoc13({ associates, sections, today }: { associates: Associ
         .map((a): Doc13Row => {
           const span = transitionWindow(a);
           return {
-            id: a.id, name: a.name,
+            id: a.id,
+            name: a.name,
             birth: a.birth_date ? fullDate(a.birth_date) : null,
             age: a.birth_date ? ageYearsMonthsLabel(ageInYearsMonths(a.birth_date, today)) : "—",
             period: span ? `${monthYearBR(span.warnOn)} - ${monthYearBR(span.dueOn)}` : null,

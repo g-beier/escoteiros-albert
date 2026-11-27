@@ -4,8 +4,21 @@ import type { CategoryItem } from "@/lib/finance/categories";
 import { buildRealizedModel, rowFilterTokens } from "./realized";
 import { realizedWorkbook } from "./xlsx";
 
-const cat = (id: string, code: string | null, name: string, parent_id: string | null, active = true, kind?: CategoryItem["kind"]): CategoryItem =>
-  ({ id, code, name, parent_id, active, kind: kind !== undefined ? kind : code?.startsWith("1") ? "receita" : code ? "despesa" : null });
+const cat = (
+  id: string,
+  code: string | null,
+  name: string,
+  parent_id: string | null,
+  active = true,
+  kind?: CategoryItem["kind"],
+): CategoryItem => ({
+  id,
+  code,
+  name,
+  parent_id,
+  active,
+  kind: kind !== undefined ? kind : code?.startsWith("1") ? "receita" : code ? "despesa" : null,
+});
 
 const categories = [
   cat("r", "1", "Receitas", null),
@@ -36,8 +49,15 @@ describe("buildRealizedModel", () => {
 
   it("monta a árvore com pais somando os filhos", () => {
     expect(model.rows.map((r) => r.label)).toEqual([
-      "1. Receitas", "1.1. Mensalidades", "1.6. Programa", "1.6.1. Acampamento", "1.6.2. Acantonamento",
-      "2. Despesas", "2.1. Administrativas", "2.8. Antiga com uso", "Rubrica antiga (sem código)",
+      "1. Receitas",
+      "1.1. Mensalidades",
+      "1.6. Programa",
+      "1.6.1. Acampamento",
+      "1.6.2. Acantonamento",
+      "2. Despesas",
+      "2.1. Administrativas",
+      "2.8. Antiga com uso",
+      "Rubrica antiga (sem código)",
     ]);
     expect(row("r6").total[3]).toBe(15000);
     expect(row("r").total[0]).toBe(6000);
@@ -54,7 +74,11 @@ describe("buildRealizedModel", () => {
     // a rubrica antiga sem código e sem pai fica sob Despesas: entra à parte
     expect(rowFilterTokens(model, model.roots.despesa!)).toEqual(["d", "old"]);
     // sem a rubrica "2", a raiz é sintética: só as adotadas
-    const synthetic = buildRealizedModel(categories.filter((c) => c.id !== "d"), sums, 2026);
+    const synthetic = buildRealizedModel(
+      categories.filter((c) => c.id !== "d"),
+      sums,
+      2026,
+    );
     expect(synthetic.rows[synthetic.roots.despesa!].id).toBe("root-despesa");
     expect(rowFilterTokens(synthetic, synthetic.roots.despesa!)).toEqual(["d1", "d8", "old"]);
   });

@@ -8,7 +8,13 @@ import { InputError, runAction } from "@/lib/action";
 import { isScoutBranch } from "@/lib/associates/model";
 import { QUICK_DONE, type QuickKind } from "@/lib/inventory/quick";
 import { quickDoneHref } from "@/lib/quick";
-import { CONDITION_LABELS, MANUAL_WRITE_OFF_LABELS, type Condition, type Tracking, type WriteOffReason } from "@/lib/inventory/vocabulary";
+import {
+  CONDITION_LABELS,
+  MANUAL_WRITE_OFF_LABELS,
+  type Condition,
+  type Tracking,
+  type WriteOffReason,
+} from "@/lib/inventory/vocabulary";
 import * as associates from "@/lib/server/associates/associates";
 import * as entries from "@/lib/server/finance/entries";
 import * as quick from "@/lib/server/inventory/quick";
@@ -28,7 +34,8 @@ function id(data: FormData, key: string, message: string) {
 }
 function quantity(data: FormData, key = "quantity", min = 1) {
   const value = text(data, key);
-  if (!/^\d+$/.test(value) || Number(value) < min) throw new InputError(min === 0 ? "Informe a quantidade contada." : "Informe uma quantidade de pelo menos 1.");
+  if (!/^\d+$/.test(value) || Number(value) < min)
+    throw new InputError(min === 0 ? "Informe a quantidade contada." : "Informe uma quantidade de pelo menos 1.");
   return Number(value);
 }
 function oneOf<T extends string>(data: FormData, key: string, labels: Record<T, string>, message: string): T {
@@ -36,7 +43,8 @@ function oneOf<T extends string>(data: FormData, key: string, labels: Record<T, 
   if (!(value in labels)) throw new InputError(message);
   return value as T;
 }
-const optionalCondition = (data: FormData) => (text(data, "condition") ? oneOf<Condition>(data, "condition", CONDITION_LABELS, "Condição inválida.") : null);
+const optionalCondition = (data: FormData) =>
+  text(data, "condition") ? oneOf<Condition>(data, "condition", CONDITION_LABELS, "Condição inválida.") : null;
 function date(data: FormData, key: string) {
   const value = text(data, key);
   if (!value) return null;
@@ -56,7 +64,12 @@ function build(kind: QuickKind, data: FormData, groupId: string): quick.QuickAct
   switch (kind) {
     case "retirar": {
       const target = item(data);
-      const reason = oneOf<Exclude<WriteOffReason, "venda">>(data, "reason", MANUAL_WRITE_OFF_LABELS, "Escolha o motivo da retirada.");
+      const reason = oneOf<Exclude<WriteOffReason, "venda">>(
+        data,
+        "reason",
+        MANUAL_WRITE_OFF_LABELS,
+        "Escolha o motivo da retirada.",
+      );
       return target.kind === "lot"
         ? { action: "write_off_lot", lot_id: target.id, quantity: quantity(data), reason, notes }
         : { action: "write_off_unit", unit_id: target.id, reason, notes };
@@ -65,8 +78,24 @@ function build(kind: QuickKind, data: FormData, groupId: string): quick.QuickAct
       const materialId = id(data, "materialId", "Material inválido. Recarregue a página.");
       const locationId = id(data, "locationId", "Escolha a divisão.");
       return text(data, "tracking") === "unit"
-        ? { action: "add_unit", material_id: materialId, location_id: locationId, tag: optional(data, "tag"), condition: optionalCondition(data), notes }
-        : { action: "add_lot", material_id: materialId, location_id: locationId, quantity: quantity(data), condition: optionalCondition(data), expires_on: date(data, "expiresOn"), variant: optional(data, "variant"), notes };
+        ? {
+            action: "add_unit",
+            material_id: materialId,
+            location_id: locationId,
+            tag: optional(data, "tag"),
+            condition: optionalCondition(data),
+            notes,
+          }
+        : {
+            action: "add_lot",
+            material_id: materialId,
+            location_id: locationId,
+            quantity: quantity(data),
+            condition: optionalCondition(data),
+            expires_on: date(data, "expiresOn"),
+            variant: optional(data, "variant"),
+            notes,
+          };
     }
     case "condicao": {
       const target = item(data);
@@ -89,14 +118,23 @@ function build(kind: QuickKind, data: FormData, groupId: string): quick.QuickAct
       return { action: "adjust_lot", lot_id: target.id, quantity: quantity(data, "quantity", 0), notes };
     }
     case "novo": {
-      const tracking = text(data, "tracking") === "unit" ? "unit" : "lot" satisfies Tracking;
+      const tracking = text(data, "tracking") === "unit" ? "unit" : ("lot" satisfies Tracking);
       const familyId = optional(data, "familyId");
       if (familyId && !UUID.test(familyId)) throw new InputError("Família inválida.");
       const count = tracking === "unit" ? 1 : quantity(data);
       return {
-        action: "new_material", group_id: groupId, name: text(data, "name"), tracking, consumable: tracking === "lot" && data.get("consumable") === "on",
-        family_id: familyId, location_id: id(data, "locationId", "Escolha a divisão."), quantity: count, condition: optionalCondition(data),
-        expires_on: tracking === "lot" ? date(data, "expiresOn") : null, tag: tracking === "unit" ? optional(data, "tag") : null, notes,
+        action: "new_material",
+        group_id: groupId,
+        name: text(data, "name"),
+        tracking,
+        consumable: tracking === "lot" && data.get("consumable") === "on",
+        family_id: familyId,
+        location_id: id(data, "locationId", "Escolha a divisão."),
+        quantity: count,
+        condition: optionalCondition(data),
+        expires_on: tracking === "lot" ? date(data, "expiresOn") : null,
+        tag: tracking === "unit" ? optional(data, "tag") : null,
+        notes,
       };
     }
   }
@@ -107,21 +145,31 @@ export async function quickRecord(_previous: ActionResult, formData: FormData): 
   const kind = text(formData, "kind") as QuickKind;
   if (!(kind in QUICK_DONE)) return { error: "Ação inválida. Recarregue a página." };
   let materialId = text(formData, "materialId");
-  const result = await runAction(() => inventoryWriterOrError(), async ({ db, groupId }) => {
-    const created = await quick.record(db, build(kind, formData, groupId));
-    if (kind === "novo" && created) materialId = created;
-    revalidatePath("/inventario", "layout");
-    revalidatePath("/");
-  });
+  const result = await runAction(
+    () => inventoryWriterOrError(),
+    async ({ db, groupId }) => {
+      const created = await quick.record(db, build(kind, formData, groupId));
+      if (kind === "novo" && created) materialId = created;
+      revalidatePath("/inventario", "layout");
+      revalidatePath("/");
+    },
+  );
   if (result.error) return result;
   redirect(quickDoneHref(kind, materialId));
 }
 
 const quickEntrySchema = z.object({
   date: z.iso.date("Informe a data."),
-  name: z.string().trim().min(2, "Informe o histórico (quem pagou ou recebeu).").max(200, "Histórico: no máximo 200 caracteres."),
+  name: z
+    .string()
+    .trim()
+    .min(2, "Informe o histórico (quem pagou ou recebeu).")
+    .max(200, "Histórico: no máximo 200 caracteres."),
   paymentMethodId: z.uuid("Escolha a forma de pagamento."),
-  totalCents: z.number().int().refine((value) => value !== 0, "Informe o valor."),
+  totalCents: z
+    .number()
+    .int()
+    .refine((value) => value !== 0, "Informe o valor."),
   description: z.string().trim().max(200, "Descrição: no máximo 200 caracteres.").nullable(),
   notes: z.string().trim().max(2000, "Observações: no máximo 2.000 caracteres.").nullable(),
 });
@@ -134,14 +182,25 @@ export async function quickEntry(payload: unknown): Promise<{ error?: string; id
   const parsed = quickEntrySchema.safeParse(payload);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   let id = "";
-  const result = await runAction(() => financeWriterOrError("Sem permissão para registrar lançamentos."), async ({ db, groupId }) => {
-    const input = parsed.data;
-    const kind = input.totalCents > 0 ? "receita" : "despesa";
-    const categoryId = await entries.rootCategory(db, groupId, kind);
-    if (!categoryId) throw new InputError(`A rubrica ${kind === "receita" ? "1 Receitas" : "2 Despesas"} não está ativa: fale com o administrador do Financeiro.`);
-    id = await entries.createQuick(db, groupId, { ...input, categoryId, description: input.description || null, notes: input.notes || null });
-    revalidatePath("/", "layout");
-  });
+  const result = await runAction(
+    () => financeWriterOrError("Sem permissão para registrar lançamentos."),
+    async ({ db, groupId }) => {
+      const input = parsed.data;
+      const kind = input.totalCents > 0 ? "receita" : "despesa";
+      const categoryId = await entries.rootCategory(db, groupId, kind);
+      if (!categoryId)
+        throw new InputError(
+          `A rubrica ${kind === "receita" ? "1 Receitas" : "2 Despesas"} não está ativa: fale com o administrador do Financeiro.`,
+        );
+      id = await entries.createQuick(db, groupId, {
+        ...input,
+        categoryId,
+        description: input.description || null,
+        notes: input.notes || null,
+      });
+      revalidatePath("/", "layout");
+    },
+  );
   return result.error ? { error: result.error } : { id };
 }
 
@@ -161,8 +220,14 @@ export async function quickAssociate(_previous: ActionResult, formData: FormData
     const notes = optional(formData, "notes");
     if (notes && notes.length > 500) throw new InputError("Use no máximo 500 caracteres.");
     savedId = await associates.createQuick(db, groupId, {
-      name, branch, sectionId: optionalId("sectionId"), patrolId: optionalId("patrolId"), notes,
-      birthDate: date(formData, "birthDate"), promiseDate: date(formData, "promiseDate"), joinedOn: date(formData, "joinedOn"),
+      name,
+      branch,
+      sectionId: optionalId("sectionId"),
+      patrolId: optionalId("patrolId"),
+      notes,
+      birthDate: date(formData, "birthDate"),
+      promiseDate: date(formData, "promiseDate"),
+      joinedOn: date(formData, "joinedOn"),
     });
     revalidatePath("/associados", "layout");
     revalidatePath("/");

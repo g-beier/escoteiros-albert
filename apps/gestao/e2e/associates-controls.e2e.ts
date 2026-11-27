@@ -40,18 +40,24 @@ async function createAssociate(page: Page, name: string, branch: string) {
   await expect(page).toHaveURL(/\/associados\/[0-9a-f-]{36}$/);
 }
 
-const matrixCell = (page: Page, person: string) => page.getByRole("button", { name: new RegExp(`^Editar ${item}, ${person}: `) });
+const matrixCell = (page: Page, person: string) =>
+  page.getByRole("button", { name: new RegExp(`^Editar ${item}, ${person}: `) });
 
-const matrixUrl = (publico: string, person: string, extra = "") => `/associados/controle?publico=${publico}&q=${encodeURIComponent(person)}${extra}`;
+const matrixUrl = (publico: string, person: string, extra = "") =>
+  `/associados/controle?publico=${publico}&q=${encodeURIComponent(person)}${extra}`;
 
 /** A página não rola de lado; a área dos itens rola e o nome fica parado. */
 async function expectMatrixLayout(page: Page, person: string) {
-  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
   expect(overflow).toBeLessThanOrEqual(0);
   const scroller = page.getByTestId("control-matrix-scroll");
   const name = page.getByRole("rowheader").filter({ has: page.getByRole("link", { name: person }) });
   const before = await name.boundingBox();
-  await scroller.evaluate((el) => { el.scrollLeft = el.scrollWidth; });
+  await scroller.evaluate((el) => {
+    el.scrollLeft = el.scrollWidth;
+  });
   const after = await name.boundingBox();
   expect(Math.round(after!.x)).toBe(Math.round(before!.x));
   expect(after!.width).toBeLessThanOrEqual(12 * 16);
@@ -76,7 +82,10 @@ test("item de controle, situação na matriz e desligamento com a remover", asyn
   // jovem novo: começa com o valor inicial (pendente) na matriz única; marcar ok
   await createAssociate(page, youth, "Lobinho");
   await page.goto(matrixUrl("jovens", youth));
-  await expect(page.getByRole("navigation", { name: "Público" }).getByRole("link", { name: "Jovens" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("navigation", { name: "Público" }).getByRole("link", { name: "Jovens" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
   for (const directorate of ["Métodos Educativos", "Administrativa", "Comunicação"]) {
     await expect(page.getByRole("columnheader", { name: directorate, exact: true })).toBeVisible();
   }
@@ -99,14 +108,18 @@ test("item de controle, situação na matriz e desligamento com a remover", asyn
   await expect(page.getByRole("columnheader", { name: "Comunicação", exact: true })).toHaveCount(0);
   await expect(hide.getByRole("button", { name: "Comunicação" })).toHaveAttribute("aria-pressed", "true");
   // a aba Adultos mantém o ocultar
-  await expect(page.getByRole("navigation", { name: "Público" }).getByRole("link", { name: "Adultos" })).toHaveAttribute("href", /ocultar=comunicacao/);
+  await expect(
+    page.getByRole("navigation", { name: "Público" }).getByRole("link", { name: "Adultos" }),
+  ).toHaveAttribute("href", /ocultar=comunicacao/);
   await hide.getByRole("button", { name: "Comunicação" }).click();
   await expect(page).not.toHaveURL(/ocultar=/);
   await expect(matrixCell(page, youth)).toBeVisible();
 
   // no detalhe: a situação aparece no Controle de dados
   await page.getByRole("link", { name: youth }).click();
-  await expect(page.getByRole("table", { name: "Controle de dados do associado" }).getByRole("row").filter({ hasText: item })).toContainText("grupo da seção");
+  await expect(
+    page.getByRole("table", { name: "Controle de dados do associado" }).getByRole("row").filter({ hasText: item }),
+  ).toContainText("grupo da seção");
 
   // desligar: o item vira "a remover", visível com "Incluir desligados"
   await page.getByRole("button", { name: "Desligar" }).click();
@@ -127,7 +140,9 @@ test("adulto: na matriz de Adultos com ou sem função; a função o leva para E
   // sem função, o adulto já está no público Adultos; a rota antiga redireciona mantendo a busca
   await page.goto(`/associados/controle/comunicacao?publico=escotista&q=${encodeURIComponent(adult)}`);
   await expect(page).toHaveURL(/\/associados\/controle\?.*publico=adultos/);
-  await expect(page.getByRole("navigation", { name: "Público" }).getByRole("link", { name: "Adultos" })).toHaveAttribute("aria-current", "page");
+  await expect(
+    page.getByRole("navigation", { name: "Público" }).getByRole("link", { name: "Adultos" }),
+  ).toHaveAttribute("aria-current", "page");
   await expect(matrixCell(page, adult)).toHaveAccessibleName(new RegExp(`${adult}: Sem registro$`));
   await expect(page.getByRole("rowheader").filter({ hasText: adult })).toContainText("Sem função");
 
@@ -191,7 +206,10 @@ test("adulto: na matriz de Adultos com ou sem função; a função o leva para E
 
   // na tabela de funções, só "Editar"; encerrar e apagar ficam no diálogo de edição
   await page.goto(detail);
-  const fnRow = page.getByRole("table", { name: "Funções do associado" }).getByRole("row").filter({ hasText: "Assistente de seção" });
+  const fnRow = page
+    .getByRole("table", { name: "Funções do associado" })
+    .getByRole("row")
+    .filter({ hasText: "Assistente de seção" });
   await expect(fnRow.getByRole("button")).toHaveCount(1);
   await fnRow.getByRole("button", { name: "Editar Escotista: Assistente de seção" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Encerrar", exact: true }).click();

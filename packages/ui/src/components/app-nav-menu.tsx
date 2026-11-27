@@ -15,28 +15,62 @@ export function AppNavMenu({ items, utilities }: { items: Item[]; utilities: Ite
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [shownFor, setShownFor] = useState(pathname);
-  if (shownFor !== pathname) { setShownFor(pathname); setOpen(false); }
+  if (shownFor !== pathname) {
+    setShownFor(pathname);
+    setOpen(false);
+  }
   const ref = useRef<HTMLDivElement>(null);
   const panelId = useId();
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
-    const onPointer = (event: PointerEvent) => { if (!ref.current?.contains(event.target as Node)) setOpen(false); };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    const onPointer = (event: PointerEvent) => {
+      if (!ref.current?.contains(event.target as Node)) setOpen(false);
+    };
     document.addEventListener("keydown", onKey);
     document.addEventListener("pointerdown", onPointer);
-    return () => { document.removeEventListener("keydown", onKey); document.removeEventListener("pointerdown", onPointer); };
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
   }, [open]);
 
-  const link = (item: Item) => <Link key={item.href} href={item.href} aria-current={item.active ? "page" : undefined} onClick={() => setOpen(false)}>{item.label}</Link>;
-  return <div ref={ref} className="geas-header__menu">
-    <button type="button" className="geas-header__menu-button" aria-expanded={open} aria-controls={panelId}
-      aria-label={open ? "Fechar menu" : "Abrir menu"} onClick={() => setOpen((value) => !value)}>
-      {open ? <IconX size={20} aria-hidden /> : <IconMenu2 size={20} aria-hidden />}
-    </button>
-    {open && <nav id={panelId} aria-label="Menu" className="geas-header__panel">
-      {items.map(link)}
-      {utilities.length > 0 && <><hr />{utilities.map(link)}</>}
-    </nav>}
-  </div>;
+  const link = (item: Item) => (
+    <Link
+      key={item.href}
+      href={item.href}
+      aria-current={item.active ? "page" : undefined}
+      onClick={() => setOpen(false)}
+    >
+      {item.label}
+    </Link>
+  );
+  return (
+    <div ref={ref} className="geas-header__menu">
+      <button
+        type="button"
+        className="geas-header__menu-button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        aria-label={open ? "Fechar menu" : "Abrir menu"}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {open ? <IconX size={20} aria-hidden /> : <IconMenu2 size={20} aria-hidden />}
+      </button>
+      {open && (
+        <nav id={panelId} aria-label="Menu" className="geas-header__panel">
+          {items.map(link)}
+          {utilities.length > 0 && (
+            <>
+              <hr />
+              {utilities.map(link)}
+            </>
+          )}
+        </nav>
+      )}
+    </div>
+  );
 }

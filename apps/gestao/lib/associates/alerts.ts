@@ -20,21 +20,69 @@ export const VALIDITY_WARNING_DAYS = 30;
  * valendo até a passagem (troca de ramo) ou o desligamento, que apagam a marca.
  */
 export type TransitionRule = {
-  branch: ScoutBranch; label: string; warnMonths: number; criticalMonths: number; afterBirthday?: boolean;
-  warn: string; critical: string; started: string; startAction: string;
+  branch: ScoutBranch;
+  label: string;
+  warnMonths: number;
+  criticalMonths: number;
+  afterBirthday?: boolean;
+  warn: string;
+  critical: string;
+  started: string;
+  startAction: string;
 };
-const FILHOTE_RULE: TransitionRule = { branch: "filhote", label: "Filhote → Lobinho", warnMonths: 6 * 12 + 6, criticalMonths: 7 * 12,
-  warn: "Pensar na transição", critical: "Já devia estar no Lobinho", started: "Em transição", startAction: "Começamos a transição" };
+const FILHOTE_RULE: TransitionRule = {
+  branch: "filhote",
+  label: "Filhote → Lobinho",
+  warnMonths: 6 * 12 + 6,
+  criticalMonths: 7 * 12,
+  warn: "Pensar na transição",
+  critical: "Já devia estar no Lobinho",
+  started: "Em transição",
+  startAction: "Começamos a transição",
+};
 
 const BASE_RULES: TransitionRule[] = [
-  { branch: "lobinho", label: "Lobinho → Escoteiro", warnMonths: 10 * 12, criticalMonths: 11 * 12,
-    warn: "Pensar na transição", critical: "Já devia estar no Escoteiro", started: "Em transição", startAction: "Começamos a transição" },
-  { branch: "escoteiro", label: "Escoteiro → Sênior", warnMonths: 14 * 12, criticalMonths: 15 * 12,
-    warn: "Pensar na transição", critical: "Já devia estar no Sênior", started: "Em transição", startAction: "Começamos a transição" },
-  { branch: "senior", label: "Sênior → Pioneiro", warnMonths: 17 * 12 + 6, criticalMonths: 18 * 12, afterBirthday: true,
-    warn: "Preparar a passagem no aniversário de 18 anos", critical: "Passou do aniversário de 18 anos", started: "Em transição", startAction: "Começamos a transição" },
-  { branch: "pioneiro", label: "Partida do Pioneiro", warnMonths: 21 * 12 + 6, criticalMonths: 22 * 12,
-    warn: "Programar a partida (desligar ou passar a adulto)", critical: "Passou dos 22 anos: falta a partida", started: "Partida programada", startAction: "Partida programada" },
+  {
+    branch: "lobinho",
+    label: "Lobinho → Escoteiro",
+    warnMonths: 10 * 12,
+    criticalMonths: 11 * 12,
+    warn: "Pensar na transição",
+    critical: "Já devia estar no Escoteiro",
+    started: "Em transição",
+    startAction: "Começamos a transição",
+  },
+  {
+    branch: "escoteiro",
+    label: "Escoteiro → Sênior",
+    warnMonths: 14 * 12,
+    criticalMonths: 15 * 12,
+    warn: "Pensar na transição",
+    critical: "Já devia estar no Sênior",
+    started: "Em transição",
+    startAction: "Começamos a transição",
+  },
+  {
+    branch: "senior",
+    label: "Sênior → Pioneiro",
+    warnMonths: 17 * 12 + 6,
+    criticalMonths: 18 * 12,
+    afterBirthday: true,
+    warn: "Preparar a passagem no aniversário de 18 anos",
+    critical: "Passou do aniversário de 18 anos",
+    started: "Em transição",
+    startAction: "Começamos a transição",
+  },
+  {
+    branch: "pioneiro",
+    label: "Partida do Pioneiro",
+    warnMonths: 21 * 12 + 6,
+    criticalMonths: 22 * 12,
+    warn: "Programar a partida (desligar ou passar a adulto)",
+    critical: "Passou dos 22 anos: falta a partida",
+    started: "Partida programada",
+    startAction: "Partida programada",
+  },
 ];
 
 /** Regras de transição em uso; a do Filhote só com o ramo ligado (`FILHOTES_ENABLED`). */
@@ -43,7 +91,9 @@ export const TRANSITIONS = transitionRules(FILHOTES_ENABLED);
 
 export type DateKind = "aniversario" | "promessa";
 export type UpcomingDate = {
-  associateId: string; name: string; kind: DateKind;
+  associateId: string;
+  name: string;
+  kind: DateKind;
   /** Data da comemoração neste ciclo (`AAAA-MM-DD`). */
   on: string;
   /** Dias de hoje até a data (negativo = já passou). */
@@ -53,13 +103,17 @@ export type UpcomingDate = {
 };
 export type TransitionLevel = "aviso" | "iniciada" | "critico";
 export type Transition = {
-  associateId: string; name: string; label: string; level: TransitionLevel;
+  associateId: string;
+  name: string;
+  label: string;
+  level: TransitionLevel;
   /** Idade hoje, em anos e meses completos. */
   age: { years: number; months: number };
   /** Texto do alerta ("Pensar na transição", "Já devia estar no Escoteiro"…). */
   text: string;
   /** Desde quando vale o aviso e quando começa o crítico (`AAAA-MM-DD`). */
-  warnOn: string; criticalOn: string;
+  warnOn: string;
+  criticalOn: string;
   /** Idade-limite do ramo (fim do período de transição), `AAAA-MM-DD`. */
   dueOn: string;
   /** Data em que a transição foi marcada como iniciada, se foi. */
@@ -91,15 +145,29 @@ function occurrence(date: string, today: string, before: number, after: number):
 }
 
 /** Aniversários e aniversários de promessa dos ativos na janela, do mais antigo para o mais distante. */
-export function upcomingDates(people: Pick<AssociateProfile, "id" | "name" | "active" | "birth_date" | "promise_date">[], today: string,
-  before = DATES_BEFORE_DAYS, after = DATES_AFTER_DAYS): UpcomingDate[] {
+export function upcomingDates(
+  people: Pick<AssociateProfile, "id" | "name" | "active" | "birth_date" | "promise_date">[],
+  today: string,
+  before = DATES_BEFORE_DAYS,
+  after = DATES_AFTER_DAYS,
+): UpcomingDate[] {
   const result: UpcomingDate[] = [];
   for (const person of people) {
     if (!person.active) continue;
-    for (const [kind, date] of [["aniversario", person.birth_date], ["promessa", person.promise_date]] as const) {
+    for (const [kind, date] of [
+      ["aniversario", person.birth_date],
+      ["promessa", person.promise_date],
+    ] as const) {
       if (!date) continue;
       const hit = occurrence(date, today, before, after);
-      if (hit) result.push({ associateId: person.id, name: person.name, kind, ...hit, years: Number(hit.on.slice(0, 4)) - Number(date.slice(0, 4)) });
+      if (hit)
+        result.push({
+          associateId: person.id,
+          name: person.name,
+          kind,
+          ...hit,
+          years: Number(hit.on.slice(0, 4)) - Number(date.slice(0, 4)),
+        });
     }
   }
   return result.sort((a, b) => a.days - b.days || a.name.localeCompare(b.name, "pt-BR"));
@@ -110,22 +178,32 @@ export function addMonths(date: string, months: number): string {
   const [y, m, d] = date.split("-").map(Number);
   const total = y * 12 + (m - 1) + months;
   const year = Math.floor(total / 12);
-  const month = total % 12 + 1;
+  const month = (total % 12) + 1;
   const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
   return `${year}-${String(month).padStart(2, "0")}-${String(Math.min(d, last)).padStart(2, "0")}`;
 }
 
-type TransitionPerson = Pick<AssociateProfile, "id" | "name" | "active" | "branch" | "birth_date"> & { transition_started_on?: string | null };
+type TransitionPerson = Pick<AssociateProfile, "id" | "name" | "active" | "branch" | "birth_date"> & {
+  transition_started_on?: string | null;
+};
 
 /** Período de transição do ramo: do aviso (`warnOn`) à idade-limite (`dueOn`); o crítico começa em `criticalOn`. */
 export type TransitionWindow = { rule: TransitionRule; warnOn: string; dueOn: string; criticalOn: string };
 
 /** Período de transição do jovem no ramo atual, qualquer que seja hoje; nulo para adulto ou sem nascimento. */
-export function transitionWindow(person: Pick<TransitionPerson, "branch" | "birth_date">, rules = TRANSITIONS): TransitionWindow | null {
+export function transitionWindow(
+  person: Pick<TransitionPerson, "branch" | "birth_date">,
+  rules = TRANSITIONS,
+): TransitionWindow | null {
   const rule = rules.find((t) => t.branch === person.branch);
   if (!rule || !person.birth_date) return null;
   const dueOn = addMonths(person.birth_date, rule.criticalMonths);
-  return { rule, warnOn: addMonths(person.birth_date, rule.warnMonths), dueOn, criticalOn: rule.afterBirthday ? toISO(toTime(dueOn) + DAY) : dueOn };
+  return {
+    rule,
+    warnOn: addMonths(person.birth_date, rule.warnMonths),
+    dueOn,
+    criticalOn: rule.afterBirthday ? toISO(toTime(dueOn) + DAY) : dueOn,
+  };
 }
 
 /** Situação da transição de um jovem ativo hoje, ou nula (fora da janela, adulto, desligado ou sem nascimento). */
@@ -137,8 +215,16 @@ export function transitionOf(person: TransitionPerson, today: string, rules = TR
   const level: TransitionLevel = today >= criticalOn ? "critico" : startedOn ? "iniciada" : "aviso";
   const text = level === "critico" ? rule.critical : level === "iniciada" ? rule.started : rule.warn;
   return {
-    associateId: person.id, name: person.name, age: ageInYearsMonths(person.birth_date, today) ?? { years: 0, months: 0 },
-    label: rule.label, level, text, warnOn, criticalOn, dueOn, startedOn,
+    associateId: person.id,
+    name: person.name,
+    age: ageInYearsMonths(person.birth_date, today) ?? { years: 0, months: 0 },
+    label: rule.label,
+    level,
+    text,
+    warnOn,
+    criticalOn,
+    dueOn,
+    startedOn,
   };
 }
 
@@ -146,8 +232,14 @@ const LEVEL_ORDER: Record<TransitionLevel, number> = { critico: 0, aviso: 1, ini
 
 /** Jovens ativos na janela de transição do próprio ramo: críticos primeiro, depois avisos e em transição; mais velhos primeiro. */
 export function transitions(people: TransitionPerson[], today: string): Transition[] {
-  return people.flatMap((person) => transitionOf(person, today) ?? [])
-    .sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level] || a.criticalOn.localeCompare(b.criticalOn) || a.name.localeCompare(b.name, "pt-BR"));
+  return people
+    .flatMap((person) => transitionOf(person, today) ?? [])
+    .sort(
+      (a, b) =>
+        LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level] ||
+        a.criticalOn.localeCompare(b.criticalOn) ||
+        a.name.localeCompare(b.name, "pt-BR"),
+    );
 }
 
 /** Validade de registro (item de controle com data de validade) vencida ou vencendo, de um associado ativo. */
@@ -159,17 +251,30 @@ export type Expiry = { associateId: string; name: string; item: string; validUnt
  */
 export function registrationExpiries(
   rows: { associate_id: string | null; item_id: string; status: string; valid_until: string | null }[],
-  people: { id: string; name: string; active: boolean }[], items: { id: string; name: string }[], today: string, days = VALIDITY_WARNING_DAYS,
+  people: { id: string; name: string; active: boolean }[],
+  items: { id: string; name: string }[],
+  today: string,
+  days = VALIDITY_WARNING_DAYS,
 ): Expiry[] {
   const until = toISO(toTime(today) + days * DAY);
   const person = new Map(people.filter((p) => p.active).map((p) => [p.id, p.name]));
   const itemName = new Map(items.map((i) => [i.id, i.name]));
-  return rows.flatMap((row) => {
-    const name = row.associate_id && person.get(row.associate_id);
-    const item = itemName.get(row.item_id);
-    if (row.status !== "ok" || !row.valid_until || row.valid_until > until || !name || !item) return [];
-    return [{ associateId: row.associate_id!, name, item, validUntil: row.valid_until, days: Math.round((toTime(row.valid_until) - toTime(today)) / DAY) }];
-  }).sort((a, b) => a.validUntil.localeCompare(b.validUntil) || a.name.localeCompare(b.name, "pt-BR"));
+  return rows
+    .flatMap((row) => {
+      const name = row.associate_id && person.get(row.associate_id);
+      const item = itemName.get(row.item_id);
+      if (row.status !== "ok" || !row.valid_until || row.valid_until > until || !name || !item) return [];
+      return [
+        {
+          associateId: row.associate_id!,
+          name,
+          item,
+          validUntil: row.valid_until,
+          days: Math.round((toTime(row.valid_until) - toTime(today)) / DAY),
+        },
+      ];
+    })
+    .sort((a, b) => a.validUntil.localeCompare(b.validUntil) || a.name.localeCompare(b.name, "pt-BR"));
 }
 
 /** "hoje", "amanhã", "ontem", "em 3 dias", "há 2 dias". */
@@ -187,7 +292,13 @@ export type ScouterSection = { id: string; name: string };
  * `associates_section_alert_rows` (002), usada no Início para mostrar primeiro os avisos da própria seção.
  */
 export function scouterSections(
-  functions: { kind: string; section_id: string | null; section: string | null; started_on: string | null; ended_on: string | null }[],
+  functions: {
+    kind: string;
+    section_id: string | null;
+    section: string | null;
+    started_on: string | null;
+    ended_on: string | null;
+  }[],
   today: string,
 ): ScouterSection[] {
   const sections = new Map<string, string>();

@@ -3,8 +3,17 @@
 export type QuickKind = "retirar" | "entrada" | "condicao" | "transferir" | "ajustar" | "novo";
 
 /** Ações sobre um material existente, na ordem dos botões. */
-export const QUICK_ACTIONS: { kind: Exclude<QuickKind, "novo">; label: string; description: string; lotOnly?: boolean }[] = [
-  { kind: "retirar", label: "Retirar / consumir", description: "Saiu do estoque: consumo, perda, extravio ou descarte." },
+export const QUICK_ACTIONS: {
+  kind: Exclude<QuickKind, "novo">;
+  label: string;
+  description: string;
+  lotOnly?: boolean;
+}[] = [
+  {
+    kind: "retirar",
+    label: "Retirar / consumir",
+    description: "Saiu do estoque: consumo, perda, extravio ou descarte.",
+  },
   { kind: "entrada", label: "Entrada", description: "Chegou mais deste material." },
   { kind: "condicao", label: "Mudar condição", description: "Estragou, foi para manutenção ou voltou bom." },
   { kind: "transferir", label: "Transferir", description: "Mudou de divisão." },

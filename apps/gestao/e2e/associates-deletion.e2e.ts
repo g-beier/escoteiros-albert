@@ -12,7 +12,9 @@ const group = `(select m.group_id from public.memberships m join auth.users u on
 let id = "";
 
 test.beforeAll(() => {
-  id = psql(`insert into public.associates(group_id, name, branch) values (${group}, ${literal(person)}, 'adulto') returning id;`);
+  id = psql(
+    `insert into public.associates(group_id, name, branch) values (${group}, ${literal(person)}, 'adulto') returning id;`,
+  );
 });
 
 test.afterAll(() => {

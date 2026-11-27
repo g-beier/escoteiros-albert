@@ -18,12 +18,24 @@ export default async function UsersPage() {
     linksAssociates ? linkableAssociates(member.db, member.groupId) : Promise.resolve([]),
   ]);
 
-  return <div className="shell">
-    <GestaoHeader current="/usuarios" member={member} />
-    <PageBody>
-      <PageHeader title="Usuários" crumbs={[{ label: "Administração" }, { label: "Usuários" }]} description="Cadastre o e-mail da conta Google de cada pessoa e defina o acesso dela em cada módulo. Cada administrador muda só os módulos que administra; quem fica sem acesso a todos sai do grupo." />
-      <UsersManager users={users} associates={associates} currentUserId={user.id} adminOf={adminOf} linksAssociates={linksAssociates}
-        actions={{ invite: inviteUser, save: saveUserRoles, remove: removeUser }} />
-    </PageBody>
-  </div>;
+  return (
+    <div className="shell">
+      <GestaoHeader current="/usuarios" member={member} />
+      <PageBody>
+        <PageHeader
+          title="Usuários"
+          crumbs={[{ label: "Administração" }, { label: "Usuários" }]}
+          description="Cadastre o e-mail da conta Google de cada pessoa e defina o acesso dela em cada módulo. Cada administrador muda só os módulos que administra; quem fica sem acesso a todos sai do grupo."
+        />
+        <UsersManager
+          users={users}
+          associates={associates}
+          currentUserId={user.id}
+          adminOf={adminOf}
+          linksAssociates={linksAssociates}
+          actions={{ invite: inviteUser, save: saveUserRoles, remove: removeUser }}
+        />
+      </PageBody>
+    </div>
+  );
 }

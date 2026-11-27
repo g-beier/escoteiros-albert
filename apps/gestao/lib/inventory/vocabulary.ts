@@ -10,22 +10,54 @@ export type ReviewStatus = "para_revisar" | "revisado";
 export type MovementChannel = "web" | "rapido" | "importacao" | "financeiro";
 
 export const CONDITION_LABELS: Record<Condition, string> = {
-  novo: "Novo", bom: "Bom", regular: "Regular", ruim: "Ruim", manutencao: "Em manutenção", inservivel: "Inservível",
+  novo: "Novo",
+  bom: "Bom",
+  regular: "Regular",
+  ruim: "Ruim",
+  manutencao: "Em manutenção",
+  inservivel: "Inservível",
 };
 export const TRACKING_LABELS: Record<Tracking, string> = { unit: "Por peça", lot: "Por quantidade" };
-export const ORIGIN_LABELS: Record<Origin, string> = { compra: "Compra", doacao: "Doação", fabricacao: "Fabricação própria", nao_informada: "Não informada" };
-export const WRITE_OFF_LABELS: Record<WriteOffReason, string> = { perda: "Perda", extravio: "Extravio", descarte: "Descarte", doacao: "Doação", consumo: "Consumo", venda: "Venda" };
+export const ORIGIN_LABELS: Record<Origin, string> = {
+  compra: "Compra",
+  doacao: "Doação",
+  fabricacao: "Fabricação própria",
+  nao_informada: "Não informada",
+};
+export const WRITE_OFF_LABELS: Record<WriteOffReason, string> = {
+  perda: "Perda",
+  extravio: "Extravio",
+  descarte: "Descarte",
+  doacao: "Doação",
+  consumo: "Consumo",
+  venda: "Venda",
+};
 /** Motivos de baixa escolhidos nas telas do Inventário (sem `venda`). */
 export const MANUAL_WRITE_OFF_LABELS: Record<Exclude<WriteOffReason, "venda">, string> = {
-  perda: "Perda", extravio: "Extravio", descarte: "Descarte", doacao: "Doação", consumo: "Consumo",
+  perda: "Perda",
+  extravio: "Extravio",
+  descarte: "Descarte",
+  doacao: "Doação",
+  consumo: "Consumo",
 };
 export const MOVEMENT_LABELS: Record<MovementKind, string> = {
-  entrada: "Entrada", transferencia: "Transferência", condicao: "Condição", ajuste: "Ajuste", baixa: "Baixa", edicao: "Edição",
+  entrada: "Entrada",
+  transferencia: "Transferência",
+  condicao: "Condição",
+  ajuste: "Ajuste",
+  baixa: "Baixa",
+  edicao: "Edição",
 };
 export const REVIEW_LABELS: Record<ReviewStatus, string> = { para_revisar: "Para revisar", revisado: "Revisado" };
-export const CHANNEL_LABELS: Record<MovementChannel, string> = { web: "Telas normais", rapido: "Registro rápido", importacao: "Importação por CSV", financeiro: "Venda no Financeiro" };
+export const CHANNEL_LABELS: Record<MovementChannel, string> = {
+  web: "Telas normais",
+  rapido: "Registro rápido",
+  importacao: "Importação por CSV",
+  financeiro: "Venda no Financeiro",
+};
 
-const options = <T extends string>(labels: Record<T, string>) => (Object.entries(labels) as [T, string][]).map(([value, label]) => ({ value, label }));
+const options = <T extends string>(labels: Record<T, string>) =>
+  (Object.entries(labels) as [T, string][]).map(([value, label]) => ({ value, label }));
 export const conditionOptions = options(CONDITION_LABELS);
 export const trackingOptions = options(TRACKING_LABELS);
 export const originOptions = options(ORIGIN_LABELS);
@@ -43,7 +75,9 @@ export function dateBR(value: string | null | undefined) {
 
 /** Data e hora (timestamptz) no fuso de São Paulo, só a data. */
 export function timestampBR(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short" }).format(new Date(value));
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short" }).format(
+    new Date(value),
+  );
 }
 
 /** Dias até a validade (negativo = vencido), a partir de hoje em São Paulo. */
